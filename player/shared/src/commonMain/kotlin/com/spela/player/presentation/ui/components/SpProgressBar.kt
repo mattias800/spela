@@ -114,6 +114,9 @@ fun SpDownloadProgressBar(
     /** Smoothed bytes-per-second. 0 hides the speed label so a stalled
      *  download doesn't show a stale value (#801). */
     bytesPerSecond: Long = 0,
+    /** Paused/interrupted-but-resumable: tints the bar amber and labels it
+     *  "Paused" instead of showing a (stale) speed. (#1296) */
+    paused: Boolean = false,
 ) {
     val byteLabelColor = if (onGradient) SpColor.OnGradientSecondary else SpColor.OnBackgroundTertiary
     val indeterminateTrackColor = if (onGradient) SpColor.OnGradientTrack else SpColor.SurfaceBright
@@ -150,7 +153,11 @@ fun SpDownloadProgressBar(
             Column(modifier = Modifier.testTag("sp_download_progress_bar_determinate")) {
                 SpProgressBar(
                     progress = progress.coerceAtLeast(0f),
-                    progressColors = listOf(SpColor.Accent, SpColor.AccentLight),
+                    progressColors = if (paused) {
+                        listOf(SpColor.DownloadPaused, SpColor.DownloadPaused)
+                    } else {
+                        listOf(SpColor.Accent, SpColor.AccentLight)
+                    },
                     onGradient = onGradient,
                 )
             }
@@ -162,7 +169,13 @@ fun SpDownloadProgressBar(
                 style = SpTypography.LabelSmall,
                 color = byteLabelColor,
             )
-            if (bytesPerSecond > 0) {
+            if (paused) {
+                Text(
+                    text = " · Paused",
+                    style = SpTypography.LabelSmall,
+                    color = byteLabelColor,
+                )
+            } else if (bytesPerSecond > 0) {
                 Text(
                     text = " · ${formatBytes(bytesPerSecond)}/s",
                     style = SpTypography.LabelSmall,

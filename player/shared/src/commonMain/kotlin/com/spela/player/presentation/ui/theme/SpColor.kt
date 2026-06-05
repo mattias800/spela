@@ -84,6 +84,10 @@ object SpColor {
     val DownloadComplete = Success
     val DownloadFailed = Error
 
+    // A paused/interrupted-but-resumable download — amber "action available",
+    // distinct from the red of a terminal failure. (#1296)
+    val DownloadPaused = Warning
+
     // On-gradient surface tokens — for badges, buttons, and other
     // controls that sit on top of the colorful console banner gradient.
     // Centralised so the badges in ConsoleComponents.kt, the Tinted

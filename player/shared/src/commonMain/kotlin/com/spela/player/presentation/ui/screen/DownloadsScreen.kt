@@ -26,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import com.spela.player.domain.model.DownloadFailureReason
 import com.spela.player.domain.model.DownloadProgress
 import com.spela.player.domain.model.DownloadState
 import com.spela.player.domain.model.DownloadedGame
@@ -151,6 +152,9 @@ fun DownloadsScreen(
                         download = download,
                         isCancelling = download.gameId in state.cancellingGameIds,
                         onCancel = { viewModel.onIntent(DownloadsIntent.CancelDownload(download.gameId)) },
+                        onResume = { viewModel.onIntent(DownloadsIntent.ResumeDownload(download.gameId)) },
+                        onRestart = { viewModel.onIntent(DownloadsIntent.RestartDownload(download.gameId, download.gameTitle)) },
+                        onRemove = { viewModel.onIntent(DownloadsIntent.RemoveDownload(download.gameId)) },
                         modifier = Modifier.focusRestoreItem(key ="download_${download.gameId}"),
                     )
                 }
@@ -189,14 +193,42 @@ fun DownloadsScreen(
     }
 }
 
+/** Status label + optional helper line for a download row, by state + cause (#1296). */
+private data class DownloadStatusCopy(val label: String, val helper: String?)
+
+private fun downloadStatusCopy(d: DownloadProgress): DownloadStatusCopy {
+    val pct = if (d.totalBytes > 0) (d.progress * 100).toInt().coerceIn(0, 100) else null
+    val resumeFrom = pct?.let { "Resume from $it%" } ?: "Resume where it left off"
+    return when (d.state) {
+        DownloadState.DOWNLOADING -> DownloadStatusCopy("Downloading", null)
+        DownloadState.QUEUED -> DownloadStatusCopy("Queued", null)
+        DownloadState.COMPLETED -> DownloadStatusCopy("Completed", null)
+        DownloadState.IDLE -> DownloadStatusCopy("Idle", null)
+        DownloadState.PAUSED -> when (d.failureReason) {
+            DownloadFailureReason.NETWORK -> DownloadStatusCopy("Connection lost", resumeFrom)
+            DownloadFailureReason.SERVER -> DownloadStatusCopy("Server interrupted", resumeFrom)
+            else -> DownloadStatusCopy("Paused", resumeFrom)
+        }
+        DownloadState.FAILED -> when (d.failureReason) {
+            DownloadFailureReason.DISK_FULL -> DownloadStatusCopy("Not enough space", "Free up space, then start over")
+            DownloadFailureReason.CORRUPT -> DownloadStatusCopy("Download corrupted", "Start over to fix it")
+            DownloadFailureReason.FILE_CHANGED -> DownloadStatusCopy("File changed on server", "Start over")
+            else -> DownloadStatusCopy("Download failed", "Start over")
+        }
+    }
+}
+
 @Composable
 private fun DownloadItem(
     download: DownloadProgress,
     isCancelling: Boolean = false,
     onCancel: () -> Unit,
+    onResume: () -> Unit = {},
+    onRestart: () -> Unit = {},
+    onRemove: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    val statusText = download.state.name.lowercase().replaceFirstChar { it.uppercase() }
+    val copy = downloadStatusCopy(download)
     val displayTitle = download.gameTitle.ifEmpty { "Game ${download.gameId}" }
 
     SpCard(modifier = modifier) {
@@ -205,10 +237,13 @@ private fun DownloadItem(
                 .fillMaxWidth()
                 .padding(SpSpacing.Default)
                 .semantics {
-                    contentDescription = "$displayTitle, $statusText" +
-                            if (download.state == DownloadState.DOWNLOADING)
-                                if (download.isIndeterminate) ", downloading" else ", ${(download.progress * 100).toInt()} percent"
-                            else ""
+                    contentDescription = "$displayTitle, ${copy.label}" +
+                            when {
+                                download.state == DownloadState.DOWNLOADING && download.isIndeterminate -> ", downloading"
+                                download.state == DownloadState.DOWNLOADING || download.state == DownloadState.PAUSED ->
+                                    if (download.totalBytes > 0) ", ${(download.progress * 100).toInt()} percent" else ""
+                                else -> ""
+                            }
                 },
         ) {
             Row(
@@ -225,6 +260,7 @@ private fun DownloadItem(
                             when (download.state) {
                                 DownloadState.DOWNLOADING -> SpColor.DownloadActive
                                 DownloadState.QUEUED -> SpColor.DownloadQueued
+                                DownloadState.PAUSED -> SpColor.DownloadPaused
                                 DownloadState.COMPLETED -> SpColor.DownloadComplete
                                 DownloadState.FAILED -> SpColor.DownloadFailed
                                 DownloadState.IDLE -> SpColor.DownloadIdle
@@ -241,31 +277,64 @@ private fun DownloadItem(
                         color = SpColor.OnCard,
                     )
                     Text(
-                        text = statusText,
+                        text = copy.helper ?: copy.label,
                         style = SpTypography.BodySmall,
                         color = SpColor.OnBackgroundTertiary,
                     )
                 }
 
-                if (download.state == DownloadState.DOWNLOADING || download.state == DownloadState.QUEUED) {
-                    SpButton(
-                        text = if (isCancelling) "Cancelling..." else "Cancel",
-                        onClick = onCancel,
-                        style = SpButtonStyle.Ghost,
-                        isLoading = isCancelling,
-                        enabled = !isCancelling,
+                // Primary action by state. Cancel pauses (keeps the partial);
+                // Resume continues a paused partial; Start over re-downloads a
+                // terminally-failed game from scratch. (#1296)
+                when (download.state) {
+                    DownloadState.DOWNLOADING, DownloadState.QUEUED -> {
+                        val label = if (download.state == DownloadState.QUEUED) "Cancel" else "Pause"
+                        SpButton(
+                            text = if (isCancelling) "…" else label,
+                            onClick = onCancel,
+                            style = SpButtonStyle.Ghost,
+                            isLoading = isCancelling,
+                            enabled = !isCancelling,
+                        )
+                    }
+                    DownloadState.PAUSED -> SpButton(
+                        text = "Resume",
+                        onClick = onResume,
+                        style = SpButtonStyle.Primary,
                     )
+                    DownloadState.FAILED -> SpButton(
+                        text = "Start over",
+                        onClick = onRestart,
+                        style = SpButtonStyle.Primary,
+                    )
+                    else -> {}
                 }
             }
 
-            if (download.state == DownloadState.DOWNLOADING) {
+            // Progress bar for an in-flight download AND for a paused one, so
+            // the user sees how far the resume will continue from. (#1296)
+            if (download.state == DownloadState.DOWNLOADING || download.state == DownloadState.PAUSED) {
                 Spacer(Modifier.height(SpSpacing.Medium))
                 SpDownloadProgressBar(
                     progress = download.progress,
                     bytesDownloaded = download.bytesDownloaded,
                     totalBytes = download.totalBytes,
-                    bytesPerSecond = download.bytesPerSecond,
+                    bytesPerSecond = if (download.state == DownloadState.PAUSED) 0 else download.bytesPerSecond,
+                    paused = download.state == DownloadState.PAUSED,
                 )
+            }
+
+            // Secondary "Remove" for paused/failed partials — reclaim disk space
+            // without resuming. (#1296)
+            if (download.state == DownloadState.PAUSED || download.state == DownloadState.FAILED) {
+                Spacer(Modifier.height(SpSpacing.Small))
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    SpButton(
+                        text = "Remove",
+                        onClick = onRemove,
+                        style = SpButtonStyle.Ghost,
+                    )
+                }
             }
         }
     }

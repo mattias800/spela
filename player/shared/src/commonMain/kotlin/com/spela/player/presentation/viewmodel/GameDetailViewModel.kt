@@ -117,6 +117,8 @@ class GameDetailViewModel(
             GameDetailIntent.DownloadGame -> downloadGame()
             GameDetailIntent.DownloadToFolder -> downloadToFolder()
             GameDetailIntent.DownloadGameAndPlay -> downloadGameAndPlay()
+            GameDetailIntent.ResumeDownload -> resumeDownload()
+            GameDetailIntent.RestartDownload -> restartDownload()
             GameDetailIntent.ConsumeAutoLaunch -> _state.update { it.copy(pendingAutoLaunch = false) }
             GameDetailIntent.PlayGame -> { /* Handled by UI navigation to emulation screen */ }
             GameDetailIntent.DeleteLocalGame -> deleteLocalGame()
@@ -607,6 +609,39 @@ class GameDetailViewModel(
                     }
                 },
             )
+        }
+    }
+
+    /**
+     * Resume a paused/resumably-failed download from its on-disk offset (#1296).
+     * Clears any error toast (the resume is the recovery) and reuses the same
+     * success/failure handling as a fresh download.
+     */
+    private fun resumeDownload() {
+        val gameId = currentGameId ?: return
+        _state.update { it.copy(isDownloading = true, error = null) }
+        scope.launch(dispatchers.io) {
+            downloadRepository.resumeDownload(gameId).fold(
+                onSuccess = {
+                    _state.update { it.copy(isGameCached = true, isDownloading = false) }
+                    currentGameId?.let { loadCheats(it) }
+                },
+                onFailure = { error ->
+                    _state.update { it.copy(error = error.message, isDownloading = false) }
+                },
+            )
+        }
+    }
+
+    /**
+     * Discard the partial and download the game over from scratch — the
+     * recovery for a terminal failure (corrupt/disk-full/changed file). (#1296)
+     */
+    private fun restartDownload() {
+        val gameId = currentGameId ?: return
+        scope.launch(dispatchers.io) {
+            downloadRepository.deleteLocalGame(gameId)
+            downloadGame()
         }
     }
 

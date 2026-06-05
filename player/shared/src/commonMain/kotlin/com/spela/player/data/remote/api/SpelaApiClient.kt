@@ -49,6 +49,21 @@ import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 
+/**
+ * Outcome of a [SpelaApiClient.downloadGameToFile] transfer, used to drive
+ * resume bookkeeping (#1296).
+ *
+ * @property validator the server's current ETag for the file, to send as
+ *   If-Range on a future resume (null if the server sent none).
+ * @property resumed true when the server honored a Range request (206) and the
+ *   bytes were appended to an existing partial; false for a full transfer (200),
+ *   which means any prior partial was overwritten from scratch.
+ */
+data class DownloadResult(
+    val validator: String?,
+    val resumed: Boolean,
+)
+
 class SpelaApiClient(
     private val engineFactory: io.ktor.client.engine.HttpClientEngineFactory<*>,
     private val tokenManager: TokenManager,
@@ -1501,17 +1516,55 @@ class SpelaApiClient(
         gameId: String,
         fileStorage: FileStorage,
         destPath: String,
+        resumeFrom: Long = 0,
+        validator: String? = null,
+        onResponseInfo: (validator: String?, fullSize: Long?) -> Unit = { _, _ -> },
         onProgress: (Long, Long?) -> Unit = { _, _ -> },
-    ) {
-        client.prepareGet("$baseUrl/api/games/$gameId/download") {
+    ): DownloadResult {
+        return client.prepareGet("$baseUrl/api/games/$gameId/download") {
             timeout {
                 requestTimeoutMillis = Long.MAX_VALUE
+            }
+            // Resume: request only the bytes after the partial, guarded by the
+            // server's validator. A changed file makes the server ignore the
+            // range and send a full 200, which we then write from scratch
+            // rather than splice mismatched bytes onto a stale partial. (#1296)
+            if (resumeFrom > 0) {
+                header(HttpHeaders.Range, "bytes=$resumeFrom-")
+                if (validator != null) {
+                    header(HttpHeaders.IfRange, validator)
+                }
             }
         }.execute { response ->
             if (!response.status.isSuccess()) {
                 throw RuntimeException("Game download failed: HTTP ${response.status.value}")
             }
-            streamResponseToFile(response, fileStorage, destPath, onProgress)
+            // Capture the server's current validator so a later resume can send
+            // If-Range and detect a file that changed underneath us.
+            val serverValidator = response.headers[HttpHeaders.ETag]
+            // 206 means the server honored our range — append to the partial.
+            // Anything else (200) is a full transfer: range ignored, no range
+            // support, or a stale validator → write from scratch.
+            val resumed = resumeFrom > 0 && response.status == HttpStatusCode.PartialContent
+            // Authoritative full size of the file the server is serving NOW.
+            // For a 206 the Content-Length is the REMAINING bytes, so add the
+            // resume offset; for a 200 it already is the full size.
+            val contentLen = response.contentLength()
+            val fullSize: Long? = if (resumed && contentLen != null) resumeFrom + contentLen else contentLen
+            // Surface validator + true size before streaming so they're
+            // persisted even if the transfer dies mid-stream (the very state a
+            // later resume needs). (#1296)
+            onResponseInfo(serverValidator, fullSize)
+            if (resumed) {
+                streamResponseToFile(
+                    response, fileStorage, destPath,
+                    startOffset = resumeFrom, append = true, totalOverride = fullSize,
+                    onProgress = onProgress,
+                )
+            } else {
+                streamResponseToFile(response, fileStorage, destPath, onProgress = onProgress)
+            }
+            DownloadResult(validator = serverValidator, resumed = resumed)
         }
     }
 
@@ -1655,7 +1708,7 @@ class SpelaApiClient(
             if (!response.status.isSuccess()) {
                 throw RuntimeException("Disc download failed: HTTP ${response.status.value}")
             }
-            streamResponseToFile(response, fileStorage, destPath, onProgress)
+            streamResponseToFile(response, fileStorage, destPath, onProgress = onProgress)
         }
     }
 
@@ -1663,28 +1716,37 @@ class SpelaApiClient(
         response: HttpResponse,
         fileStorage: FileStorage,
         destPath: String,
+        startOffset: Long = 0,
+        append: Boolean = false,
+        totalOverride: Long? = null,
         onProgress: (Long, Long?) -> Unit,
     ) {
-        val totalBytes = response.contentLength()
+        // For a 206 resume, totalOverride is the full size (offset + remaining);
+        // for a 200 it's null and the response Content-Length is the full size.
+        val totalBytes = totalOverride ?: response.contentLength()
         val channel = response.bodyAsChannel()
-        var downloaded = 0L
-        println("[Download] Starting stream to $destPath, Content-Length=$totalBytes")
+        // downloaded tracks bytes-on-disk, so it starts at the partial offset
+        // when resuming — progress then continues from where it stopped.
+        var downloaded = startOffset
+        println("[Download] Streaming to $destPath startOffset=$startOffset append=$append total=$totalBytes")
 
-        fileStorage.writeFileStreaming(destPath) { append ->
+        val pump: suspend (suspend (ByteArray, Int, Int) -> Unit) -> Unit = { write ->
             val buffer = ByteArray(65536)
             var chunkCount = 0
             while (true) {
                 val bytesRead = channel.readAvailable(buffer)
                 if (bytesRead == -1) break
-                append(buffer, 0, bytesRead)
+                write(buffer, 0, bytesRead)
                 downloaded += bytesRead
                 chunkCount++
-                if (chunkCount % 100 == 0) {
-                    println("[Download] chunk=$chunkCount downloaded=$downloaded total=$totalBytes")
-                }
                 onProgress(downloaded, totalBytes)
             }
-            println("[Download] Finished: $chunkCount chunks, $downloaded bytes written")
+            println("[Download] Finished: $chunkCount chunks, $downloaded bytes on disk")
+        }
+        if (append) {
+            fileStorage.appendFileStreaming(destPath, pump)
+        } else {
+            fileStorage.writeFileStreaming(destPath, pump)
         }
     }
 

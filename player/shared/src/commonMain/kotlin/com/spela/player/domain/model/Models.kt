@@ -307,8 +307,50 @@ enum class DownloadState {
     IDLE,
     QUEUED,
     DOWNLOADING,
+
+    /**
+     * A resumable partial exists on disk but no transfer is active — the
+     * download stopped and can continue from its current byte offset. Set
+     * either by a user-initiated pause/cancel-keeping-partial or by a
+     * *resumable* failure (network drop, server cut the connection). The UI
+     * offers **Resume**. See [DownloadProgress.failureReason] for the cause
+     * (null = user-initiated). (#1296)
+     */
+    PAUSED,
     COMPLETED,
+
+    /**
+     * The download stopped and cannot be safely resumed — the partial (if any)
+     * was discarded. The only recovery is a clean restart ("Start over"). See
+     * [DownloadProgress.failureReason] for which terminal condition applied.
+     */
     FAILED,
+}
+
+/**
+ * Why a download stopped, used to drive recovery UI copy and decide whether a
+ * partial is resumable. Resumable causes leave the partial on disk and surface
+ * as [DownloadState.PAUSED]; terminal causes discard the partial and surface as
+ * [DownloadState.FAILED]. (#1296)
+ */
+enum class DownloadFailureReason(val resumable: Boolean) {
+    /** Transient connectivity loss (wifi drop, timeout, reset). Resume. */
+    NETWORK(resumable = true),
+
+    /** Server cut the connection mid-stream (e.g. write timeout, 5xx). Resume. */
+    SERVER(resumable = true),
+
+    /** Server file changed since the partial (size/ETag mismatch). The stale
+     *  partial is discarded; the only safe path is a clean restart. */
+    FILE_CHANGED(resumable = false),
+
+    /** The partial is corrupt or its offset no longer matches the server.
+     *  Restart cleanly rather than splice a bad file. */
+    CORRUPT(resumable = false),
+
+    /** Not enough free disk space to finish. Restarting won't help until the
+     *  user frees space, so this is terminal with specific copy. */
+    DISK_FULL(resumable = false),
 }
 
 data class DownloadProgress(
@@ -322,6 +364,13 @@ data class DownloadProgress(
     /** Rolling-window average bytes per second over the most recent
      *  ~2 s of progress samples. 0 when stalled or not yet computable. */
     val bytesPerSecond: Long = 0,
+    /**
+     * Why the download stopped, for PAUSED/FAILED states. null when the
+     * download is healthy or was paused by the user (no error). For PAUSED
+     * this is a resumable cause (or null for a user pause); for FAILED it's a
+     * terminal cause. (#1296)
+     */
+    val failureReason: DownloadFailureReason? = null,
 ) {
     val progress: Float
         get() = when {
@@ -332,6 +381,10 @@ data class DownloadProgress(
 
     val isIndeterminate: Boolean
         get() = totalBytes < 0
+
+    /** True when a partial exists that can be resumed (PAUSED state). */
+    val isResumable: Boolean
+        get() = state == DownloadState.PAUSED
 }
 
 // RetroAchievements

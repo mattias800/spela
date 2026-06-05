@@ -11,6 +11,12 @@ sealed interface GameDetailIntent {
      * the screen invokes its onPlay handler. See #932.
      */
     data object DownloadGameAndPlay : GameDetailIntent
+
+    /** Resume a paused/failed download from its on-disk offset (#1296). */
+    data object ResumeDownload : GameDetailIntent
+
+    /** Discard the partial and download the game over from scratch (#1296). */
+    data object RestartDownload : GameDetailIntent
     /**
      * Screen-side acknowledgement that the auto-launch signal was
      * consumed. Clears [GameDetailState.pendingAutoLaunch] so the

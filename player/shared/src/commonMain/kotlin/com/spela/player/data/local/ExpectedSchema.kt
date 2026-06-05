@@ -36,5 +36,9 @@ object ExpectedSchema {
             "retry_count", "last_error",
         ),
         "OnboardingHintEntity" to setOf("hint_key", "dismissed_at"),
+        "PartialDownloadEntity" to setOf(
+            "game_id", "game_title", "file_name", "local_path",
+            "expected_size", "validator", "failure_reason", "updated_at",
+        ),
     )
 }
