@@ -53,4 +53,37 @@ describe("Modal", () => {
     await userEvent.click(closeButton);
     expect(onClose).toHaveBeenCalledOnce();
   });
+
+  it("caps height at the viewport and scrolls the body, keeping the header pinned (#1290)", () => {
+    render(
+      <Modal open onClose={vi.fn()} title="Devices">
+        <div>device row</div>
+      </Modal>,
+    );
+    const dialog = screen.getByRole("dialog");
+    // Dialog is bounded to the viewport and laid out as a column.
+    expect(dialog.className).toContain("max-h-[calc(100vh-2rem)]");
+    expect(dialog.className).toContain("flex-col");
+
+    // Header doesn't shrink, so the title + close button stay reachable.
+    const header = dialog.querySelector("div.shrink-0");
+    expect(header).not.toBeNull();
+    expect(header).toHaveTextContent("Devices");
+
+    // The body scrolls internally instead of overflowing the viewport.
+    const body = screen.getByText("device row").parentElement;
+    expect(body?.className).toContain("overflow-y-auto");
+    expect(body?.className).toContain("min-h-0");
+  });
+
+  it("preserves the bodyClassName escape hatch alongside scroll handling", () => {
+    render(
+      <Modal open onClose={vi.fn()} title="Edge to edge" bodyClassName="p-0">
+        <div>flush content</div>
+      </Modal>,
+    );
+    const body = screen.getByText("flush content").parentElement;
+    expect(body?.className).toContain("p-0");
+    expect(body?.className).toContain("overflow-y-auto");
+  });
 });
