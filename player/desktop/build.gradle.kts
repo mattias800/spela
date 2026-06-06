@@ -171,7 +171,11 @@ compose.desktop {
 // Parallel test execution — each test class gets its own SpelaTestHarness with
 // in-memory SQLite and isolated Compose/Skia surface, so they are safe to fork.
 tasks.withType<Test> {
-    maxParallelForks = (Runtime.getRuntime().availableProcessors() / 2).coerceAtLeast(2)
+    // CI runs on fewer cores under a software renderer, so the fork count and
+    // the outer task timeout below are overridable via -P flags; locally they
+    // keep their tuned defaults. (#1279)
+    val defaultForks = (Runtime.getRuntime().availableProcessors() / 2).coerceAtLeast(2)
+    maxParallelForks = (project.findProperty("desktopTestForks") as String?)?.toIntOrNull() ?: defaultForks
     jvmArgs("-Xmx1024m")
     // Fail individual tests that hang instead of blocking the entire suite.
     // Per-test timeout: 30 seconds. Per-class (suite) timeout: 120 seconds.
@@ -186,7 +190,11 @@ tasks.withType<Test> {
     // per-class 120s guard still catch real waitForIdle hangs; this
     // outer cap just keeps a truly stuck Gradle daemon from lasting
     // forever.
-    timeout.set(Duration.ofMinutes(15))
+    timeout.set(
+        Duration.ofMinutes(
+            (project.findProperty("desktopTestTimeoutMin") as String?)?.toLongOrNull() ?: 15,
+        ),
+    )
     testLogging {
         events("failed")
     }

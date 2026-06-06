@@ -1,0 +1,82 @@
+name: Desktop E2E
+
+# The :desktop:desktopTest suite (Compose UI tests via SpelaTestHarness, ~117
+# classes) is too slow for the 15-minute "Player unit tests" gate, so it ran in
+# no workflow at all — desktop-specific E2E was unguarded on CI (#1279). This
+# dedicated job gives it a home with a longer timeout, and is path-filtered to
+# player/** so it only runs when the player app actually changes (CI quota).
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'player/**'
+      - '.github/workflows/desktop-e2e.yml'
+  pull_request:
+    branches: [master]
+    paths:
+      - 'player/**'
+      - '.github/workflows/desktop-e2e.yml'
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  desktop-e2e:
+    name: Desktop E2E (Compose UI)
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    defaults:
+      run:
+        working-directory: player
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5
+        with:
+          # JBR — matches the desktop-build Linux job (the desktop app targets
+          # the JetBrains Runtime).
+          distribution: jetbrains
+          java-version: 21
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # :desktop:desktopTest depends on buildNativeLibrary (the desktop libretro
+      # bridge) and renders real Compose/Skia surfaces, so it needs the native
+      # toolchain, a virtual display (xvfb), and software GL/Vulkan.
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake libvulkan-dev libx11-dev \
+            libwayland-dev wayland-protocols libsdl2-dev pkg-config \
+            xvfb mesa-vulkan-drivers libgl1-mesa-dri
+
+      # Gradle configures :android too, and AGP resolves the pinned NDK at
+      # configuration time — pre-install it so AGP never does its own flaky
+      # on-the-fly install. (#1281)
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: ''
+      - name: Pre-install pinned Android NDK + cmake
+        run: |
+          for i in 1 2 3; do
+            yes | sdkmanager --install "ndk;27.0.12077973" "cmake;3.22.1" && exit 0
+            echo "::warning::sdkmanager install attempt $i failed; retrying in 15s" >&2
+            sleep 15
+          done
+          echo "::error::NDK/cmake install failed after 3 attempts" >&2
+          exit 1
+
+      - name: Cache Gradle
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: desktop-e2e-gradle-${{ hashFiles('player/**/*.gradle*', 'player/gradle/libs.versions.toml') }}
+          restore-keys: |
+            desktop-e2e-gradle-
+
+      - name: Run desktop E2E suite
+        # xvfb-run provides the virtual display Compose/Skia + the emulation
+        # tests need on a headless runner. The Gradle test-task timeout default
+        # (15m, tuned for a 12-core dev box) is raised, and the fork count set
+        # to match the 4-core runner — both via -P overrides (#1279).
+        run: xvfb-run -a ./gradlew :desktop:desktopTest -PdesktopTestForks=4 -PdesktopTestTimeoutMin=45
