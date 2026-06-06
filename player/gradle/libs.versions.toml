@@ -68,3 +68,4 @@ compose-multiplatform = { id = "org.jetbrains.compose", version.ref = "compose-m
 sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 detekt = { id = "dev.detekt", version.ref = "detekt" }
+test-retry = { id = "org.gradle.test-retry", version = "1.6.2" }

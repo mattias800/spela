@@ -24,7 +24,7 @@ jobs:
   desktop-e2e:
     name: Desktop E2E (Compose UI)
     runs-on: ubuntu-latest
-    timeout-minutes: 50
+    timeout-minutes: 65
     defaults:
       run:
         working-directory: player
@@ -76,7 +76,11 @@ jobs:
 
       - name: Run desktop E2E suite
         # xvfb-run provides the virtual display Compose/Skia + the emulation
-        # tests need on a headless runner. The Gradle test-task timeout default
-        # (15m, tuned for a 12-core dev box) is raised, and the fork count set
-        # to match the 4-core runner — both via -P overrides (#1279).
-        run: xvfb-run -a ./gradlew :desktop:desktopTest -PdesktopTestForks=4 -PdesktopTestTimeoutMin=45
+        # tests need on a headless runner. Via -P overrides (#1279): raise the
+        # Gradle test-task timeout (default 15m, tuned for a 12-core dev box),
+        # match the fork count to the 4-core runner, and retry transient flakes
+        # twice (timing-sensitive Compose UI tests flake under software-render
+        # contention) so a flake doesn't redden the gate.
+        run: >-
+          xvfb-run -a ./gradlew :desktop:desktopTest
+          -PdesktopTestForks=4 -PdesktopTestTimeoutMin=55 -PdesktopTestRetries=2

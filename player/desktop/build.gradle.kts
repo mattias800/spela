@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.kotlin.compose.compiler)
     alias(libs.plugins.compose.multiplatform)
+    alias(libs.plugins.test.retry)
 }
 
 val nativeBuildDir = project.layout.buildDirectory.dir("native")
@@ -197,6 +198,19 @@ tasks.withType<Test> {
     )
     testLogging {
         events("failed")
+    }
+    // Retry transient failures (default 0 = off locally). On CI the suite runs
+    // at 4 forks under a software renderer, so timing-sensitive Compose UI tests
+    // (focus-driven scroll, retry-after-failure, sequential emulation) flake
+    // non-deterministically — a different test each run — without being broken.
+    // CI passes -PdesktopTestRetries=2 so a flake retries instead of reddening
+    // the gate; maxFailures stops retrying if the suite is genuinely broken
+    // (many distinct failures), and failOnPassedAfterRetry stays false so a
+    // flake that passes on retry doesn't fail the build. (#1279)
+    retry {
+        maxRetries.set((project.findProperty("desktopTestRetries") as String?)?.toIntOrNull() ?: 0)
+        maxFailures.set(12)
+        failOnPassedAfterRetry.set(false)
     }
 }
 
