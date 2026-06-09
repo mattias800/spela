@@ -501,6 +501,48 @@ func TestSearch_PlatformCodeHintDoesNotFilterOtherConsoles(t *testing.T) {
 		"NES hint must not filter out SNES + GBA results when no NES title matches")
 }
 
+// TestSearch_MultiWordNonAdjacent covers #1310: a multi-word query must
+// match a title where the query words appear with other words between
+// them. "symphony night" must match "Castlevania: Symphony of the
+// Night" — the old single-substring LIKE '%symphony night%' pattern
+// required the words to be adjacent and missed it.
+func TestSearch_MultiWordNonAdjacent(t *testing.T) {
+	database, router, token := setupSearchEnv(t)
+
+	var snes db.Console
+	require.NoError(t, database.Where("abbreviation = ?", "SNES").First(&snes).Error)
+
+	game := db.Game{ConsoleID: snes.ID, Title: "Castlevania: Symphony of the Night", FileName: "sotn.smc", FilePath: "/roms/snes/sotn.smc"}
+	require.NoError(t, database.Create(&game).Error)
+
+	code, resp := searchGet(t, router, token, "/api/search?q="+url.QueryEscape("symphony night"))
+	require.Equal(t, http.StatusOK, code)
+
+	require.Equal(t, 1, resp.Games.Total)
+	require.Len(t, resp.Games.Results, 1)
+	assert.Equal(t, "Castlevania: Symphony of the Night", resp.Games.Results[0].Title)
+}
+
+// TestSearch_MultiWordRequiresAllTokens asserts the AND semantics: every
+// query token must appear in the title. A query mixing a matching and a
+// non-matching token must not return the game.
+func TestSearch_MultiWordRequiresAllTokens(t *testing.T) {
+	database, router, token := setupSearchEnv(t)
+
+	var snes db.Console
+	require.NoError(t, database.Where("abbreviation = ?", "SNES").First(&snes).Error)
+
+	game := db.Game{ConsoleID: snes.ID, Title: "Castlevania: Symphony of the Night", FileName: "sotn.smc", FilePath: "/roms/snes/sotn.smc"}
+	require.NoError(t, database.Create(&game).Error)
+
+	// "symphony" matches but "zelda" does not — AND of tokens means no result.
+	code, resp := searchGet(t, router, token, "/api/search?q="+url.QueryEscape("symphony zelda"))
+	require.Equal(t, http.StatusOK, code)
+
+	assert.Equal(t, 0, resp.Games.Total)
+	assert.Empty(t, resp.Games.Results)
+}
+
 func TestSearch_LimitDefaultsAndBounds(t *testing.T) {
 	database, router, token := setupSearchEnv(t)
 

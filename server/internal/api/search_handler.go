@@ -163,11 +163,36 @@ func (h *SearchHandler) extractConsoleHint(query string) (cleanedQuery string, p
 	return cleaned, matched
 }
 
+// titleLikeClauses tokenizes a query on whitespace and returns an AND-ed
+// set of "<column> LIKE ?" fragments — one per token — alongside the
+// matching %...%-wrapped, escaped arguments. Requiring every token to
+// appear (rather than matching the whole query as one substring) lets a
+// multi-word query match titles where the words are non-adjacent, e.g.
+// "symphony night" → "Castlevania: Symphony of the Night". A single
+// token reduces to one fragment, preserving the original behavior.
+func titleLikeClauses(column, query string) (clause string, args []any) {
+	tokens := strings.Fields(query)
+	if len(tokens) == 0 {
+		tokens = []string{query}
+	}
+	fragments := make([]string, len(tokens))
+	args = make([]any, len(tokens))
+	for i, t := range tokens {
+		fragments[i] = column + " LIKE ?" + likeEscape
+		args[i] = "%" + escapeLikePattern(t) + "%"
+	}
+	return strings.Join(fragments, " AND "), args
+}
+
 // searchGames searches for games matching the query, excluding soft-deleted entries.
+//
+// The query is tokenized on whitespace and every token must appear in
+// the title (see [titleLikeClauses]), so multi-word queries match titles
+// whose words are non-adjacent.
 //
 // When priorityAbbr is non-empty, games on that console float to the top
 // of the result list without filtering out other consoles' results.
-func (h *SearchHandler) searchGames(likePattern string, limit int, priorityAbbr string) SearchCategoryResult[SearchGameResult] {
+func (h *SearchHandler) searchGames(gameQuery string, limit int, priorityAbbr string) SearchCategoryResult[SearchGameResult] {
 	type gameRow struct {
 		ID          uint
 		Title       string
@@ -179,12 +204,13 @@ func (h *SearchHandler) searchGames(likePattern string, limit int, priorityAbbr 
 		CoverAspect string
 	}
 
-	likeClause := "games.title LIKE ?" + likeEscape + " AND games.deleted_at IS NULL"
+	titleClause, titleArgs := titleLikeClauses("games.title", gameQuery)
+	likeClause := "(" + titleClause + ") AND games.deleted_at IS NULL"
 
 	var total int64
 	h.DB.Model(&db.Game{}).
 		Joins("JOIN consoles ON consoles.id = games.console_id").
-		Where(likeClause, likePattern).
+		Where(likeClause, titleArgs...).
 		Count(&total)
 
 	var rows []gameRow
@@ -192,7 +218,7 @@ func (h *SearchHandler) searchGames(likePattern string, limit int, priorityAbbr 
 		Table("games").
 		Select("games.id, games.title, games.cover_url, consoles.name as console_name, consoles.abbreviation as console_abbr, games.developer, games.genre, consoles.cover_aspect").
 		Joins("JOIN consoles ON consoles.id = games.console_id").
-		Where(likeClause, likePattern)
+		Where(likeClause, titleArgs...)
 
 	// Priority-console hint: matching console first, then alphabetical
 	// within each bucket. Implemented via a CASE expression on the
