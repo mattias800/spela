@@ -187,14 +187,12 @@ export function ConsoleDetailPage() {
           )}
         </>
       ) : (
-        /* Large library: showcase sections + terminal browse CTA */
+        /* Large library: Browse-all CTA first (directly under the
+           banner), then the curated showcase shelves. The CTA leads so
+           the console screen matches the player app, where "Browse all"
+           is the first section under the hero banner (ConsoleScreen.kt).
+           See #1312. */
         <>
-          <ConsoleRecentlyPlayed consoleId={id!} />
-          <ConsoleEssentials consoleId={id!} />
-          <ConsoleLaunchGames consoleId={id!} />
-          <ConsoleHiddenGems consoleId={id!} />
-          <ConsoleTopDevelopers consoleId={id!} />
-          <ConsoleRecentlyAdded consoleId={id!} />
           {gameCount > BROWSE_CTA_THRESHOLD && (
             <TitledSection title="Library" icon={Library}>
               <Link
@@ -209,6 +207,12 @@ export function ConsoleDetailPage() {
               </Link>
             </TitledSection>
           )}
+          <ConsoleRecentlyPlayed consoleId={id!} />
+          <ConsoleEssentials consoleId={id!} />
+          <ConsoleLaunchGames consoleId={id!} />
+          <ConsoleHiddenGems consoleId={id!} />
+          <ConsoleTopDevelopers consoleId={id!} />
+          <ConsoleRecentlyAdded consoleId={id!} />
         </>
       )}
     </SectionList>

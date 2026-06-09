@@ -115,17 +115,36 @@ describe("ConsoleDetailPage", () => {
       expect(screen.getByText("100 games")).toBeInTheDocument();
     });
 
-    it("renders the terminal Browse-all CTA below the curated shelves (#1095)", () => {
-      // Pre-#1095 the Browse link lived in the banner's bottom-right
-      // corner with test ID `banner-browse-games`. The hero banner is
-      // now pure identity; the Browse-all CTA moves to a terminal
-      // "Library" section below the showcase shelves with the new
-      // test ID `browse-all-games-cta`.
+    it("renders the Browse-all CTA above the curated shelves, aligned with the player app (#1312)", () => {
+      // #1095 moved the Browse link out of the hero banner into a
+      // "Library" section. It originally lived at the *bottom*, below
+      // the showcase shelves. #1312 moves it to the *top* — directly
+      // under the hero banner, above the shelves — to match the player
+      // app's console screen (ConsoleScreen.kt), where "Browse all" is
+      // the first section under the banner.
+      mockUseConsoleShowcase.mockReturnValue({
+        data: {
+          console: makeConsole({ id: "snes", name: "Super Nintendo" }),
+          essentials: [],
+          launchGames: [],
+          hiddenGems: [],
+          recentlyPlayed: [makeGame({ id: "rp1", title: "Half-Played Game" })],
+          recentlyAdded: [],
+          topDevelopers: [],
+        },
+      });
       renderPage();
+
       const cta = screen.getByTestId("browse-all-games-cta");
       expect(cta).toBeInTheDocument();
       expect(cta).toHaveTextContent("Browse all 100 Super Nintendo games");
       expect(cta).toHaveAttribute("href", "/consoles/snes/games");
+
+      // The CTA must render before the first curated shelf in DOM order.
+      const shelf = screen.getByTestId("recently-played-section");
+      expect(
+        cta.compareDocumentPosition(shelf) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
     });
 
     it("does not render inline search input", () => {
