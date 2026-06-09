@@ -618,6 +618,15 @@ Sections within a screen must be ordered by relevance to the user:
 3. **Browse / Discovery** (Browse All Games button, genre filters)
 4. **Metadata** (developer info, stats) — least urgent
 
+**Carve-out — console detail screen "Browse all" CTA (#1312):** On the
+console detail screen, the "Browse all N games" CTA leads the content
+(directly under the hero banner, above Continue Playing) on **both** the
+player app and the web app, intentionally. The player app requires it
+first so it owns d-pad/default focus (`ConsoleScreen.kt`); the web app
+matches that placement for cross-client consistency
+(`console-detail-page.tsx`). This is a deliberate exception to the
+"Continue Playing first" rule for this one screen — do not "fix" it back.
+
 ### Design System Review Checklist (for UI Agent)
 
 Before approving any UI PR, verify:
