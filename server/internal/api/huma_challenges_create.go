@@ -154,6 +154,12 @@ func (h *ChallengeHandler) HumaCreateChallenge(ctx context.Context, in *CreateCh
 		return nil, huma.Error400BadRequest(fmt.Sprintf("save file too large (max %d MB)", maxChallengeSaveSize>>20))
 	}
 
+	// Count this challenge's starting save against the creator's storage
+	// quota (#1314) — challenge saves previously bypassed the quota entirely.
+	if err := checkStorageQuota(h.DB, uid, saveFile.Size); err != nil {
+		return nil, huma.Error413RequestEntityTooLarge("storage quota exceeded")
+	}
+
 	// Create DB record first to get ID
 	challenge := db.Challenge{
 		CreatorID:   uid,
