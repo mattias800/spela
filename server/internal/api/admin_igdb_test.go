@@ -263,7 +263,9 @@ func TestSettingsMasking_NewSecretOverwrites(t *testing.T) {
 
 	var setting db.ServerSetting
 	require.NoError(t, database.Where("key = ?", "igdb_client_secret").First(&setting).Error)
-	assert.Equal(t, "brand-new-secret", setting.Value)
+	// Stored encrypted at rest (#1318) but must decrypt to the new secret.
+	assert.NotEqual(t, "brand-new-secret", setting.Value, "secret must not be stored in plaintext")
+	assert.Equal(t, "brand-new-secret", decryptSecretSetting(setting.Value))
 }
 
 func TestSettingsMasking_EmptySecret(t *testing.T) {

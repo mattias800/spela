@@ -117,6 +117,24 @@ func main() {
 		slog.Info("CORS: same-origin only (set SPELA_CORS_ORIGINS to allow cross-origin requests)")
 	}
 
+	// Effective key for decrypting secret server settings at startup, matching
+	// the router's resolution (#1318). auth.Decrypt returns legacy plaintext
+	// (no "enc:" prefix) unchanged, so this is safe before any value has been
+	// re-saved through the encrypting admin path.
+	settingsKey := encryptionKey
+	if len(settingsKey) == 0 {
+		settingsKey = auth.DeriveEncryptionKey(jwtSecret)
+	}
+	decryptSetting := func(v string) string {
+		if v == "" {
+			return v
+		}
+		if plain, err := auth.Decrypt(v, settingsKey); err == nil {
+			return plain
+		}
+		return v
+	}
+
 	slog.Info("starting Spela server", "port", port, "gameDirs", gameDirs)
 
 	// Initialize database
@@ -217,7 +235,7 @@ func main() {
 				case "igdb_client_id":
 					clientID = s.Value
 				case "igdb_client_secret":
-					clientSecret = s.Value
+					clientSecret = decryptSetting(s.Value)
 				}
 			}
 		}
@@ -229,7 +247,7 @@ func main() {
 		if raAPIKey == "" {
 			var setting db.ServerSetting
 			database.Where("key = ?", "ra_api_key").First(&setting)
-			raAPIKey = setting.Value
+			raAPIKey = decryptSetting(setting.Value)
 		}
 		if raAPIKey != "" {
 			metaScraper.RAClient = retroachievements.NewRAClient()
@@ -242,7 +260,7 @@ func main() {
 		} else {
 			var setting db.ServerSetting
 			if err := database.Where("key = ?", "steamgriddb_api_key").First(&setting).Error; err == nil && setting.Value != "" {
-				metaScraper.ConfigureSteamGridDB(setting.Value)
+				metaScraper.ConfigureSteamGridDB(decryptSetting(setting.Value))
 			}
 		}
 	}
@@ -312,17 +330,17 @@ func main() {
 
 	// Create router
 	router, _ := api.NewRouter(api.Config{
-		DB:            database,
-		JWTSecret:     jwtSecret,
-		EncryptionKey: encryptionKey,
-		GameDirs:      gameDirs,
-		Storage:       store,
-		Scanner:       gameScanner,
-		Scraper:       metaScraper,
-		Hub:           hub,
-		NetplayHub:    netplayHub,
-		CoreDir:       coreDir,
-		FrontendDir:   frontendDir,
+		DB:                           database,
+		JWTSecret:                    jwtSecret,
+		EncryptionKey:                encryptionKey,
+		GameDirs:                     gameDirs,
+		Storage:                      store,
+		Scanner:                      gameScanner,
+		Scraper:                      metaScraper,
+		Hub:                          hub,
+		NetplayHub:                   netplayHub,
+		CoreDir:                      coreDir,
+		FrontendDir:                  frontendDir,
 		CORSOrigins:                  corsOrigins,
 		ChallengeAttemptRateLimitSec: challengeRateLimit,
 		Version:                      version,

@@ -163,6 +163,9 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 	if len(encryptionKey) == 0 {
 		encryptionKey = auth.DeriveEncryptionKey(cfg.JWTSecret)
 	}
+	// Make the effective key available to the secret-server-setting
+	// encrypt/decrypt helpers (#1318).
+	setServerSettingsKey(encryptionKey)
 	socialHandler := &SocialHandler{DB: cfg.DB, Hub: cfg.Hub}
 	ratingHandler := &RatingHandler{DB: cfg.DB, Hub: cfg.Hub}
 	sharedSaveHandler := &SharedSaveHandler{DB: cfg.DB, Storage: cfg.Storage, Hub: cfg.Hub}
