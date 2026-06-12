@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
 	"math"
 	"net/http"
@@ -18,10 +19,20 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/spela/server/internal/db"
 	"github.com/spela/server/internal/igdb"
+	"github.com/spela/server/internal/safehttp"
 	"github.com/spela/server/internal/scraper"
 	"github.com/spela/server/internal/storage"
 	"gorm.io/gorm"
 )
+
+// safePreviewImageClient is the SSRF-hardened client used to fetch console
+// preview screenshots from the libretro CDN: scheme allowlist + private-IP
+// rejection on redirects, instead of a raw http.Client (#1317).
+var safePreviewImageClient = safehttp.NewClient(15 * time.Second)
+
+// maxPreviewImageBytes caps a downloaded preview screenshot so a compromised
+// CDN can't stream an unbounded body to disk.
+const maxPreviewImageBytes = 32 << 20 // 32 MB
 
 // previewFallbackGames maps console abbreviations to well-known game titles
 // used as fallback when no local game has a scraped screenshot.
@@ -42,28 +53,28 @@ var previewFallbackGames = map[string]string{
 	"ARCADE": "Street Fighter II - The World Warrior (World 910522)",
 	"PCE":    "Bonk's Adventure (USA)",
 	"A26":    "Pitfall! - Pitfall Harry's Jungle Adventure (USA)",
-	"GG":    "Sonic The Hedgehog (USA, Europe)",
-	"SCD":   "Sonic CD (USA)",
-	"32X":   "Knuckles' Chaotix (Japan, USA)",
-	"DC":    "Sonic Adventure (USA)",
-	"VB":    "Mario's Tennis (USA)",
-	"3DS":   "Super Mario 3D Land",
-	"GC":    "Super Smash Bros. Melee (USA)",
-	"A52":   "Pac-Man (USA)",
-	"A78":   "Ms. Pac-Man (USA)",
-	"LYNX":  "California Games (USA, Europe)",
-	"JAG":   "Tempest 2000 (World)",
-	"NGP":   "SNK vs. Capcom - Card Fighters' Clash (USA, Europe)",
-	"WS":    "Final Fantasy (Japan)",
-	"PCFX":  "Zenki FX - Vajra Fight (Japan)",
-	"CV":    "Donkey Kong (USA)",
-	"PKMN":  "Pokemon Pinball Mini (USA, Europe)",
-	"PS2":   "Grand Theft Auto - San Andreas (USA)",
-	"C64":   "Boulder Dash (USA, Europe)",
-	"DOS":   "DOOM (USA)",
-	"AMIGA": "Lemmings (USA)",
-	"PS3":   "The Last of Us (USA)",
-	"WII":   "Super Mario Galaxy (USA)",
+	"GG":     "Sonic The Hedgehog (USA, Europe)",
+	"SCD":    "Sonic CD (USA)",
+	"32X":    "Knuckles' Chaotix (Japan, USA)",
+	"DC":     "Sonic Adventure (USA)",
+	"VB":     "Mario's Tennis (USA)",
+	"3DS":    "Super Mario 3D Land",
+	"GC":     "Super Smash Bros. Melee (USA)",
+	"A52":    "Pac-Man (USA)",
+	"A78":    "Ms. Pac-Man (USA)",
+	"LYNX":   "California Games (USA, Europe)",
+	"JAG":    "Tempest 2000 (World)",
+	"NGP":    "SNK vs. Capcom - Card Fighters' Clash (USA, Europe)",
+	"WS":     "Final Fantasy (Japan)",
+	"PCFX":   "Zenki FX - Vajra Fight (Japan)",
+	"CV":     "Donkey Kong (USA)",
+	"PKMN":   "Pokemon Pinball Mini (USA, Europe)",
+	"PS2":    "Grand Theft Auto - San Andreas (USA)",
+	"C64":    "Boulder Dash (USA, Europe)",
+	"DOS":    "DOOM (USA)",
+	"AMIGA":  "Lemmings (USA)",
+	"PS3":    "The Last of Us (USA)",
+	"WII":    "Super Mario Galaxy (USA)",
 }
 
 // ConsoleHandler handles console-related endpoints.
@@ -107,8 +118,11 @@ func (h *ConsoleHandler) resolvePreviewScreenshotPath(_ context.Context, console
 	)
 	slog.Info("downloading preview screenshot from CDN", "console", console.Abbreviation, "url", imageURL)
 
-	httpClient := &http.Client{Timeout: 15 * time.Second}
-	resp, err := httpClient.Get(imageURL)
+	if err := safehttp.CheckURL(imageURL); err != nil {
+		slog.Warn("rejecting preview screenshot URL", "console", console.Abbreviation, "error", err)
+		return "", huma.Error404NotFound("failed to download preview")
+	}
+	resp, err := safePreviewImageClient.Get(imageURL)
 	if err != nil {
 		slog.Warn("failed to download preview screenshot", "console", console.Abbreviation, "error", err)
 		return "", huma.Error404NotFound("failed to download preview")
@@ -120,14 +134,13 @@ func (h *ConsoleHandler) resolvePreviewScreenshotPath(_ context.Context, console
 		return "", huma.Error404NotFound("preview not available from CDN")
 	}
 
-	savedPath, err := h.Storage.WriteImage(cachedPath, resp.Body)
+	savedPath, err := h.Storage.WriteImage(cachedPath, io.LimitReader(resp.Body, maxPreviewImageBytes+1))
 	if err != nil {
 		slog.Warn("failed to cache preview screenshot", "console", console.Abbreviation, "error", err)
 		return "", huma.Error500InternalServerError("failed to cache preview")
 	}
 	return "/api/images/" + filepath.ToSlash(savedPath), nil
 }
-
 
 // GetConsoleIcon has been migrated to huma — see HumaGetConsoleIcon in
 // huma_downloads.go.
@@ -188,12 +201,12 @@ func inlineSvgStyles(svg string) string {
 
 // TopRatedGameResponse is the API response for a top-rated IGDB game.
 type TopRatedGameResponse struct {
-	Rank        int     `json:"rank"`
-	Name        string  `json:"name"`
-	CoverUrl    string  `json:"coverUrl"`
+	Rank              int     `json:"rank"`
+	Name              string  `json:"name"`
+	CoverUrl          string  `json:"coverUrl"`
 	IGDBCriticsRating float64 `json:"igdbCriticsRating"`
-	LocalGameId *string `json:"localGameId"`
-	ConsoleName string  `json:"consoleName"`
+	LocalGameId       *string `json:"localGameId"`
+	ConsoleName       string  `json:"consoleName"`
 }
 
 // topRatedStaleness is how long cached top-rated data is considered fresh.
@@ -209,12 +222,12 @@ var demoConsoleAbbreviations = []string{"ADEMO", "DDEMO"}
 // TopListGameResponse is the API response for a top-rated IGDB game that is
 // available locally on the server.
 type TopListGameResponse struct {
-	Rank        int     `json:"rank"`
-	GameId      string  `json:"gameId"`
-	Name        string  `json:"name"`
-	CoverUrl    string  `json:"coverUrl"`
-	ConsoleName string  `json:"consoleName"`
-	ConsoleId   string  `json:"consoleId"`
+	Rank              int     `json:"rank"`
+	GameId            string  `json:"gameId"`
+	Name              string  `json:"name"`
+	CoverUrl          string  `json:"coverUrl"`
+	ConsoleName       string  `json:"consoleName"`
+	ConsoleId         string  `json:"consoleId"`
 	IGDBCriticsRating float64 `json:"igdbCriticsRating"`
 }
 
@@ -250,10 +263,10 @@ func (h *ConsoleHandler) buildTopRatedResponses(cached []db.TopRatedGame, rerank
 		}
 
 		resp := TopRatedGameResponse{
-			Rank:        rank,
-			Name:        tr.Name,
+			Rank:              rank,
+			Name:              tr.Name,
 			IGDBCriticsRating: tr.TotalRating,
-			ConsoleName: consoleName,
+			ConsoleName:       consoleName,
 		}
 
 		// Check for local game match — prefer scraper_id (stable IGDB FK),

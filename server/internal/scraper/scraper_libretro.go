@@ -2,12 +2,21 @@ package scraper
 
 import (
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"net/url"
 	"path/filepath"
 	"strings"
+
+	"github.com/spela/server/internal/safehttp"
 )
+
+// maxLibRetroListingBytes caps the in-memory size of a thumbnail directory
+// listing. The HTML index for even the largest system is well under this;
+// the cap stops a compromised/MITM'd CDN from streaming an unbounded body
+// into memory (#1317).
+const maxLibRetroListingBytes = 16 << 20 // 16 MB
 
 var libRetroThumbnailBase = "https://thumbnails.libretro.com"
 
@@ -27,7 +36,15 @@ func (s *Scraper) tryDownloadImage(system, name, imageType, subpath string) stri
 		url.PathEscape(name),
 	)
 
-	resp, err := s.HTTPClient.Get(imageURL)
+	// Use the SSRF-hardened image client (scheme allowlist, private-IP
+	// rejection on redirects) and cap the body, instead of a raw client +
+	// unbounded io.Copy into WriteImage (#1317).
+	if err := safehttp.CheckURL(imageURL); err != nil {
+		slog.Debug("rejecting LibRetro image URL", "url", imageURL, "error", err)
+		return ""
+	}
+
+	resp, err := safeImageClient.Get(imageURL)
 	if err != nil {
 		slog.Debug("failed to fetch LibRetro image", "url", imageURL, "error", err)
 		return ""
@@ -39,7 +56,8 @@ func (s *Scraper) tryDownloadImage(system, name, imageType, subpath string) stri
 		return ""
 	}
 
-	savedPath, err := s.Storage.WriteImage(subpath, resp.Body)
+	limited := io.LimitReader(resp.Body, maxExternalImageBytes+1)
+	savedPath, err := s.Storage.WriteImage(subpath, limited)
 	resp.Body.Close()
 	if err != nil {
 		slog.Warn("failed to save LibRetro image", "subpath", subpath, "error", err)
@@ -67,7 +85,7 @@ func (s *Scraper) downloadLibRetroImage(system, gameName, imageType, subpath str
 	}
 
 	// Fuzzy matching: prefers USA/World entries via hasPreferredRegion tie-breaking.
-	entries, err := s.cache.getOrLoad(system, s.HTTPClient)
+	entries, err := s.cache.getOrLoad(system, safeImageClient)
 	if err != nil {
 		slog.Warn("failed to load LibRetro name listing", "system", system, "error", err)
 		return ""
@@ -94,7 +112,7 @@ func (s *Scraper) FindRegionalVariants(consoleAbbr, gameName string) []RegionalV
 		return nil
 	}
 
-	entries, err := s.cache.getOrLoad(system, s.HTTPClient)
+	entries, err := s.cache.getOrLoad(system, safeImageClient)
 	if err != nil {
 		slog.Warn("failed to load LibRetro listing for regional variants", "system", system, "error", err)
 		return nil
@@ -164,11 +182,11 @@ func LibRetroThumbnailURL(consoleAbbr, libRetroName string) string {
 // its full game title (e.g. "Metal Slug - Super Vehicle-001").
 //
 // Resolution strategy (in order):
-// 1. DAT file lookup — if a MAME/FBNeo DAT is loaded, the `description`
-//    field provides an authoritative name→title mapping for every ROM.
-// 2. LibRetro fuzzy match — falls back to matching against the LibRetro
-//    thumbnail directory listing (works when short name normalizes close
-//    to the full title, e.g. "akkaarrh" → "Akka Arrh").
+//  1. DAT file lookup — if a MAME/FBNeo DAT is loaded, the `description`
+//     field provides an authoritative name→title mapping for every ROM.
+//  2. LibRetro fuzzy match — falls back to matching against the LibRetro
+//     thumbnail directory listing (works when short name normalizes close
+//     to the full title, e.g. "akkaarrh" → "Akka Arrh").
 func (s *Scraper) ResolveFullTitle(consoleAbbr, shortName string) string {
 	// Strategy 1: DAT file name→description lookup (authoritative, covers all ROMs)
 	if idx, err := s.DATCache.GetIndexForNameLookup(consoleAbbr); err == nil && idx != nil {
@@ -190,7 +208,7 @@ func (s *Scraper) ResolveFullTitle(consoleAbbr, shortName string) string {
 		return ""
 	}
 
-	entries, err := s.cache.getOrLoad(system, s.HTTPClient)
+	entries, err := s.cache.getOrLoad(system, safeImageClient)
 	if err != nil || len(entries) == 0 {
 		return ""
 	}
