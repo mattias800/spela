@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log/slog"
+	"net"
 	"net/http"
 	_ "net/http/pprof" // profiling endpoint at /debug/pprof/
 	"os"
@@ -11,6 +12,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"golang.org/x/net/netutil"
 
 	"github.com/spela/server/internal/api"
 	"github.com/spela/server/internal/auth"
@@ -546,7 +549,25 @@ func main() {
 		}
 	}()
 
-	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+	// Cap total concurrent connections so a single source can't exhaust file
+	// descriptors / goroutines by holding many open connections to anonymous
+	// endpoints (#1329). Generous default; tune via SPELA_MAX_CONNECTIONS.
+	// Operators behind a reverse proxy may also bound this at the proxy.
+	maxConns := 4096
+	if v := os.Getenv("SPELA_MAX_CONNECTIONS"); v != "" {
+		if parsed, perr := strconv.Atoi(v); perr == nil && parsed > 0 {
+			maxConns = parsed
+		}
+	}
+	ln, err := net.Listen("tcp", srv.Addr)
+	if err != nil {
+		slog.Error("failed to bind listener", "addr", srv.Addr, "error", err)
+		os.Exit(1)
+	}
+	ln = netutil.LimitListener(ln, maxConns)
+	slog.Info("connection cap configured", "maxConnections", maxConns)
+
+	if err := srv.Serve(ln); err != nil && err != http.ErrServerClosed {
 		slog.Error("server failed", "error", err)
 		os.Exit(1)
 	}
