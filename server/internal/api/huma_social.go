@@ -296,17 +296,14 @@ func (h *SocialHandler) HumaGetPublicProfile(ctx context.Context, in *GetPublicP
 	uid := user.ID
 	callerID := UserIDFromContext(ctx)
 
-	// Issue #1121: respect block relationships in BOTH directions and
-	// the target's profile_visibility setting. If either user has
-	// blocked the other, surface the same 404 we'd return for a
-	// nonexistent user — don't leak existence.
-	if callerID != 0 && callerID != uid && isBlockedEitherWay(h.DB, callerID, uid) {
+	// Issue #1121: respect block relationships in BOTH directions and the
+	// target's profile_visibility setting. A block surfaces the same 404
+	// we'd return for a nonexistent user (don't leak existence); a private
+	// profile yields an empty view. The caller still sees their own profile.
+	visible, blocked := publicProfileAccess(h.DB, callerID, user)
+	if blocked {
 		return nil, huma.Error404NotFound("user not found")
 	}
-
-	// Treat anything other than "public" as private. The caller can
-	// still see their own profile in full.
-	visible := user.ProfileVisibility == "" || user.ProfileVisibility == "public" || callerID == uid
 
 	var agg struct {
 		TotalPlayTime int64
@@ -415,4 +412,19 @@ func isBlockedEitherWay(database *gorm.DB, a, b uint) bool {
 		Where("(user_id = ? AND blocked_user_id = ?) OR (user_id = ? AND blocked_user_id = ?)", a, b, b, a).
 		Count(&count)
 	return count > 0
+}
+
+// publicProfileAccess centralises the #1121 privacy gate for every
+// /api/users/{id}/... read that exposes per-user activity. When blocked is
+// true the caller must return 404 (don't leak existence); when visible is
+// false the target is private and the caller must return an empty/limited
+// view. Issue #1316/#1320: the play-heatmap and achievement-showcase reads
+// previously skipped this gate, so it now lives in one helper called by all
+// three handlers.
+func publicProfileAccess(database *gorm.DB, callerID uint, target db.User) (visible, blocked bool) {
+	if callerID != 0 && callerID != target.ID && isBlockedEitherWay(database, callerID, target.ID) {
+		return false, true
+	}
+	visible = target.ProfileVisibility == "" || target.ProfileVisibility == "public" || callerID == target.ID
+	return visible, false
 }

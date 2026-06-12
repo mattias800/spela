@@ -450,6 +450,55 @@ func TestHeatmap_PublicNotFound(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, w.Code)
 }
 
+// Issue #1316: a private-profile user's play timeline must not be readable by
+// other users via the public heatmap endpoint — it returns an empty list.
+func TestHeatmap_PublicRespectsProfileVisibility(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	token := registerAndGetToken(t, router)
+
+	otherUser := db.User{Username: "private_heatmap", Email: "ph@example.com", PasswordHash: "hash", Role: "user", ProfileVisibility: "private"}
+	database.Create(&otherUser)
+	today := time.Now().UTC().Truncate(24 * time.Hour)
+	database.Create(&db.DailyPlayActivity{UserID: otherUser.ID, Date: today, PlayTime: 7200})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", fmt.Sprintf("/api/users/%d/play-heatmap", otherUser.ID), nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var entries []HeatmapEntry
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &entries))
+	assert.Empty(t, entries, "private profile heatmap must not leak activity")
+}
+
+// Issue #1316: a block in either direction hides the heatmap behind a 404,
+// matching the public-profile endpoint's existence-non-disclosure behaviour.
+func TestHeatmap_PublicRespectsBlock(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	token := registerAndGetToken(t, router)
+
+	var caller db.User
+	database.Where("username = ?", "apitest").First(&caller)
+
+	otherUser := db.User{Username: "blocker_heatmap", Email: "bh@example.com", PasswordHash: "hash", Role: "user"}
+	database.Create(&otherUser)
+	today := time.Now().UTC().Truncate(24 * time.Hour)
+	database.Create(&db.DailyPlayActivity{UserID: otherUser.ID, Date: today, PlayTime: 7200})
+	// otherUser blocks the caller.
+	database.Create(&db.Block{UserID: otherUser.ID, BlockedUserID: caller.ID})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", fmt.Sprintf("/api/users/%d/play-heatmap", otherUser.ID), nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusNotFound, w.Code, "blocked user must not read the heatmap")
+}
+
 func TestCalculateStreaks(t *testing.T) {
 	tests := []struct {
 		name            string

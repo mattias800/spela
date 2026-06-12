@@ -326,10 +326,25 @@ func (h *AchievementShowcaseHandler) HumaGetShowcase(ctx context.Context, _ *Get
 }
 
 // HumaGetPublicShowcase is the huma handler for GET /api/users/{id}/achievements/showcase.
-func (h *AchievementShowcaseHandler) HumaGetPublicShowcase(_ context.Context, in *GetPublicShowcaseInput) (*GetPublicShowcaseOutput, error) {
+func (h *AchievementShowcaseHandler) HumaGetPublicShowcase(ctx context.Context, in *GetPublicShowcaseInput) (*GetPublicShowcaseOutput, error) {
 	userID, err := strconv.ParseUint(in.ID, 10, 64)
 	if err != nil {
 		return nil, huma.Error400BadRequest("invalid user ID")
+	}
+
+	// Issue #1320: honour the same block + profile-visibility gate as the
+	// public profile/heatmap reads instead of exposing the showcase to
+	// blocked or private-profile users.
+	var user db.User
+	if err := h.DB.First(&user, uint(userID)).Error; err != nil {
+		return nil, huma.Error404NotFound("user not found")
+	}
+	visible, blocked := publicProfileAccess(h.DB, UserIDFromContext(ctx), user)
+	if blocked {
+		return nil, huma.Error404NotFound("user not found")
+	}
+	if !visible {
+		return &GetPublicShowcaseOutput{Body: []ShowcaseEntryResponse{}}, nil
 	}
 
 	var entries []db.UserAchievementShowcase
