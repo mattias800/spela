@@ -100,9 +100,14 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 		}))
 	}
 
-	// Serve images — save screenshots require auth + ownership; everything else is public
+	// Serve images — save screenshots require auth + ownership; everything else is public.
+	// Per-IP rate limit (#1327): this route is unauthenticated and, on a cache
+	// miss, triggers a DB lookup + outbound CDN fetch + disk write. The limit
+	// is generous so a normal grid of covers loads fine (rate.Limiter bursts up
+	// to the limit) while bounding sustained anonymous amplification.
+	imageLimiter := NewRateLimiter(600, time.Minute)
 	imageHandler := &ImageHandler{ImageDir: cfg.Storage.ImageDir, JWTSecret: cfg.JWTSecret, DB: cfg.DB, Scraper: cfg.Scraper}
-	r.GET("/api/images/*filepath", imageHandler.ServeImage)
+	r.GET("/api/images/*filepath", imageLimiter.RateLimit(), imageHandler.ServeImage)
 
 	// Bootstrap the huma API. Registered handlers below run alongside the raw
 	// gin handlers that follow — the two stacks coexist during the migration.
@@ -442,6 +447,7 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 		downloadLimiter.Close()
 		uploadLimiter.Close()
 		userLimiter.Close()
+		imageLimiter.Close()
 	}
 
 	return r, cleanup
