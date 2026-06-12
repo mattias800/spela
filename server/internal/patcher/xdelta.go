@@ -74,6 +74,15 @@ func ApplyXDelta(romData, patchData []byte) ([]byte, error) {
 		return nil, fmt.Errorf("xdelta3 failed: %s: %w", string(output), err)
 	}
 
+	// Bound the output before reading it wholly into memory: a malicious
+	// VCDIFF can declare a huge target window, and os.ReadFile would buffer
+	// all of it (#1325). Cap at the same MaxOutputSize the in-Go parsers use.
+	if fi, err := os.Stat(outFile.Name()); err != nil {
+		return nil, fmt.Errorf("stat xdelta3 output: %w", err)
+	} else if fi.Size() > MaxOutputSize {
+		return nil, fmt.Errorf("xdelta3 output %d exceeds maximum allowed size (%d bytes)", fi.Size(), MaxOutputSize)
+	}
+
 	// Read result
 	result, err := os.ReadFile(outFile.Name())
 	if err != nil {
