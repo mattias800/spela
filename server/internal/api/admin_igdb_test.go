@@ -190,10 +190,10 @@ func TestSettingsMasking_IGDBSecret(t *testing.T) {
 	defer cleanup()
 	_, adminToken := createAdminUser(t, database)
 
-	// Store settings including IGDB secret
+	// Store settings including IGDB secret. registration_enabled is already
+	// seeded "true" by setupTestEnv.
 	database.Create(&db.ServerSetting{Key: "igdb_client_id", Value: "my-client-id"})
 	database.Create(&db.ServerSetting{Key: "igdb_client_secret", Value: "super-secret-value"})
-	database.Create(&db.ServerSetting{Key: "registration_enabled", Value: "true"})
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/api/admin/settings", nil)

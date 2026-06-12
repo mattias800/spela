@@ -203,6 +203,12 @@ func main() {
 		slog.Warn("failed to migrate shared sessions", "error", err)
 	}
 
+	// Preserve open registration for installs that predate the
+	// secure-by-default change (#1319). Fresh installs stay closed.
+	if err := db.MigratePreserveOpenRegistration(database); err != nil {
+		slog.Warn("failed to preserve registration default", "error", err)
+	}
+
 	// Create ES-DE console subdirectories in game dirs
 	if err := scanner.CreateConsoleFolders(database, gameDirs); err != nil {
 		slog.Warn("failed to create console folders", "error", err)
