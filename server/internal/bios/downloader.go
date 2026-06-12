@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/spela/server/internal/db"
+	"github.com/spela/server/internal/safehttp"
 	"gorm.io/gorm"
 )
 
@@ -65,7 +66,11 @@ func DownloadMissing(biosDir, baseURL string, onProgress func(DownloadProgress))
 	result := DownloadResult{}
 	total := len(entries)
 
-	client := &http.Client{Timeout: 30 * time.Second}
+	// SSRF-hardened client: BIOS sources (archive.org / github / buildbot)
+	// redirect heavily, so re-validate every redirect hop against the
+	// private-IP block list instead of following blindly (#1322). Content is
+	// additionally MD5-gated below.
+	client := safehttp.NewClient(30 * time.Second)
 
 	for i, entry := range entries {
 		progress := DownloadProgress{
@@ -289,11 +294,11 @@ func DownloadMissing(biosDir, baseURL string, onProgress func(DownloadProgress))
 				progress.Error = fmt.Sprintf("creating bundle target: %v", err)
 				result.Failed++
 				result.Errors = append(result.Errors, DownloadError{
-				FileName:  entry.FileName,
-				ConsoleID: entry.ConsoleID,
-				URL:       url,
-				Error:     progress.Error,
-			})
+					FileName:  entry.FileName,
+					ConsoleID: entry.ConsoleID,
+					URL:       url,
+					Error:     progress.Error,
+				})
 				if onProgress != nil {
 					onProgress(progress)
 				}
@@ -311,11 +316,11 @@ func DownloadMissing(biosDir, baseURL string, onProgress func(DownloadProgress))
 				progress.Error = fmt.Sprintf("extracting bundle: %v", err)
 				result.Failed++
 				result.Errors = append(result.Errors, DownloadError{
-				FileName:  entry.FileName,
-				ConsoleID: entry.ConsoleID,
-				URL:       url,
-				Error:     progress.Error,
-			})
+					FileName:  entry.FileName,
+					ConsoleID: entry.ConsoleID,
+					URL:       url,
+					Error:     progress.Error,
+				})
 				if onProgress != nil {
 					onProgress(progress)
 				}
@@ -331,11 +336,11 @@ func DownloadMissing(biosDir, baseURL string, onProgress func(DownloadProgress))
 				progress.Error = fmt.Sprintf("renaming temp file: %v", err)
 				result.Failed++
 				result.Errors = append(result.Errors, DownloadError{
-				FileName:  entry.FileName,
-				ConsoleID: entry.ConsoleID,
-				URL:       url,
-				Error:     progress.Error,
-			})
+					FileName:  entry.FileName,
+					ConsoleID: entry.ConsoleID,
+					URL:       url,
+					Error:     progress.Error,
+				})
 				if onProgress != nil {
 					onProgress(progress)
 				}
