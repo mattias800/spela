@@ -98,6 +98,14 @@ func main() {
 		}
 	}
 
+	// Test mode registers the destructive /api/test/reset endpoint and relaxes
+	// the JWT-secret strength check — never safe in production. Refuse to start
+	// if an operator enabled it alongside a release build (#1330).
+	if testMode && os.Getenv("GIN_MODE") == "release" {
+		slog.Error("FATAL: SPELA_TEST_MODE must not be enabled with GIN_MODE=release (it exposes /api/test/reset)")
+		os.Exit(1)
+	}
+
 	// Derive or use explicit encryption key.
 	// A separate key is strongly recommended so that JWT secret rotation
 	// does not require re-encrypting stored data.

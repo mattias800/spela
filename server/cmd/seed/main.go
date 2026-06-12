@@ -24,6 +24,22 @@ func main() {
 		slog.Error("failed to initialize database", "error", err)
 		os.Exit(1)
 	}
+
+	// Refuse to seed a database that already has users. This tool creates demo
+	// accounts with well-known passwords (admin/admin123, player/player123), so
+	// running it against a real/populated database would inject weak
+	// credentials. Override with SPELA_SEED_FORCE=true for an intentional dev
+	// re-seed. (#1330)
+	var userCount int64
+	if err := database.Model(&db.User{}).Count(&userCount).Error; err != nil {
+		slog.Error("failed to count existing users", "error", err)
+		os.Exit(1)
+	}
+	if userCount > 0 && os.Getenv("SPELA_SEED_FORCE") != "true" {
+		slog.Error("refusing to seed: database already has users; set SPELA_SEED_FORCE=true to override", "users", userCount)
+		os.Exit(1)
+	}
+
 	if err := db.SeedConsoles(database); err != nil {
 		slog.Error("failed to seed consoles", "error", err)
 		os.Exit(1)
