@@ -519,11 +519,14 @@ func main() {
 
 	slog.Info("server listening", "port", port)
 	srv := &http.Server{
-		Addr:         ":" + port,
-		Handler:      router,
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 120 * time.Second, // generous for large file downloads
-		IdleTimeout:  120 * time.Second,
+		Addr:    ":" + port,
+		Handler: router,
+		// ReadHeaderTimeout bounds slow-header (Slowloris) clients with a
+		// dedicated deadline rather than relying on ReadTimeout alone (#1326).
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      120 * time.Second, // generous for large file downloads
+		IdleTimeout:       120 * time.Second,
 	}
 
 	// Graceful shutdown: listen for SIGINT/SIGTERM and drain in-flight requests
