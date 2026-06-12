@@ -111,6 +111,23 @@ func IsPrivateURL(rawURL string) bool {
 // URL targets a private IP (initial host or redirect target).
 var ErrPrivateURL = errors.New("safehttp: URL targets a private/internal IP")
 
+// Residual DNS-rebinding note (#1323): CheckURL/IsPrivateURL resolve and
+// validate the host, and CheckRedirect re-validates every redirect hop, but
+// the actual TCP connection re-resolves DNS independently. An attacker who
+// controls a hostname with a very short TTL could therefore resolve public at
+// check time and private at connect time (a TOCTOU window).
+//
+// We deliberately do NOT close this with a connect-time IP pin (a custom
+// DialContext that dials only the validated IP). Such a dialer also intercepts
+// the address of an outbound HTTP proxy, and self-hosted operators behind a
+// firewalled/corporate proxy frequently route through a private-range proxy IP
+// — pinning would block that and break all outbound fetching (scraping, cover
+// art, cores, BIOS). The exposure here is low: the only inputs that reach
+// safehttp with attacker influence over the hostname are admin-only (set-hero
+// URL) or an already-compromised upstream metadata provider, both of which are
+// high-privilege positions. If this trade-off ever changes, the fix is a
+// pinning dialer guarded to skip the proxy case.
+
 // ErrUnsupportedScheme is returned when an outbound fetch is rejected
 // because the scheme is not http or https.
 var ErrUnsupportedScheme = errors.New("safehttp: only http/https are allowed")
