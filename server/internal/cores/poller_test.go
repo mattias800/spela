@@ -287,3 +287,14 @@ func TestPoller_SkipsCoresWithCustomDownloadURL(t *testing.T) {
 		assert.Equal(t, buildbotCore.ID, row.CoreID, "every row must belong to buildbot_core, not pinned")
 	}
 }
+
+// TestFetchZipBody_RefusesNonHTTPSInProduction verifies that, outside the
+// test-only BaseURLOverride path, the poller refuses to fetch a core binary
+// over a non-https URL — defense in depth for #1315 so no future code path
+// can pull an executable over cleartext.
+func TestFetchZipBody_RefusesNonHTTPSInProduction(t *testing.T) {
+	p := &Poller{opts: PollerOptions{HTTPClient: &http.Client{Timeout: time.Second}}}
+	_, err := p.fetchZipBody(context.Background(), "http://buildbot.libretro.com/nightly/x.zip")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "non-https")
+}

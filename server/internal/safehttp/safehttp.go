@@ -138,6 +138,34 @@ func NewClient(timeout time.Duration) *http.Client {
 	}
 }
 
+// NewStrictHTTPSClient is like NewClient but additionally rejects any
+// redirect hop whose scheme is not https. It is intended for fetching
+// executable artifacts — libretro core binaries (#1315) — where transport
+// authentication must never be silently downgraded to cleartext by a
+// misbehaving or compromised upstream. A redirect from https to http would
+// otherwise let a network attacker serve an arbitrary (malicious) binary
+// over a connection with no server authentication.
+//
+// The initial request URL is the caller's responsibility (the cores poller
+// uses a hardcoded https buildbot constant); this guards the redirect chain.
+func NewStrictHTTPSClient(timeout time.Duration) *http.Client {
+	return &http.Client{
+		Timeout: timeout,
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			if len(via) >= 10 {
+				return errors.New("safehttp: redirect chain exceeds 10 hops")
+			}
+			if req.URL.Scheme != "https" {
+				return fmt.Errorf("redirect to %q scheme: %w", req.URL.Scheme, ErrUnsupportedScheme)
+			}
+			if IsPrivateURL(req.URL.String()) {
+				return fmt.Errorf("redirect to %s: %w", req.URL.Host, ErrPrivateURL)
+			}
+			return nil
+		},
+	}
+}
+
 // CheckURL is a convenience that runs the same checks as NewClient applies
 // before issuing a request — useful for callers that want to gate a URL
 // before passing it to an existing http.Client (where redirect validation

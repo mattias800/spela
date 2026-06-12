@@ -71,3 +71,27 @@ func TestNewClient_RedirectToPrivateRejected(t *testing.T) {
 		t.Fatalf("expected ErrPrivateURL, got: %v", err)
 	}
 }
+
+// TestNewStrictHTTPSClient_RejectsRedirectDowngrade verifies that the strict
+// client refuses an https->http redirect, so a compromised/MITM'd upstream
+// can't downgrade a core-binary fetch to an unauthenticated transport (#1315).
+// The redirect target is a public http host; the scheme check fires before
+// any DNS lookup, so no real network call is made to it.
+func TestNewStrictHTTPSClient_RejectsRedirectDowngrade(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "http://example.com/evil-core.zip", http.StatusFound)
+	}))
+	defer srv.Close()
+
+	cli := NewStrictHTTPSClient(5 * time.Second)
+	resp, err := cli.Get(srv.URL)
+	if resp != nil {
+		resp.Body.Close()
+	}
+	if err == nil {
+		t.Fatal("expected error from https->http redirect downgrade")
+	}
+	if !errors.Is(err, ErrUnsupportedScheme) && !strings.Contains(err.Error(), "scheme") {
+		t.Fatalf("expected ErrUnsupportedScheme, got: %v", err)
+	}
+}
