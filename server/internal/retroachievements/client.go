@@ -13,6 +13,10 @@ import (
 	"time"
 )
 
+// maxRAResponseBytes caps how much of an upstream response we buffer into
+// memory, so a compromised/MITM'd endpoint can't OOM the server (#1321).
+const maxRAResponseBytes = 16 << 20
+
 // RAClient wraps the RetroAchievements web API.
 type RAClient struct {
 	BaseURL    string
@@ -97,7 +101,7 @@ func (c *RAClient) GetGameExtended(apiKey string, raGameID uint) (*GameInfo, err
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxRAResponseBytes))
 	if err != nil {
 		return nil, fmt.Errorf("reading RA game extended response: %w", err)
 	}
@@ -116,14 +120,14 @@ func (c *RAClient) GetGameExtended(apiKey string, raGameID uint) (*GameInfo, err
 		NumDistinctPlayersCasual   int    `json:"NumDistinctPlayersCasual"`
 		NumDistinctPlayersHardcore int    `json:"NumDistinctPlayersHardcore"`
 		Achievements               map[string]struct {
-			ID                 uint             `json:"ID"`
-			Title              string           `json:"Title"`
-			Description        string           `json:"Description"`
-			Points             int              `json:"Points"`
-			BadgeName          string           `json:"BadgeName"`
-			Type               json.RawMessage  `json:"type"`
-			NumAwarded         int              `json:"NumAwarded"`
-			NumAwardedHardcore int              `json:"NumAwardedHardcore"`
+			ID                 uint            `json:"ID"`
+			Title              string          `json:"Title"`
+			Description        string          `json:"Description"`
+			Points             int             `json:"Points"`
+			BadgeName          string          `json:"BadgeName"`
+			Type               json.RawMessage `json:"type"`
+			NumAwarded         int             `json:"NumAwarded"`
+			NumAwardedHardcore int             `json:"NumAwardedHardcore"`
 		} `json:"Achievements"`
 	}
 	if err := json.Unmarshal(body, &raw); err != nil {
@@ -212,7 +216,7 @@ func (c *RAClient) LoginWithPassword(username, password string) (string, error) 
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxRAResponseBytes))
 	if err != nil {
 		return "", fmt.Errorf("reading RA login response: %w", err)
 	}
@@ -257,7 +261,7 @@ func (c *RAClient) GetGameIDFromHash(hash string) (uint, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxRAResponseBytes))
 	if err != nil {
 		return 0, fmt.Errorf("reading RA gameid response: %w", err)
 	}
@@ -302,7 +306,7 @@ func (c *RAClient) GetGameInfoAndUserProgress(username, token string, raGameID u
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxRAResponseBytes))
 	if err != nil {
 		return nil, nil, fmt.Errorf("reading RA game info response: %w", err)
 	}
@@ -313,11 +317,11 @@ func (c *RAClient) GetGameInfoAndUserProgress(username, token string, raGameID u
 
 	// The RA API returns a flat object with an Achievements map
 	var raw struct {
-		ID                        uint   `json:"ID"`
-		Title                     string `json:"Title"`
-		NumDistinctPlayersCasual  int    `json:"NumDistinctPlayersCasual"`
-		NumDistinctPlayersHardcore int   `json:"NumDistinctPlayersHardcore"`
-		Achievements map[string]struct {
+		ID                         uint   `json:"ID"`
+		Title                      string `json:"Title"`
+		NumDistinctPlayersCasual   int    `json:"NumDistinctPlayersCasual"`
+		NumDistinctPlayersHardcore int    `json:"NumDistinctPlayersHardcore"`
+		Achievements               map[string]struct {
 			ID                 uint   `json:"ID"`
 			Title              string `json:"Title"`
 			Description        string `json:"Description"`
@@ -398,4 +402,3 @@ func (c *RAClient) GetGameInfoAndUserProgress(username, token string, raGameID u
 
 	return gameInfo, progress, nil
 }
-
