@@ -104,6 +104,15 @@ func ApplyBPS(romData, patchData []byte) ([]byte, error) {
 		actionType := data & 3
 		length := int((data >> 2) + 1)
 
+		// Every BPS action writes exactly `length` bytes into the target, so
+		// an action whose length runs past the target buffer is malformed.
+		// Reject it up front (#1324) — without this, a crafted VLQ length
+		// (up to ~2^62) spins the copy loop for billions of no-op iterations
+		// even though the bounded writes below produce nothing.
+		if targetPos+length > len(target) {
+			return nil, fmt.Errorf("BPS action would write past end of target buffer at offset %d", targetPos)
+		}
+
 		switch actionType {
 		case 0: // SourceRead
 			for i := 0; i < length; i++ {
@@ -195,7 +204,7 @@ func decodeVLQ(data []byte) (uint64, int, bool) {
 func decodeSignedVLQ(data []byte) (int, int, bool) {
 	value, n, ok := decodeVLQ(data)
 	if value&1 != 0 {
-		return -int(value >> 1) - 1, n, ok
+		return -int(value>>1) - 1, n, ok
 	}
 	return int(value >> 1), n, ok
 }
