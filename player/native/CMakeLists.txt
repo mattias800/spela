@@ -51,7 +51,17 @@ if(NOT ANDROID)
     set(SDL_TESTS OFF CACHE BOOL "" FORCE)
     set(SDL_EXAMPLES OFF CACHE BOOL "" FORCE)
     set(SDL_AUDIO OFF CACHE BOOL "" FORCE)
-    set(SDL_VIDEO OFF CACHE BOOL "" FORCE)
+    # SDL_VIDEO must stay ON. SDL3's always-built events/tray-utils code
+    # (SDL_PumpEventMaintenance -> SDL_UpdateTrays, SDL_CleanupTrays ->
+    # SDL_DestroyTray) hard-references the tray implementation, which on macOS lives
+    # only in the Cocoa video backend (the dummy tray fallback is
+    # #ifndef SDL_PLATFORM_MACOS). A video-less static build therefore fails to link.
+    # Video-on is SDL's well-tested default config, so it's the most robust choice
+    # across macOS/Linux/Windows, and it adds no new CI build deps: Linux already
+    # installs X11/Wayland headers for our own Vulkan/Wayland code, and SDL's CMake
+    # gracefully skips backends whose deps are absent rather than failing. Everything
+    # else stays off (audio/render/gpu/camera/haptic/...). See #1337.
+    set(SDL_VIDEO ON CACHE BOOL "" FORCE)
     set(SDL_RENDER OFF CACHE BOOL "" FORCE)
     set(SDL_GPU OFF CACHE BOOL "" FORCE)
     set(SDL_CAMERA OFF CACHE BOOL "" FORCE)

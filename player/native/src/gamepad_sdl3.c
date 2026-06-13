@@ -136,6 +136,9 @@ JNIEXPORT jobjectArray JNICALL Java_com_spela_player_libretro_LibretroJni_native
         switch (event.type) {
             case SDL_EVENT_GAMEPAD_ADDED: {
                 SDL_JoystickID new_id = event.gdevice.which;
+                /* Dedup: SDL also posts ADDED for controllers already opened at
+                 * init (open_controllers), which would otherwise open the same
+                 * physical device twice and assign it two ports. */
                 int already_open = 0;
                 for (int k = 0; k < num_controllers; k++) {
                     if (controller_instance_ids[k] == new_id) { already_open = 1; break; }
