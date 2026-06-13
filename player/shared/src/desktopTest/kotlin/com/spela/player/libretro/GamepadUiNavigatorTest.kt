@@ -27,10 +27,10 @@ class GamepadUiNavigatorTest {
     private fun pressed(vararg buttonIds: Int): Array<GamepadState> {
         val buttons = BooleanArray(16)
         buttonIds.forEach { buttons[it] = true }
-        return arrayOf(GamepadState(0, "Test Controller", buttons, IntArray(6)))
+        return arrayOf(GamepadState(0, "Test Controller", buttons, IntArray(6), 0))
     }
 
-    private val released = arrayOf(GamepadState(0, "Test Controller", BooleanArray(16), IntArray(6)))
+    private val released = arrayOf(GamepadState(0, "Test Controller", BooleanArray(16), IntArray(6), 0))
 
     @Test
     fun dpadDirectionsMapToArrowKeys() {

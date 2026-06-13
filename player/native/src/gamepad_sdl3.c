@@ -179,7 +179,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_spela_player_libretro_LibretroJni_native
     jclass stateClass = (*env)->FindClass(env, "com/spela/player/libretro/GamepadState");
     if (!stateClass) return NULL;
 
-    jmethodID ctor = (*env)->GetMethodID(env, stateClass, "<init>", "(ILjava/lang/String;[Z[I)V");
+    jmethodID ctor = (*env)->GetMethodID(env, stateClass, "<init>", "(ILjava/lang/String;[Z[II)V");
     if (!ctor) return NULL;
 
     int attached_count = 0;
@@ -222,7 +222,8 @@ JNIEXPORT jobjectArray JNICALL Java_com_spela_player_libretro_LibretroJni_native
         axisValues[5] = SDL_GetGamepadAxis(gc, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER);
         (*env)->SetIntArrayRegion(env, axes, 0, NUM_AXES, axisValues);
 
-        jobject stateObj = (*env)->NewObject(env, stateClass, ctor, controllerId, jname, buttons, axes);
+        jint gpType = (jint)SDL_GetRealGamepadType(gc);
+        jobject stateObj = (*env)->NewObject(env, stateClass, ctor, controllerId, jname, buttons, axes, gpType);
         (*env)->SetObjectArrayElement(env, result, out_index, stateObj);
         out_index++;
 
