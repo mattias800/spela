@@ -1020,6 +1020,33 @@ func mergeGameMetadata(database *gorm.DB, keeper, dup *Game) {
 // MigrateSharedSessions creates GameSession records for existing SharedSessions that
 // don't have a SessionID, and copies their SharedSessionSave records into
 // SessionSaveState. Guarded by the "relay_sessions_migrated" ServerSetting.
+// MigratePreserveOpenRegistration keeps self-service registration working for
+// installs that existed before #1319 changed the default to closed. If the
+// registration_enabled setting has never been configured AND at least one user
+// already exists (the server was set up before this upgrade), seed the flag to
+// "true" so the prior open-registration behaviour is preserved. Fresh installs
+// (no users yet) are left untouched and default to closed (secure-by-default).
+// Idempotent: a no-op once the setting exists.
+func MigratePreserveOpenRegistration(database *gorm.DB) error {
+	var setting ServerSetting
+	err := database.Where("key = ?", "registration_enabled").First(&setting).Error
+	if err == nil {
+		return nil // already configured — respect the operator's choice
+	}
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return fmt.Errorf("checking registration_enabled: %w", err)
+	}
+
+	var userCount int64
+	if err := database.Model(&User{}).Count(&userCount).Error; err != nil {
+		return fmt.Errorf("counting users: %w", err)
+	}
+	if userCount == 0 {
+		return nil // fresh install — leave closed-by-default
+	}
+	return database.Create(&ServerSetting{Key: "registration_enabled", Value: "true"}).Error
+}
+
 func MigrateSharedSessions(database *gorm.DB) error {
 	// Check if already migrated
 	var setting ServerSetting

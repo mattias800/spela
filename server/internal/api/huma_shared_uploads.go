@@ -152,6 +152,11 @@ func (h *SharedSaveHandler) HumaShareSave(ctx context.Context, in *SharedSaveUpl
 	}
 	defer save.Close()
 
+	// Count this upload against the uploader's storage quota (#1314).
+	if err := checkStorageQuota(h.DB, uid, save.Size); err != nil {
+		return nil, huma.Error413RequestEntityTooLarge("storage quota exceeded")
+	}
+
 	name := body.Name
 	if name == "" {
 		name = save.Filename
@@ -205,6 +210,11 @@ func (h *SharedSessionHandler) HumaUploadSharedSessionSave(ctx context.Context, 
 		return nil, huma.Error400BadRequest("save file required")
 	}
 	defer save.Close()
+
+	// Count this upload against the uploader's storage quota (#1314).
+	if err := checkStorageQuota(h.DB, uid, save.Size); err != nil {
+		return nil, huma.Error413RequestEntityTooLarge("storage quota exceeded")
+	}
 
 	name := body.Name
 	if name == "" {
@@ -267,6 +277,14 @@ func (h *SharedSessionHandler) HumaUploadSharedSessionAutoSave(ctx context.Conte
 		return nil, huma.Error400BadRequest("save file required")
 	}
 	defer save.Close()
+
+	// Count this upload against the uploader's storage quota (#1314). The
+	// auto-save row itself is upserted, but the mirrored SessionSaveState
+	// (below) is created per call, so an unbounded auto-save loop would
+	// otherwise still grow on-disk bytes without limit.
+	if err := checkStorageQuota(h.DB, uid, save.Size); err != nil {
+		return nil, huma.Error413RequestEntityTooLarge("storage quota exceeded")
+	}
 
 	const autoSaveFilename = "autosave.sav"
 	filePath, size, err := h.Storage.WriteSharedSessionSave(ss.ID, autoSaveFilename, save)

@@ -239,6 +239,7 @@ frontend behavior differs — not the hosting.
 - See ARCHITECTURE.md for full technical architecture
 - See `player/LAYOUT.md` for the player app's shared layout composable system (SpScreen, SpMainContentPadding, SpSectionList, etc.). All screens must use these — no custom padding or scroll code.
 - See `player/GAMEPAD_NAVIGATION.md` for the player app's focus system. **Required reading before touching any focus / autoFocus / focusRestoreItem / rememberFocus / LocalFocusMemory / ComposeFocusBridge call, MainActivity.onKeyDown, or SpScreen's tap handler** — it documents non-obvious invariants (capture-once-on-mount, FocusRequester sharing, the AnimatedContent re-fire bug, default-focus / restore semantics, and the hybrid touch+gamepad input-mode recovery flow from #1194) that break in subtle ways if you "simplify" them.
+- See `server/internal/cores/CORE_INTEGRITY.md` for the core-download trust model. **Required reading before changing the buildbot poller's fetch/verify path** — cores are native executables the player runs, so the doc spells out why fetches are HTTPS-strict, why buildbot nightlies are trust-on-fetch (no upstream signatures/stable hashes to pin), and the operator off-switches (#1315).
 - SQLite as default database (self-hosted friendly)
 - JWT authentication with refresh token rotation
 - REST API + WebSocket for real-time events

@@ -19,6 +19,11 @@ import (
 // the rate-limit window can reset.
 var ErrRateLimit = errors.New("igdb: rate limit")
 
+// maxIGDBResponseBytes caps how much of an upstream response body we buffer
+// into memory, so a compromised/MITM'd endpoint can't OOM the server with an
+// unbounded body (#1321). 16 MB is far above any real IGDB JSON payload.
+const maxIGDBResponseBytes = 16 << 20
+
 // API base URLs (variables for testability).
 var (
 	twitchTokenURL = "https://id.twitch.tv/oauth2/token"
@@ -341,7 +346,7 @@ func (c *Client) fetchToken() error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, maxIGDBResponseBytes))
 		return fmt.Errorf("Twitch OAuth returned %d: %s", resp.StatusCode, string(body))
 	}
 
@@ -378,7 +383,7 @@ func (c *Client) TestCredentials(clientID, clientSecret string) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, maxIGDBResponseBytes))
 		return fmt.Errorf("authentication failed (HTTP %d): %s", resp.StatusCode, string(body))
 	}
 
@@ -387,23 +392,23 @@ func (c *Client) TestCredentials(clientID, clientSecret string) error {
 
 // Game represents an IGDB game search result.
 type Game struct {
-	ID                int              `json:"id"`
-	Name              string           `json:"name"`
-	Summary           string           `json:"summary"`
-	Storyline         string           `json:"storyline"`
-	Cover             *Image           `json:"cover"`
-	Screenshots       []Image          `json:"screenshots"`
-	Genres            []Genre          `json:"genres"`
+	ID                int               `json:"id"`
+	Name              string            `json:"name"`
+	Summary           string            `json:"summary"`
+	Storyline         string            `json:"storyline"`
+	Cover             *Image            `json:"cover"`
+	Screenshots       []Image           `json:"screenshots"`
+	Genres            []Genre           `json:"genres"`
 	InvolvedCompanies []InvolvedCompany `json:"involved_companies"`
-	FirstReleaseDate  int64            `json:"first_release_date"`
-	AggregatedRating  float64          `json:"aggregated_rating"`
-	TotalRating       float64          `json:"total_rating"`
-	TotalRatingCount  int              `json:"total_rating_count"`
-	IGDBRating        float64          `json:"rating"`
-	IGDBRatingCount   int              `json:"rating_count"`
-	GameModes         []GameMode       `json:"game_modes"`
-	ReleaseDates      []ReleaseDate    `json:"release_dates"`
-	TimeToBeat        *TimeToBeat      `json:"time_to_beat"`
+	FirstReleaseDate  int64             `json:"first_release_date"`
+	AggregatedRating  float64           `json:"aggregated_rating"`
+	TotalRating       float64           `json:"total_rating"`
+	TotalRatingCount  int               `json:"total_rating_count"`
+	IGDBRating        float64           `json:"rating"`
+	IGDBRatingCount   int               `json:"rating_count"`
+	GameModes         []GameMode        `json:"game_modes"`
+	ReleaseDates      []ReleaseDate     `json:"release_dates"`
+	TimeToBeat        *TimeToBeat       `json:"time_to_beat"`
 }
 
 // TimeToBeat represents IGDB time-to-beat data in seconds.
@@ -415,10 +420,10 @@ type TimeToBeat struct {
 
 // ReleaseDate represents an IGDB release date with region info.
 type ReleaseDate struct {
-	ID       int           `json:"id"`
-	Date     int64         `json:"date"`
-	Region   int           `json:"region"`
-	Human    string        `json:"human"`
+	ID       int              `json:"id"`
+	Date     int64            `json:"date"`
+	Region   int              `json:"region"`
+	Human    string           `json:"human"`
 	Platform *ReleasePlatform `json:"platform"`
 }
 
@@ -535,7 +540,7 @@ func (c *Client) SearchGame(name string, platformIDs []int) ([]Game, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, maxIGDBResponseBytes))
 		if resp.StatusCode == http.StatusTooManyRequests {
 			return nil, fmt.Errorf("IGDB API returned %d: %s: %w", resp.StatusCode, string(body), ErrRateLimit)
 		}
@@ -602,7 +607,7 @@ func (c *Client) SearchGameExact(name string, platformIDs []int) ([]Game, error)
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, maxIGDBResponseBytes))
 		if resp.StatusCode == http.StatusTooManyRequests {
 			return nil, fmt.Errorf("IGDB API returned %d: %s: %w", resp.StatusCode, string(body), ErrRateLimit)
 		}
@@ -659,7 +664,7 @@ func (c *Client) GetGameByID(igdbID int) (*Game, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, maxIGDBResponseBytes))
 		if resp.StatusCode == http.StatusTooManyRequests {
 			return nil, fmt.Errorf("IGDB API returned %d: %s: %w", resp.StatusCode, string(body), ErrRateLimit)
 		}
@@ -714,7 +719,7 @@ func (c *Client) GetTimeToBeat(igdbGameID int) (*TimeToBeat, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, maxIGDBResponseBytes))
 		if resp.StatusCode == http.StatusTooManyRequests {
 			return nil, fmt.Errorf("IGDB API returned %d: %s: %w", resp.StatusCode, string(body), ErrRateLimit)
 		}
@@ -739,15 +744,15 @@ func (c *Client) GetTimeToBeat(igdbGameID int) (*TimeToBeat, error) {
 
 // TopGame represents an IGDB top-rated game result.
 type TopGame struct {
-	ID                    int     `json:"id"`
-	Name                  string  `json:"name"`
-	Cover                 *Image  `json:"cover"`
-	TotalRating           float64 `json:"total_rating"`
-	TotalRatingCount      int     `json:"total_rating_count"`
-	UserRating            float64 `json:"rating"`
-	UserRatingCount       int     `json:"rating_count"`
-	CriticRating          float64 `json:"aggregated_rating"`
-	CriticRatingCount     int     `json:"aggregated_rating_count"`
+	ID                int     `json:"id"`
+	Name              string  `json:"name"`
+	Cover             *Image  `json:"cover"`
+	TotalRating       float64 `json:"total_rating"`
+	TotalRatingCount  int     `json:"total_rating_count"`
+	UserRating        float64 `json:"rating"`
+	UserRatingCount   int     `json:"rating_count"`
+	CriticRating      float64 `json:"aggregated_rating"`
+	CriticRatingCount int     `json:"aggregated_rating_count"`
 }
 
 // GetTopGames fetches the top-rated games for the given IGDB platform(s).
@@ -792,7 +797,7 @@ func (c *Client) GetTopGames(platformIDs []int, limit int) ([]TopGame, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, maxIGDBResponseBytes))
 		if resp.StatusCode == http.StatusTooManyRequests {
 			return nil, fmt.Errorf("IGDB API returned %d: %s: %w", resp.StatusCode, string(body), ErrRateLimit)
 		}
@@ -856,7 +861,7 @@ func (c *Client) GetSimilarGames(igdbGameID int) ([]SimilarGame, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, maxIGDBResponseBytes))
 		if resp.StatusCode == http.StatusTooManyRequests {
 			return nil, fmt.Errorf("IGDB API returned %d: %s: %w", resp.StatusCode, string(body), ErrRateLimit)
 		}
@@ -934,8 +939,8 @@ type CompanyDetail struct {
 	Description  string `json:"description"`
 	LogoImageID  string `json:"logo_image_id"`
 	Country      int    `json:"country"`
-	StartDate    int64  `json:"start_date"`     // Unix timestamp
-	WebsiteURL   string `json:"website_url"`    // official website
+	StartDate    int64  `json:"start_date"`  // Unix timestamp
+	WebsiteURL   string `json:"website_url"` // official website
 	WikipediaURL string `json:"wikipedia_url"`
 }
 
@@ -982,7 +987,7 @@ func (c *Client) GetCompanyByID(igdbID int) (*CompanyDetail, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, maxIGDBResponseBytes))
 		if resp.StatusCode == http.StatusTooManyRequests {
 			return nil, fmt.Errorf("IGDB API returned %d: %s: %w", resp.StatusCode, string(body), ErrRateLimit)
 		}
@@ -1077,7 +1082,7 @@ func (c *Client) SearchCompanyByName(name string) (*CompanyDetail, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, maxIGDBResponseBytes))
 		if resp.StatusCode == http.StatusTooManyRequests {
 			return nil, fmt.Errorf("IGDB API returned %d: %s: %w", resp.StatusCode, string(body), ErrRateLimit)
 		}
@@ -1152,8 +1157,8 @@ type GameEnrichment struct {
 	Themes             []EnrichmentNamedItem `json:"themes"`
 	Keywords           []EnrichmentNamedItem `json:"keywords"`
 	PlayerPerspectives []EnrichmentNamedItem `json:"player_perspectives"`
-	Franchises         []int                 `json:"franchises"`       // raw franchise IDs
-	CollectionID       *int                  `json:"collection_id"`    // IGDB collection (series) ID, nil if none
+	Franchises         []int                 `json:"franchises"`    // raw franchise IDs
+	CollectionID       *int                  `json:"collection_id"` // IGDB collection (series) ID, nil if none
 	Artworks           []ArtworkData         `json:"artworks"`
 	Videos             []VideoData           `json:"videos"`
 	LanguageSupports   []LanguageSupportData `json:"language_supports"`
@@ -1232,8 +1237,6 @@ func AgeRatingCategoryName(category int) string {
 	}
 }
 
-
-
 // EnrichmentNamedItem holds an IGDB entity with an ID and name.
 type EnrichmentNamedItem struct {
 	ID   int    `json:"id"`
@@ -1263,8 +1266,8 @@ type CollectionData struct {
 
 // CollectionGameInfo holds basic info about a game within a collection.
 type CollectionGameInfo struct {
-	ID       int    `json:"id"`
-	Name     string `json:"name"`
+	ID           int    `json:"id"`
+	Name         string `json:"name"`
 	CoverImageID string `json:"cover_image_id"`
 }
 
@@ -1303,7 +1306,7 @@ func (c *Client) GetGameEnrichment(igdbID int) (*GameEnrichment, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, maxIGDBResponseBytes))
 		if resp.StatusCode == http.StatusTooManyRequests {
 			return nil, fmt.Errorf("IGDB API returned %d: %s: %w", resp.StatusCode, string(body), ErrRateLimit)
 		}
@@ -1425,7 +1428,7 @@ func (c *Client) GetCollection(collectionID int) (*CollectionData, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, maxIGDBResponseBytes))
 		if resp.StatusCode == http.StatusTooManyRequests {
 			return nil, fmt.Errorf("IGDB API returned %d: %s: %w", resp.StatusCode, string(body), ErrRateLimit)
 		}
@@ -1483,7 +1486,7 @@ func (c *Client) GetFranchise(franchiseID int) (*FranchiseData, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, maxIGDBResponseBytes))
 		if resp.StatusCode == http.StatusTooManyRequests {
 			return nil, fmt.Errorf("IGDB API returned %d: %s: %w", resp.StatusCode, string(body), ErrRateLimit)
 		}
@@ -1555,7 +1558,7 @@ func (c *Client) GetCollectionGames(gameIDs []int) ([]CollectionGameInfo, error)
 		}
 
 		if resp.StatusCode != http.StatusOK {
-			body, _ := io.ReadAll(resp.Body)
+			body, _ := io.ReadAll(io.LimitReader(resp.Body, maxIGDBResponseBytes))
 			resp.Body.Close()
 			return nil, fmt.Errorf("IGDB API returned %d: %s", resp.StatusCode, string(body))
 		}

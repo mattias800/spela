@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log/slog"
+	"net"
 	"net/http"
 	_ "net/http/pprof" // profiling endpoint at /debug/pprof/
 	"os"
@@ -11,6 +12,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"golang.org/x/net/netutil"
 
 	"github.com/spela/server/internal/api"
 	"github.com/spela/server/internal/auth"
@@ -95,6 +98,14 @@ func main() {
 		}
 	}
 
+	// Test mode registers the destructive /api/test/reset endpoint and relaxes
+	// the JWT-secret strength check — never safe in production. Refuse to start
+	// if an operator enabled it alongside a release build (#1330).
+	if testMode && os.Getenv("GIN_MODE") == "release" {
+		slog.Error("FATAL: SPELA_TEST_MODE must not be enabled with GIN_MODE=release (it exposes /api/test/reset)")
+		os.Exit(1)
+	}
+
 	// Derive or use explicit encryption key.
 	// A separate key is strongly recommended so that JWT secret rotation
 	// does not require re-encrypting stored data.
@@ -115,6 +126,24 @@ func main() {
 
 	if len(corsOrigins) == 0 {
 		slog.Info("CORS: same-origin only (set SPELA_CORS_ORIGINS to allow cross-origin requests)")
+	}
+
+	// Effective key for decrypting secret server settings at startup, matching
+	// the router's resolution (#1318). auth.Decrypt returns legacy plaintext
+	// (no "enc:" prefix) unchanged, so this is safe before any value has been
+	// re-saved through the encrypting admin path.
+	settingsKey := encryptionKey
+	if len(settingsKey) == 0 {
+		settingsKey = auth.DeriveEncryptionKey(jwtSecret)
+	}
+	decryptSetting := func(v string) string {
+		if v == "" {
+			return v
+		}
+		if plain, err := auth.Decrypt(v, settingsKey); err == nil {
+			return plain
+		}
+		return v
 	}
 
 	slog.Info("starting Spela server", "port", port, "gameDirs", gameDirs)
@@ -185,6 +214,12 @@ func main() {
 		slog.Warn("failed to migrate shared sessions", "error", err)
 	}
 
+	// Preserve open registration for installs that predate the
+	// secure-by-default change (#1319). Fresh installs stay closed.
+	if err := db.MigratePreserveOpenRegistration(database); err != nil {
+		slog.Warn("failed to preserve registration default", "error", err)
+	}
+
 	// Create ES-DE console subdirectories in game dirs
 	if err := scanner.CreateConsoleFolders(database, gameDirs); err != nil {
 		slog.Warn("failed to create console folders", "error", err)
@@ -217,7 +252,7 @@ func main() {
 				case "igdb_client_id":
 					clientID = s.Value
 				case "igdb_client_secret":
-					clientSecret = s.Value
+					clientSecret = decryptSetting(s.Value)
 				}
 			}
 		}
@@ -229,7 +264,7 @@ func main() {
 		if raAPIKey == "" {
 			var setting db.ServerSetting
 			database.Where("key = ?", "ra_api_key").First(&setting)
-			raAPIKey = setting.Value
+			raAPIKey = decryptSetting(setting.Value)
 		}
 		if raAPIKey != "" {
 			metaScraper.RAClient = retroachievements.NewRAClient()
@@ -242,7 +277,7 @@ func main() {
 		} else {
 			var setting db.ServerSetting
 			if err := database.Where("key = ?", "steamgriddb_api_key").First(&setting).Error; err == nil && setting.Value != "" {
-				metaScraper.ConfigureSteamGridDB(setting.Value)
+				metaScraper.ConfigureSteamGridDB(decryptSetting(setting.Value))
 			}
 		}
 	}
@@ -312,17 +347,17 @@ func main() {
 
 	// Create router
 	router, _ := api.NewRouter(api.Config{
-		DB:            database,
-		JWTSecret:     jwtSecret,
-		EncryptionKey: encryptionKey,
-		GameDirs:      gameDirs,
-		Storage:       store,
-		Scanner:       gameScanner,
-		Scraper:       metaScraper,
-		Hub:           hub,
-		NetplayHub:    netplayHub,
-		CoreDir:       coreDir,
-		FrontendDir:   frontendDir,
+		DB:                           database,
+		JWTSecret:                    jwtSecret,
+		EncryptionKey:                encryptionKey,
+		GameDirs:                     gameDirs,
+		Storage:                      store,
+		Scanner:                      gameScanner,
+		Scraper:                      metaScraper,
+		Hub:                          hub,
+		NetplayHub:                   netplayHub,
+		CoreDir:                      coreDir,
+		FrontendDir:                  frontendDir,
 		CORSOrigins:                  corsOrigins,
 		ChallengeAttemptRateLimitSec: challengeRateLimit,
 		Version:                      version,
@@ -495,11 +530,14 @@ func main() {
 
 	slog.Info("server listening", "port", port)
 	srv := &http.Server{
-		Addr:         ":" + port,
-		Handler:      router,
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 120 * time.Second, // generous for large file downloads
-		IdleTimeout:  120 * time.Second,
+		Addr:    ":" + port,
+		Handler: router,
+		// ReadHeaderTimeout bounds slow-header (Slowloris) clients with a
+		// dedicated deadline rather than relying on ReadTimeout alone (#1326).
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      120 * time.Second, // generous for large file downloads
+		IdleTimeout:       120 * time.Second,
 	}
 
 	// Graceful shutdown: listen for SIGINT/SIGTERM and drain in-flight requests
@@ -519,7 +557,25 @@ func main() {
 		}
 	}()
 
-	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+	// Cap total concurrent connections so a single source can't exhaust file
+	// descriptors / goroutines by holding many open connections to anonymous
+	// endpoints (#1329). Generous default; tune via SPELA_MAX_CONNECTIONS.
+	// Operators behind a reverse proxy may also bound this at the proxy.
+	maxConns := 4096
+	if v := os.Getenv("SPELA_MAX_CONNECTIONS"); v != "" {
+		if parsed, perr := strconv.Atoi(v); perr == nil && parsed > 0 {
+			maxConns = parsed
+		}
+	}
+	ln, err := net.Listen("tcp", srv.Addr)
+	if err != nil {
+		slog.Error("failed to bind listener", "addr", srv.Addr, "error", err)
+		os.Exit(1)
+	}
+	ln = netutil.LimitListener(ln, maxConns)
+	slog.Info("connection cap configured", "maxConnections", maxConns)
+
+	if err := srv.Serve(ln); err != nil && err != http.ErrServerClosed {
 		slog.Error("server failed", "error", err)
 		os.Exit(1)
 	}

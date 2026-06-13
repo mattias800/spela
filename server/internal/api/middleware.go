@@ -50,14 +50,44 @@ func maxSaveStorageBytes() int64 {
 	return mb << 20
 }
 
+// userStoredBytes sums every on-disk artifact attributed to a user across all
+// the tables that record a file size. Issue #1314: a quota that only counted
+// SessionSaveState let shared saves, shared-session saves, and challenge
+// starting-saves grow without bound, so any authenticated user could exhaust
+// the host disk. Each query is fail-closed — a DB error aborts the check
+// rather than silently treating the table as empty.
+func userStoredBytes(database *gorm.DB, userID uint) (int64, error) {
+	// Each entry: model, the column holding the file size, and the column
+	// that attributes the row to a user.
+	sources := []struct {
+		model    interface{}
+		sizeCol  string
+		ownerCol string
+	}{
+		{&db.SessionSaveState{}, "file_size", "user_id"},
+		{&db.SharedSaveState{}, "file_size", "user_id"},
+		{&db.SharedSessionSave{}, "file_size", "user_id"},
+		{&db.Challenge{}, "save_file_size", "creator_id"},
+	}
+	var total int64
+	for _, s := range sources {
+		var sum int64
+		if err := database.Model(s.model).Where(s.ownerCol+" = ?", userID).
+			Select("COALESCE(SUM(" + s.sizeCol + "), 0)").Scan(&sum).Error; err != nil {
+			return 0, fmt.Errorf("summing %T for quota: %w", s.model, err)
+		}
+		total += sum
+	}
+	return total, nil
+}
+
 // checkStorageQuota verifies that adding additionalBytes would not exceed the user's quota.
 func checkStorageQuota(database *gorm.DB, userID uint, additionalBytes int64) error {
-	var totalBytes int64
 	// Surface DB errors instead of silently treating them as totalBytes=0,
 	// which would let an unbounded payload through whenever the DB is
 	// momentarily unavailable. Prefer to fail closed.
-	if err := database.Model(&db.SessionSaveState{}).Where("user_id = ?", userID).
-		Select("COALESCE(SUM(file_size), 0)").Scan(&totalBytes).Error; err != nil {
+	totalBytes, err := userStoredBytes(database, userID)
+	if err != nil {
 		return fmt.Errorf("checking storage quota: %w", err)
 	}
 	if totalBytes+additionalBytes > maxSaveStorageBytes() {

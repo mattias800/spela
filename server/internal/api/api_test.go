@@ -124,6 +124,13 @@ func setupTestEnv(t *testing.T) (*gorm.DB, *Config) {
 	database.Create(&db.SystemEventCategory{Code: db.CategoryOperational, Name: "Operational"})
 	db.ResetCategoryIDCacheForTest()
 
+	// Registration is closed-by-default since #1319. The handler tests model a
+	// configured server that permits multi-user registration, so enable it
+	// here; tests that need it disabled override the row explicitly.
+	database.Where("key = ?", "registration_enabled").
+		Assign(db.ServerSetting{Value: "true"}).
+		FirstOrCreate(&db.ServerSetting{Key: "registration_enabled"})
+
 	tmpDir := t.TempDir()
 	store, err := storage.NewStorage(tmpDir+"/saves", tmpDir+"/cores", tmpDir+"/images", tmpDir+"/bios")
 	require.NoError(t, err)

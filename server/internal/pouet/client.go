@@ -14,6 +14,10 @@ import (
 // API base URL (variable for testability).
 var apiBase = "https://api.pouet.net/v1"
 
+// maxPouetResponseBytes caps how much of an upstream response we buffer into
+// memory, so a compromised/MITM'd endpoint can't OOM the server (#1321).
+const maxPouetResponseBytes = 16 << 20
+
 // AbbreviationToPouetPlatforms maps Spela console abbreviations to Pouet platform IDs.
 // Pouet has no platform filter on search, so we filter client-side.
 var AbbreviationToPouetPlatforms = map[string][]int{
@@ -77,9 +81,9 @@ type Prod struct {
 	Screenshot string              `json:"screenshot"`
 	Download   string              `json:"download"`
 	Placings   []Placement         `json:"placings"`
-	VoteUp   json.Number `json:"voteup"`
-	VotePig  json.Number `json:"votepig"`
-	VoteDown json.Number `json:"votedown"`
+	VoteUp     json.Number         `json:"voteup"`
+	VotePig    json.Number         `json:"votepig"`
+	VoteDown   json.Number         `json:"votedown"`
 
 	ReleaseDate string `json:"releaseDate"`
 
@@ -118,7 +122,7 @@ func (c *Client) SearchProd(query string) ([]Prod, error) {
 		return nil, fmt.Errorf("pouet search: HTTP %d", resp.StatusCode)
 	}
 
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxPouetResponseBytes))
 	if err != nil {
 		return nil, fmt.Errorf("pouet search: reading body: %w", err)
 	}
@@ -154,7 +158,7 @@ func (c *Client) GetProd(id string) (*Prod, error) {
 		return nil, fmt.Errorf("pouet get prod: HTTP %d", resp.StatusCode)
 	}
 
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxPouetResponseBytes))
 	if err != nil {
 		return nil, fmt.Errorf("pouet get prod: reading body: %w", err)
 	}

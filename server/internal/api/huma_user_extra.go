@@ -221,11 +221,23 @@ func (h *StatsHandler) HumaGetPlayHeatmap(ctx context.Context, _ *GetPlayHeatmap
 }
 
 // HumaGetPublicPlayHeatmap is the huma handler for GET /api/users/{id}/play-heatmap.
-func (h *StatsHandler) HumaGetPublicPlayHeatmap(_ context.Context, in *GetPublicPlayHeatmapInput) (*GetPublicPlayHeatmapOutput, error) {
+func (h *StatsHandler) HumaGetPublicPlayHeatmap(ctx context.Context, in *GetPublicPlayHeatmapInput) (*GetPublicPlayHeatmapOutput, error) {
 	var user db.User
 	if err := h.DB.First(&user, in.ID).Error; err != nil {
 		return nil, huma.Error404NotFound("user not found")
 	}
+
+	// Issue #1316: this timeline is exactly the "gaming habits" data the
+	// #1121 privacy gate protects on the profile endpoint — apply the same
+	// block + visibility check here.
+	visible, blocked := publicProfileAccess(h.DB, UserIDFromContext(ctx), user)
+	if blocked {
+		return nil, huma.Error404NotFound("user not found")
+	}
+	if !visible {
+		return &GetPublicPlayHeatmapOutput{Body: []HeatmapEntry{}}, nil
+	}
+
 	entries := h.buildHeatmapEntries(user.ID)
 	return &GetPublicPlayHeatmapOutput{Body: entries}, nil
 }

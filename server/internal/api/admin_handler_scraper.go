@@ -99,7 +99,7 @@ func steamGridDBAPIKey(database *gorm.DB) string {
 	if err := database.Where("key = ?", "steamgriddb_api_key").First(&setting).Error; err != nil {
 		return ""
 	}
-	return setting.Value
+	return decryptSecretSetting(setting.Value)
 }
 
 // igdbCredentials returns the IGDB client ID and secret.
@@ -121,7 +121,8 @@ func igdbCredentials(database *gorm.DB) (clientID, clientSecret string) {
 	for _, s := range settings {
 		sm[s.Key] = s.Value
 	}
-	return sm["igdb_client_id"], sm["igdb_client_secret"]
+	// igdb_client_id is not secret; igdb_client_secret is encrypted at rest (#1318).
+	return sm["igdb_client_id"], decryptSecretSetting(sm["igdb_client_secret"])
 }
 
 func SteamGridDBSource(database *gorm.DB) string {

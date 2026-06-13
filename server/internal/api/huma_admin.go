@@ -215,7 +215,17 @@ func (h *AdminHandler) HumaUpdateAdminSettings(ctx context.Context, in *UpdateAd
 		if secretSettingKeys[key] && value == secretMaskPlaceholder {
 			continue
 		}
-		setting := db.ServerSetting{Key: key, Value: value}
+		// Encrypt secret values at rest (#1318); non-secret settings are
+		// stored as-is.
+		stored := value
+		if secretSettingKeys[key] {
+			enc, err := encryptSecretSetting(value)
+			if err != nil {
+				return nil, huma.Error500InternalServerError("failed to encrypt setting")
+			}
+			stored = enc
+		}
+		setting := db.ServerSetting{Key: key, Value: stored}
 		h.DB.Where("key = ?", key).Assign(setting).FirstOrCreate(&setting)
 		changedKeys = append(changedKeys, key)
 	}

@@ -145,7 +145,9 @@ func ImportCheatsForGame(database *gorm.DB, game db.Game, console db.Console, ba
 		return fmt.Errorf("unexpected status %d for %s", resp.StatusCode, url)
 	}
 
-	data, err := io.ReadAll(resp.Body)
+	// Cap the buffered body so a compromised/MITM'd cheat host can't OOM the
+	// server (#1321); cheat files are small text, 16 MB is ample headroom.
+	data, err := io.ReadAll(io.LimitReader(resp.Body, 16<<20))
 	if err != nil {
 		return fmt.Errorf("reading cheat content for %s: %w", game.FileName, err)
 	}

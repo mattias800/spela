@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/spela/server/internal/db"
+	"github.com/spela/server/internal/safehttp"
 	"gorm.io/gorm"
 )
 
@@ -21,6 +22,14 @@ import (
 // Previously "Abdess/retroarch_system" on master branch with flat folder names;
 // renamed to "Abdess/retrobios" on main branch with manufacturer/system paths.
 const DefaultRepoBaseURL = "https://raw.githubusercontent.com/Abdess/retrobios/main/bios"
+
+// maxBiosDownloadBytes caps a single BIOS file/bundle download and
+// maxBiosBundleBytes caps the total extracted size of a bundle archive, so a
+// compromised source or a decompression bomb can't exhaust the disk (#1325).
+const (
+	maxBiosDownloadBytes = 512 << 20
+	maxBiosBundleBytes   = 512 << 20
+)
 
 // DownloadProgress reports the status of a single file download.
 type DownloadProgress struct {
@@ -65,7 +74,11 @@ func DownloadMissing(biosDir, baseURL string, onProgress func(DownloadProgress))
 	result := DownloadResult{}
 	total := len(entries)
 
-	client := &http.Client{Timeout: 30 * time.Second}
+	// SSRF-hardened client: BIOS sources (archive.org / github / buildbot)
+	// redirect heavily, so re-validate every redirect hop against the
+	// private-IP block list instead of following blindly (#1322). Content is
+	// additionally MD5-gated below.
+	client := safehttp.NewClient(30 * time.Second)
 
 	for i, entry := range entries {
 		progress := DownloadProgress{
@@ -230,9 +243,28 @@ func DownloadMissing(biosDir, baseURL string, onProgress func(DownloadProgress))
 
 		hasher := md5.New()
 		writer := io.MultiWriter(tmpFile, hasher)
-		_, copyErr := io.Copy(writer, resp.Body)
+		// Cap the download so a compromised source can't fill the disk before
+		// the MD5 check runs (#1325). +1 lets us detect an over-cap body.
+		nCopied, copyErr := io.Copy(writer, io.LimitReader(resp.Body, maxBiosDownloadBytes+1))
 		resp.Body.Close()
 		tmpFile.Close()
+
+		if copyErr == nil && nCopied > maxBiosDownloadBytes {
+			os.Remove(tmpPath)
+			progress.Status = "failed"
+			progress.Error = fmt.Sprintf("download exceeded %d-byte cap", maxBiosDownloadBytes)
+			result.Failed++
+			result.Errors = append(result.Errors, DownloadError{
+				FileName:  entry.FileName,
+				ConsoleID: entry.ConsoleID,
+				URL:       url,
+				Error:     progress.Error,
+			})
+			if onProgress != nil {
+				onProgress(progress)
+			}
+			continue
+		}
 
 		if copyErr != nil {
 			os.Remove(tmpPath)
@@ -289,11 +321,11 @@ func DownloadMissing(biosDir, baseURL string, onProgress func(DownloadProgress))
 				progress.Error = fmt.Sprintf("creating bundle target: %v", err)
 				result.Failed++
 				result.Errors = append(result.Errors, DownloadError{
-				FileName:  entry.FileName,
-				ConsoleID: entry.ConsoleID,
-				URL:       url,
-				Error:     progress.Error,
-			})
+					FileName:  entry.FileName,
+					ConsoleID: entry.ConsoleID,
+					URL:       url,
+					Error:     progress.Error,
+				})
 				if onProgress != nil {
 					onProgress(progress)
 				}
@@ -311,11 +343,11 @@ func DownloadMissing(biosDir, baseURL string, onProgress func(DownloadProgress))
 				progress.Error = fmt.Sprintf("extracting bundle: %v", err)
 				result.Failed++
 				result.Errors = append(result.Errors, DownloadError{
-				FileName:  entry.FileName,
-				ConsoleID: entry.ConsoleID,
-				URL:       url,
-				Error:     progress.Error,
-			})
+					FileName:  entry.FileName,
+					ConsoleID: entry.ConsoleID,
+					URL:       url,
+					Error:     progress.Error,
+				})
 				if onProgress != nil {
 					onProgress(progress)
 				}
@@ -331,11 +363,11 @@ func DownloadMissing(biosDir, baseURL string, onProgress func(DownloadProgress))
 				progress.Error = fmt.Sprintf("renaming temp file: %v", err)
 				result.Failed++
 				result.Errors = append(result.Errors, DownloadError{
-				FileName:  entry.FileName,
-				ConsoleID: entry.ConsoleID,
-				URL:       url,
-				Error:     progress.Error,
-			})
+					FileName:  entry.FileName,
+					ConsoleID: entry.ConsoleID,
+					URL:       url,
+					Error:     progress.Error,
+				})
 				if onProgress != nil {
 					onProgress(progress)
 				}
@@ -429,6 +461,8 @@ func extractZipBundle(archivePath, destDir, stripPrefix string) error {
 		return fmt.Errorf("resolving dest dir: %w", err)
 	}
 
+	var extracted int64 // running total of bytes written; bounds zip bombs (#1325)
+
 	for _, zf := range r.File {
 		// Reject absolute paths and traversal.
 		if filepath.IsAbs(zf.Name) || strings.Contains(zf.Name, "..") {
@@ -484,13 +518,17 @@ func extractZipBundle(archivePath, destDir, stripPrefix string) error {
 			out.Close()
 			return fmt.Errorf("opening archive entry %s: %w", zf.Name, err)
 		}
-		if _, err := io.Copy(out, in); err != nil {
-			out.Close()
-			in.Close()
-			return fmt.Errorf("writing %s: %w", target, err)
-		}
+		remaining := maxBiosBundleBytes - extracted
+		n, err := io.Copy(out, io.LimitReader(in, remaining+1))
 		out.Close()
 		in.Close()
+		if err != nil {
+			return fmt.Errorf("writing %s: %w", target, err)
+		}
+		extracted += n
+		if extracted > maxBiosBundleBytes {
+			return fmt.Errorf("bundle extraction exceeded %d-byte cap (possible decompression bomb)", maxBiosBundleBytes)
+		}
 	}
 	return nil
 }

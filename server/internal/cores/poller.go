@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/spela/server/internal/db"
@@ -64,7 +65,13 @@ type Poller struct {
 // NewPoller constructs a Poller with sensible defaults filled in.
 func NewPoller(database *gorm.DB, opts PollerOptions) *Poller {
 	if opts.HTTPClient == nil {
-		opts.HTTPClient = safehttp.NewClient(60 * time.Second)
+		// Strict HTTPS: core binaries are native executables the player
+		// runs, so the transport must never be downgraded to cleartext by
+		// a redirect (#1315). The trust boundary is documented in
+		// CORE_INTEGRITY.md — buildbot nightlies are trust-on-fetch over
+		// authenticated TLS; operators who need stronger guarantees pin a
+		// build or disable the poller via SPELA_DISABLE_CORE_POLLER.
+		opts.HTTPClient = safehttp.NewStrictHTTPSClient(60 * time.Second)
 	}
 	if len(opts.PollMatrix) == 0 {
 		opts.PollMatrix = DefaultPollMatrix
@@ -293,6 +300,12 @@ type fetchedBody struct {
 }
 
 func (p *Poller) fetchZipBody(ctx context.Context, url string) (fetchedBody, error) {
+	// Production fetches must be HTTPS so the upstream is TLS-authenticated
+	// before we execute what it returns (#1315). BaseURLOverride is the
+	// test-only hook that injects an http httptest server.
+	if p.opts.BaseURLOverride == "" && !strings.HasPrefix(url, "https://") {
+		return fetchedBody{}, fmt.Errorf("refusing non-https core URL: %s", url)
+	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return fetchedBody{}, fmt.Errorf("building request: %w", err)

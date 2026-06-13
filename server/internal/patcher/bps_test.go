@@ -60,6 +60,35 @@ func buildBPSPatch(source, target []byte) []byte {
 	return patch
 }
 
+// Issue #1324: a crafted SourceRead action with an enormous VLQ length must be
+// rejected immediately rather than spinning the copy loop for billions of
+// bounded no-op iterations.
+func TestApplyBPS_RejectsOversizedActionLength(t *testing.T) {
+	source := []byte("Hello, World!")
+
+	var patch []byte
+	patch = append(patch, []byte("BPS1")...)
+	patch = append(patch, encodeVLQ(uint64(len(source)))...)
+	patch = append(patch, encodeVLQ(4)...) // target size = 4
+	patch = append(patch, encodeVLQ(0)...) // no metadata
+
+	// SourceRead (type 0) with an absurd length that overruns the 4-byte target.
+	const hugeLength = uint64(1) << 60
+	actionData := (hugeLength-1)<<2 | 0
+	patch = append(patch, encodeVLQ(actionData)...)
+
+	// Footer: correct source/patch CRCs so we reach the action loop; the target
+	// CRC is never verified because we reject first.
+	patch = append(patch, writeLE32(crc32.ChecksumIEEE(source))...)
+	patch = append(patch, writeLE32(0)...)
+	patch = append(patch, writeLE32(crc32.ChecksumIEEE(patch))...)
+
+	result, err := ApplyBPS(source, patch)
+	require.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "past end of target buffer")
+}
+
 func TestApplyBPS_Simple(t *testing.T) {
 	source := []byte("Hello, World!")
 	target := []byte("Hello, Go!!!")

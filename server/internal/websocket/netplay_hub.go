@@ -3,6 +3,7 @@ package websocket
 import (
 	"encoding/json"
 	"log/slog"
+	"net/http"
 	"sync"
 	"time"
 
@@ -20,6 +21,10 @@ const (
 	netplayMsgRateLimit = 60
 	// netplayMsgBurst is the burst allowance for the per-client rate limiter.
 	netplayMsgBurst = 120
+	// maxNetplayRooms caps concurrently active netplay rooms. Each room holds
+	// at most two players, so this bounds total netplay connections (and their
+	// goroutines/memory) regardless of how many sessions clients create (#1328).
+	maxNetplayRooms = 500
 )
 
 // NetplayMessage represents a JSON message in a netplay session.
@@ -71,13 +76,32 @@ func NewNetplayHub(allowedOrigins []string) *NetplayHub {
 		upgrader: websocket.Upgrader{
 			ReadBufferSize:  4096,
 			WriteBufferSize: 4096,
-			CheckOrigin: checkOrigin(allowedOrigins),
+			CheckOrigin:     checkOrigin(allowedOrigins),
 		},
 	}
 }
 
+// hasCapacityFor reports whether a connection for sessionID can be accepted:
+// always true when the room already exists (the client is joining), otherwise
+// gated by the global room cap. Soft cap — a brief race may let the count
+// nudge slightly past the limit, which is fine for a DoS guard.
+func (h *NetplayHub) hasCapacityFor(sessionID uint) bool {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if _, ok := h.rooms[sessionID]; ok {
+		return true
+	}
+	return len(h.rooms) < maxNetplayRooms
+}
+
 // HandleNetplayWebSocket upgrades the connection and joins the client to a room.
 func (h *NetplayHub) HandleNetplayWebSocket(c *gin.Context, sessionID, userID uint) {
+	// Reject before upgrading when the global room cap is reached (#1328).
+	if !h.hasCapacityFor(sessionID) {
+		http.Error(c.Writer, "netplay capacity reached, try again later", http.StatusServiceUnavailable)
+		return
+	}
+
 	conn, err := h.upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		slog.Error("netplay websocket upgrade failed", "error", err, "sessionId", sessionID, "userId", userID)
@@ -215,7 +239,7 @@ func (r *NetplayRoom) sendTo(targetUID uint, data []byte, msgType int) {
 // --- Client message pumps ---
 
 const (
-	netplayPongWait    = 60 * time.Second
+	netplayPongWait     = 60 * time.Second
 	netplayPingInterval = 30 * time.Second
 )
 

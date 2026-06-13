@@ -387,6 +387,22 @@ func (h *AuthHandler) HumaLogin(ctx context.Context, in *AuthLoginInput) (*AuthL
 	}}, nil
 }
 
+// isRegistrationEnabled reports whether self-service registration is allowed.
+// Secure-by-default (#1319): when the registration_enabled setting has never
+// been configured, registration is treated as DISABLED so a freshly deployed,
+// internet-exposed instance doesn't accept account requests until the owner
+// opts in. Existing installs are preserved on upgrade by
+// db.MigratePreserveOpenRegistration, which seeds the flag to "true" when
+// users already exist. (Note: even when enabled, non-owner registrations are
+// held PendingApproval and receive no tokens until an admin approves.)
+func isRegistrationEnabled(database *gorm.DB) bool {
+	var setting db.ServerSetting
+	if err := database.Where("key = ?", "registration_enabled").First(&setting).Error; err != nil {
+		return false
+	}
+	return setting.Value != "false"
+}
+
 // HumaRegister is the huma implementation of POST /api/auth/register. Returns
 // 201 Created with tokens on success, or 202 Accepted with {pending, message}
 // when the new account is awaiting admin approval — matching the raw gin shape.
@@ -428,14 +444,9 @@ func (h *AuthHandler) HumaRegister(ctx context.Context, in *AuthRegisterInput) (
 
 		var totalUsers int64
 		tx.Model(&db.User{}).Count(&totalUsers)
-		if totalUsers > 0 {
-			var setting db.ServerSetting
-			if err := tx.Where("key = ?", "registration_enabled").First(&setting).Error; err == nil {
-				if setting.Value == "false" {
-					txErr = huma.NewError(http.StatusForbidden, "Registration is currently disabled. Please contact an administrator.")
-					return fmt.Errorf("disabled")
-				}
-			}
+		if totalUsers > 0 && !isRegistrationEnabled(tx) {
+			txErr = huma.NewError(http.StatusForbidden, "Registration is currently disabled. Please contact an administrator.")
+			return fmt.Errorf("disabled")
 		}
 
 		role := db.RoleUser
@@ -692,11 +703,7 @@ func (h *AuthHandler) HumaSetupStatus(_ context.Context, _ *SetupStatusInput) (*
 	var gameCount int64
 	h.DB.Model(&db.Game{}).Count(&gameCount)
 
-	registrationEnabled := true
-	var setting db.ServerSetting
-	if err := h.DB.Where("key = ?", "registration_enabled").First(&setting).Error; err == nil {
-		registrationEnabled = setting.Value != "false"
-	}
+	registrationEnabled := isRegistrationEnabled(h.DB)
 
 	return &SetupStatusOutput{Body: SetupStatusResponse{
 		NeedsSetup:          userCount == 0 && !hasMarker,

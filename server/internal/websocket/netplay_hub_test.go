@@ -13,6 +13,17 @@ func TestNewNetplayHub(t *testing.T) {
 	assert.NotNil(t, hub.rooms)
 }
 
+// Issue #1328: once the global room cap is reached, a connection for a NEW
+// session is refused, but joining an existing room is still allowed.
+func TestNetplayHub_RoomCapacity(t *testing.T) {
+	hub := NewNetplayHub(nil)
+	for i := uint(1); i <= maxNetplayRooms; i++ {
+		hub.getOrCreateRoom(i)
+	}
+	assert.False(t, hub.hasCapacityFor(maxNetplayRooms+1), "new room beyond cap must be rejected")
+	assert.True(t, hub.hasCapacityFor(1), "joining an existing room must still be allowed")
+}
+
 func TestNetplayHub_GetOrCreateRoom(t *testing.T) {
 	hub := NewNetplayHub(nil)
 

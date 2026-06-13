@@ -190,10 +190,10 @@ func TestSettingsMasking_IGDBSecret(t *testing.T) {
 	defer cleanup()
 	_, adminToken := createAdminUser(t, database)
 
-	// Store settings including IGDB secret
+	// Store settings including IGDB secret. registration_enabled is already
+	// seeded "true" by setupTestEnv.
 	database.Create(&db.ServerSetting{Key: "igdb_client_id", Value: "my-client-id"})
 	database.Create(&db.ServerSetting{Key: "igdb_client_secret", Value: "super-secret-value"})
-	database.Create(&db.ServerSetting{Key: "registration_enabled", Value: "true"})
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/api/admin/settings", nil)
@@ -263,7 +263,9 @@ func TestSettingsMasking_NewSecretOverwrites(t *testing.T) {
 
 	var setting db.ServerSetting
 	require.NoError(t, database.Where("key = ?", "igdb_client_secret").First(&setting).Error)
-	assert.Equal(t, "brand-new-secret", setting.Value)
+	// Stored encrypted at rest (#1318) but must decrypt to the new secret.
+	assert.NotEqual(t, "brand-new-secret", setting.Value, "secret must not be stored in plaintext")
+	assert.Equal(t, "brand-new-secret", decryptSecretSetting(setting.Value))
 }
 
 func TestSettingsMasking_EmptySecret(t *testing.T) {

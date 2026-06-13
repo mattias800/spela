@@ -83,7 +83,9 @@ func (c *nameCache) getOrLoad(system string, httpClient *http.Client) ([]nameEnt
 		return nil, fmt.Errorf("name listing for %s returned status %d", system, resp.StatusCode)
 	}
 
-	bodyBytes, err := io.ReadAll(resp.Body)
+	// Cap the listing read so a compromised/MITM'd CDN can't stream an
+	// unbounded body into memory (#1317).
+	bodyBytes, err := io.ReadAll(io.LimitReader(resp.Body, maxLibRetroListingBytes))
 	if err != nil {
 		return nil, fmt.Errorf("reading name listing for %s: %w", system, err)
 	}
