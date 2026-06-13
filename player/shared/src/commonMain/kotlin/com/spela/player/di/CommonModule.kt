@@ -415,6 +415,14 @@ val commonModule = module {
         )
     }
     factory {
+        GamepadMappingViewModel(
+            gamepadMappingRepository = get(),
+            gamepadPortManager = get(),
+            dispatchers = get(),
+            scope = get(),
+        )
+    }
+    factory {
         SettingsViewModel(
             authRepository = get(),
             downloadRepository = get(),

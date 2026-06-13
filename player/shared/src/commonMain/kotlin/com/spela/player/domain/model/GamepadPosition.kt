@@ -32,6 +32,32 @@ enum class GamepadPosition {
     R3,         // 13 right stick click
     START,      // 14
     SELECT,     // 15
+    ;
+
+    /**
+     * Brand-neutral human label for the mapping UI. Deliberately positional
+     * (no Xbox/Nintendo/PlayStation glyphs or letters) — that neutrality is the
+     * whole point of the input layer (#1334).
+     */
+    val displayName: String
+        get() = when (this) {
+            SOUTH -> "Bottom button"
+            EAST -> "Right button"
+            WEST -> "Left button"
+            NORTH -> "Top button"
+            DPAD_UP -> "D-pad Up"
+            DPAD_DOWN -> "D-pad Down"
+            DPAD_LEFT -> "D-pad Left"
+            DPAD_RIGHT -> "D-pad Right"
+            L1 -> "L1"
+            R1 -> "R1"
+            L2 -> "L2"
+            R2 -> "R2"
+            L3 -> "L3 (left stick)"
+            R3 -> "R3 (right stick)"
+            START -> "Start"
+            SELECT -> "Select"
+        }
 }
 
 /**

@@ -18,6 +18,7 @@ import com.spela.player.presentation.viewmodel.ExploreViewModel
 import com.spela.player.presentation.viewmodel.GameDetailViewModel
 import com.spela.player.presentation.viewmodel.GameListViewModel
 import com.spela.player.presentation.viewmodel.GamepadConfigViewModel
+import com.spela.player.presentation.viewmodel.GamepadMappingViewModel
 import com.spela.player.presentation.viewmodel.GlobalSearchViewModel
 import com.spela.player.presentation.viewmodel.KeyMappingViewModel
 import com.spela.player.presentation.viewmodel.LibretroController
@@ -86,6 +87,7 @@ data class SpelaAppDependencies(
     // signature. Keeping them nullable so tests + simpler host
     // apps can omit services the scenario doesn't exercise.
     val gamepadConfigViewModel: GamepadConfigViewModel? = null,
+    val gamepadMappingViewModel: GamepadMappingViewModel? = null,
     val sessionDetailViewModel: SessionDetailViewModel? = null,
     val topListsViewModel: TopListsViewModel? = null,
     val exploreViewModel: ExploreViewModel? = null,

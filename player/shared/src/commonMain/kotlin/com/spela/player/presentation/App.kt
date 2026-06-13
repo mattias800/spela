@@ -29,6 +29,7 @@ import com.spela.player.presentation.viewmodel.CollectionsViewModel
 import com.spela.player.presentation.viewmodel.SocialViewModel
 import com.spela.player.presentation.viewmodel.ExploreViewModel
 import com.spela.player.presentation.viewmodel.GamepadConfigViewModel
+import com.spela.player.presentation.viewmodel.GamepadMappingViewModel
 import com.spela.player.presentation.viewmodel.GlobalSearchViewModel
 import com.spela.player.presentation.viewmodel.StatsViewModel
 import com.spela.player.presentation.viewmodel.TopListsViewModel
@@ -70,6 +71,7 @@ fun App() {
     val exploreViewModel: ExploreViewModel = koinInject()
     val topListsViewModel: TopListsViewModel = koinInject()
     val gamepadConfigViewModel: GamepadConfigViewModel = koinInject()
+    val gamepadMappingViewModel: GamepadMappingViewModel = koinInject()
     val scrapeService: ScrapeService = koinInject()
     val downloadRepository: com.spela.player.domain.repository.DownloadRepository = koinInject()
     val preferencesRepository: com.spela.player.domain.repository.PreferencesRepository = koinInject()
@@ -105,6 +107,7 @@ fun App() {
             exploreViewModel = exploreViewModel,
             topListsViewModel = topListsViewModel,
             gamepadConfigViewModel = gamepadConfigViewModel,
+            gamepadMappingViewModel = gamepadMappingViewModel,
             scrapeService = scrapeService,
             downloadRepository = downloadRepository,
             preferencesRepository = preferencesRepository,

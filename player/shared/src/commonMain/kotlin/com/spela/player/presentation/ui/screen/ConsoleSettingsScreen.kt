@@ -24,7 +24,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -38,22 +40,27 @@ import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.components.ShaderPreview
 import com.spela.player.presentation.ui.components.ShaderPreviewDialog
 import com.spela.player.presentation.ui.components.SpCard
+import com.spela.player.presentation.ui.components.SpSecondaryButton
 import com.spela.player.presentation.ui.components.SpRadioOption
 import com.spela.player.presentation.ui.components.SpScreen
 import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.components.gamepad.GamepadConfigScreen
+import com.spela.player.presentation.ui.components.gamepad.GamepadMappingDialog
 import com.spela.player.presentation.ui.components.keymapping.KeyMappingScreen
 import com.spela.player.presentation.ui.components.keymapping.platformKeyName
 import com.spela.player.presentation.ui.gamepad.gamepadFocusable
 import com.spela.player.presentation.viewmodel.GamepadConfigIntent
 import com.spela.player.presentation.viewmodel.GamepadConfigViewModel
+import com.spela.player.presentation.viewmodel.GamepadMappingIntent
+import com.spela.player.presentation.viewmodel.GamepadMappingViewModel
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
 import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
 import com.spela.player.presentation.ui.gamepad.focusRestoreItem
 import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
 import androidx.compose.runtime.CompositionLocalProvider
+import com.spela.player.util.currentPlatform
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -70,6 +77,7 @@ fun ConsoleSettingsScreen(
     settingsViewModel: SettingsViewModel,
     keyMappingViewModel: KeyMappingViewModel,
     gamepadConfigViewModel: GamepadConfigViewModel? = null,
+    gamepadMappingViewModel: GamepadMappingViewModel? = null,
     onBack: () -> Unit,
 ) {
     PlatformBackHandler { onBack() }
@@ -308,6 +316,56 @@ fun ConsoleSettingsScreen(
                                     GamepadConfigIntent.SetStyleOverride(port, style)
                                 )
                             },
+                        )
+                    }
+                }
+            }
+
+            // Desktop gamepad button remapping (#1334). Gated to desktop —
+            // Android's gamepad input isn't routed through the positional
+            // mapping layer yet (that lands with the Android phase).
+            if (gamepadMappingViewModel != null && currentPlatform() != "android") {
+                item {
+                    val gamepadMappingState by gamepadMappingViewModel.state.collectAsState()
+                    var showGamepadMapping by remember { mutableStateOf(false) }
+
+                    SpCard(onGradient = true) {
+                        Column(modifier = Modifier.fillMaxWidth().padding(SpSpacing.Default)) {
+                            Text(
+                                text = "Gamepad buttons",
+                                style = SpTypography.TitleMedium,
+                                color = SpColor.OnCard,
+                            )
+                            Spacer(Modifier.height(SpSpacing.Small))
+                            Text(
+                                text = "Remap what each physical controller button does on $consoleName.",
+                                style = SpTypography.BodySmall,
+                                color = SpColor.OnBackgroundTertiary,
+                            )
+                            Spacer(Modifier.height(SpSpacing.Medium))
+                            SpSecondaryButton(
+                                text = "Configure gamepad buttons",
+                                onClick = {
+                                    gamepadMappingViewModel.onIntent(GamepadMappingIntent.Load(consoleId))
+                                    showGamepadMapping = true
+                                },
+                                modifier = Modifier.testTag("configure_gamepad_buttons"),
+                            )
+                        }
+                    }
+
+                    if (showGamepadMapping) {
+                        GamepadMappingDialog(
+                            state = gamepadMappingState,
+                            onSetBinding = { position, retroButtonId ->
+                                gamepadMappingViewModel.onIntent(
+                                    GamepadMappingIntent.SetBinding(position, retroButtonId)
+                                )
+                            },
+                            onResetToDefaults = {
+                                gamepadMappingViewModel.onIntent(GamepadMappingIntent.ResetAll)
+                            },
+                            onDismiss = { showGamepadMapping = false },
                         )
                     }
                 }

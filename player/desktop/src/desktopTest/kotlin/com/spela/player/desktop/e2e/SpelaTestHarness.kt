@@ -280,6 +280,13 @@ class SpelaTestHarness(
         nowMs = { testDispatcher.scheduler.currentTime },
     )
 
+    val gamepadMappingViewModel = GamepadMappingViewModel(
+        gamepadMappingRepository = GamepadMappingRepositoryImpl(testDatabase),
+        gamepadPortManager = gamepadPortManager,
+        dispatchers = dispatchers,
+        scope = scope,
+    )
+
     val socialRepo = FakeSocialRepository()
 
     val socialViewModel = SocialViewModel(
@@ -408,6 +415,7 @@ class SpelaTestHarness(
                 settingsViewModel = settingsViewModel,
                 keyMappingViewModel = keyMappingViewModel,
                 gamepadConfigViewModel = gamepadConfigViewModel,
+                gamepadMappingViewModel = gamepadMappingViewModel,
                 socialViewModel = socialViewModel,
                 sharedSessionsViewModel = sharedSessionsViewModel,
                 sharedSessionDetailViewModel = sharedSessionDetailViewModel,
