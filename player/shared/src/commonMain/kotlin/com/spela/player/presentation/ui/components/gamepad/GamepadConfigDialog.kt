@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.spela.player.domain.model.ControllerStyle
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.viewmodel.GamepadConfigState
@@ -25,6 +26,7 @@ fun GamepadConfigDialog(
     onConfigurePort: (Int) -> Unit,
     onSwapUp: ((Int) -> Unit)? = null,
     onSwapDown: ((Int) -> Unit)? = null,
+    onSetStyleOverride: ((Int, ControllerStyle?) -> Unit)? = null,
     onDismiss: () -> Unit,
 ) {
     Dialog(
@@ -49,6 +51,7 @@ fun GamepadConfigDialog(
                     onConfigurePort = onConfigurePort,
                     onSwapUp = onSwapUp,
                     onSwapDown = onSwapDown,
+                    onSetStyleOverride = onSetStyleOverride,
                 )
             }
         }

@@ -303,6 +303,11 @@ fun ConsoleSettingsScreen(
                                     GamepadConfigIntent.SwapPorts(port, port + 1)
                                 )
                             },
+                            onSetStyleOverride = { port, style ->
+                                gamepadConfigViewModel.onIntent(
+                                    GamepadConfigIntent.SetStyleOverride(port, style)
+                                )
+                            },
                         )
                     }
                 }

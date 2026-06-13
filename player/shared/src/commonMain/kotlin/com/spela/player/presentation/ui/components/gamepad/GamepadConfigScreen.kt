@@ -23,6 +23,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -51,8 +54,12 @@ fun GamepadConfigScreen(
     onConfigurePort: (Int) -> Unit,
     onSwapUp: ((Int) -> Unit)? = null,
     onSwapDown: ((Int) -> Unit)? = null,
+    onSetStyleOverride: ((Int, ControllerStyle?) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
+    // Port whose controller-type picker is open, or null when closed.
+    var stylePickerPort by remember { mutableStateOf<Int?>(null) }
+
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -79,11 +86,28 @@ fun GamepadConfigScreen(
                 onSwapDown = if (port < 3 && assignment != null) {
                     { onSwapDown?.invoke(port) }
                 } else null,
+                onPickStyle = if (assignment != null && onSetStyleOverride != null) {
+                    { stylePickerPort = port }
+                } else null,
             )
             if (port < 3) {
                 Spacer(Modifier.height(SpSpacing.Small))
             }
         }
+    }
+
+    val pickerPort = stylePickerPort
+    val pickerAssignment = pickerPort?.let { p -> state.portAssignments.find { it.port == p } }
+    if (pickerPort != null && pickerAssignment != null && onSetStyleOverride != null) {
+        ControllerStylePickerDialog(
+            detectedStyle = pickerAssignment.detectedStyle,
+            currentOverride = pickerAssignment.styleOverride,
+            onSelect = { style ->
+                onSetStyleOverride(pickerPort, style)
+                stylePickerPort = null
+            },
+            onDismiss = { stylePickerPort = null },
+        )
     }
 }
 
@@ -94,12 +118,16 @@ private fun ControllerRow(
     onConfigure: () -> Unit,
     onSwapUp: (() -> Unit)?,
     onSwapDown: (() -> Unit)?,
+    onPickStyle: (() -> Unit)? = null,
 ) {
-    // Show the detected controller identity (e.g. "Xbox Controller"). For an
+    // Show the effective controller identity (e.g. "Xbox Controller"). For an
     // unrecognized pad fall back to the raw OS device name. (#1334)
     val identity = assignment?.let {
         if (it.style == ControllerStyle.Generic) it.deviceName else it.style.displayName
     }
+    // Compact label for the type-override affordance: "Auto" when deferring to
+    // detection, else the chosen style's short name.
+    val styleLabel = assignment?.styleOverride?.name ?: "Auto"
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -125,13 +153,25 @@ private fun ControllerRow(
 
         Spacer(Modifier.width(SpSpacing.Medium))
 
-        // Controller identity (brand when detected, else raw device name)
-        Text(
-            text = identity ?: "No controller",
-            style = SpTypography.BodyMedium,
-            color = if (assignment != null) SpColor.OnCard else SpColor.OnBackgroundTertiary,
-            modifier = Modifier.weight(1f),
-        )
+        // Controller identity (detected/overridden style, else raw device name)
+        // plus the per-controller type-override affordance.
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = identity ?: "No controller",
+                style = SpTypography.BodyMedium,
+                color = if (assignment != null) SpColor.OnCard else SpColor.OnBackgroundTertiary,
+            )
+            if (assignment != null && onPickStyle != null) {
+                SpButton(
+                    text = "Type: $styleLabel",
+                    onClick = onPickStyle,
+                    style = SpButtonStyle.Ghost,
+                    modifier = Modifier.semantics {
+                        contentDescription = "Player ${port + 1} controller type"
+                    },
+                )
+            }
+        }
 
         // Activity indicator
         if (assignment != null) {
