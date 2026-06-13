@@ -1,5 +1,6 @@
 package com.spela.player.libretro
 
+import com.spela.player.domain.model.controllerStyleFromSdlType
 import com.spela.player.presentation.navigation.NavigationEventBus
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.viewmodel.LibretroButtons
@@ -107,7 +108,11 @@ class DesktopGamepadPoller(
             // Connect new devices
             if (state.controllerId !in knownControllers) {
                 knownControllers.add(state.controllerId)
-                gamepadPortManager.connectDevice(state.controllerId, state.name)
+                gamepadPortManager.connectDevice(
+                    state.controllerId,
+                    state.name,
+                    controllerStyleFromSdlType(state.type),
+                )
             }
 
             val port = gamepadPortManager.getPort(state.controllerId)

@@ -1,5 +1,6 @@
 package com.spela.player.libretro
 
+import com.spela.player.domain.model.ControllerStyle
 import com.spela.player.domain.repository.KeyMappingRepository
 import com.spela.player.presentation.ui.gamepad.InputMode
 import kotlinx.coroutines.CoroutineScope
@@ -44,6 +45,7 @@ class GamepadPortManager(
         val deviceId: Int,
         val port: Int,
         val deviceName: String = "",
+        val style: ControllerStyle = ControllerStyle.Generic,
     )
 
     /** Current port assignments, keyed by device ID. */
@@ -90,7 +92,7 @@ class GamepadPortManager(
      * If the device is already assigned, returns its existing port.
      */
     @Synchronized
-    fun connectDevice(deviceId: Int, deviceName: String = ""): Int {
+    fun connectDevice(deviceId: Int, deviceName: String = "", style: ControllerStyle = ControllerStyle.Generic): Int {
         // Already assigned?
         deviceToPort[deviceId]?.let { return it.port }
 
@@ -99,7 +101,7 @@ class GamepadPortManager(
         if (port == -1) return -1
 
         occupiedPorts[port] = true
-        val assignment = PortAssignment(deviceId = deviceId, port = port, deviceName = deviceName)
+        val assignment = PortAssignment(deviceId = deviceId, port = port, deviceName = deviceName, style = style)
         deviceToPort[deviceId] = assignment
         _assignments.value = deviceToPort.values.toList()
         emitControllerStatus()
