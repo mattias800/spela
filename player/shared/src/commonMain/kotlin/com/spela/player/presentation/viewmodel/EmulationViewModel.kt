@@ -159,6 +159,11 @@ class EmulationViewModel(
                             } else {
                                 gamepadPortManager.loadAllMappings(consoleId)
                             }
+                            // Positional gamepad mapping layer (#1334). Inert
+                            // until the user rebinds (defaults reproduce the
+                            // historical behavior); no-op when no repository is
+                            // wired (e.g. Android until its phase lands).
+                            gamepadPortManager.loadAllGamepadMappings(consoleId)
                         } catch (e: kotlinx.coroutines.CancellationException) {
                             // Re-throw so cooperative cancellation works.
                             // Pre-#963 the broad `catch (_: Exception)` below

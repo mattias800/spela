@@ -5,7 +5,10 @@ package com.spela.player.libretro
  *
  * @param controllerId SDL instance ID for this controller
  * @param name Human-readable controller name (e.g. "Xbox Controller")
- * @param buttons Button states indexed by libretro button ID (0..15)
+ * @param buttons Button states indexed by [com.spela.player.domain.model.GamepadPosition]
+ *   ordinal (0..15) — the input layer's canonical positions, NOT libretro ids.
+ *   The L2/R2 trigger slots are filled Kotlin-side from [axes], not by the C bridge.
+ *   Kotlin applies the configurable GamepadPosition→RetroPad mapping (#1334).
  * @param axes Axis values: [LX, LY, RX, RY, TriggerL, TriggerR] in SDL range (-32768..32767)
  * @param type SDL_GamepadType (SDL_GetRealGamepadType) integer for the connected pad; 0 = unknown
  */

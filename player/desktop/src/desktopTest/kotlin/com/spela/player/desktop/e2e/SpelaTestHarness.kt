@@ -5,6 +5,7 @@ import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.spela.player.data.device.DeviceManager
 import com.spela.player.data.local.SpelaDatabase
 import com.spela.player.data.repository.ControllerStyleOverrideRepositoryImpl
+import com.spela.player.data.repository.GamepadMappingRepositoryImpl
 import com.spela.player.data.remote.ConnectivityMonitor
 import com.spela.player.data.remote.PresenceService
 import com.spela.player.data.remote.SyncEngine
@@ -172,6 +173,7 @@ class SpelaTestHarness(
         keyMappingRepo,
         scope,
         nowMs = { testDispatcher.scheduler.currentTime },
+        gamepadMappingRepository = GamepadMappingRepositoryImpl(testDatabase),
     )
 
     // Achievement fakes are exposed so tests can drive the popup wiring:
