@@ -1,5 +1,5 @@
-#ifndef GAMEPAD_SDL2_H
-#define GAMEPAD_SDL2_H
+#ifndef GAMEPAD_SDL3_H
+#define GAMEPAD_SDL3_H
 
 #include <jni.h>
 
@@ -15,4 +15,4 @@ JNIEXPORT jobjectArray JNICALL Java_com_spela_player_libretro_LibretroJni_native
 }
 #endif
 
-#endif /* GAMEPAD_SDL2_H */
+#endif /* GAMEPAD_SDL3_H */

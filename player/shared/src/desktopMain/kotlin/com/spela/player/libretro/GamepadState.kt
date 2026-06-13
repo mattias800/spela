@@ -1,7 +1,7 @@
 package com.spela.player.libretro
 
 /**
- * Represents the state of a connected gamepad as returned by the native SDL2 poller.
+ * Represents the state of a connected gamepad as returned by the native SDL3 poller.
  *
  * @param controllerId SDL instance ID for this controller
  * @param name Human-readable controller name (e.g. "Xbox Controller")
