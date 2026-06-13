@@ -35,6 +35,7 @@ import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpSecondaryButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.theme.SpColor
+import com.spela.player.domain.model.ControllerStyle
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.presentation.viewmodel.GamepadConfigState
@@ -94,6 +95,11 @@ private fun ControllerRow(
     onSwapUp: (() -> Unit)?,
     onSwapDown: (() -> Unit)?,
 ) {
+    // Show the detected controller identity (e.g. "Xbox Controller"). For an
+    // unrecognized pad fall back to the raw OS device name. (#1334)
+    val identity = assignment?.let {
+        if (it.style == ControllerStyle.Generic) it.deviceName else it.style.displayName
+    }
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -102,7 +108,7 @@ private fun ControllerRow(
             .padding(horizontal = SpSpacing.Default, vertical = SpSpacing.Medium)
             .semantics {
                 contentDescription = if (assignment != null) {
-                    "Player ${port + 1}: ${assignment.deviceName}" +
+                    "Player ${port + 1}: $identity" +
                         if (assignment.isActive) ", active" else ""
                 } else {
                     "Player ${port + 1}: No controller"
@@ -119,9 +125,9 @@ private fun ControllerRow(
 
         Spacer(Modifier.width(SpSpacing.Medium))
 
-        // Device name
+        // Controller identity (brand when detected, else raw device name)
         Text(
-            text = assignment?.deviceName ?: "No controller",
+            text = identity ?: "No controller",
             style = SpTypography.BodyMedium,
             color = if (assignment != null) SpColor.OnCard else SpColor.OnBackgroundTertiary,
             modifier = Modifier.weight(1f),

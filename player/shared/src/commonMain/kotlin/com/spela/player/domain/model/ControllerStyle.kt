@@ -4,7 +4,22 @@ package com.spela.player.domain.model
  * Normalized physical-controller layout family. Drives Android input
  * normalization and the identity display only — never the positional bindings.
  */
-enum class ControllerStyle { Xbox, Nintendo, PlayStation, Generic }
+enum class ControllerStyle {
+    Xbox,
+    Nintendo,
+    PlayStation,
+    Generic,
+    ;
+
+    /** Human-readable identity shown to the user (e.g. "Player 1: Xbox Controller"). */
+    val displayName: String
+        get() = when (this) {
+            Xbox -> "Xbox Controller"
+            Nintendo -> "Nintendo Controller"
+            PlayStation -> "PlayStation Controller"
+            Generic -> "Gamepad"
+        }
+}
 
 /**
  * Classifies a connected controller into a [ControllerStyle] from USB vendor/

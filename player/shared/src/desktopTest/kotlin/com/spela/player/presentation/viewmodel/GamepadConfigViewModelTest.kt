@@ -63,6 +63,19 @@ class GamepadConfigViewModelTest {
     }
 
     @Test
+    fun detectedStyleSurfacesInState() = runTest(testDispatcher) {
+        val scope = CoroutineScope(testDispatcher + Job())
+        val vm = createViewModel(scope)
+        gamepadPortManager.connectDevice(1, "Wireless Controller", com.spela.player.domain.model.ControllerStyle.PlayStation)
+        advanceTimeBy(300)
+
+        val assignments = vm.state.value.portAssignments
+        assertEquals(1, assignments.size)
+        assertEquals(com.spela.player.domain.model.ControllerStyle.PlayStation, assignments[0].style)
+        scope.cancel()
+    }
+
+    @Test
     fun multipleDevicesAppearSortedByPort() = runTest(testDispatcher) {
         val scope = CoroutineScope(testDispatcher + Job())
         val vm = createViewModel(scope)

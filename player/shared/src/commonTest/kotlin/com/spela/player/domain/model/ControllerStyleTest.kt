@@ -16,4 +16,12 @@ class ControllerStyleTest {
         assertEquals(ControllerStyle.Nintendo, ControllerClassifier.fromVendorProduct(0x0000, 0x0000, "Pro Controller"))
         assertEquals(ControllerStyle.Generic, ControllerClassifier.fromVendorProduct(0x1234, 0x5678, "Some USB Gamepad"))
     }
+
+    @Test
+    fun displayNames() {
+        assertEquals("Xbox Controller", ControllerStyle.Xbox.displayName)
+        assertEquals("Nintendo Controller", ControllerStyle.Nintendo.displayName)
+        assertEquals("PlayStation Controller", ControllerStyle.PlayStation.displayName)
+        assertEquals("Gamepad", ControllerStyle.Generic.displayName)
+    }
 }

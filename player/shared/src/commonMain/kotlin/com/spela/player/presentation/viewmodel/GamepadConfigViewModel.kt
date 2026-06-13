@@ -1,5 +1,6 @@
 package com.spela.player.presentation.viewmodel
 
+import com.spela.player.domain.model.ControllerStyle
 import com.spela.player.libretro.GamepadPortManager
 import com.spela.player.util.DispatcherProvider
 import kotlinx.coroutines.CoroutineScope
@@ -23,6 +24,7 @@ data class PortAssignmentUi(
     val deviceId: Int,
     val isActive: Boolean,
     val hasCustomMapping: Boolean,
+    val style: ControllerStyle = ControllerStyle.Generic,
 )
 
 sealed interface GamepadConfigIntent {
@@ -95,6 +97,7 @@ class GamepadConfigViewModel(
                 deviceId = assignment.deviceId,
                 isActive = isActive,
                 hasCustomMapping = gamepadPortManager.getKeyMapping(assignment.port) != null,
+                style = assignment.style,
             )
         }.sortedBy { it.port }
 
