@@ -196,6 +196,37 @@ DELETE FROM GameKeyMappingEntity WHERE game_id = ?;
 hasGameKeyMappings:
 SELECT COUNT(*) FROM GameKeyMappingEntity WHERE game_id = ?;
 
+-- Positional gamepad mappings (#1334): the mapping layer of the two-layer
+-- model — GamepadPosition (string enum name) -> libretro RetroPad id, per
+-- console/port. Distinct from KeyMappingEntity (physical key code -> RetroPad):
+-- this layer is brand-independent because the input layer normalizes physical
+-- buttons to canonical positions first. Only diffs from the default mapping are
+-- stored; the effective mapping is default + these overrides.
+CREATE TABLE GamepadMappingEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    console_id TEXT NOT NULL,
+    port INTEGER NOT NULL DEFAULT 0,
+    gamepad_position TEXT NOT NULL,
+    libretro_button_id INTEGER NOT NULL,
+    UNIQUE(console_id, port, gamepad_position)
+);
+
+insertGamepadMapping:
+INSERT OR REPLACE INTO GamepadMappingEntity(id, console_id, port, gamepad_position, libretro_button_id)
+VALUES (?, ?, ?, ?, ?);
+
+getGamepadMappingsForConsole:
+SELECT * FROM GamepadMappingEntity WHERE console_id = ? AND port = ?;
+
+deleteGamepadMappingsForConsole:
+DELETE FROM GamepadMappingEntity WHERE console_id = ? AND port = ?;
+
+deleteGamepadMappingForPosition:
+DELETE FROM GamepadMappingEntity WHERE console_id = ? AND port = ? AND gamepad_position = ?;
+
+getAllGamepadMappings:
+SELECT * FROM GamepadMappingEntity;
+
 -- Device info (singleton row for this device's identity)
 CREATE TABLE DeviceInfoEntity (
     id INTEGER PRIMARY KEY DEFAULT 1,

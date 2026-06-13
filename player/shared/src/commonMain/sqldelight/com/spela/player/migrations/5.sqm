@@ -1,0 +1,13 @@
+-- Migration from schema version 5 to 6: add GamepadMappingEntity, the mapping
+-- layer of the two-layer positional gamepad model (#1334). Stores
+-- GamepadPosition -> libretro RetroPad id per console/port, brand-independent
+-- (the input layer normalizes physical buttons to canonical positions first).
+-- Only diffs from the default mapping are stored.
+CREATE TABLE GamepadMappingEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    console_id TEXT NOT NULL,
+    port INTEGER NOT NULL DEFAULT 0,
+    gamepad_position TEXT NOT NULL,
+    libretro_button_id INTEGER NOT NULL,
+    UNIQUE(console_id, port, gamepad_position)
+);

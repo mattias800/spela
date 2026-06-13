@@ -71,6 +71,7 @@ val commonModule = module {
     single<PendingSaveUploadRepository> { PendingSaveUploadRepositoryImpl(get()) }
     single<OnboardingRepository> { OnboardingRepositoryImpl(get()) }
     single<ControllerStyleOverrideRepository> { ControllerStyleOverrideRepositoryImpl(get()) }
+    single<GamepadMappingRepository> { GamepadMappingRepositoryImpl(get()) }
     single<SessionRepository> { SessionRepositoryImpl(get(), get()) }
     single<ExploreRepository> { ExploreRepositoryImpl(get()) }
     single<SearchRepository> { SearchRepositoryImpl(get(), get()) }
