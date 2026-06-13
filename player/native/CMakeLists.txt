@@ -37,13 +37,36 @@ else()
     )
 endif()
 
-# SDL2 gamepad support (desktop only)
+# SDL3 gamepad support (desktop only) — vendored via FetchContent, built
+# minimal (gamepad input only; no audio/video/render) and linked statically so
+# no SDL3 shared library has to ship in the desktop artifacts. Always present,
+# so gamepad support is unconditional (no HAS_SDL2 optional path). See #1337.
 if(NOT ANDROID)
-    list(APPEND COMMON_SOURCES src/gamepad_sdl2.c)
-    find_package(SDL2 QUIET)
-    if(SDL2_FOUND)
-        add_compile_definitions(HAS_SDL2)
-    endif()
+    list(APPEND COMMON_SOURCES src/gamepad_sdl3.c)
+
+    include(FetchContent)
+    set(SDL_SHARED OFF CACHE BOOL "" FORCE)
+    set(SDL_STATIC ON CACHE BOOL "" FORCE)
+    set(SDL_TEST OFF CACHE BOOL "" FORCE)
+    set(SDL_TESTS OFF CACHE BOOL "" FORCE)
+    set(SDL_EXAMPLES OFF CACHE BOOL "" FORCE)
+    set(SDL_AUDIO OFF CACHE BOOL "" FORCE)
+    set(SDL_VIDEO OFF CACHE BOOL "" FORCE)
+    set(SDL_RENDER OFF CACHE BOOL "" FORCE)
+    set(SDL_GPU OFF CACHE BOOL "" FORCE)
+    set(SDL_CAMERA OFF CACHE BOOL "" FORCE)
+    set(SDL_HAPTIC OFF CACHE BOOL "" FORCE)
+    set(SDL_POWER OFF CACHE BOOL "" FORCE)
+    set(SDL_SENSOR OFF CACHE BOOL "" FORCE)
+    set(SDL_DIALOG OFF CACHE BOOL "" FORCE)
+    # Keep joystick + gamepad + events (+ hidapi) — the defaults we need.
+    FetchContent_Declare(
+        SDL3
+        GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
+        GIT_TAG release-3.2.30
+        GIT_SHALLOW TRUE
+    )
+    FetchContent_MakeAvailable(SDL3)
 endif()
 
 add_library(spela-libretro SHARED ${COMMON_SOURCES})
@@ -91,11 +114,8 @@ else()
     # Desktop (JNI)
     find_package(JNI REQUIRED)
     target_include_directories(spela-libretro PRIVATE ${JNI_INCLUDE_DIRS})
-    # SDL2 include/link (optional, for gamepad support)
-    if(SDL2_FOUND)
-        target_include_directories(spela-libretro PRIVATE ${SDL2_INCLUDE_DIRS})
-        target_link_libraries(spela-libretro ${SDL2_LIBRARIES})
-    endif()
+    # SDL3 (static) for gamepad support.
+    target_link_libraries(spela-libretro SDL3::SDL3-static)
 
     if(APPLE)
         # macOS: Vulkan via MoltenVK (linked directly, bypasses Vulkan loader ICD).
@@ -217,10 +237,7 @@ if(NOT ANDROID)
     find_package(JNI REQUIRED)
     target_include_directories(spela-core-host PRIVATE ${JNI_INCLUDE_DIRS})
 
-    if(SDL2_FOUND)
-        target_include_directories(spela-core-host PRIVATE ${SDL2_INCLUDE_DIRS})
-        target_link_libraries(spela-core-host ${SDL2_LIBRARIES})
-    endif()
+    target_link_libraries(spela-core-host SDL3::SDL3-static)
 
     find_package(Vulkan REQUIRED)
     target_include_directories(spela-core-host PRIVATE ${Vulkan_INCLUDE_DIRS})
