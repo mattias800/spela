@@ -195,11 +195,11 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake libvulkan-dev libx11-dev \
-            libwayland-dev wayland-protocols libsdl2-dev pkg-config
+            libwayland-dev wayland-protocols pkg-config
       - name: Install macOS dependencies
         if: runner.os == 'macOS'
         run: |
-          brew install molten-vk vulkan-headers vulkan-loader sdl2
+          brew install molten-vk vulkan-headers vulkan-loader
           echo "VULKAN_SDK=$(brew --prefix)" >> "$GITHUB_ENV"
       - name: Install Windows dependencies
         if: runner.os == 'Windows'
@@ -279,7 +279,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake libvulkan-dev libx11-dev \
-            libwayland-dev wayland-protocols libsdl2-dev pkg-config libfuse2
+            libwayland-dev wayland-protocols pkg-config libfuse2
       - name: Cache Gradle
         uses: actions/cache@v5
         with:
@@ -320,7 +320,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake libvulkan-dev libx11-dev \
-            libwayland-dev wayland-protocols libsdl2-dev pkg-config \
+            libwayland-dev wayland-protocols pkg-config \
             flatpak flatpak-builder
       - name: Set up Flatpak
         run: |
@@ -372,7 +372,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake libvulkan-dev libx11-dev \
-            libwayland-dev wayland-protocols libsdl2-dev pkg-config libfuse2
+            libwayland-dev wayland-protocols pkg-config libfuse2
       - name: Cache Gradle
         uses: actions/cache@v5
         with:
