@@ -29,10 +29,12 @@ class GamepadConfigViewModelTest {
 
     private val fakeRepo = FakeKeyMappingRepo()
     private val gamepadPortManager = GamepadPortManager(fakeRepo)
+    private val styleOverrideRepo = FakeControllerStyleOverrideRepo()
 
     private fun createViewModel(scope: CoroutineScope): GamepadConfigViewModel {
         return GamepadConfigViewModel(
             gamepadPortManager = gamepadPortManager,
+            styleOverrideRepository = styleOverrideRepo,
             dispatchers = dispatchers,
             scope = scope,
         )
@@ -72,6 +74,56 @@ class GamepadConfigViewModelTest {
         val assignments = vm.state.value.portAssignments
         assertEquals(1, assignments.size)
         assertEquals(com.spela.player.domain.model.ControllerStyle.PlayStation, assignments[0].style)
+        scope.cancel()
+    }
+
+    @Test
+    fun storedOverrideWinsOverDetectedStyle() = runTest(testDispatcher) {
+        styleOverrideRepo.overrides["Wireless Controller"] = com.spela.player.domain.model.ControllerStyle.Nintendo
+        val scope = CoroutineScope(testDispatcher + Job())
+        val vm = createViewModel(scope)
+        gamepadPortManager.connectDevice(1, "Wireless Controller", com.spela.player.domain.model.ControllerStyle.PlayStation)
+        advanceTimeBy(600)
+
+        val a = vm.state.value.portAssignments.single()
+        assertEquals(com.spela.player.domain.model.ControllerStyle.Nintendo, a.style)
+        assertEquals(com.spela.player.domain.model.ControllerStyle.PlayStation, a.detectedStyle)
+        assertEquals(com.spela.player.domain.model.ControllerStyle.Nintendo, a.styleOverride)
+        scope.cancel()
+    }
+
+    @Test
+    fun setStyleOverridePersistsAndResolves() = runTest(testDispatcher) {
+        val scope = CoroutineScope(testDispatcher + Job())
+        val vm = createViewModel(scope)
+        gamepadPortManager.connectDevice(1, "Wireless Controller", com.spela.player.domain.model.ControllerStyle.PlayStation)
+        advanceTimeBy(300)
+        assertEquals(com.spela.player.domain.model.ControllerStyle.PlayStation, vm.state.value.portAssignments.single().style)
+
+        vm.onIntent(GamepadConfigIntent.SetStyleOverride(0, com.spela.player.domain.model.ControllerStyle.Xbox))
+        advanceTimeBy(300)
+
+        assertEquals(com.spela.player.domain.model.ControllerStyle.Xbox, vm.state.value.portAssignments.single().style)
+        assertEquals(com.spela.player.domain.model.ControllerStyle.Xbox, styleOverrideRepo.overrides["Wireless Controller"])
+        scope.cancel()
+    }
+
+    @Test
+    fun clearStyleOverrideRevertsToDetected() = runTest(testDispatcher) {
+        styleOverrideRepo.overrides["Wireless Controller"] = com.spela.player.domain.model.ControllerStyle.Xbox
+        val scope = CoroutineScope(testDispatcher + Job())
+        val vm = createViewModel(scope)
+        gamepadPortManager.connectDevice(1, "Wireless Controller", com.spela.player.domain.model.ControllerStyle.PlayStation)
+        advanceTimeBy(600)
+        assertEquals(com.spela.player.domain.model.ControllerStyle.Xbox, vm.state.value.portAssignments.single().style)
+
+        vm.onIntent(GamepadConfigIntent.SetStyleOverride(0, null))
+        advanceTimeBy(300)
+
+        val a = vm.state.value.portAssignments.single()
+        assertEquals(com.spela.player.domain.model.ControllerStyle.PlayStation, a.style)
+        assertNull(a.styleOverride)
+        assertNull(styleOverrideRepo.overrides["Wireless Controller"])
         scope.cancel()
     }
 
@@ -154,6 +206,18 @@ class GamepadConfigViewModelTest {
         advanceTimeBy(300)
         assertTrue(vm.state.value.portAssignments.isEmpty())
         scope.cancel()
+    }
+
+    private class FakeControllerStyleOverrideRepo :
+        com.spela.player.domain.repository.ControllerStyleOverrideRepository {
+        val overrides = mutableMapOf<String, com.spela.player.domain.model.ControllerStyle>()
+        override suspend fun getOverride(deviceName: String) = overrides[deviceName]
+        override suspend fun setOverride(
+            deviceName: String,
+            style: com.spela.player.domain.model.ControllerStyle?,
+        ) {
+            if (style == null) overrides.remove(deviceName) else overrides[deviceName] = style
+        }
     }
 
     private class FakeKeyMappingRepo : KeyMappingRepository {

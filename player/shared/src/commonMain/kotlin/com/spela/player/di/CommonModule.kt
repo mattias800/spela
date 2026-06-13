@@ -70,6 +70,7 @@ val commonModule = module {
     single<CheatRepository> { CheatRepositoryImpl(get(), get()) }
     single<PendingSaveUploadRepository> { PendingSaveUploadRepositoryImpl(get()) }
     single<OnboardingRepository> { OnboardingRepositoryImpl(get()) }
+    single<ControllerStyleOverrideRepository> { ControllerStyleOverrideRepositoryImpl(get()) }
     single<SessionRepository> { SessionRepositoryImpl(get(), get()) }
     single<ExploreRepository> { ExploreRepositoryImpl(get()) }
     single<SearchRepository> { SearchRepositoryImpl(get(), get()) }
@@ -407,6 +408,7 @@ val commonModule = module {
     factory {
         GamepadConfigViewModel(
             gamepadPortManager = get(),
+            styleOverrideRepository = get(),
             dispatchers = get(),
             scope = get(),
         )
