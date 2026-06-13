@@ -332,7 +332,7 @@ fun ConsoleSettingsScreen(
                     SpCard(onGradient = true) {
                         Column(modifier = Modifier.fillMaxWidth().padding(SpSpacing.Default)) {
                             Text(
-                                text = "Gamepad buttons",
+                                text = "Controller buttons",
                                 style = SpTypography.TitleMedium,
                                 color = SpColor.OnCard,
                             )
@@ -344,7 +344,7 @@ fun ConsoleSettingsScreen(
                             )
                             Spacer(Modifier.height(SpSpacing.Medium))
                             SpSecondaryButton(
-                                text = "Configure gamepad buttons",
+                                text = "Configure controller buttons",
                                 onClick = {
                                     gamepadMappingViewModel.onIntent(GamepadMappingIntent.Load(consoleId))
                                     showGamepadMapping = true

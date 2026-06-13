@@ -82,7 +82,7 @@ fun GamepadMappingDialog(
             ) {
                 Text(
                     text = "Controller buttons — ${state.displayName}",
-                    style = SpTypography.HeadlineSmall,
+                    style = SpTypography.HeadlineMedium,
                     color = SpColor.OnBackground,
                 )
                 Text(

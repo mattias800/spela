@@ -19,6 +19,15 @@ enum class ControllerStyle {
             PlayStation -> "PlayStation Controller"
             Generic -> "Gamepad"
         }
+
+    /** Compact label for chips/affordances (e.g. the "Type: …" override button). */
+    val shortLabel: String
+        get() = when (this) {
+            Xbox -> "Xbox"
+            Nintendo -> "Nintendo"
+            PlayStation -> "PlayStation"
+            Generic -> "Gamepad"
+        }
 }
 
 /**

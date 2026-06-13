@@ -24,4 +24,14 @@ class ControllerStyleTest {
         assertEquals("PlayStation Controller", ControllerStyle.PlayStation.displayName)
         assertEquals("Gamepad", ControllerStyle.Generic.displayName)
     }
+
+    @Test
+    fun shortLabels() {
+        assertEquals("Xbox", ControllerStyle.Xbox.shortLabel)
+        assertEquals("Nintendo", ControllerStyle.Nintendo.shortLabel)
+        assertEquals("PlayStation", ControllerStyle.PlayStation.shortLabel)
+        // Generic's short label matches its displayName so the "Type: …"
+        // affordance and the picker never disagree.
+        assertEquals("Gamepad", ControllerStyle.Generic.shortLabel)
+    }
 }

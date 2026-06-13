@@ -126,8 +126,9 @@ private fun ControllerRow(
         if (it.style == ControllerStyle.Generic) it.deviceName else it.style.displayName
     }
     // Compact label for the type-override affordance: "Auto" when deferring to
-    // detection, else the chosen style's short name.
-    val styleLabel = assignment?.styleOverride?.name ?: "Auto"
+    // detection, else the chosen style's short name (matches the picker wording,
+    // e.g. Generic → "Gamepad").
+    val styleLabel = assignment?.styleOverride?.shortLabel ?: "Auto"
     Row(
         modifier = Modifier
             .fillMaxWidth()
