@@ -1,6 +1,7 @@
 package com.spela.player.libretro
 
 import com.spela.player.domain.model.ControllerStyle
+import com.spela.player.domain.model.DefaultGamepadMapping
 import com.spela.player.domain.model.GamepadPosition
 import com.spela.player.domain.repository.GamepadMappingRepository
 import com.spela.player.domain.repository.KeyMappingRepository
@@ -248,6 +249,22 @@ class GamepadPortManager(
     fun getGamepadMapping(port: Int): Map<GamepadPosition, Int>? {
         if (port < 0 || port >= MAX_PORTS) return null
         return portGamepadMappings[port] ?: fallbackGamepadMapping
+    }
+
+    /**
+     * Maps an Android gamepad key code to a libretro RetroPad id for a port via
+     * the two-layer model (#1334): physical key code → canonical
+     * [GamepadPosition] (input layer) → RetroPad id (mapping layer). Falls back
+     * to [DefaultGamepadMapping] when no per-console mapping is loaded, so the
+     * default reproduces the historical behavior. Returns null for non-gamepad
+     * key codes or unmapped positions.
+     */
+    @Synchronized
+    fun mapGamepadKeyToLibretro(port: Int, keyCode: Int): Int? {
+        if (port < 0 || port >= MAX_PORTS) return null
+        val position = AndroidGamepadNormalizer.normalize(keyCode) ?: return null
+        val mapping = portGamepadMappings[port] ?: fallbackGamepadMapping ?: DefaultGamepadMapping.POSITION_TO_RETRO
+        return mapping[position]
     }
 
     /**

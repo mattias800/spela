@@ -13,6 +13,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.lifecycle.lifecycleScope
+import com.spela.player.domain.model.ControllerClassifier
 import com.spela.player.domain.repository.PreferencesRepository
 import com.spela.player.libretro.AndroidLibretroController
 import com.spela.player.libretro.GamepadPortManager
@@ -191,13 +192,18 @@ class MainActivity : ComponentActivity() {
         if (!isGamepadInputDevice(device)) return -1
 
         val deviceName = device.name ?: "Gamepad $deviceId"
-        val port = gamepadPortManager.connectDevice(deviceId, deviceName)
+        // Detect the controller style (#1334) so input is normalized positionally
+        // and the identity display is correct. Vendor/product with a name fallback.
+        val style = ControllerClassifier.fromVendorProduct(device.vendorId, device.productId, deviceName)
+        val port = gamepadPortManager.connectDevice(deviceId, deviceName, style)
         if (port >= 0) {
             val consoleId = emulationViewModel.state.value.consoleId
             if (consoleId.isNotEmpty()) {
                 lifecycleScope.launch {
                     try {
-                        gamepadPortManager.loadMappingForPort(port, consoleId)
+                        // Gamepad input now flows through the positional mapping
+                        // layer (key code → GamepadPosition → RetroPad).
+                        gamepadPortManager.loadGamepadMappingForPort(port, consoleId)
                     } catch (_: Exception) {
                         // Best effort
                     }
@@ -267,7 +273,7 @@ class MainActivity : ComponentActivity() {
             val port = ensureDeviceConnected(deviceId)
             if (port < 0) return super.onKeyDown(keyCode, event)
 
-            val buttonId = gamepadPortManager.mapKeyToLibretro(port, keyCode)
+            val buttonId = gamepadPortManager.mapGamepadKeyToLibretro(port, keyCode)
             if (buttonId != null) {
                 androidController?.let {
                     it.setButton(port, buttonId, true)
@@ -367,7 +373,7 @@ class MainActivity : ComponentActivity() {
             val port = gamepadPortManager.getPort(deviceId)
             if (port < 0) return super.onKeyUp(keyCode, event)
 
-            val buttonId = gamepadPortManager.mapKeyToLibretro(port, keyCode)
+            val buttonId = gamepadPortManager.mapGamepadKeyToLibretro(port, keyCode)
             if (buttonId != null) {
                 androidController?.let {
                     it.setButton(port, buttonId, false)
