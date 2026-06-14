@@ -31,6 +31,7 @@ import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.presentation.intent.KeyMappingIntent
 import com.spela.player.presentation.viewmodel.KeyMappingViewModel
+import com.spela.player.presentation.viewmodel.GamepadConfigViewModel
 import com.spela.player.presentation.viewmodel.SettingsIntent
 import com.spela.player.presentation.viewmodel.SettingsViewModel
 import androidx.compose.foundation.layout.Arrangement
@@ -43,6 +44,7 @@ private const val LIST_DETAIL_BREAKPOINT = 600
 fun SettingsScreen(
     viewModel: SettingsViewModel,
     keyMappingViewModel: KeyMappingViewModel? = null,
+    gamepadConfigViewModel: GamepadConfigViewModel? = null,
     onBack: () -> Unit = {},
     onLogout: () -> Unit,
     onNavigateToConsoleSettings: (String) -> Unit = {},
@@ -108,6 +110,7 @@ fun SettingsScreen(
                         connectionState = connectionState,
                         keyMappingViewModel = keyMappingViewModel,
                         keyMappingState = keyMappingState?.value,
+                        gamepadConfigViewModel = gamepadConfigViewModel,
                         onNavigateToConsoleSettings = onNavigateToConsoleSettings,
                         onNavigateToLicenses = onNavigateToLicenses,
                         onLogout = onLogout,
@@ -128,6 +131,7 @@ fun SettingsScreen(
                         connectionState = connectionState,
                         keyMappingViewModel = keyMappingViewModel,
                         keyMappingState = keyMappingState?.value,
+                        gamepadConfigViewModel = gamepadConfigViewModel,
                         onNavigateToConsoleSettings = onNavigateToConsoleSettings,
                         onNavigateToLicenses = onNavigateToLicenses,
                         onLogout = onLogout,

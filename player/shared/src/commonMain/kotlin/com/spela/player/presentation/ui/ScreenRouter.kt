@@ -736,6 +736,7 @@ fun ScreenRouter(
                                 SettingsScreen(
                                     viewModel = settingsViewModel,
                                     keyMappingViewModel = keyMappingViewModel,
+                                    gamepadConfigViewModel = gamepadConfigViewModel,
                                     onBack = {
                                         navigationViewModel.onIntent(NavigationIntent.GoBack)
                                     },
