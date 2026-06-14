@@ -14,6 +14,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/spela/server/internal/auth"
 	"github.com/spela/server/internal/db"
+	"github.com/spela/server/internal/federation"
 	"github.com/spela/server/internal/igdb"
 	"github.com/spela/server/internal/retroachievements"
 	"github.com/spela/server/internal/scanner"
@@ -40,7 +41,11 @@ type Config struct {
 	RAClient                     *retroachievements.RAClient // optional; defaults to production RA client
 	ChallengeAttemptRateLimitSec int                         // 0 = disabled; default 30 in production
 	Version                      string
-	TestMode                     bool // when true, registers POST /api/test/reset for E2E test isolation
+	// PublicBaseURL is this server's own externally-reachable base URL, embedded
+	// as the callback URL in federation invites (#1343). Empty if unset, in
+	// which case issued invites carry no usable callback URL.
+	PublicBaseURL string
+	TestMode      bool // when true, registers POST /api/test/reset for E2E test isolation
 }
 
 // NewRouter creates and configures the Gin router with all endpoints.
@@ -171,6 +176,22 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 	// Make the effective key available to the secret-server-setting
 	// encrypt/decrypt helpers (#1318).
 	setServerSettingsKey(encryptionKey)
+
+	// Federation identity + handler (epic #1343). The identity keypair is
+	// created on first startup and persisted (private key encrypted at rest).
+	fedIdentity, fedErr := federation.LoadOrCreateIdentity(cfg.DB, encryptionKey)
+	if fedErr != nil {
+		slog.Error("federation: failed to initialize identity", "error", fedErr)
+	} else {
+		slog.Info("federation: identity ready", "fingerprint", federation.ShortFingerprint(fedIdentity.Fingerprint()))
+	}
+	federationHandler := &FederationHandler{
+		DB:       cfg.DB,
+		Identity: fedIdentity,
+		Peers:    federation.PeerStore{DB: cfg.DB},
+		BaseURL:  cfg.PublicBaseURL,
+	}
+
 	socialHandler := &SocialHandler{DB: cfg.DB, Hub: cfg.Hub}
 	ratingHandler := &RatingHandler{DB: cfg.DB, Hub: cfg.Hub}
 	sharedSaveHandler := &SharedSaveHandler{DB: cfg.DB, Storage: cfg.Storage, Hub: cfg.Hub}
@@ -231,6 +252,8 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 	RegisterMakerRoutes(humaAPI, makerHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterCoreRoutes(humaAPI, coreHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterStatsRoutes(humaAPI, statsHandler, cfg.JWTSecret, cfg.DB, userLimiter)
+	RegisterFederationRoutes(humaAPI, federationHandler, cfg.JWTSecret, cfg.DB, userLimiter)
+	RegisterFederationGinRoutes(r, federationHandler)
 	RegisterConsoleRoutes(humaAPI, consoleHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterUserRoutes(humaAPI, userHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterUserMutationRoutes(humaAPI, userHandler, cfg.JWTSecret, cfg.DB, userLimiter, authLimiter)
