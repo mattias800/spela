@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -469,7 +470,10 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 	// local snapshot cache so the mesh leaderboard stays current. Disable with
 	// SPELA_DISABLE_FEDERATION_REFRESH=1; force one anytime via the admin endpoint.
 	stopFedRefresh := make(chan struct{})
+	fedRefreshStarted := false
+	var stopFedRefreshOnce sync.Once
 	if fedErr == nil && os.Getenv("SPELA_DISABLE_FEDERATION_REFRESH") == "" {
+		fedRefreshStarted = true
 		go func() {
 			ticker := time.NewTicker(15 * time.Minute)
 			defer ticker.Stop()
@@ -491,7 +495,11 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 		uploadLimiter.Close()
 		userLimiter.Close()
 		imageLimiter.Close()
-		close(stopFedRefresh)
+		// sync.Once so a second cleanup() call (e.g. in tests) can't panic on a
+		// double close; only close if the goroutine was actually started.
+		if fedRefreshStarted {
+			stopFedRefreshOnce.Do(func() { close(stopFedRefresh) })
+		}
 	}
 
 	return r, cleanup

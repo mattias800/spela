@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"time"
@@ -107,7 +108,7 @@ func (h *FederationHandler) ginExportStats(c *gin.Context) {
 
 	maxHops := federation.MaxFederationHops - 1
 	if q := c.Query("maxHops"); q != "" {
-		if n, err := strconv.Atoi(q); err == nil && n >= 0 && n < maxHops {
+		if n, err := strconv.Atoi(q); err == nil && n >= 0 && n <= maxHops {
 			maxHops = n
 		}
 	}
@@ -139,6 +140,15 @@ func (h *FederationHandler) ginExportStats(c *gin.Context) {
 // friend's cached snapshot. This is the periodic sync that powers transitive
 // re-serving. Returns (refreshed, failed) peer counts.
 func (h *FederationHandler) RefreshFederationStats() (int, int) {
+	// Serialize refreshes: the periodic ticker and an admin trigger must not run
+	// concurrently (WAL allows overlapping write txns, which would race the
+	// per-peer delete-then-insert). If one is already running, skip.
+	if !h.refreshMu.TryLock() {
+		slog.Info("federation: stats refresh already in progress, skipping", "component", "federation")
+		return 0, 0
+	}
+	defer h.refreshMu.Unlock()
+
 	peers, err := h.Peers.List()
 	if err != nil {
 		return 0, 0

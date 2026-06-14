@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"log/slog"
+	"sync"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -32,6 +33,9 @@ type FederationHandler struct {
 	// StatsClient fetches a friend's stat rollup. Defaults to httpStatsClient
 	// when nil; overridden in tests.
 	StatsClient statsClient
+	// refreshMu serializes RefreshFederationStats so the periodic ticker and an
+	// admin trigger can't run concurrently and race on the snapshot store.
+	refreshMu sync.Mutex
 }
 
 // pairClient performs the outbound pairing callback to a friend.
