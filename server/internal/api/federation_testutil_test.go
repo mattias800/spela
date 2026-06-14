@@ -25,8 +25,23 @@ func openAPIFedTestDB(t *testing.T) *gorm.DB {
 		&db.FederationPeer{},
 		&db.FederationInviteNonce{},
 		&db.FederationExchange{},
+		// For stats rollup tests.
+		&db.User{},
+		&db.Game{},
+		&db.PlayHistory{},
 	))
 	return database
+}
+
+// sharePeer / consumePeer upsert an active peer with a single-class policy set.
+func policyPeer(t *testing.T, database *gorm.DB, id federation.Identity, name, baseURL string, share, consume bool) {
+	t.Helper()
+	sp, _ := federation.MarshalPolicy(map[federation.DataClass]bool{federation.DataClassStats: share})
+	cp, _ := federation.MarshalPolicy(map[federation.DataClass]bool{federation.DataClassStats: consume})
+	require.NoError(t, federation.PeerStore{DB: database}.Upsert(&db.FederationPeer{
+		Fingerprint: id.Fingerprint(), PublicKey: b64(id.PublicKey), Name: name, BaseURL: baseURL,
+		Status: db.PeerStatusActive, SharePolicy: sp, ConsumePolicy: cp,
+	}))
 }
 
 // b64 is a test helper for base64-std encoding a byte slice.

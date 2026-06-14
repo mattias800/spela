@@ -22,10 +22,11 @@ func fedHTTPClient() *http.Client { return &http.Client{Timeout: federationHTTPT
 
 // signedFederationHeaders builds the signed headers for an outbound
 // server-to-server request, matching what VerifyFederationRequest expects.
-func signedFederationHeaders(id federation.Identity, method, path, requestID string, body []byte) map[string]string {
+// recipientFingerprint binds the request to its intended recipient.
+func signedFederationHeaders(id federation.Identity, method, path, requestID string, body []byte, recipientFingerprint string) map[string]string {
 	ts := strconv.FormatInt(time.Now().Unix(), 10)
 	bodyHash := sha256.Sum256(body)
-	sig := id.Sign(signedRequestMessage(method, path, ts, hex.EncodeToString(bodyHash[:])))
+	sig := id.Sign(signedRequestMessage(method, path, ts, hex.EncodeToString(bodyHash[:]), recipientFingerprint))
 	return map[string]string{
 		headerFedFingerprint: id.Fingerprint(),
 		headerFedTimestamp:   ts,
@@ -83,7 +84,7 @@ func (httpPeerPinger) Ping(baseURL, requestID string, id federation.Identity, ex
 	if err != nil {
 		return PingResult{Error: err.Error()}
 	}
-	for k, v := range signedFederationHeaders(id, http.MethodGet, path, requestID, nil) {
+	for k, v := range signedFederationHeaders(id, http.MethodGet, path, requestID, nil, expectFingerprint) {
 		req.Header.Set(k, v)
 	}
 	start := time.Now()
