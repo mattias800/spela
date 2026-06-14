@@ -87,6 +87,33 @@ class GamepadPortManager(
     private val _assignments = MutableStateFlow<List<PortAssignment>>(emptyList())
     val assignments: StateFlow<List<PortAssignment>> = _assignments.asStateFlow()
 
+    /** Currently-pressed canonical input positions per port (the input layer).
+     *  Fed by the desktop poller and Android key dispatch; consumed by the live
+     *  input tester so a user can press a button and see which GamepadPosition it
+     *  normalizes to (#1355). */
+    private val pressedByPort = HashMap<Int, MutableSet<GamepadPosition>>()
+    private val _pressedPositions = MutableStateFlow<Set<GamepadPosition>>(emptySet())
+    /** Union of currently-pressed positions across all connected controllers. */
+    val pressedPositions: StateFlow<Set<GamepadPosition>> = _pressedPositions.asStateFlow()
+
+    /** True only while the input-tester element is focused. The input pipelines
+     *  (Android key dispatch, desktop poller) capture test buttons for the tester
+     *  ONLY when this is set, and the D-pad is never captured — so navigation is
+     *  never disrupted by the tester being on screen (#1355). */
+    private val _testCaptureActive = MutableStateFlow(false)
+    val testCaptureActive: StateFlow<Boolean> = _testCaptureActive.asStateFlow()
+
+    /** Set by the tester UI on focus gain/loss. Clears stale highlights on exit. */
+    @Synchronized
+    fun setTestCaptureActive(active: Boolean) {
+        if (_testCaptureActive.value == active) return
+        _testCaptureActive.value = active
+        if (!active && pressedByPort.isNotEmpty()) {
+            pressedByPort.clear()
+            _pressedPositions.value = emptySet()
+        }
+    }
+
     /** Current input mode: TOUCH when touch input was last used, GAMEPAD when D-pad/buttons were. */
     private val _inputMode = MutableStateFlow(InputMode.TOUCH)
     val inputMode: StateFlow<InputMode> = _inputMode.asStateFlow()
@@ -148,6 +175,7 @@ class GamepadPortManager(
         portKeyMappings[assignment.port] = null
         portGamepadMappings[assignment.port] = null
         lastActivityMs[assignment.port] = 0L
+        if (pressedByPort.remove(assignment.port) != null) recomputePressedPositions()
         _assignments.value = deviceToPort.values.toList()
         _portActivity.value = buildActivityMap()
         emitControllerStatus()
@@ -268,6 +296,40 @@ class GamepadPortManager(
     }
 
     /**
+     * Records that a single canonical [position] was pressed/released on [port]
+     * (incremental — used by the Android key dispatch). Feeds [pressedPositions]
+     * for the live input tester (#1355).
+     */
+    @Synchronized
+    fun reportPositionInput(port: Int, position: GamepadPosition, pressed: Boolean) {
+        if (port < 0 || port >= MAX_PORTS) return
+        val set = pressedByPort.getOrPut(port) { mutableSetOf() }
+        val changed = if (pressed) set.add(position) else set.remove(position)
+        if (changed) recomputePressedPositions()
+    }
+
+    /**
+     * Replaces the full set of currently-pressed positions for [port] (wholesale
+     * — used by the desktop poller, which has all positions each frame). Only
+     * emits when the union actually changes, so the 120 Hz poll loop doesn't
+     * churn [pressedPositions].
+     */
+    @Synchronized
+    fun reportPressedPositions(port: Int, positions: Set<GamepadPosition>) {
+        if (port < 0 || port >= MAX_PORTS) return
+        val set = pressedByPort.getOrPut(port) { mutableSetOf() }
+        if (set == positions) return
+        set.clear()
+        set.addAll(positions)
+        recomputePressedPositions()
+    }
+
+    /** Must be called while holding the monitor. */
+    private fun recomputePressedPositions() {
+        _pressedPositions.value = pressedByPort.values.flatMapTo(mutableSetOf()) { it }
+    }
+
+    /**
      * Loads per-game key mapping for a specific port, with fallback chain:
      * per-game -> per-console -> global default -> hardcoded defaults.
      */
@@ -385,6 +447,8 @@ class GamepadPortManager(
         fallbackKeyMapping = null
         fallbackGamepadMapping = null
         lastActivityMs.fill(0L)
+        pressedByPort.clear()
+        _pressedPositions.value = emptySet()
         _assignments.value = emptyList()
         _portActivity.value = emptyMap()
         emitControllerStatus()

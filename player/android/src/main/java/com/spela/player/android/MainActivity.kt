@@ -15,6 +15,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.lifecycle.lifecycleScope
 import com.spela.player.domain.model.ControllerClassifier
 import com.spela.player.domain.repository.PreferencesRepository
+import com.spela.player.libretro.AndroidGamepadNormalizer
 import com.spela.player.libretro.AndroidLibretroController
 import com.spela.player.libretro.GamepadPortManager
 import com.spela.player.presentation.App
@@ -228,6 +229,25 @@ class MainActivity : ComponentActivity() {
         return isGamepad || isJoystick
     }
 
+    /**
+     * Routes a test button to the live input tester (#1355) — but ONLY while the
+     * tester element is focused, and never the D-pad. Returns true when it
+     * captured the event so the caller consumes it (the button must not also
+     * navigate/select). When the tester isn't focused this is a no-op and input
+     * routing is unchanged, so navigation is never disrupted by the tester being
+     * on screen. The D-pad always falls through to navigation.
+     */
+    private fun captureTestInput(event: KeyEvent?, keyCode: Int, pressed: Boolean): Boolean {
+        if (!gamepadPortManager.testCaptureActive.value) return false
+        val deviceId = event?.deviceId ?: return false
+        val port = gamepadPortManager.getPort(deviceId)
+        if (port < 0) return false
+        val position = AndroidGamepadNormalizer.normalize(keyCode) ?: return false
+        if (position.isDpad) return false
+        gamepadPortManager.reportPositionInput(port, position, pressed)
+        return true
+    }
+
     /** Key codes that are gamepad-relevant and should be captured during key mapping. */
     private fun isGamepadCapturable(keyCode: Int): Boolean = when (keyCode) {
         KeyEvent.KEYCODE_BUTTON_A, KeyEvent.KEYCODE_BUTTON_B,
@@ -260,6 +280,11 @@ class MainActivity : ComponentActivity() {
         if (event != null) {
             ensureDeviceConnected(event.deviceId)
         }
+
+        // Live input tester (#1355): when its element is focused, capture test
+        // buttons (face/shoulder/trigger/stick — never the D-pad) and consume
+        // them so they don't navigate. No-op otherwise.
+        if (captureTestInput(event, keyCode, pressed = true)) return true
 
         // Key mapping capture: when in listening mode, intercept gamepad buttons
         if (keyMappingViewModel.state.value.currentMappingButton != null && isGamepadCapturable(keyCode)) {
@@ -362,6 +387,9 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onKeyUp(keyCode: Int, event: KeyEvent?): Boolean {
+        // Live input tester (#1355): release the captured test button.
+        if (captureTestInput(event, keyCode, pressed = false)) return true
+
         // Key mapping capture: consume key-up for gamepad buttons when in listening mode
         if (keyMappingViewModel.state.value.currentMappingButton != null && isGamepadCapturable(keyCode)) {
             return true

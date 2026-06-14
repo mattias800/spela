@@ -1,6 +1,7 @@
 package com.spela.player.libretro
 
 import com.spela.player.domain.model.ControllerStyle
+import com.spela.player.domain.model.GamepadPosition
 import com.spela.player.domain.model.KeyMappingProfile
 import com.spela.player.domain.repository.KeyMappingRepository
 import kotlinx.coroutines.test.runTest
@@ -384,6 +385,53 @@ class GamepadPortManagerTest {
         // Both ports still connected after swap
         assertTrue(after.ports[0].connected)
         assertTrue(after.ports[1].connected)
+    }
+
+    // ── Live input tester: pressedPositions (#1355) ──────────────────────────
+
+    @Test
+    fun reportPositionInputTracksPressAndRelease() {
+        manager.reportPositionInput(0, GamepadPosition.SOUTH, pressed = true)
+        assertTrue(GamepadPosition.SOUTH in manager.pressedPositions.value)
+        manager.reportPositionInput(0, GamepadPosition.SOUTH, pressed = false)
+        assertFalse(GamepadPosition.SOUTH in manager.pressedPositions.value)
+    }
+
+    @Test
+    fun reportPressedPositionsReplacesPortSet() {
+        manager.reportPressedPositions(0, setOf(GamepadPosition.SOUTH, GamepadPosition.EAST))
+        assertEquals(setOf(GamepadPosition.SOUTH, GamepadPosition.EAST), manager.pressedPositions.value)
+        manager.reportPressedPositions(0, setOf(GamepadPosition.WEST))
+        assertEquals(setOf(GamepadPosition.WEST), manager.pressedPositions.value)
+    }
+
+    @Test
+    fun pressedPositionsUnionAcrossPortsAndReleaseIsIsolated() {
+        manager.reportPositionInput(0, GamepadPosition.SOUTH, pressed = true)
+        manager.reportPositionInput(1, GamepadPosition.NORTH, pressed = true)
+        assertEquals(setOf(GamepadPosition.SOUTH, GamepadPosition.NORTH), manager.pressedPositions.value)
+        // Releasing port 0's button doesn't clear port 1's.
+        manager.reportPositionInput(0, GamepadPosition.SOUTH, pressed = false)
+        assertEquals(setOf(GamepadPosition.NORTH), manager.pressedPositions.value)
+    }
+
+    @Test
+    fun deactivatingTestCaptureClearsHighlights() {
+        manager.setTestCaptureActive(true)
+        manager.reportPositionInput(0, GamepadPosition.SOUTH, pressed = true)
+        assertTrue(GamepadPosition.SOUTH in manager.pressedPositions.value)
+        // Leaving the tester (focus lost) clears stale highlights.
+        manager.setTestCaptureActive(false)
+        assertTrue(manager.pressedPositions.value.isEmpty())
+    }
+
+    @Test
+    fun disconnectClearsPressedPositionsForThatPort() {
+        manager.connectDevice(deviceId = 7, deviceName = "Pad")
+        manager.reportPositionInput(0, GamepadPosition.SOUTH, pressed = true)
+        assertTrue(GamepadPosition.SOUTH in manager.pressedPositions.value)
+        manager.disconnectDevice(7)
+        assertFalse(GamepadPosition.SOUTH in manager.pressedPositions.value)
     }
 
     private class FakeKeyMappingRepo : KeyMappingRepository {

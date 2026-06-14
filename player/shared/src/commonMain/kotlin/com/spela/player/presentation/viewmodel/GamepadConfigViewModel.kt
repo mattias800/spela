@@ -1,6 +1,7 @@
 package com.spela.player.presentation.viewmodel
 
 import com.spela.player.domain.model.ControllerStyle
+import com.spela.player.domain.model.GamepadPosition
 import com.spela.player.domain.repository.ControllerStyleOverrideRepository
 import com.spela.player.libretro.GamepadPortManager
 import com.spela.player.util.DispatcherProvider
@@ -17,6 +18,9 @@ import kotlinx.coroutines.launch
 data class GamepadConfigState(
     val portAssignments: List<PortAssignmentUi> = emptyList(),
     val selectedPort: Int? = null,
+    /** Canonical input positions currently held down (any controller) — drives
+     *  the live input tester (#1355). */
+    val pressedPositions: Set<GamepadPosition> = emptySet(),
 )
 
 data class PortAssignmentUi(
@@ -81,6 +85,20 @@ class GamepadConfigViewModel(
 
     init {
         startRefreshing()
+        // Mirror the live pressed-positions signal into state (event-driven, not
+        // the 200 ms poll) so the input tester highlights feel immediate.
+        scope.launch(dispatchers.default) {
+            gamepadPortManager.pressedPositions.collect { positions ->
+                _state.update { it.copy(pressedPositions = positions) }
+            }
+        }
+    }
+
+    /** Toggle input-test capture (called by the tester element on focus change).
+     *  While active, the input pipelines route test buttons to [pressedPositions]
+     *  and consume them so they don't navigate; the D-pad is never captured. */
+    fun setInputTestActive(active: Boolean) {
+        gamepadPortManager.setTestCaptureActive(active)
     }
 
     fun onIntent(intent: GamepadConfigIntent) {

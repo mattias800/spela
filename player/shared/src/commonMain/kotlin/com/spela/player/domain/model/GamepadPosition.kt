@@ -58,6 +58,11 @@ enum class GamepadPosition {
             START -> "Start"
             SELECT -> "Select"
         }
+
+    /** D-pad directions. They're positional-standard (don't vary by controller)
+     *  and drive navigation, so the input tester neither shows nor captures them. */
+    val isDpad: Boolean
+        get() = this == DPAD_UP || this == DPAD_DOWN || this == DPAD_LEFT || this == DPAD_RIGHT
 }
 
 /**

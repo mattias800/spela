@@ -54,6 +54,7 @@ import com.spela.player.presentation.viewmodel.KeyMappingViewModel
 import com.spela.player.presentation.viewmodel.GamepadConfigIntent
 import com.spela.player.presentation.viewmodel.GamepadConfigViewModel
 import com.spela.player.presentation.ui.components.gamepad.GamepadConfigScreen
+import com.spela.player.presentation.ui.components.gamepad.GamepadInputTester
 import com.spela.player.util.currentPlatform
 import com.spela.player.presentation.state.KeyMappingState
 import com.spela.player.data.remote.SyncState
@@ -295,6 +296,20 @@ private fun androidx.compose.foundation.lazy.LazyListScope.controlsContent(
                 )
             }
         }
+
+        // Live input tester (#1355): press a button, see which canonical input
+        // position lights up — verifies the detected type/normalization.
+        item { SettingsSectionHeader(title = "Test controller input") }
+        item {
+            val gamepadConfigState by gamepadConfigViewModel.state.collectAsState()
+            SpCard(onGradient = true) {
+                GamepadInputTester(
+                    pressedPositions = gamepadConfigState.pressedPositions,
+                    onActiveChange = { gamepadConfigViewModel.setInputTestActive(it) },
+                )
+            }
+        }
+
         item {
             Text(
                 text = "Gamepad button mappings are configured per console — open a console " +
