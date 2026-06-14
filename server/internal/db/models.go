@@ -30,15 +30,15 @@ func IsAdminOrOwner(role UserRole) bool {
 
 // User represents an application user.
 type User struct {
-	ID           uint           `gorm:"primarykey" json:"id"`
-	CreatedAt    time.Time      `json:"createdAt"`
-	UpdatedAt    time.Time      `json:"updatedAt"`
-	DeletedAt    gorm.DeletedAt `gorm:"index" json:"-"`
-	Username     string         `gorm:"uniqueIndex;size:64;not null" json:"username"`
-	Email        string         `gorm:"uniqueIndex;size:255;not null" json:"email"`
-	PasswordHash string         `gorm:"not null" json:"-"`
-	Role         UserRole       `gorm:"size:16;default:user" json:"role"`
-	AvatarURL    string         `gorm:"size:512" json:"avatarUrl"`
+	ID                  uint           `gorm:"primarykey" json:"id"`
+	CreatedAt           time.Time      `json:"createdAt"`
+	UpdatedAt           time.Time      `json:"updatedAt"`
+	DeletedAt           gorm.DeletedAt `gorm:"index" json:"-"`
+	Username            string         `gorm:"uniqueIndex;size:64;not null" json:"username"`
+	Email               string         `gorm:"uniqueIndex;size:255;not null" json:"email"`
+	PasswordHash        string         `gorm:"not null" json:"-"`
+	Role                UserRole       `gorm:"size:16;default:user" json:"role"`
+	AvatarURL           string         `gorm:"size:512" json:"avatarUrl"`
 	TokenVersion        int            `gorm:"default:0" json:"-"`
 	Disabled            bool           `gorm:"default:false" json:"disabled"`
 	PendingApproval     bool           `gorm:"default:false" json:"pendingApproval"`
@@ -50,20 +50,20 @@ type User struct {
 	// When false, the player trusts its local cache even if the server
 	// has a newer build — session pinning keeps long-running saves
 	// loadable without a version mismatch. See #555 Phase 2.
-	AutoUpdateCoresEnabled bool           `gorm:"default:true" json:"autoUpdateCoresEnabled"`
-	SelectedShader      string         `gorm:"size:64;default:none" json:"selectedShader"`
-	SelectedTheme       string         `gorm:"size:64;default:default-dark" json:"selectedTheme"`
-	SelectedKeyMapping  string         `gorm:"size:64;default:arrows-left" json:"selectedKeyMapping"`
-	CustomKeyMapping         string         `gorm:"type:text" json:"customKeyMapping"` // JSON: {"0":"z","1":"x",...}
-	DefaultSecondScreenPage string         `gorm:"size:64;default:art" json:"defaultSecondScreenPage"`
-	PreferredRegions         string         `gorm:"size:255" json:"preferredRegions"` // comma-separated ordered list, e.g. "USA,Europe,World"
+	AutoUpdateCoresEnabled  bool   `gorm:"default:true" json:"autoUpdateCoresEnabled"`
+	SelectedShader          string `gorm:"size:64;default:none" json:"selectedShader"`
+	SelectedTheme           string `gorm:"size:64;default:default-dark" json:"selectedTheme"`
+	SelectedKeyMapping      string `gorm:"size:64;default:arrows-left" json:"selectedKeyMapping"`
+	CustomKeyMapping        string `gorm:"type:text" json:"customKeyMapping"` // JSON: {"0":"z","1":"x",...}
+	DefaultSecondScreenPage string `gorm:"size:64;default:art" json:"defaultSecondScreenPage"`
+	PreferredRegions        string `gorm:"size:255" json:"preferredRegions"` // comma-separated ordered list, e.g. "USA,Europe,World"
 	// ProfileVisibility controls whether the user's public profile
 	// exposes detailed activity (current game, recent games, top
 	// played, play time). Issue #1121: previously every authenticated
 	// user could scrape every other user's gaming habits in real time.
 	// Values: "public" (default), "private". The "friends" tier is
 	// reserved for a future friend graph.
-	ProfileVisibility       string         `gorm:"size:16;default:public" json:"profileVisibility"`
+	ProfileVisibility string `gorm:"size:16;default:public" json:"profileVisibility"`
 }
 
 // Block represents a one-way "I do not want to interact with this user"
@@ -83,9 +83,9 @@ type Block struct {
 
 // LoginAttempt tracks failed login attempts per username for account lockout.
 type LoginAttempt struct {
-	ID          uint      `gorm:"primarykey"`
-	Username    string    `gorm:"size:64;uniqueIndex"`
-	FailedCount int       `gorm:"default:0"`
+	ID          uint   `gorm:"primarykey"`
+	Username    string `gorm:"size:64;uniqueIndex"`
+	FailedCount int    `gorm:"default:0"`
 	LockedUntil time.Time
 	UpdatedAt   time.Time
 }
@@ -135,23 +135,23 @@ const (
 
 // Console represents a detected game console/platform.
 type Console struct {
-	ID             uint           `gorm:"primarykey" json:"id"`
-	CreatedAt      time.Time      `json:"createdAt"`
-	UpdatedAt      time.Time      `json:"updatedAt"`
-	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
-	Name           string         `gorm:"uniqueIndex;size:128;not null" json:"name"`
+	ID        uint           `gorm:"primarykey" json:"id"`
+	CreatedAt time.Time      `json:"createdAt"`
+	UpdatedAt time.Time      `json:"updatedAt"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+	Name      string         `gorm:"uniqueIndex;size:128;not null" json:"name"`
 	// Abbreviation is the canonical short identifier (e.g. "NES", "SNES",
 	// "PS2"). Every seed function and backfill loop in database.go uses
 	// `WHERE abbreviation = ?` as the lookup key, so the schema must
 	// enforce uniqueness — otherwise a race or bug could insert two
 	// rows for the same abbreviation and subsequent `First()` calls
 	// would silently pick whichever SQLite returns first. See #970.
-	Abbreviation   string         `gorm:"uniqueIndex;size:16;not null" json:"abbreviation"`
-	Extensions     string         `gorm:"size:255;not null" json:"extensions"` // comma-separated
-	DefaultCore    string         `gorm:"size:128" json:"defaultCore"`
-	EmulatorJSCore string         `gorm:"size:64" json:"emulatorJsCore"`
-	FolderName     string         `gorm:"size:64" json:"folderName"`
-	CoverAspect    string         `gorm:"size:16;default:3:4" json:"coverAspect"`
+	Abbreviation   string `gorm:"uniqueIndex;size:16;not null" json:"abbreviation"`
+	Extensions     string `gorm:"size:255;not null" json:"extensions"` // comma-separated
+	DefaultCore    string `gorm:"size:128" json:"defaultCore"`
+	EmulatorJSCore string `gorm:"size:64" json:"emulatorJsCore"`
+	FolderName     string `gorm:"size:64" json:"folderName"`
+	CoverAspect    string `gorm:"size:16;default:3:4" json:"coverAspect"`
 	// LogoAspectRatio is the intrinsic width/height ratio of this
 	// console's logo asset, computed once at seed time from the SVG's
 	// viewBox. The player app uses it to size the logo container
@@ -160,10 +160,10 @@ type Console struct {
 	// decoded, producing a visible size-A → size-B jump on the
 	// console-detail hero. Null is acceptable (clients fall back to
 	// the legacy fluid sizing). See #1166.
-	LogoAspectRatio  *float64       `json:"logoAspectRatio"`
-	ColorTheme       string         `gorm:"size:7;default:#6366f1" json:"colorTheme"`
-	Generation       int            `gorm:"default:0" json:"generation"`
-	SaveStateSupport bool           `gorm:"default:true" json:"saveStateSupport"`
+	LogoAspectRatio  *float64 `json:"logoAspectRatio"`
+	ColorTheme       string   `gorm:"size:7;default:#6366f1" json:"colorTheme"`
+	Generation       int      `gorm:"default:0" json:"generation"`
+	SaveStateSupport bool     `gorm:"default:true" json:"saveStateSupport"`
 	// Size tier driving retention/slot/UX behaviour for save states on
 	// this console. See [SaveStatePolicy]. The column has NO default
 	// at the schema level — empty is the "needs seeding" sentinel that
@@ -171,79 +171,79 @@ type Console struct {
 	// override (which it must preserve). The API response falls back
 	// to "small" so clients still see a closed-set value. See #804
 	// phase 3.
-	SaveStatePolicy  SaveStatePolicy `gorm:"type:varchar(16);not null;default:''" json:"saveStatePolicy"`
-	Playable         bool           `gorm:"default:true" json:"playable"`
-	Code             *string        `gorm:"uniqueIndex;size:32" json:"code"`
-	HardwareMakerID  *uint          `json:"hardwareMakerId"`
-	HardwareMaker    *HardwareMaker `gorm:"foreignKey:HardwareMakerID" json:"hardwareMaker"`
-	MediaTypeID      *uint          `json:"mediaTypeId"`
-	MediaType        *MediaType     `gorm:"foreignKey:MediaTypeID" json:"mediaType"`
-	ReleaseYear      *int           `json:"releaseYear"`
-	UnitsSold        *int64         `json:"unitsSold"`
-	Summary          *string        `gorm:"type:text" json:"summary"`
-	Games            []Game         `gorm:"foreignKey:ConsoleID" json:"games"`
-	GameCount      int            `gorm:"-" json:"gameCount"`
+	SaveStatePolicy SaveStatePolicy `gorm:"type:varchar(16);not null;default:''" json:"saveStatePolicy"`
+	Playable        bool            `gorm:"default:true" json:"playable"`
+	Code            *string         `gorm:"uniqueIndex;size:32" json:"code"`
+	HardwareMakerID *uint           `json:"hardwareMakerId"`
+	HardwareMaker   *HardwareMaker  `gorm:"foreignKey:HardwareMakerID" json:"hardwareMaker"`
+	MediaTypeID     *uint           `json:"mediaTypeId"`
+	MediaType       *MediaType      `gorm:"foreignKey:MediaTypeID" json:"mediaType"`
+	ReleaseYear     *int            `json:"releaseYear"`
+	UnitsSold       *int64          `json:"unitsSold"`
+	Summary         *string         `gorm:"type:text" json:"summary"`
+	Games           []Game          `gorm:"foreignKey:ConsoleID" json:"games"`
+	GameCount       int             `gorm:"-" json:"gameCount"`
 }
 
 // Game represents a detected ROM/game file.
 type Game struct {
-	ID            uint           `gorm:"primarykey" json:"id"`
-	CreatedAt     time.Time      `json:"createdAt"`
-	UpdatedAt     time.Time      `json:"updatedAt"`
-	DeletedAt     gorm.DeletedAt `gorm:"index" json:"-"`
-	ConsoleID     uint           `gorm:"index;not null;index:idx_console_group_key,priority:1;index:idx_console_is_primary,priority:1" json:"consoleId"`
-	Console       Console        `gorm:"foreignKey:ConsoleID" json:"console"`
-	Title         string         `gorm:"size:255;not null" json:"title"`
-	FileName      string         `gorm:"size:512;not null" json:"fileName"`
-	FilePath      string         `gorm:"uniqueIndex;size:1024;not null" json:"-"`
-	FileSize      int64          `json:"fileSize"`
-	DiscCount     int            `json:"discCount"`                                    // 0 = single-disc legacy, 2+ = multi-disc
-	Discs         []GameDisc     `gorm:"foreignKey:GameID" json:"discs"`
-	Description   string         `gorm:"type:text" json:"description"`
-	CoverURL      string         `gorm:"size:512" json:"coverUrl"`
-	ScreenshotURL string         `gorm:"size:512" json:"screenshotUrl"`
-	Developer     string         `gorm:"size:255" json:"developer"`
-	Publisher     string         `gorm:"size:255" json:"publisher"`
-	ReleaseDate   string         `gorm:"size:32" json:"releaseDate"`
-	Genre         string         `gorm:"size:512" json:"genre"`
-	GameModes            string  `gorm:"size:255" json:"gameModes"`
-	Storyline            string  `gorm:"type:text" json:"storyline"`
-	TotalRating          float64 `json:"totalRating"`
-	TotalRatingCount     int     `json:"totalRatingCount"`
-	IGDBUserRating       float64 `json:"igdbUserRating"`
-	IGDBUserRatingCount  int     `json:"igdbUserRatingCount"`
-	TimeToBeatHastily    int     `json:"timeToBeatHastily"`
-	TimeToBeatNormally   int     `json:"timeToBeatNormally"`
-	TimeToBeatCompletely int     `json:"timeToBeatCompletely"`
-	Players              int     `json:"players"`
-	IGDBCriticsRating    float64 `gorm:"column:rating" json:"igdbCriticsRating"`
-	CoreOverride         string  `gorm:"size:128" json:"coreOverride"`
-	LibRetroCoverURL    string         `gorm:"size:512" json:"-"`
-	IGDBCoverURL        string         `gorm:"size:512" json:"-"`
-	CoverManuallySet    bool           `gorm:"default:false" json:"-"`
-	ScrapeAttempts      int            `json:"scrapeAttempts"`
-	ScraperID           string         `gorm:"size:128" json:"scraperId"`
-	AchievementsWarning string         `gorm:"size:512" json:"achievementsWarning"`
-	VerificationStatus  string         `gorm:"size:32" json:"verificationStatus"`
-	VerificationTag     string         `gorm:"size:128" json:"verificationTag"`
-	Region              string         `gorm:"size:128" json:"region"`
-	Revision            string         `gorm:"size:64" json:"revision"`
-	Tags                string         `gorm:"size:255" json:"tags"`
-	IsPreRelease        bool           `gorm:"default:false;index:idx_game_is_pre_release" json:"isPreRelease"`
-	GroupKey            string         `gorm:"size:255;index:idx_game_group_key;index:idx_console_group_key,priority:2" json:"groupKey"`
-	IsPrimary           bool           `gorm:"default:false;index:idx_game_is_primary;index:idx_console_is_primary,priority:2" json:"isPrimary"`
-	PrimaryGameID       *uint          `json:"primaryGameId"`
-	ParentGameID        *uint          `gorm:"index:idx_game_parent" json:"parentGameId"` // links standalone ROM hacks to their base game
-	PartyInfo           string         `gorm:"size:512" json:"partyInfo"`                // Demo party and placement, e.g. "Assembly 1993, 1st place"
-	CRC32               string         `gorm:"size:16" json:"-"`
-	RAGameID            uint           `gorm:"index" json:"-"` // RetroAchievements game ID (cached from hash lookup)
+	ID                   uint           `gorm:"primarykey" json:"id"`
+	CreatedAt            time.Time      `json:"createdAt"`
+	UpdatedAt            time.Time      `json:"updatedAt"`
+	DeletedAt            gorm.DeletedAt `gorm:"index" json:"-"`
+	ConsoleID            uint           `gorm:"index;not null;index:idx_console_group_key,priority:1;index:idx_console_is_primary,priority:1" json:"consoleId"`
+	Console              Console        `gorm:"foreignKey:ConsoleID" json:"console"`
+	Title                string         `gorm:"size:255;not null" json:"title"`
+	FileName             string         `gorm:"size:512;not null" json:"fileName"`
+	FilePath             string         `gorm:"uniqueIndex;size:1024;not null" json:"-"`
+	FileSize             int64          `json:"fileSize"`
+	DiscCount            int            `json:"discCount"` // 0 = single-disc legacy, 2+ = multi-disc
+	Discs                []GameDisc     `gorm:"foreignKey:GameID" json:"discs"`
+	Description          string         `gorm:"type:text" json:"description"`
+	CoverURL             string         `gorm:"size:512" json:"coverUrl"`
+	ScreenshotURL        string         `gorm:"size:512" json:"screenshotUrl"`
+	Developer            string         `gorm:"size:255" json:"developer"`
+	Publisher            string         `gorm:"size:255" json:"publisher"`
+	ReleaseDate          string         `gorm:"size:32" json:"releaseDate"`
+	Genre                string         `gorm:"size:512" json:"genre"`
+	GameModes            string         `gorm:"size:255" json:"gameModes"`
+	Storyline            string         `gorm:"type:text" json:"storyline"`
+	TotalRating          float64        `json:"totalRating"`
+	TotalRatingCount     int            `json:"totalRatingCount"`
+	IGDBUserRating       float64        `json:"igdbUserRating"`
+	IGDBUserRatingCount  int            `json:"igdbUserRatingCount"`
+	TimeToBeatHastily    int            `json:"timeToBeatHastily"`
+	TimeToBeatNormally   int            `json:"timeToBeatNormally"`
+	TimeToBeatCompletely int            `json:"timeToBeatCompletely"`
+	Players              int            `json:"players"`
+	IGDBCriticsRating    float64        `gorm:"column:rating" json:"igdbCriticsRating"`
+	CoreOverride         string         `gorm:"size:128" json:"coreOverride"`
+	LibRetroCoverURL     string         `gorm:"size:512" json:"-"`
+	IGDBCoverURL         string         `gorm:"size:512" json:"-"`
+	CoverManuallySet     bool           `gorm:"default:false" json:"-"`
+	ScrapeAttempts       int            `json:"scrapeAttempts"`
+	ScraperID            string         `gorm:"size:128" json:"scraperId"`
+	AchievementsWarning  string         `gorm:"size:512" json:"achievementsWarning"`
+	VerificationStatus   string         `gorm:"size:32" json:"verificationStatus"`
+	VerificationTag      string         `gorm:"size:128" json:"verificationTag"`
+	Region               string         `gorm:"size:128" json:"region"`
+	Revision             string         `gorm:"size:64" json:"revision"`
+	Tags                 string         `gorm:"size:255" json:"tags"`
+	IsPreRelease         bool           `gorm:"default:false;index:idx_game_is_pre_release" json:"isPreRelease"`
+	GroupKey             string         `gorm:"size:255;index:idx_game_group_key;index:idx_console_group_key,priority:2" json:"groupKey"`
+	IsPrimary            bool           `gorm:"default:false;index:idx_game_is_primary;index:idx_console_is_primary,priority:2" json:"isPrimary"`
+	PrimaryGameID        *uint          `json:"primaryGameId"`
+	ParentGameID         *uint          `gorm:"index:idx_game_parent" json:"parentGameId"` // links standalone ROM hacks to their base game
+	PartyInfo            string         `gorm:"size:512" json:"partyInfo"`                 // Demo party and placement, e.g. "Assembly 1993, 1st place"
+	CRC32                string         `gorm:"size:16" json:"-"`
+	RAGameID             uint           `gorm:"index" json:"-"` // RetroAchievements game ID (cached from hash lookup)
 	// RAHashChecked + RAGameID sentinel logic:
 	//   RAHashChecked=false, RAGameID=0  → Not yet looked up. Compute ROM MD5 and query RA.
 	//   RAHashChecked=true,  RAGameID=0  → Looked up, but RA doesn't have this game. Do NOT retry.
 	//   RAHashChecked=true,  RAGameID>0  → Valid RA game ID cached.
 	// RAHashChecked is ONLY set to true after a successful API response (even if RA returned no match).
 	// Transient errors (network, 403) leave RAHashChecked=false so the next visit retries.
-	RAHashChecked       bool           `gorm:"default:false" json:"-"`
+	RAHashChecked    bool                  `gorm:"default:false" json:"-"`
 	Screenshots      []GameScreenshot      `gorm:"foreignKey:GameID" json:"-"`
 	ReleaseDates     []GameReleaseDate     `gorm:"foreignKey:GameID" json:"-"`
 	Videos           []GameVideo           `gorm:"foreignKey:GameID" json:"-"`
@@ -334,10 +334,10 @@ type PlayHistory struct {
 	// (UserID, GameID) so SQLite cannot use it for queries that filter
 	// by GameID alone (GET /api/games/{id}/stats and the top-player JOIN
 	// were full-scanning play_histories).
-	GameID    uint           `gorm:"uniqueIndex:idx_user_game_play_history;not null;index:idx_play_history_game" json:"gameId"`
-	Game      Game           `gorm:"foreignKey:GameID" json:"game"`
-	LastPlayed time.Time     `json:"lastPlayed"`
-	PlayTime   int64         `json:"playTime"` // seconds
+	GameID     uint      `gorm:"uniqueIndex:idx_user_game_play_history;not null;index:idx_play_history_game" json:"gameId"`
+	Game       Game      `gorm:"foreignKey:GameID" json:"game"`
+	LastPlayed time.Time `json:"lastPlayed"`
+	PlayTime   int64     `json:"playTime"` // seconds
 }
 
 // DailyPlayActivity aggregates play time per user per day for heatmap display.
@@ -351,7 +351,7 @@ type DailyPlayActivity struct {
 
 // RefreshToken stores issued refresh tokens.
 type RefreshToken struct {
-	ID          uint           `gorm:"primarykey"`
+	ID          uint `gorm:"primarykey"`
 	CreatedAt   time.Time
 	DeletedAt   gorm.DeletedAt `gorm:"index"`
 	UserID      uint           `gorm:"index;not null"`
@@ -359,7 +359,7 @@ type RefreshToken struct {
 	Token       string         `gorm:"uniqueIndex;size:512;not null"`
 	ExpiresAt   time.Time      `gorm:"not null;index"`
 	TokenFamily string         `gorm:"size:64;index"` // groups related tokens for replay detection
-	Consumed    bool           `gorm:"default:false"`  // marked true on rotation instead of deleted
+	Consumed    bool           `gorm:"default:false"` // marked true on rotation instead of deleted
 }
 
 // TokenBlacklist stores revoked access tokens until they expire naturally.
@@ -500,11 +500,11 @@ type SystemEvent struct {
 	// SET NULL not CASCADE: SystemEvent is the audit log. Deleting a
 	// user must not erase the record of what they did. We keep the
 	// event row and null the FK so nothing dangles.
-	User          *User               `gorm:"foreignKey:UserID;constraint:OnDelete:SET NULL"`
-	IP            string              `gorm:"size:64;index"`
-	Path          string              `gorm:"size:256"`
-	Metadata      string              `gorm:"type:text"`
-	DismissedAt   *time.Time          `gorm:"index"`
+	User        *User      `gorm:"foreignKey:UserID;constraint:OnDelete:SET NULL"`
+	IP          string     `gorm:"size:64;index"`
+	Path        string     `gorm:"size:256"`
+	Metadata    string     `gorm:"type:text"`
+	DismissedAt *time.Time `gorm:"index"`
 }
 
 // ServerSetting stores key-value server configuration.
@@ -589,18 +589,18 @@ type FederationExchange struct {
 	CreatedAt time.Time `gorm:"index" json:"createdAt"`
 	// RequestID correlates both ends of one logical operation (also emitted in
 	// logs and propagated via the X-Spela-Request-Id header).
-	RequestID       string `gorm:"size:64;index" json:"requestId"`
-	PeerFingerprint string `gorm:"size:64;index" json:"peerFingerprint"`
-	PeerName        string `gorm:"size:128" json:"peerName"`
-	Direction       string `gorm:"size:16;index" json:"direction"`
-	Operation       string `gorm:"size:64;index" json:"operation"`
-	DataClass       string `gorm:"size:32" json:"dataClass"`
-	MaxHops         int    `json:"maxHops"`
-	Status          string `gorm:"size:16;index" json:"status"`
-	HTTPStatus      int    `json:"httpStatus"`
-	ItemCount       int    `json:"itemCount"`
-	Bytes           int64  `json:"bytes"`
-	DurationMs      int64  `json:"durationMs"`
+	RequestID       string    `gorm:"size:64;index" json:"requestId"`
+	PeerFingerprint string    `gorm:"size:64;index" json:"peerFingerprint"`
+	PeerName        string    `gorm:"size:128" json:"peerName"`
+	Direction       string    `gorm:"size:16;index" json:"direction"`
+	Operation       string    `gorm:"size:64;index" json:"operation"`
+	DataClass       string    `gorm:"size:32" json:"dataClass"`
+	MaxHops         int       `json:"maxHops"`
+	Status          string    `gorm:"size:16;index" json:"status"`
+	HTTPStatus      int       `json:"httpStatus"`
+	ItemCount       int       `json:"itemCount"`
+	Bytes           int64     `json:"bytes"`
+	DurationMs      int64     `json:"durationMs"`
 	StartedAt       time.Time `json:"startedAt"`
 	FinishedAt      time.Time `json:"finishedAt"`
 	Error           string    `gorm:"size:512" json:"error"`
@@ -802,22 +802,22 @@ type ActivityEvent struct {
 	// stored, but with FK enforcement enabled the FK to games(id=0)
 	// fails. SET NULL on Game so deleting a game preserves the activity
 	// row but disconnects the FK.
-	GameID    *uint          `gorm:"index" json:"gameId"`
-	Game      Game           `gorm:"foreignKey:GameID;constraint:OnDelete:SET NULL" json:"-"`
-	Metadata  string         `gorm:"type:text" json:"metadata"` // JSON
+	GameID   *uint  `gorm:"index" json:"gameId"`
+	Game     Game   `gorm:"foreignKey:GameID;constraint:OnDelete:SET NULL" json:"-"`
+	Metadata string `gorm:"type:text" json:"metadata"` // JSON
 }
 
 // GameCollection represents a user-created collection of games.
 type GameCollection struct {
-	ID          uint           `gorm:"primarykey" json:"id"`
-	CreatedAt   time.Time      `json:"createdAt"`
-	UpdatedAt   time.Time      `json:"updatedAt"`
-	DeletedAt   gorm.DeletedAt `gorm:"index" json:"-"`
-	UserID      uint           `gorm:"index;not null" json:"userId"`
-	User        User           `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"-"`
-	Name        string         `gorm:"size:255;not null" json:"name"`
-	Description string         `gorm:"type:text" json:"description"`
-	IsPublic    bool           `gorm:"default:false" json:"isPublic"`
+	ID          uint             `gorm:"primarykey" json:"id"`
+	CreatedAt   time.Time        `json:"createdAt"`
+	UpdatedAt   time.Time        `json:"updatedAt"`
+	DeletedAt   gorm.DeletedAt   `gorm:"index" json:"-"`
+	UserID      uint             `gorm:"index;not null" json:"userId"`
+	User        User             `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"-"`
+	Name        string           `gorm:"size:255;not null" json:"name"`
+	Description string           `gorm:"type:text" json:"description"`
+	IsPublic    bool             `gorm:"default:false" json:"isPublic"`
 	Items       []CollectionItem `gorm:"foreignKey:CollectionID" json:"items"`
 }
 
@@ -846,23 +846,23 @@ type PlayLaterItem struct {
 
 // SharedSession represents a shared play session where friends take turns playing a game.
 type SharedSession struct {
-	ID           uint                   `gorm:"primarykey" json:"id"`
-	CreatedAt    time.Time              `json:"createdAt"`
-	UpdatedAt    time.Time              `json:"updatedAt"`
-	DeletedAt    gorm.DeletedAt         `gorm:"index" json:"-"`
-	OwnerID      uint                   `gorm:"index;not null" json:"ownerId"`
-	Owner        User                   `gorm:"foreignKey:OwnerID;constraint:OnDelete:CASCADE" json:"-"`
-	GameID       uint                   `gorm:"index;not null" json:"gameId"`
-	Game         Game                   `gorm:"foreignKey:GameID" json:"-"`
-	Name         string                 `gorm:"size:255;not null" json:"name"`
-	Status       string                 `gorm:"size:32;default:active;not null" json:"status"` // "active", "completed", "archived"
-	ActiveUserID *uint                  `json:"activeUserId"`
-	TurnToken    string                 `gorm:"size:64" json:"-"`
-	TurnTakenAt  *time.Time             `json:"turnTakenAt"`
-	CoreName     string                 `gorm:"size:128" json:"coreName"`
-	SessionID    *uint                  `gorm:"index" json:"sessionId"`
-	Session      *GameSession           `json:"-"`
-	Members      []SharedSessionMember  `gorm:"foreignKey:SharedSessionID" json:"members"`
+	ID           uint                  `gorm:"primarykey" json:"id"`
+	CreatedAt    time.Time             `json:"createdAt"`
+	UpdatedAt    time.Time             `json:"updatedAt"`
+	DeletedAt    gorm.DeletedAt        `gorm:"index" json:"-"`
+	OwnerID      uint                  `gorm:"index;not null" json:"ownerId"`
+	Owner        User                  `gorm:"foreignKey:OwnerID;constraint:OnDelete:CASCADE" json:"-"`
+	GameID       uint                  `gorm:"index;not null" json:"gameId"`
+	Game         Game                  `gorm:"foreignKey:GameID" json:"-"`
+	Name         string                `gorm:"size:255;not null" json:"name"`
+	Status       string                `gorm:"size:32;default:active;not null" json:"status"` // "active", "completed", "archived"
+	ActiveUserID *uint                 `json:"activeUserId"`
+	TurnToken    string                `gorm:"size:64" json:"-"`
+	TurnTakenAt  *time.Time            `json:"turnTakenAt"`
+	CoreName     string                `gorm:"size:128" json:"coreName"`
+	SessionID    *uint                 `gorm:"index" json:"sessionId"`
+	Session      *GameSession          `json:"-"`
+	Members      []SharedSessionMember `gorm:"foreignKey:SharedSessionID" json:"members"`
 }
 
 // SharedSessionMember represents a user's membership in a shared session.
@@ -922,7 +922,7 @@ type NetplaySession struct {
 	GameID       uint           `gorm:"index;not null" json:"gameId"`
 	Game         Game           `gorm:"foreignKey:GameID" json:"-"`
 	Status       string         `gorm:"size:32;default:waiting;not null" json:"status"` // "waiting", "in_progress", "ended"
-	EndReason    string         `gorm:"size:32" json:"endReason"`              // "host_left", "client_left", "timeout", "completed"
+	EndReason    string         `gorm:"size:32" json:"endReason"`                       // "host_left", "client_left", "timeout", "completed"
 	InputDelay   int            `gorm:"default:3" json:"inputDelay"`
 	CoreName     string         `gorm:"size:128" json:"coreName"`
 	InviteCode   string         `gorm:"uniqueIndex;size:6;not null" json:"inviteCode"`
@@ -956,9 +956,9 @@ type Challenge struct {
 	Game            Game           `gorm:"foreignKey:GameID" json:"-"`
 	Name            string         `gorm:"size:255;not null" json:"name"`
 	Description     string         `gorm:"type:text" json:"description"`
-	Type            string         `gorm:"size:32;not null;default:completion" json:"type"`       // "completion", "speedrun", "survival"
-	Difficulty      string         `gorm:"size:32;not null;default:medium" json:"difficulty"`     // "easy", "medium", "hard"
-	Status          string         `gorm:"size:32;not null;default:active;index" json:"status"`   // "active", "closed", "expired"
+	Type            string         `gorm:"size:32;not null;default:completion" json:"type"`     // "completion", "speedrun", "survival"
+	Difficulty      string         `gorm:"size:32;not null;default:medium" json:"difficulty"`   // "easy", "medium", "hard"
+	Status          string         `gorm:"size:32;not null;default:active;index" json:"status"` // "active", "closed", "expired"
 	SaveFilePath    string         `gorm:"size:1024;not null" json:"-"`
 	SaveFileSize    int64          `json:"saveFileSize"`
 	ScreenshotPath  string         `gorm:"size:512" json:"-"`
@@ -1017,15 +1017,15 @@ type TopRatedGame struct {
 
 // SimilarGame caches IGDB similar games for a local game.
 type SimilarGame struct {
-	ID           uint           `gorm:"primarykey" json:"id"`
-	CreatedAt    time.Time      `json:"createdAt"`
-	UpdatedAt    time.Time      `json:"updatedAt"`
-	DeletedAt    gorm.DeletedAt `gorm:"index" json:"-"`
-	GameID       uint           `gorm:"index;not null" json:"gameId"`
-	Game         Game           `gorm:"foreignKey:GameID" json:"-"`
-	IGDBGameID   int            `gorm:"not null" json:"igdbGameId"`
-	Name         string         `gorm:"size:255;not null" json:"name"`
-	CoverImageID   string         `gorm:"size:128" json:"coverImageId"`
+	ID                uint           `gorm:"primarykey" json:"id"`
+	CreatedAt         time.Time      `json:"createdAt"`
+	UpdatedAt         time.Time      `json:"updatedAt"`
+	DeletedAt         gorm.DeletedAt `gorm:"index" json:"-"`
+	GameID            uint           `gorm:"index;not null" json:"gameId"`
+	Game              Game           `gorm:"foreignKey:GameID" json:"-"`
+	IGDBGameID        int            `gorm:"not null" json:"igdbGameId"`
+	Name              string         `gorm:"size:255;not null" json:"name"`
+	CoverImageID      string         `gorm:"size:128" json:"coverImageId"`
 	CoverLocalPath    string         `gorm:"size:512" json:"-"`
 	IGDBCriticsRating float64        `gorm:"column:rating" json:"igdbCriticsRating"`
 	LocalGameID       *uint          `json:"localGameId"`
@@ -1077,9 +1077,9 @@ type Core struct {
 	// staleness check on the player), see CorePlatformBinary. The manifest
 	// endpoint falls back to these when no per-platform row exists, so
 	// existing admin upload flows keep working without changes.
-	Sha256    string     `gorm:"size:64" json:"sha256"`    // hex sha256 of the cached binary
-	SizeBytes int64      `json:"sizeBytes"`                // byte length of the cached binary
-	FetchedAt *time.Time `json:"fetchedAt"`                // when the binary was last downloaded
+	Sha256    string     `gorm:"size:64" json:"sha256"`      // hex sha256 of the cached binary
+	SizeBytes int64      `json:"sizeBytes"`                  // byte length of the cached binary
+	FetchedAt *time.Time `json:"fetchedAt"`                  // when the binary was last downloaded
 	SourceURL string     `gorm:"size:1024" json:"sourceUrl"` // URL we pulled the binary from
 }
 
@@ -1123,21 +1123,21 @@ type CheatCode struct {
 // GameSession represents a user's play session for a game.
 // Each session groups save states and SRAM data together as a "playthrough".
 type GameSession struct {
-	ID             uint           `gorm:"primarykey" json:"id"`
-	CreatedAt      time.Time      `json:"createdAt"`
-	UpdatedAt      time.Time      `json:"updatedAt"`
-	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
-	OwnerID        uint           `gorm:"index;not null" json:"ownerId"`
-	Owner          User           `gorm:"foreignKey:OwnerID" json:"-"`
-	GameID         uint           `gorm:"index;not null" json:"gameId"`
-	Game           Game           `gorm:"foreignKey:GameID" json:"-"`
-	Name           string         `gorm:"size:255;not null" json:"name"`
-	LastPlayedAt   *time.Time     `json:"lastPlayedAt"`
-	LastPlayedBy   *uint          `json:"lastPlayedBy"`
-	TotalPlayTime  int64          `gorm:"default:0" json:"totalPlayTime"` // seconds
-	ScreenshotURL  string         `gorm:"size:512" json:"screenshotUrl"`
-	CoreName       string         `gorm:"size:128" json:"coreName"`
-	CheatsEnabled  bool           `gorm:"default:false" json:"cheatsEnabled"`
+	ID            uint           `gorm:"primarykey" json:"id"`
+	CreatedAt     time.Time      `json:"createdAt"`
+	UpdatedAt     time.Time      `json:"updatedAt"`
+	DeletedAt     gorm.DeletedAt `gorm:"index" json:"-"`
+	OwnerID       uint           `gorm:"index;not null" json:"ownerId"`
+	Owner         User           `gorm:"foreignKey:OwnerID" json:"-"`
+	GameID        uint           `gorm:"index;not null" json:"gameId"`
+	Game          Game           `gorm:"foreignKey:GameID" json:"-"`
+	Name          string         `gorm:"size:255;not null" json:"name"`
+	LastPlayedAt  *time.Time     `json:"lastPlayedAt"`
+	LastPlayedBy  *uint          `json:"lastPlayedBy"`
+	TotalPlayTime int64          `gorm:"default:0" json:"totalPlayTime"` // seconds
+	ScreenshotURL string         `gorm:"size:512" json:"screenshotUrl"`
+	CoreName      string         `gorm:"size:128" json:"coreName"`
+	CheatsEnabled bool           `gorm:"default:false" json:"cheatsEnabled"`
 	// PinnedCoreSha256 is the sha256 of the libretro core binary this session
 	// was first manually saved with. Set lazily on the first manual save (or
 	// auto-save) once we can resolve the matching Core row by name; never
@@ -1192,15 +1192,15 @@ type SessionSaveState struct {
 	// the specific binary that wrote the save) and — eventually — for
 	// rollback UX that offers the exact core version the save was made
 	// with. Empty when the player didn't supply one. See #555 Phase 3.
-	CoreSha256    string         `gorm:"size:64" json:"coreSha256"`
-	Notes         string         `gorm:"type:text" json:"notes"`
-	Slot          *int           `json:"slot"`
+	CoreSha256 string `gorm:"size:64" json:"coreSha256"`
+	Notes      string `gorm:"type:text" json:"notes"`
+	Slot       *int   `json:"slot"`
 	// Compression algorithm applied to the bytes at FilePath. Empty
 	// string = uncompressed (the only case for pre-#804 saves). Known
 	// values: "" | "gzip". Players that don't recognise a value should
 	// reject the save with a "newer client required" error rather than
 	// load garbage. See #804 phase 2.
-	Compression   string         `gorm:"size:16" json:"compression"`
+	Compression string `gorm:"size:16" json:"compression"`
 }
 
 // SessionSaveData represents SRAM/battery save data within a game session.
@@ -1419,15 +1419,15 @@ type StagedUpload struct {
 	PossibleConsoles string         `gorm:"size:512" json:"possibleConsoles"` // JSON array of abbreviations
 	Status           string         `gorm:"size:32;not null;default:pending_console" json:"status"`
 	// Scrape results
-	Title       string  `gorm:"size:255" json:"title"`
-	CoverURL    string  `gorm:"size:512" json:"coverUrl"`
+	Title             string  `gorm:"size:255" json:"title"`
+	CoverURL          string  `gorm:"size:512" json:"coverUrl"`
 	Description       string  `gorm:"type:text" json:"description"`
 	IGDBCriticsRating float64 `gorm:"column:rating" json:"igdbCriticsRating"`
 	Developer         string  `gorm:"size:255" json:"developer"`
-	Publisher   string  `gorm:"size:255" json:"publisher"`
-	Genre       string  `gorm:"size:128" json:"genre"`
-	Players     int     `json:"players"`
-	ReleaseDate string  `gorm:"size:32" json:"releaseDate"`
+	Publisher         string  `gorm:"size:255" json:"publisher"`
+	Genre             string  `gorm:"size:128" json:"genre"`
+	Players           int     `json:"players"`
+	ReleaseDate       string  `gorm:"size:32" json:"releaseDate"`
 	// Verification
 	VerificationStatus string `gorm:"size:32" json:"verificationStatus"` // verified, unverified, not_applicable
 	CRC32              string `gorm:"size:16" json:"crc32"`
