@@ -24,6 +24,9 @@ type FederationHandler struct {
 	// PairClient performs the outbound pairing callback to a friend. Defaults to
 	// httpPairClient when nil; overridden in tests.
 	PairClient pairClient
+	// Pinger performs the outbound connection-test ping. Defaults to
+	// httpPeerPinger when nil; overridden in tests.
+	Pinger peerPinger
 }
 
 // pairClient performs the outbound pairing callback to a friend.

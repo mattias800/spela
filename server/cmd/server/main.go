@@ -361,6 +361,7 @@ func main() {
 		CORSOrigins:                  corsOrigins,
 		ChallengeAttemptRateLimitSec: challengeRateLimit,
 		Version:                      version,
+		PublicBaseURL:                os.Getenv("SPELA_PUBLIC_URL"),
 		TestMode:                     testMode,
 	})
 
