@@ -146,8 +146,9 @@ func (h *UserHandler) buildConsoleKeyMappingMap(userID uint) map[string]ConsoleK
 	for _, p := range prefs {
 		if abbr, ok := abbrMap[p.ConsoleID]; ok {
 			m[abbr] = ConsoleKeyMappingDTO{
-				SelectedMapping: p.SelectedMapping,
-				CustomMapping:   parseJSONMap(p.CustomMapping),
+				SelectedMapping:  p.SelectedMapping,
+				CustomMapping:    parseJSONMap(p.CustomMapping),
+				PositionMappings: parseJSONIntMap(p.PositionMappings),
 			}
 		}
 	}
@@ -162,6 +163,18 @@ func parseJSONMap(s string) map[string]string {
 	var m map[string]string
 	if err := json.Unmarshal([]byte(s), &m); err != nil {
 		return map[string]string{}
+	}
+	return m
+}
+
+// parseJSONIntMap parses a JSON string into a map[string]int, returning an empty map on error.
+func parseJSONIntMap(s string) map[string]int {
+	if s == "" {
+		return map[string]int{}
+	}
+	var m map[string]int
+	if err := json.Unmarshal([]byte(s), &m); err != nil {
+		return map[string]int{}
 	}
 	return m
 }

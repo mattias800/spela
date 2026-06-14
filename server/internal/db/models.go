@@ -589,7 +589,11 @@ type ConsoleKeyMappingPreference struct {
 	User            User           `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"-"`
 	ConsoleID       uint           `gorm:"uniqueIndex:idx_user_console_keymapping;not null" json:"consoleId"`
 	SelectedMapping string         `gorm:"size:64;not null" json:"selectedMapping"`
-	CustomMapping   string         `gorm:"type:text" json:"customMapping"` // JSON
+	CustomMapping   string         `gorm:"type:text" json:"customMapping"` // JSON map[string]string (retroId -> keycode)
+	// PositionMappings is the brand-independent positional gamepad mapping layer
+	// (#1334): JSON map[string]int of GamepadPosition name -> libretro RetroPad id.
+	// Platform-independent, so it syncs across devices without keycode validation.
+	PositionMappings string `gorm:"type:text" json:"positionMappings"` // JSON map[string]int
 }
 
 // Device represents a registered user device.

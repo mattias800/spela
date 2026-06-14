@@ -78,7 +78,7 @@ describe("useResolvedGamePreferences", () => {
         preferences: prefs({
           selectedKeyMapping: "arrows-left",
           consoleKeyMappings: {
-            snes: { selectedMapping: "wasd-left", customMapping: {} },
+            snes: { selectedMapping: "wasd-left", customMapping: {}, positionMappings: {} },
           },
         }),
         consoleId: "snes",
@@ -101,6 +101,7 @@ describe("useResolvedGamePreferences", () => {
             snes: {
               selectedMapping: "custom",
               customMapping: consoleCustom,
+              positionMappings: {},
             },
           },
         }),
@@ -132,7 +133,7 @@ describe("useResolvedGamePreferences", () => {
           selectedKeyMapping: "custom",
           customKeyMapping: { button_a: "K" },
           consoleKeyMappings: {
-            snes: { selectedMapping: "custom", customMapping: {} },
+            snes: { selectedMapping: "custom", customMapping: {}, positionMappings: {} },
           },
         }),
         consoleId: "gba",

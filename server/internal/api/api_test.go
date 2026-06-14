@@ -827,6 +827,63 @@ func TestUpdatePreferences_SetConsoleShader(t *testing.T) {
 	assert.Equal(t, "crt-royale", consoleShaders["nes"])
 }
 
+// TestUpdatePreferences_SetConsolePositionMappings verifies the #1334 positional
+// gamepad mapping layer round-trips through PUT/GET, and that a console carrying
+// ONLY positional mappings (no keyboard preset) is preserved, not deleted.
+func TestUpdatePreferences_SetConsolePositionMappings(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	token := registerAndGetToken(t, router)
+
+	// NES guiding example: SOUTH -> RetroPad A (8), WEST -> RetroPad B (0).
+	// selectedMapping intentionally empty (positional-only console row).
+	// ConsoleKeyMappingDTO is shared request/response, so all fields are
+	// required by Huma — send the full DTO (empty keycode layers + the
+	// positional layer).
+	body, _ := json.Marshal(map[string]interface{}{
+		"consoleKeyMappings": map[string]interface{}{
+			"nes": map[string]interface{}{
+				"selectedMapping":  "",
+				"customMapping":    map[string]string{},
+				"positionMappings": map[string]int{"SOUTH": 8, "WEST": 0},
+			},
+		},
+	})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("PUT", "/api/user/preferences", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	assertPositionMappings := func(prefs map[string]interface{}) {
+		ckm, ok := prefs["consoleKeyMappings"].(map[string]interface{})
+		assert.True(t, ok, "consoleKeyMappings present")
+		nes, ok := ckm["nes"].(map[string]interface{})
+		assert.True(t, ok, "nes mapping present (positional-only row not deleted)")
+		pm, ok := nes["positionMappings"].(map[string]interface{})
+		assert.True(t, ok, "positionMappings present")
+		assert.Equal(t, float64(8), pm["SOUTH"])
+		assert.Equal(t, float64(0), pm["WEST"])
+	}
+
+	var prefs map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &prefs)
+	assertPositionMappings(prefs)
+
+	// GET to verify persistence.
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/user/preferences", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	prefs = map[string]interface{}{}
+	json.Unmarshal(w.Body.Bytes(), &prefs)
+	assertPositionMappings(prefs)
+}
+
 func TestUpdatePreferences_RemoveConsoleShader(t *testing.T) {
 	_, cfg := setupTestEnv(t)
 	router, cleanup := NewRouter(*cfg)

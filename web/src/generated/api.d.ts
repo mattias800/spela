@@ -5925,6 +5925,9 @@ export interface components {
             customMapping: {
                 [key: string]: string;
             };
+            positionMappings: {
+                [key: string]: number;
+            };
             selectedMapping: string;
         };
         ConsoleResponse: {

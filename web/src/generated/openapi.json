@@ -1954,13 +1954,21 @@
             },
             "type": "object"
           },
+          "positionMappings": {
+            "additionalProperties": {
+              "format": "int64",
+              "type": "integer"
+            },
+            "type": "object"
+          },
           "selectedMapping": {
             "type": "string"
           }
         },
         "required": [
           "selectedMapping",
-          "customMapping"
+          "customMapping",
+          "positionMappings"
         ],
         "type": "object"
       },
@@ -10800,7 +10808,7 @@
             "schema": {
               "description": "BIOS file name.",
               "maxLength": 128,
-              "pattern": "^[A-Za-z0-9._()\\[\\] +-]+$",
+              "pattern": "^[A-Za-z0-9._()\\[\\],'\u0026! +-]+$",
               "type": "string"
             }
           }
@@ -13951,7 +13959,7 @@
             "schema": {
               "description": "Sentinel filename of the bundle entry (matches registry FileName).",
               "maxLength": 128,
-              "pattern": "^[A-Za-z0-9._()\\[\\] +-]+$",
+              "pattern": "^[A-Za-z0-9._()\\[\\],'\u0026! +-]+$",
               "type": "string"
             }
           }
@@ -13995,7 +14003,7 @@
             "schema": {
               "description": "BIOS file name.",
               "maxLength": 128,
-              "pattern": "^[A-Za-z0-9._()\\[\\] +-]+$",
+              "pattern": "^[A-Za-z0-9._()\\[\\],'\u0026! +-]+$",
               "type": "string"
             }
           }
@@ -19026,7 +19034,7 @@
             "schema": {
               "description": "Optional download filename — server ignores it; lets clients control the saved filename.",
               "maxLength": 128,
-              "pattern": "^[A-Za-z0-9._()\\[\\] +-]+$",
+              "pattern": "^[A-Za-z0-9._()\\[\\],'\u0026! +-]+$",
               "type": "string"
             }
           },
@@ -19091,7 +19099,7 @@
             "schema": {
               "description": "Optional download filename — server ignores it; lets clients control the saved filename.",
               "maxLength": 128,
-              "pattern": "^[A-Za-z0-9._()\\[\\] +-]+$",
+              "pattern": "^[A-Za-z0-9._()\\[\\],'\u0026! +-]+$",
               "type": "string"
             }
           },

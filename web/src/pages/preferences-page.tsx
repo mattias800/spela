@@ -108,7 +108,7 @@ export function PreferencesPage() {
 
   function handleConsoleKeyMappingChange(consoleId: string, mapping: string) {
     updatePreferences.mutate(
-      { consoleKeyMappings: { [consoleId]: { selectedMapping: mapping, customMapping: {} } } },
+      { consoleKeyMappings: { [consoleId]: { selectedMapping: mapping, customMapping: {}, positionMappings: {} } } },
       { onError: (err) => toast("error", err.message) },
     );
   }

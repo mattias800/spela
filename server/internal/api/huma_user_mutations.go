@@ -356,7 +356,11 @@ func (h *UserHandler) HumaUpdatePreferences(ctx context.Context, in *UpdatePrefe
 			if err := h.DB.Where("LOWER(abbreviation) = LOWER(?)", consoleAbbr).First(&console).Error; err != nil {
 				continue
 			}
-			if km.SelectedMapping == "" {
+			// Only delete the row when the user has cleared BOTH layers: the
+			// keycode mapping (empty selectedMapping) and the positional gamepad
+			// mapping (#1334). A console may carry positional bindings with no
+			// keyboard preset, so selectedMapping alone must not wipe the row.
+			if km.SelectedMapping == "" && len(km.PositionMappings) == 0 {
 				h.DB.Unscoped().Where("user_id = ? AND console_id = ?", uid, console.ID).
 					Delete(&db.ConsoleKeyMappingPreference{})
 			} else {
@@ -365,19 +369,26 @@ func (h *UserHandler) HumaUpdatePreferences(ctx context.Context, in *UpdatePrefe
 					b, _ := json.Marshal(km.CustomMapping)
 					customJSON = string(b)
 				}
+				positionJSON := ""
+				if km.PositionMappings != nil {
+					b, _ := json.Marshal(km.PositionMappings)
+					positionJSON = string(b)
+				}
 				var existing db.ConsoleKeyMappingPreference
 				result := h.DB.Unscoped().Where("user_id = ? AND console_id = ?", uid, console.ID).First(&existing)
 				if result.Error == nil {
 					existing.SelectedMapping = km.SelectedMapping
 					existing.CustomMapping = customJSON
+					existing.PositionMappings = positionJSON
 					existing.DeletedAt = gorm.DeletedAt{}
 					h.DB.Unscoped().Save(&existing)
 				} else {
 					h.DB.Create(&db.ConsoleKeyMappingPreference{
-						UserID:          uid,
-						ConsoleID:       console.ID,
-						SelectedMapping: km.SelectedMapping,
-						CustomMapping:   customJSON,
+						UserID:           uid,
+						ConsoleID:        console.ID,
+						SelectedMapping:  km.SelectedMapping,
+						CustomMapping:    customJSON,
+						PositionMappings: positionJSON,
 					})
 				}
 			}

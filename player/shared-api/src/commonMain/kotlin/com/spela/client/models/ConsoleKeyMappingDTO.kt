@@ -24,6 +24,7 @@ import kotlinx.serialization.encoding.*
  * 
  *
  * @param customMapping 
+ * @param positionMappings 
  * @param selectedMapping 
  */
 @Serializable
@@ -31,6 +32,8 @@ import kotlinx.serialization.encoding.*
 data class ConsoleKeyMappingDTO (
 
     @SerialName(value = "customMapping") @Required val customMapping: kotlin.collections.Map<kotlin.String, kotlin.String>,
+
+    @SerialName(value = "positionMappings") @Required val positionMappings: kotlin.collections.Map<kotlin.String, kotlin.Long>,
 
     @SerialName(value = "selectedMapping") @Required val selectedMapping: kotlin.String
 
