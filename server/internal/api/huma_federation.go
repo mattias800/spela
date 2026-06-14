@@ -4,8 +4,8 @@ import (
 	"context"
 	"crypto/ed25519"
 	"encoding/base64"
-	"errors"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -77,33 +77,36 @@ func (h *FederationHandler) HumaPair(_ context.Context, in *PairInput) (*PairOut
 		reqID = federation.NewRequestID()
 	}
 
-	fail := func(status string, httpErr error) error {
-		federation.RecordExchange(h.DB, federation.ExchangeRecord{
-			RequestID: reqID, PeerFingerprint: b.Fingerprint, Direction: db.ExchangeInbound,
-			Operation: "pair", Status: status, StartedAt: started, Error: httpErr.Error(),
-		})
+	// Rejections are logged, not written to the ledger: /api/federation/pair is
+	// public, so recording a row per failed attempt would let an attacker flood
+	// the exchange table. The slog line keeps failures diagnosable during
+	// testing (the operator initiating accept also sees the HTTP error).
+	fail := func(httpErr error) error {
+		slog.Warn("federation: rejected inbound pairing", "component", "federation",
+			"request_id", reqID, "peer", federation.ShortFingerprint(b.Fingerprint),
+			"error", httpErr.Error())
 		return httpErr
 	}
 
 	// 1. Verify the bundle signature and fingerprint<->key binding.
 	pub, err := base64.StdEncoding.DecodeString(b.PublicKey)
 	if err != nil || len(pub) != ed25519.PublicKeySize {
-		return nil, fail(db.ExchangeRejected, huma.Error400BadRequest("invalid public key"))
+		return nil, fail(huma.Error400BadRequest("invalid public key"))
 	}
 	if federation.Fingerprint(pub) != b.Fingerprint {
-		return nil, fail(db.ExchangeRejected, huma.Error400BadRequest("fingerprint does not match public key"))
+		return nil, fail(huma.Error400BadRequest("fingerprint does not match public key"))
 	}
 	sig, err := base64.StdEncoding.DecodeString(b.Signature)
 	if err != nil {
-		return nil, fail(db.ExchangeRejected, huma.Error400BadRequest("invalid signature encoding"))
+		return nil, fail(huma.Error400BadRequest("invalid signature encoding"))
 	}
 	if !federation.Verify(pub, pairBundleBytes(b.Fingerprint, b.PublicKey, b.BaseURL, b.Nonce), sig) {
-		return nil, fail(db.ExchangeRejected, huma.Error401Unauthorized("bundle signature verification failed"))
+		return nil, fail(huma.Error401Unauthorized("bundle signature verification failed"))
 	}
 
 	// 2. Consume the nonce: it must be one we issued, unexpired, unused.
 	if err := h.consumeNonce(b.Nonce); err != nil {
-		return nil, fail(db.ExchangeRejected, huma.Error401Unauthorized("invalid or already-used pairing nonce"))
+		return nil, fail(huma.Error401Unauthorized("invalid or already-used pairing nonce"))
 	}
 
 	// 3. Store the peer as active.
@@ -113,7 +116,7 @@ func (h *FederationHandler) HumaPair(_ context.Context, in *PairInput) (*PairOut
 		BaseURL:     b.BaseURL,
 		Status:      db.PeerStatusActive,
 	}); err != nil {
-		return nil, fail(db.ExchangeError, huma.Error500InternalServerError("failed to store peer"))
+		return nil, fail(huma.Error500InternalServerError("failed to store peer"))
 	}
 
 	federation.RecordExchange(h.DB, federation.ExchangeRecord{
@@ -129,19 +132,18 @@ func (h *FederationHandler) HumaPair(_ context.Context, in *PairInput) (*PairOut
 	}}, nil
 }
 
-// consumeNonce atomically marks a valid, unexpired, unused nonce as used.
+// consumeNonce atomically marks a valid, unexpired, unused nonce as used. The
+// single conditional UPDATE (rather than SELECT-then-UPDATE) is race-safe:
+// exactly one of two concurrent callers with the same nonce sees RowsAffected==1.
 func (h *FederationHandler) consumeNonce(nonce string) error {
-	return h.DB.Transaction(func(tx *gorm.DB) error {
-		var n db.FederationInviteNonce
-		if err := tx.Where("nonce = ?", nonce).First(&n).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return fmt.Errorf("nonce not found")
-			}
-			return err
-		}
-		if n.Used || time.Now().After(n.ExpiresAt) {
-			return fmt.Errorf("nonce used or expired")
-		}
-		return tx.Model(&n).Update("used", true).Error
-	})
+	res := h.DB.Model(&db.FederationInviteNonce{}).
+		Where("nonce = ? AND used = ? AND expires_at > ?", nonce, false, time.Now()).
+		Update("used", true)
+	if res.Error != nil {
+		return res.Error
+	}
+	if res.RowsAffected == 0 {
+		return fmt.Errorf("nonce not found, already used, or expired")
+	}
+	return nil
 }

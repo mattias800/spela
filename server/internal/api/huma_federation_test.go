@@ -69,10 +69,11 @@ func TestPair_RejectsUnknownNonce(t *testing.T) {
 	_, err := h.HumaPair(context.Background(), &PairInput{Body: body})
 	assert.Error(t, err, "pairing without a matching issued nonce must be rejected")
 
-	// A rejected exchange row is recorded for diagnosis.
-	var rejected int64
-	database.Model(&db.FederationExchange{}).Where("status = ?", db.ExchangeRejected).Count(&rejected)
-	assert.Equal(t, int64(1), rejected)
+	// Rejections on the public pair endpoint are logged, NOT written to the
+	// ledger (anti-flood) — no exchange row should exist.
+	var rows int64
+	database.Model(&db.FederationExchange{}).Count(&rows)
+	assert.Equal(t, int64(0), rows)
 }
 
 func TestPair_RejectsBadSignature(t *testing.T) {

@@ -41,7 +41,7 @@ func (h *FederationHandler) HumaIssueInvite(_ context.Context, _ *IssueInviteInp
 
 type AcceptInviteBody struct {
 	Invite string `json:"invite"`
-	Name   string `json:"name"`
+	Name   string `json:"name" maxLength:"128"`
 }
 type AcceptInviteInput struct {
 	Body AcceptInviteBody
@@ -87,17 +87,35 @@ func (h *FederationHandler) HumaAcceptInvite(_ context.Context, in *AcceptInvite
 		return nil, huma.Error502BadGateway("pairing callback failed: " + err.Error())
 	}
 
+	// Trust the invite's verified identity, NOT the response body. The invite
+	// was signature-verified (VerifyInvite binds fingerprint == SHA-256(pubkey)
+	// and checks the signature), so inv.Fingerprint/PublicKey/BaseURL are
+	// trustworthy. The response is only a success confirmation; a hostile or
+	// misconfigured remote must not be able to inject a different peer's
+	// identity. Mismatch => abort.
+	if resp.Fingerprint != inv.Fingerprint {
+		federation.RecordExchange(h.DB, federation.ExchangeRecord{
+			RequestID: reqID, PeerFingerprint: inv.Fingerprint, PeerName: in.Body.Name,
+			Direction: db.ExchangeOutbound, Operation: "pair", Status: db.ExchangeRejected,
+			StartedAt: started, Error: "remote returned a mismatched fingerprint",
+		})
+		return nil, huma.Error502BadGateway("remote returned a mismatched fingerprint")
+	}
+
 	if err := h.Peers.Upsert(&db.FederationPeer{
-		Fingerprint: resp.Fingerprint, PublicKey: resp.PublicKey,
-		Name: in.Body.Name, BaseURL: resp.BaseURL, Status: db.PeerStatusActive,
+		Fingerprint: inv.Fingerprint, PublicKey: inv.PublicKey,
+		Name: in.Body.Name, BaseURL: inv.BaseURL, Status: db.PeerStatusActive,
 	}); err != nil {
 		return nil, huma.Error500InternalServerError("failed to store peer")
 	}
 	federation.RecordExchange(h.DB, federation.ExchangeRecord{
-		RequestID: reqID, PeerFingerprint: resp.Fingerprint, PeerName: in.Body.Name,
+		RequestID: reqID, PeerFingerprint: inv.Fingerprint, PeerName: in.Body.Name,
 		Direction: db.ExchangeOutbound, Operation: "pair", Status: db.ExchangeOK, StartedAt: started,
 	})
-	return &AcceptInviteOutput{Body: resp}, nil
+	return &AcceptInviteOutput{Body: PairResponseBody{
+		Fingerprint: inv.Fingerprint, PublicKey: inv.PublicKey,
+		BaseURL: inv.BaseURL, Status: db.PeerStatusActive,
+	}}, nil
 }
 
 // --- List peers (with health) ----------------------------------------------

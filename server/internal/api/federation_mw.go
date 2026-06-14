@@ -38,6 +38,12 @@ const fedPeerContextKey = "federationPeer"
 // server-to-server request: method, path, timestamp, and body hash. Both the
 // signer (outbound client) and verifier (this middleware) must build it
 // identically.
+//
+// NOTE: this does NOT bind the recipient server's identity, so a signed request
+// is replayable to any other server the same peer is paired with, within the
+// timestamp skew window. Harmless in Phase 0 (the only signed endpoint is the
+// read-only /ping). Before any *mutating* federated endpoint lands (Phase 1,
+// #1346), bind the recipient fingerprint into this payload.
 func signedRequestMessage(method, path, timestamp, bodyHashHex string) []byte {
 	return []byte(fmt.Sprintf("%s\n%s\n%s\n%s", method, path, timestamp, bodyHashHex))
 }

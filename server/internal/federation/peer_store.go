@@ -46,6 +46,11 @@ func (s PeerStore) SetStatus(fp, status string) error {
 
 // Remove hard-deletes a peer (revocation). After this, signed requests from the
 // peer no longer verify.
+//
+// The hard delete (Unscoped) is load-bearing: FederationPeer has a soft-delete
+// column, and the unique index is on `fingerprint` alone. A soft delete would
+// leave a row that (a) blocks re-pairing via Upsert's OnConflict and (b) could
+// be silently resurrected as active. Do not switch this to a soft delete.
 func (s PeerStore) Remove(fp string) error {
 	return s.DB.Unscoped().Where("fingerprint = ?", fp).Delete(&db.FederationPeer{}).Error
 }

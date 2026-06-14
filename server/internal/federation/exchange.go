@@ -84,10 +84,18 @@ func updatePeerHealth(database *gorm.DB, rec ExchangeRecord) {
 	}
 	now := rec.FinishedAt
 	updates := map[string]any{"last_contact_at": now}
-	if rec.Status == db.ExchangeOK {
+	switch rec.Status {
+	case db.ExchangeOK:
 		updates["last_success_at"] = now
 		updates["reachable"] = true
-	} else {
+	case db.ExchangeRejected:
+		// We DID communicate with the peer — they're reachable — but the
+		// request was refused (bad signature / policy / nonce). Record the
+		// error without flipping reachability to false.
+		updates["last_error"] = truncate(rec.Error, 512)
+		updates["last_error_at"] = now
+		updates["reachable"] = true
+	default: // ExchangeError: failed to reach the peer / transport or remote error
 		updates["last_error"] = truncate(rec.Error, 512)
 		updates["last_error_at"] = now
 		updates["reachable"] = false

@@ -11,16 +11,23 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// fakePairClient returns a canned bundle from the remote friend.
+// fakePairClient returns a canned bundle from the remote friend. respFingerprint
+// overrides the returned fingerprint (empty = the remote's real one) so tests
+// can simulate a hostile/misconfigured remote.
 type fakePairClient struct {
-	remote federation.Identity
-	called bool
+	remote          federation.Identity
+	respFingerprint string
+	called          bool
 }
 
 func (f *fakePairClient) Pair(baseURL string, _ PairRequestBody) (PairResponseBody, error) {
 	f.called = true
+	fp := f.remote.Fingerprint()
+	if f.respFingerprint != "" {
+		fp = f.respFingerprint
+	}
 	return PairResponseBody{
-		Fingerprint: f.remote.Fingerprint(),
+		Fingerprint: fp,
 		PublicKey:   b64(f.remote.PublicKey),
 		BaseURL:     baseURL,
 		Status:      db.PeerStatusActive,
@@ -72,6 +79,33 @@ func TestAcceptInvite_PairsAndStoresPeer(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "Bob", stored.Name)
 	assert.Equal(t, db.PeerStatusActive, stored.Status)
+}
+
+func TestAcceptInvite_RejectsMismatchedFingerprint(t *testing.T) {
+	database := openAPIFedTestDB(t)
+	selfID, _ := federation.GenerateIdentity()
+	remoteID, _ := federation.GenerateIdentity()
+	attacker, _ := federation.GenerateIdentity()
+
+	// The remote responds with a fingerprint different from the invite it signed.
+	fake := &fakePairClient{remote: remoteID, respFingerprint: attacker.Fingerprint()}
+	h := &FederationHandler{
+		DB: database, Identity: selfID, Peers: federation.PeerStore{DB: database},
+		BaseURL: "https://self", PairClient: fake,
+	}
+	inv := remoteID.NewInvite("https://remote", "n", time.Unix(4_000_000_000, 0))
+
+	_, err := h.HumaAcceptInvite(context.Background(), &AcceptInviteInput{
+		Body: AcceptInviteBody{Invite: federation.EncodeInvite(inv), Name: "Bob"},
+	})
+	assert.Error(t, err, "must reject a response whose fingerprint differs from the verified invite")
+
+	// Neither the real remote nor the injected attacker identity is stored.
+	store := federation.PeerStore{DB: database}
+	_, e1 := store.GetByFingerprint(remoteID.Fingerprint())
+	_, e2 := store.GetByFingerprint(attacker.Fingerprint())
+	assert.Error(t, e1)
+	assert.Error(t, e2)
 }
 
 func TestRevokePeer_RemovesIt(t *testing.T) {
