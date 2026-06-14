@@ -35,25 +35,22 @@ const federationTimestampSkew = 5 * time.Minute
 const fedPeerContextKey = "federationPeer"
 
 // signedRequestMessage is the canonical byte string a peer signs for a
-// server-to-server request: method, path, timestamp, and body hash. Both the
-// signer (outbound client) and verifier (this middleware) must build it
-// identically.
-//
-// NOTE: this does NOT bind the recipient server's identity, so a signed request
-// is replayable to any other server the same peer is paired with, within the
-// timestamp skew window. Harmless in Phase 0 (the only signed endpoint is the
-// read-only /ping). Before any *mutating* federated endpoint lands (Phase 1,
-// #1346), bind the recipient fingerprint into this payload.
-func signedRequestMessage(method, path, timestamp, bodyHashHex string) []byte {
-	return []byte(fmt.Sprintf("%s\n%s\n%s\n%s", method, path, timestamp, bodyHashHex))
+// server-to-server request: method, path, timestamp, body hash, AND the
+// recipient server's fingerprint. Binding the recipient prevents a captured
+// signed request from being replayed against a different server the same peer is
+// paired with (within the skew window). Both the signer (outbound client) and
+// verifier (this middleware) must build it identically.
+func signedRequestMessage(method, path, timestamp, bodyHashHex, recipientFingerprint string) []byte {
+	return []byte(fmt.Sprintf("%s\n%s\n%s\n%s\n%s", method, path, timestamp, bodyHashHex, recipientFingerprint))
 }
 
 // VerifyFederationRequest authenticates server-to-server requests: it requires a
-// known, active peer whose Ed25519 signature covers method, path, timestamp, and
-// body hash, within the allowed clock skew. On success the verified peer is set
-// on the gin context under fedPeerContextKey. Rejections are logged (not written
-// to the ledger) to avoid a hostile peer flooding storage.
-func VerifyFederationRequest(database *gorm.DB) gin.HandlerFunc {
+// known, active peer whose Ed25519 signature covers method, path, timestamp,
+// body hash, and this server's own fingerprint (selfFingerprint), within the
+// allowed clock skew. On success the verified peer is set on the gin context
+// under fedPeerContextKey. Rejections are logged (not written to the ledger) to
+// avoid a hostile peer flooding storage.
+func VerifyFederationRequest(database *gorm.DB, selfFingerprint string) gin.HandlerFunc {
 	store := federation.PeerStore{DB: database}
 	return func(c *gin.Context) {
 		fp := c.GetHeader(headerFedFingerprint)
@@ -102,7 +99,7 @@ func VerifyFederationRequest(database *gorm.DB) gin.HandlerFunc {
 			reject("invalid signature encoding")
 			return
 		}
-		msg := signedRequestMessage(c.Request.Method, c.Request.URL.Path, tsStr, hex.EncodeToString(bodyHash[:]))
+		msg := signedRequestMessage(c.Request.Method, c.Request.URL.Path, tsStr, hex.EncodeToString(bodyHash[:]), selfFingerprint)
 		if !federation.Verify(pub, msg, sig) {
 			reject("signature verification failed")
 			return

@@ -342,5 +342,5 @@ func RegisterFederationRoutes(api huma.API, h *FederationHandler, jwtSecret stri
 // RegisterFederationGinRoutes wires raw-gin federation routes: the signed ping
 // used by the connection-test diagnostic.
 func RegisterFederationGinRoutes(r *gin.Engine, h *FederationHandler) {
-	r.GET("/api/federation/ping", VerifyFederationRequest(h.DB), h.ginPing)
+	r.GET("/api/federation/ping", VerifyFederationRequest(h.DB, h.Identity.Fingerprint()), h.ginPing)
 }
