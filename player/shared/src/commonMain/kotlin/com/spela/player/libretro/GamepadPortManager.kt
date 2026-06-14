@@ -1,5 +1,9 @@
 package com.spela.player.libretro
 
+import com.spela.player.domain.model.ControllerStyle
+import com.spela.player.domain.model.DefaultGamepadMapping
+import com.spela.player.domain.model.GamepadPosition
+import com.spela.player.domain.repository.GamepadMappingRepository
 import com.spela.player.domain.repository.KeyMappingRepository
 import com.spela.player.presentation.ui.gamepad.InputMode
 import kotlinx.coroutines.CoroutineScope
@@ -30,6 +34,13 @@ class GamepadPortManager(
      * activity-timeout window is deterministic instead of racing real time.
      */
     private val nowMs: () -> Long = { Clock.System.now().toEpochMilliseconds() },
+    /**
+     * Source of the device-local/synced gamepad mapping layer (GamepadPosition →
+     * RetroPad). Null disables per-console gamepad remapping — consumers fall
+     * back to [com.spela.player.domain.model.DefaultGamepadMapping], reproducing
+     * the historical fixed behavior. Desktop wires the real repository (#1334).
+     */
+    private val gamepadMappingRepository: GamepadMappingRepository? = null,
 ) {
     companion object {
         const val MAX_PORTS = 8
@@ -44,6 +55,7 @@ class GamepadPortManager(
         val deviceId: Int,
         val port: Int,
         val deviceName: String = "",
+        val style: ControllerStyle = ControllerStyle.Generic,
     )
 
     /** Current port assignments, keyed by device ID. */
@@ -57,6 +69,12 @@ class GamepadPortManager(
 
     /** Fallback mapping used when a port-specific mapping hasn't been loaded yet. */
     private var fallbackKeyMapping: Map<Int, Int>? = null
+
+    /** Per-port gamepad mapping: GamepadPosition -> retroButtonId. Loaded from repository. */
+    private val portGamepadMappings = Array<Map<GamepadPosition, Int>?>(MAX_PORTS) { null }
+
+    /** Fallback gamepad mapping used before a port-specific one is loaded. */
+    private var fallbackGamepadMapping: Map<GamepadPosition, Int>? = null
 
     /** Per-port last-input timestamps (epoch milliseconds). */
     private val lastActivityMs = LongArray(MAX_PORTS)
@@ -90,7 +108,7 @@ class GamepadPortManager(
      * If the device is already assigned, returns its existing port.
      */
     @Synchronized
-    fun connectDevice(deviceId: Int, deviceName: String = ""): Int {
+    fun connectDevice(deviceId: Int, deviceName: String = "", style: ControllerStyle = ControllerStyle.Generic): Int {
         // Already assigned?
         deviceToPort[deviceId]?.let { return it.port }
 
@@ -99,7 +117,7 @@ class GamepadPortManager(
         if (port == -1) return -1
 
         occupiedPorts[port] = true
-        val assignment = PortAssignment(deviceId = deviceId, port = port, deviceName = deviceName)
+        val assignment = PortAssignment(deviceId = deviceId, port = port, deviceName = deviceName, style = style)
         deviceToPort[deviceId] = assignment
         _assignments.value = deviceToPort.values.toList()
         emitControllerStatus()
@@ -128,6 +146,7 @@ class GamepadPortManager(
         val assignment = deviceToPort.remove(deviceId) ?: return
         occupiedPorts[assignment.port] = false
         portKeyMappings[assignment.port] = null
+        portGamepadMappings[assignment.port] = null
         lastActivityMs[assignment.port] = 0L
         _assignments.value = deviceToPort.values.toList()
         _portActivity.value = buildActivityMap()
@@ -189,6 +208,63 @@ class GamepadPortManager(
         for (port in ports) {
             loadMappingForPort(port, consoleId)
         }
+    }
+
+    /**
+     * Loads the gamepad mapping layer (GamepadPosition -> retroButtonId) for a
+     * port from [gamepadMappingRepository]. No-op when no repository is wired.
+     */
+    suspend fun loadGamepadMappingForPort(port: Int, consoleId: String) {
+        if (port < 0 || port >= MAX_PORTS) return
+        val repo = gamepadMappingRepository ?: return
+        val mapping = repo.getEffectiveMapping(consoleId, port)
+        synchronized(this) {
+            portGamepadMappings[port] = mapping
+        }
+    }
+
+    /**
+     * Loads the gamepad mapping layer for all currently assigned ports, plus a
+     * port-0 fallback for devices that connect before their port-specific
+     * mapping is ready. No-op when no repository is wired.
+     */
+    suspend fun loadAllGamepadMappings(consoleId: String) {
+        val repo = gamepadMappingRepository ?: return
+        val fallback = repo.getEffectiveMapping(consoleId, 0)
+        synchronized(this) {
+            fallbackGamepadMapping = fallback
+        }
+        val ports = synchronized(this) { deviceToPort.values.map { it.port } }
+        for (port in ports) {
+            loadGamepadMappingForPort(port, consoleId)
+        }
+    }
+
+    /**
+     * Returns the gamepad mapping (GamepadPosition -> retroButtonId) for a port:
+     * the port-specific mapping if loaded, else the fallback, else null (the
+     * caller should default to [com.spela.player.domain.model.DefaultGamepadMapping]).
+     */
+    @Synchronized
+    fun getGamepadMapping(port: Int): Map<GamepadPosition, Int>? {
+        if (port < 0 || port >= MAX_PORTS) return null
+        return portGamepadMappings[port] ?: fallbackGamepadMapping
+    }
+
+    /**
+     * Maps an Android gamepad key code to a libretro RetroPad id for a port via
+     * the two-layer model (#1334): physical key code → canonical
+     * [GamepadPosition] (input layer) → RetroPad id (mapping layer). Falls back
+     * to [DefaultGamepadMapping] when no per-console mapping is loaded, so the
+     * default reproduces the historical behavior. Returns null for non-gamepad
+     * key codes or unmapped positions.
+     */
+    @Synchronized
+    fun mapGamepadKeyToLibretro(port: Int, keyCode: Int): Int? {
+        if (port < 0 || port >= MAX_PORTS) return null
+        val position = AndroidGamepadNormalizer.normalize(keyCode) ?: return null
+        val mapping = portGamepadMappings[port] ?: fallbackGamepadMapping ?: DefaultGamepadMapping.POSITION_TO_RETRO
+        return mapping[position]
     }
 
     /**
@@ -269,6 +345,11 @@ class GamepadPortManager(
         portKeyMappings[portA] = portKeyMappings[portB]
         portKeyMappings[portB] = tmpMapping
 
+        // Swap gamepad mappings
+        val tmpGamepadMapping = portGamepadMappings[portA]
+        portGamepadMappings[portA] = portGamepadMappings[portB]
+        portGamepadMappings[portB] = tmpGamepadMapping
+
         // Swap activity timestamps
         val tmpActivity = lastActivityMs[portA]
         lastActivityMs[portA] = lastActivityMs[portB]
@@ -300,7 +381,9 @@ class GamepadPortManager(
         deviceToPort.clear()
         occupiedPorts.fill(false)
         portKeyMappings.fill(null)
+        portGamepadMappings.fill(null)
         fallbackKeyMapping = null
+        fallbackGamepadMapping = null
         lastActivityMs.fill(0L)
         _assignments.value = emptyList()
         _portActivity.value = emptyMap()

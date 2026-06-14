@@ -1,5 +1,6 @@
 package com.spela.player.libretro
 
+import com.spela.player.domain.model.ControllerStyle
 import com.spela.player.domain.model.KeyMappingProfile
 import com.spela.player.domain.repository.KeyMappingRepository
 import kotlinx.coroutines.test.runTest
@@ -19,6 +20,20 @@ class GamepadPortManagerTest {
     fun connectFirstDeviceAssignsPort0() {
         val port = manager.connectDevice(100, "Xbox Controller")
         assertEquals(0, port)
+    }
+
+    @Test
+    fun connectDeviceRecordsStyleOnAssignment() {
+        manager.connectDevice(deviceId = 1, deviceName = "Xbox Wireless Controller", style = ControllerStyle.Xbox)
+        val a = manager.assignments.value.single()
+        assertEquals(ControllerStyle.Xbox, a.style)
+        assertEquals("Xbox Wireless Controller", a.deviceName)
+    }
+
+    @Test
+    fun styleDefaultsToGeneric() {
+        manager.connectDevice(deviceId = 2, deviceName = "")
+        assertEquals(ControllerStyle.Generic, manager.assignments.value.single().style)
     }
 
     @Test

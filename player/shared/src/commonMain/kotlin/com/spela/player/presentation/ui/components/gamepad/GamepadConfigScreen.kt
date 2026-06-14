@@ -23,6 +23,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -35,6 +38,7 @@ import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpSecondaryButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.theme.SpColor
+import com.spela.player.domain.model.ControllerStyle
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.presentation.viewmodel.GamepadConfigState
@@ -50,8 +54,15 @@ fun GamepadConfigScreen(
     onConfigurePort: (Int) -> Unit,
     onSwapUp: ((Int) -> Unit)? = null,
     onSwapDown: ((Int) -> Unit)? = null,
+    onSetStyleOverride: ((Int, ControllerStyle?) -> Unit)? = null,
+    /** Shows the per-port "Configure" (keyboard key-mapping) button. Hidden on
+     *  Android, where gamepad input is positional and there's no keyboard. */
+    showConfigureButton: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
+    // Port whose controller-type picker is open, or null when closed.
+    var stylePickerPort by remember { mutableStateOf<Int?>(null) }
+
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -71,12 +82,17 @@ fun GamepadConfigScreen(
             ControllerRow(
                 port = port,
                 assignment = assignment,
-                onConfigure = { onConfigurePort(port) },
+                onConfigure = if (showConfigureButton) {
+                    { onConfigurePort(port) }
+                } else null,
                 onSwapUp = if (port > 0 && assignment != null) {
                     { onSwapUp?.invoke(port) }
                 } else null,
                 onSwapDown = if (port < 3 && assignment != null) {
                     { onSwapDown?.invoke(port) }
+                } else null,
+                onPickStyle = if (assignment != null && onSetStyleOverride != null) {
+                    { stylePickerPort = port }
                 } else null,
             )
             if (port < 3) {
@@ -84,16 +100,40 @@ fun GamepadConfigScreen(
             }
         }
     }
+
+    val pickerPort = stylePickerPort
+    val pickerAssignment = pickerPort?.let { p -> state.portAssignments.find { it.port == p } }
+    if (pickerPort != null && pickerAssignment != null && onSetStyleOverride != null) {
+        ControllerStylePickerDialog(
+            detectedStyle = pickerAssignment.detectedStyle,
+            currentOverride = pickerAssignment.styleOverride,
+            onSelect = { style ->
+                onSetStyleOverride(pickerPort, style)
+                stylePickerPort = null
+            },
+            onDismiss = { stylePickerPort = null },
+        )
+    }
 }
 
 @Composable
 private fun ControllerRow(
     port: Int,
     assignment: PortAssignmentUi?,
-    onConfigure: () -> Unit,
+    onConfigure: (() -> Unit)?,
     onSwapUp: (() -> Unit)?,
     onSwapDown: (() -> Unit)?,
+    onPickStyle: (() -> Unit)? = null,
 ) {
+    // Show the effective controller identity (e.g. "Xbox Controller"). For an
+    // unrecognized pad fall back to the raw OS device name. (#1334)
+    val identity = assignment?.let {
+        if (it.style == ControllerStyle.Generic) it.deviceName else it.style.displayName
+    }
+    // Compact label for the type-override affordance: "Auto" when deferring to
+    // detection, else the chosen style's short name (matches the picker wording,
+    // e.g. Generic → "Gamepad").
+    val styleLabel = assignment?.styleOverride?.shortLabel ?: "Auto"
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -102,7 +142,7 @@ private fun ControllerRow(
             .padding(horizontal = SpSpacing.Default, vertical = SpSpacing.Medium)
             .semantics {
                 contentDescription = if (assignment != null) {
-                    "Player ${port + 1}: ${assignment.deviceName}" +
+                    "Player ${port + 1}: $identity" +
                         if (assignment.isActive) ", active" else ""
                 } else {
                     "Player ${port + 1}: No controller"
@@ -119,13 +159,25 @@ private fun ControllerRow(
 
         Spacer(Modifier.width(SpSpacing.Medium))
 
-        // Device name
-        Text(
-            text = assignment?.deviceName ?: "No controller",
-            style = SpTypography.BodyMedium,
-            color = if (assignment != null) SpColor.OnCard else SpColor.OnBackgroundTertiary,
-            modifier = Modifier.weight(1f),
-        )
+        // Controller identity (detected/overridden style, else raw device name)
+        // plus the per-controller type-override affordance.
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = identity ?: "No controller",
+                style = SpTypography.BodyMedium,
+                color = if (assignment != null) SpColor.OnCard else SpColor.OnBackgroundTertiary,
+            )
+            if (assignment != null && onPickStyle != null) {
+                SpButton(
+                    text = "Type: $styleLabel",
+                    onClick = onPickStyle,
+                    style = SpButtonStyle.Ghost,
+                    modifier = Modifier.semantics {
+                        contentDescription = "Player ${port + 1} controller type"
+                    },
+                )
+            }
+        }
 
         // Activity indicator
         if (assignment != null) {
@@ -154,8 +206,8 @@ private fun ControllerRow(
             Spacer(Modifier.width(SpSpacing.Small))
         }
 
-        // Configure button
-        if (assignment != null) {
+        // Configure (keyboard key-mapping) button — omitted when onConfigure is null.
+        if (assignment != null && onConfigure != null) {
             SpSecondaryButton(
                 text = "Configure",
                 onClick = onConfigure,

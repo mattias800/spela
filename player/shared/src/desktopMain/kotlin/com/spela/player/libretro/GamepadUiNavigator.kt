@@ -1,8 +1,8 @@
 package com.spela.player.libretro
 
+import com.spela.player.domain.model.GamepadPosition
 import com.spela.player.presentation.navigation.NavigationEvent
 import com.spela.player.presentation.navigation.NavigationEventBus
-import com.spela.player.presentation.viewmodel.LibretroButtons
 import java.awt.Robot
 import java.awt.event.KeyEvent
 
@@ -48,10 +48,17 @@ class GamepadUiNavigator(
         private const val REPEAT_INITIAL_DELAY_TICKS = 45 // ~360ms at the 8ms poll rate
         private const val REPEAT_INTERVAL_TICKS = 8       // ~64ms between repeats
 
-        /** Libretro button ids that count as UI navigation input. */
+        /**
+         * GamepadPosition ordinals that count as UI navigation input. Menu
+         * navigation is positional — it reads the input layer directly (not the
+         * per-console GamepadPosition→RetroPad mapping), so remapping game
+         * bindings never changes how the controller drives menus.
+         */
         private val NAV_BUTTONS = intArrayOf(
-            LibretroButtons.UP, LibretroButtons.DOWN, LibretroButtons.LEFT, LibretroButtons.RIGHT,
-            LibretroButtons.B, LibretroButtons.A, LibretroButtons.L, LibretroButtons.R,
+            GamepadPosition.DPAD_UP.ordinal, GamepadPosition.DPAD_DOWN.ordinal,
+            GamepadPosition.DPAD_LEFT.ordinal, GamepadPosition.DPAD_RIGHT.ordinal,
+            GamepadPosition.SOUTH.ordinal, GamepadPosition.EAST.ordinal,
+            GamepadPosition.L1.ordinal, GamepadPosition.R1.ordinal,
         )
     }
 
@@ -60,12 +67,13 @@ class GamepadUiNavigator(
     private var prevConfirm = false
     private var prevBack = false
 
-    /** Poll ticks each d-pad direction has been held (0 = released), for auto-repeat. */
+    /** Poll ticks each d-pad direction has been held (0 = released), for auto-repeat.
+     *  Keyed by GamepadPosition ordinal (input layer). */
     private val dpadHoldTicks = mutableMapOf(
-        LibretroButtons.UP to 0,
-        LibretroButtons.DOWN to 0,
-        LibretroButtons.LEFT to 0,
-        LibretroButtons.RIGHT to 0,
+        GamepadPosition.DPAD_UP.ordinal to 0,
+        GamepadPosition.DPAD_DOWN.ordinal to 0,
+        GamepadPosition.DPAD_LEFT.ordinal to 0,
+        GamepadPosition.DPAD_RIGHT.ordinal to 0,
     )
 
     /** Lazily-created AWT Robot used when no [synthesizeKey] sink is injected. */
@@ -93,9 +101,9 @@ class GamepadUiNavigator(
         if (anyNavInput) onGamepadInput()
 
         // L1/R1 -> section switching (via the navigation bus).
-        // buttons is indexed by libretro button id, so use L (10) / R (11).
-        val leftShoulder = first.buttons.getOrNull(LibretroButtons.L) == true
-        val rightShoulder = first.buttons.getOrNull(LibretroButtons.R) == true
+        // buttons is indexed by GamepadPosition ordinal.
+        val leftShoulder = first.buttons.getOrNull(GamepadPosition.L1.ordinal) == true
+        val rightShoulder = first.buttons.getOrNull(GamepadPosition.R1.ordinal) == true
         if (leftShoulder && !prevLeftShoulder) {
             navigationEventBus.emit(NavigationEvent.PreviousSection)
         }
@@ -106,14 +114,14 @@ class GamepadUiNavigator(
         prevRightShoulder = rightShoulder
 
         // D-pad -> arrow keys with hold-to-repeat. Confirm (bottom face button =
-        // RETRO_B) -> Enter and back (right face button = RETRO_A) -> Escape are
-        // single-press only.
-        repeatOnHold(first, LibretroButtons.UP, KeyEvent.VK_UP)
-        repeatOnHold(first, LibretroButtons.DOWN, KeyEvent.VK_DOWN)
-        repeatOnHold(first, LibretroButtons.LEFT, KeyEvent.VK_LEFT)
-        repeatOnHold(first, LibretroButtons.RIGHT, KeyEvent.VK_RIGHT)
-        prevConfirm = synthOnEdge(first, LibretroButtons.B, prevConfirm, KeyEvent.VK_ENTER)
-        prevBack = synthOnEdge(first, LibretroButtons.A, prevBack, KeyEvent.VK_ESCAPE)
+        // SOUTH) -> Enter and back (right face button = EAST) -> Escape are
+        // single-press only. Positional, so it's brand-consistent on any pad.
+        repeatOnHold(first, GamepadPosition.DPAD_UP.ordinal, KeyEvent.VK_UP)
+        repeatOnHold(first, GamepadPosition.DPAD_DOWN.ordinal, KeyEvent.VK_DOWN)
+        repeatOnHold(first, GamepadPosition.DPAD_LEFT.ordinal, KeyEvent.VK_LEFT)
+        repeatOnHold(first, GamepadPosition.DPAD_RIGHT.ordinal, KeyEvent.VK_RIGHT)
+        prevConfirm = synthOnEdge(first, GamepadPosition.SOUTH.ordinal, prevConfirm, KeyEvent.VK_ENTER)
+        prevBack = synthOnEdge(first, GamepadPosition.EAST.ordinal, prevBack, KeyEvent.VK_ESCAPE)
     }
 
     /**

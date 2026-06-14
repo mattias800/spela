@@ -1,5 +1,7 @@
 package com.spela.player.presentation.viewmodel
 
+import com.spela.player.domain.model.ControllerStyle
+import com.spela.player.domain.repository.ControllerStyleOverrideRepository
 import com.spela.player.libretro.GamepadPortManager
 import com.spela.player.util.DispatcherProvider
 import kotlinx.coroutines.CoroutineScope
@@ -23,16 +25,29 @@ data class PortAssignmentUi(
     val deviceId: Int,
     val isActive: Boolean,
     val hasCustomMapping: Boolean,
+    /** Effective controller style: the user's override if set, else detection. */
+    val style: ControllerStyle = ControllerStyle.Generic,
+    /** Raw detected style, independent of any override (labels the "Auto" choice). */
+    val detectedStyle: ControllerStyle = ControllerStyle.Generic,
+    /** The user's explicit style override, or null when Auto (defer to detection). */
+    val styleOverride: ControllerStyle? = null,
 )
 
 sealed interface GamepadConfigIntent {
     data class SwapPorts(val portA: Int, val portB: Int) : GamepadConfigIntent
     data class SelectPortForMapping(val port: Int) : GamepadConfigIntent
     data object DeselectPort : GamepadConfigIntent
+
+    /**
+     * Set (or, with style == null, clear back to Auto) the device-local
+     * controller-style override for the controller on [port].
+     */
+    data class SetStyleOverride(val port: Int, val style: ControllerStyle?) : GamepadConfigIntent
 }
 
 class GamepadConfigViewModel(
     private val gamepadPortManager: GamepadPortManager,
+    private val styleOverrideRepository: ControllerStyleOverrideRepository,
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
     /**
@@ -49,6 +64,18 @@ class GamepadConfigViewModel(
 
     private val _state = MutableStateFlow(GamepadConfigState())
     val state: StateFlow<GamepadConfigState> = _state.asStateFlow()
+
+    /**
+     * In-memory cache of device-local style overrides, keyed by controller
+     * device name. Loaded lazily when a controller first appears (so the
+     * 200 ms refresh loop never touches the DB) and updated on
+     * [GamepadConfigIntent.SetStyleOverride].
+     */
+    private val _overrides = MutableStateFlow<Map<String, ControllerStyle>>(emptyMap())
+
+    /** Device names whose override load has been requested. Only mutated from
+     *  the single refresh coroutine, so it needs no synchronization. */
+    private val requestedLoads = mutableSetOf<String>()
 
     private var refreshJob: Job? = null
 
@@ -68,6 +95,20 @@ class GamepadConfigViewModel(
             GamepadConfigIntent.DeselectPort -> {
                 _state.update { it.copy(selectedPort = null) }
             }
+            is GamepadConfigIntent.SetStyleOverride -> {
+                val deviceName = gamepadPortManager.assignments.value
+                    .find { it.port == intent.port }
+                    ?.deviceName
+                    ?.takeIf { it.isNotEmpty() }
+                    ?: return
+                scope.launch(dispatchers.io) {
+                    styleOverrideRepository.setOverride(deviceName, intent.style)
+                    _overrides.update { current ->
+                        if (intent.style == null) current - deviceName
+                        else current + (deviceName to intent.style)
+                    }
+                }
+            }
         }
     }
 
@@ -84,17 +125,34 @@ class GamepadConfigViewModel(
     private fun refreshState() {
         val assignments = gamepadPortManager.assignments.value
         val activity = gamepadPortManager.portActivity.value
+        val overrides = _overrides.value
         val now = nowMs()
+
+        // Lazily load the override for any controller we haven't looked up yet.
+        // The result lands in [_overrides] and is reflected on the next tick.
+        for (assignment in assignments) {
+            val name = assignment.deviceName
+            if (name.isNotEmpty() && requestedLoads.add(name)) {
+                scope.launch(dispatchers.io) {
+                    val stored = styleOverrideRepository.getOverride(name) ?: return@launch
+                    _overrides.update { it + (name to stored) }
+                }
+            }
+        }
 
         val portAssignments = assignments.map { assignment ->
             val lastActivity = activity[assignment.port] ?: 0L
             val isActive = lastActivity > 0L && (now - lastActivity) < ACTIVITY_TIMEOUT_MS
+            val override = overrides[assignment.deviceName]
             PortAssignmentUi(
                 port = assignment.port,
                 deviceName = assignment.deviceName.ifEmpty { "Controller ${assignment.port + 1}" },
                 deviceId = assignment.deviceId,
                 isActive = isActive,
                 hasCustomMapping = gamepadPortManager.getKeyMapping(assignment.port) != null,
+                style = override ?: assignment.style,
+                detectedStyle = assignment.style,
+                styleOverride = override,
             )
         }.sortedBy { it.port }
 

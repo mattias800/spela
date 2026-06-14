@@ -24,7 +24,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -38,22 +40,27 @@ import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.components.ShaderPreview
 import com.spela.player.presentation.ui.components.ShaderPreviewDialog
 import com.spela.player.presentation.ui.components.SpCard
+import com.spela.player.presentation.ui.components.SpSecondaryButton
 import com.spela.player.presentation.ui.components.SpRadioOption
 import com.spela.player.presentation.ui.components.SpScreen
 import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.components.gamepad.GamepadConfigScreen
+import com.spela.player.presentation.ui.components.gamepad.GamepadMappingDialog
 import com.spela.player.presentation.ui.components.keymapping.KeyMappingScreen
 import com.spela.player.presentation.ui.components.keymapping.platformKeyName
 import com.spela.player.presentation.ui.gamepad.gamepadFocusable
 import com.spela.player.presentation.viewmodel.GamepadConfigIntent
 import com.spela.player.presentation.viewmodel.GamepadConfigViewModel
+import com.spela.player.presentation.viewmodel.GamepadMappingIntent
+import com.spela.player.presentation.viewmodel.GamepadMappingViewModel
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
 import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
 import com.spela.player.presentation.ui.gamepad.focusRestoreItem
 import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
 import androidx.compose.runtime.CompositionLocalProvider
+import com.spela.player.util.currentPlatform
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -70,6 +77,7 @@ fun ConsoleSettingsScreen(
     settingsViewModel: SettingsViewModel,
     keyMappingViewModel: KeyMappingViewModel,
     gamepadConfigViewModel: GamepadConfigViewModel? = null,
+    gamepadMappingViewModel: GamepadMappingViewModel? = null,
     onBack: () -> Unit,
 ) {
     PlatformBackHandler { onBack() }
@@ -303,53 +311,120 @@ fun ConsoleSettingsScreen(
                                     GamepadConfigIntent.SwapPorts(port, port + 1)
                                 )
                             },
+                            onSetStyleOverride = { port, style ->
+                                gamepadConfigViewModel.onIntent(
+                                    GamepadConfigIntent.SetStyleOverride(port, style)
+                                )
+                            },
+                            // Keyboard key-mapping is desktop-only; on Android the
+                            // positional "Controller buttons" editor is used instead.
+                            showConfigureButton = currentPlatform() != "android",
                         )
                     }
                 }
             }
 
-            item {
-                val selectedPort = gamepadConfigViewModel?.state?.collectAsState()?.value?.selectedPort
-                val portAssignment = gamepadConfigViewModel?.state?.collectAsState()?.value
-                    ?.portAssignments?.find { it.port == selectedPort }
-                val portLabel = if (selectedPort != null && portAssignment != null) {
-                    "Player ${selectedPort + 1} \u2014 ${portAssignment.deviceName}"
-                } else null
+            // Positional gamepad button remapping (#1334). Available on both
+            // platforms now that Android input also flows through the positional
+            // mapping layer.
+            if (gamepadMappingViewModel != null) {
+                item {
+                    val gamepadMappingState by gamepadMappingViewModel.state.collectAsState()
+                    var showGamepadMapping by remember { mutableStateOf(false) }
 
-                SpCard(onGradient = true) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(560.dp)
-                            .padding(SpSpacing.Small)
-                            .testTag("key-mapping-card"),
-                    ) {
-                        KeyMappingScreen(
-                            layout = layout,
-                            state = keyMappingState,
-                            onButtonClick = { retroButtonId ->
-                                keyMappingViewModel.onIntent(
-                                    KeyMappingIntent.StartSingleButtonMap(retroButtonId)
-                                )
-                            },
-                            onStartWizard = {
-                                keyMappingViewModel.onIntent(
-                                    KeyMappingIntent.StartWizard(consoleId)
+                    SpCard(onGradient = true) {
+                        Column(modifier = Modifier.fillMaxWidth().padding(SpSpacing.Default)) {
+                            Text(
+                                text = "Controller buttons",
+                                style = SpTypography.TitleMedium,
+                                color = SpColor.OnCard,
+                            )
+                            Spacer(Modifier.height(SpSpacing.Small))
+                            Text(
+                                text = "Remap what each physical controller button does on $consoleName.",
+                                style = SpTypography.BodySmall,
+                                color = SpColor.OnBackgroundTertiary,
+                            )
+                            Spacer(Modifier.height(SpSpacing.Medium))
+                            SpSecondaryButton(
+                                text = "Configure controller buttons",
+                                onClick = {
+                                    gamepadMappingViewModel.onIntent(GamepadMappingIntent.Load(consoleId))
+                                    showGamepadMapping = true
+                                },
+                                modifier = Modifier.testTag("configure_gamepad_buttons"),
+                            )
+                        }
+                    }
+
+                    if (showGamepadMapping) {
+                        GamepadMappingDialog(
+                            state = gamepadMappingState,
+                            onSetBinding = { position, retroButtonId ->
+                                gamepadMappingViewModel.onIntent(
+                                    GamepadMappingIntent.SetBinding(position, retroButtonId)
                                 )
                             },
                             onResetToDefaults = {
-                                keyMappingViewModel.onIntent(KeyMappingIntent.ResetAll)
+                                gamepadMappingViewModel.onIntent(GamepadMappingIntent.ResetAll)
                             },
-                            onCancelMapping = {
-                                keyMappingViewModel.onIntent(KeyMappingIntent.CancelMapping)
-                            },
-                            onClearBinding = {
-                                keyMappingViewModel.onIntent(KeyMappingIntent.ClearCurrentBinding)
-                            },
-                            keyNameResolver = ::platformKeyName,
-                            portLabel = portLabel,
-                            modifier = Modifier.padding(SpSpacing.ScreenHorizontal),
+                            onDismiss = { showGamepadMapping = false },
                         )
+                    }
+                }
+            }
+
+            // Keyboard key mapping (keycode \u2192 RetroPad). Desktop-only: there's no
+            // keyboard on Android, and Android gamepad input is positional (the
+            // "Controller buttons" editor above), so the keycode editor would be
+            // dead there. (#1334)
+            if (currentPlatform() != "android") {
+                item {
+                    SettingsSectionHeader(title = "Keyboard")
+                }
+                item {
+                    val selectedPort = gamepadConfigViewModel?.state?.collectAsState()?.value?.selectedPort
+                    val portAssignment = gamepadConfigViewModel?.state?.collectAsState()?.value
+                        ?.portAssignments?.find { it.port == selectedPort }
+                    val portLabel = if (selectedPort != null && portAssignment != null) {
+                        "Player ${selectedPort + 1} \u2014 ${portAssignment.deviceName}"
+                    } else null
+
+                    SpCard(onGradient = true) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(560.dp)
+                                .padding(SpSpacing.Small)
+                                .testTag("key-mapping-card"),
+                        ) {
+                            KeyMappingScreen(
+                                layout = layout,
+                                state = keyMappingState,
+                                onButtonClick = { retroButtonId ->
+                                    keyMappingViewModel.onIntent(
+                                        KeyMappingIntent.StartSingleButtonMap(retroButtonId)
+                                    )
+                                },
+                                onStartWizard = {
+                                    keyMappingViewModel.onIntent(
+                                        KeyMappingIntent.StartWizard(consoleId)
+                                    )
+                                },
+                                onResetToDefaults = {
+                                    keyMappingViewModel.onIntent(KeyMappingIntent.ResetAll)
+                                },
+                                onCancelMapping = {
+                                    keyMappingViewModel.onIntent(KeyMappingIntent.CancelMapping)
+                                },
+                                onClearBinding = {
+                                    keyMappingViewModel.onIntent(KeyMappingIntent.ClearCurrentBinding)
+                                },
+                                keyNameResolver = ::platformKeyName,
+                                portLabel = portLabel,
+                                modifier = Modifier.padding(SpSpacing.ScreenHorizontal),
+                            )
+                        }
                     }
                 }
             }

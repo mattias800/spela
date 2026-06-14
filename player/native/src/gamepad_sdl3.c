@@ -23,45 +23,52 @@ static SDL_JoystickID controller_instance_ids[MAX_CONTROLLERS];
 static int num_controllers = 0;
 static int initialized = 0;
 
-/* libretro button IDs (matching RETRO_DEVICE_ID_JOYPAD_*) */
-#define RETRO_B      0
-#define RETRO_Y      1
-#define RETRO_SELECT 2
-#define RETRO_START  3
-#define RETRO_UP     4
-#define RETRO_DOWN   5
-#define RETRO_LEFT   6
-#define RETRO_RIGHT  7
-#define RETRO_A      8
-#define RETRO_X      9
-#define RETRO_L     10
-#define RETRO_R     11
-#define RETRO_L2    12
-#define RETRO_R2    13
-#define RETRO_L3    14
-#define RETRO_R3    15
+/* Canonical GamepadPosition ordinals — the INPUT layer of the two-layer model
+ * (#1334). These MUST match the Kotlin enum order in
+ * shared/src/commonMain/kotlin/com/spela/player/domain/model/GamepadPosition.kt
+ * (its "ordinal contract"). The poller reports the per-frame button array
+ * indexed by these ordinals; Kotlin then applies the configurable
+ * GamepadPosition -> RetroPad mapping. Changing one side without the other
+ * silently corrupts desktop input. POS_L2 / POS_R2 are analog triggers, filled
+ * Kotlin-side from the axis values, never here. */
+#define POS_SOUTH       0
+#define POS_EAST        1
+#define POS_WEST        2
+#define POS_NORTH       3
+#define POS_DPAD_UP     4
+#define POS_DPAD_DOWN   5
+#define POS_DPAD_LEFT   6
+#define POS_DPAD_RIGHT  7
+#define POS_L1          8
+#define POS_R1          9
+#define POS_L2         10  /* trigger (axis) — filled in Kotlin */
+#define POS_R2         11  /* trigger (axis) — filled in Kotlin */
+#define POS_L3         12
+#define POS_R3         13
+#define POS_START      14
+#define POS_SELECT     15
 
-/* Number of discrete buttons we track */
+/* Number of discrete positions we track */
 #define NUM_BUTTONS 16
 /* Number of axes we track: LX, LY, RX, RY, TriggerL, TriggerR */
 #define NUM_AXES 6
 
-static int sdl_button_to_retro(SDL_GamepadButton btn) {
+static int sdl_button_to_position(SDL_GamepadButton btn) {
     switch (btn) {
-        case SDL_GAMEPAD_BUTTON_SOUTH:          return RETRO_B;
-        case SDL_GAMEPAD_BUTTON_EAST:           return RETRO_A;
-        case SDL_GAMEPAD_BUTTON_WEST:           return RETRO_Y;
-        case SDL_GAMEPAD_BUTTON_NORTH:          return RETRO_X;
-        case SDL_GAMEPAD_BUTTON_BACK:           return RETRO_SELECT;
-        case SDL_GAMEPAD_BUTTON_START:          return RETRO_START;
-        case SDL_GAMEPAD_BUTTON_LEFT_STICK:     return RETRO_L3;
-        case SDL_GAMEPAD_BUTTON_RIGHT_STICK:    return RETRO_R3;
-        case SDL_GAMEPAD_BUTTON_LEFT_SHOULDER:  return RETRO_L;
-        case SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER: return RETRO_R;
-        case SDL_GAMEPAD_BUTTON_DPAD_UP:        return RETRO_UP;
-        case SDL_GAMEPAD_BUTTON_DPAD_DOWN:      return RETRO_DOWN;
-        case SDL_GAMEPAD_BUTTON_DPAD_LEFT:      return RETRO_LEFT;
-        case SDL_GAMEPAD_BUTTON_DPAD_RIGHT:     return RETRO_RIGHT;
+        case SDL_GAMEPAD_BUTTON_SOUTH:          return POS_SOUTH;
+        case SDL_GAMEPAD_BUTTON_EAST:           return POS_EAST;
+        case SDL_GAMEPAD_BUTTON_WEST:           return POS_WEST;
+        case SDL_GAMEPAD_BUTTON_NORTH:          return POS_NORTH;
+        case SDL_GAMEPAD_BUTTON_BACK:           return POS_SELECT;
+        case SDL_GAMEPAD_BUTTON_START:          return POS_START;
+        case SDL_GAMEPAD_BUTTON_LEFT_STICK:     return POS_L3;
+        case SDL_GAMEPAD_BUTTON_RIGHT_STICK:    return POS_R3;
+        case SDL_GAMEPAD_BUTTON_LEFT_SHOULDER:  return POS_L1;
+        case SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER: return POS_R1;
+        case SDL_GAMEPAD_BUTTON_DPAD_UP:        return POS_DPAD_UP;
+        case SDL_GAMEPAD_BUTTON_DPAD_DOWN:      return POS_DPAD_DOWN;
+        case SDL_GAMEPAD_BUTTON_DPAD_LEFT:      return POS_DPAD_LEFT;
+        case SDL_GAMEPAD_BUTTON_DPAD_RIGHT:     return POS_DPAD_RIGHT;
         default:                                return -1;
     }
 }
@@ -179,7 +186,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_spela_player_libretro_LibretroJni_native
     jclass stateClass = (*env)->FindClass(env, "com/spela/player/libretro/GamepadState");
     if (!stateClass) return NULL;
 
-    jmethodID ctor = (*env)->GetMethodID(env, stateClass, "<init>", "(ILjava/lang/String;[Z[I)V");
+    jmethodID ctor = (*env)->GetMethodID(env, stateClass, "<init>", "(ILjava/lang/String;[Z[II)V");
     if (!ctor) return NULL;
 
     int attached_count = 0;
@@ -205,9 +212,9 @@ JNIEXPORT jobjectArray JNICALL Java_com_spela_player_libretro_LibretroJni_native
         memset(btnValues, 0, sizeof(btnValues));
 
         for (int b = SDL_GAMEPAD_BUTTON_SOUTH; b <= SDL_GAMEPAD_BUTTON_DPAD_RIGHT; b++) {
-            int retro_id = sdl_button_to_retro((SDL_GamepadButton)b);
-            if (retro_id >= 0 && retro_id < NUM_BUTTONS) {
-                btnValues[retro_id] = SDL_GetGamepadButton(gc, (SDL_GamepadButton)b) ? JNI_TRUE : JNI_FALSE;
+            int position = sdl_button_to_position((SDL_GamepadButton)b);
+            if (position >= 0 && position < NUM_BUTTONS) {
+                btnValues[position] = SDL_GetGamepadButton(gc, (SDL_GamepadButton)b) ? JNI_TRUE : JNI_FALSE;
             }
         }
         (*env)->SetBooleanArrayRegion(env, buttons, 0, NUM_BUTTONS, btnValues);
@@ -222,7 +229,8 @@ JNIEXPORT jobjectArray JNICALL Java_com_spela_player_libretro_LibretroJni_native
         axisValues[5] = SDL_GetGamepadAxis(gc, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER);
         (*env)->SetIntArrayRegion(env, axes, 0, NUM_AXES, axisValues);
 
-        jobject stateObj = (*env)->NewObject(env, stateClass, ctor, controllerId, jname, buttons, axes);
+        jint gpType = (jint)SDL_GetRealGamepadType(gc);
+        jobject stateObj = (*env)->NewObject(env, stateClass, ctor, controllerId, jname, buttons, axes, gpType);
         (*env)->SetObjectArrayElement(env, result, out_index, stateObj);
         out_index++;
 

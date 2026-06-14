@@ -4,6 +4,8 @@ import androidx.compose.runtime.Composable
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.spela.player.data.device.DeviceManager
 import com.spela.player.data.local.SpelaDatabase
+import com.spela.player.data.repository.ControllerStyleOverrideRepositoryImpl
+import com.spela.player.data.repository.GamepadMappingRepositoryImpl
 import com.spela.player.data.remote.ConnectivityMonitor
 import com.spela.player.data.remote.PresenceService
 import com.spela.player.data.remote.SyncEngine
@@ -171,6 +173,7 @@ class SpelaTestHarness(
         keyMappingRepo,
         scope,
         nowMs = { testDispatcher.scheduler.currentTime },
+        gamepadMappingRepository = GamepadMappingRepositoryImpl(testDatabase),
     )
 
     // Achievement fakes are exposed so tests can drive the popup wiring:
@@ -271,9 +274,18 @@ class SpelaTestHarness(
 
     val gamepadConfigViewModel = GamepadConfigViewModel(
         gamepadPortManager = gamepadPortManager,
+        styleOverrideRepository = ControllerStyleOverrideRepositoryImpl(testDatabase),
         dispatchers = dispatchers,
         scope = scope,
         nowMs = { testDispatcher.scheduler.currentTime },
+    )
+
+    val gamepadMappingViewModel = GamepadMappingViewModel(
+        gamepadMappingRepository = GamepadMappingRepositoryImpl(testDatabase),
+        gamepadPortManager = gamepadPortManager,
+        preferencesRepository = preferencesRepo,
+        dispatchers = dispatchers,
+        scope = scope,
     )
 
     val socialRepo = FakeSocialRepository()
@@ -404,6 +416,7 @@ class SpelaTestHarness(
                 settingsViewModel = settingsViewModel,
                 keyMappingViewModel = keyMappingViewModel,
                 gamepadConfigViewModel = gamepadConfigViewModel,
+                gamepadMappingViewModel = gamepadMappingViewModel,
                 socialViewModel = socialViewModel,
                 sharedSessionsViewModel = sharedSessionsViewModel,
                 sharedSessionDetailViewModel = sharedSessionDetailViewModel,

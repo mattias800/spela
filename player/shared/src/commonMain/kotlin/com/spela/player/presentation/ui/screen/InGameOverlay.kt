@@ -42,6 +42,7 @@ import com.spela.player.presentation.ui.components.keymapping.PresetPickerDialog
 import com.spela.player.presentation.ui.components.keymapping.platformKeyName
 import com.spela.player.presentation.viewmodel.EmulationViewModel
 import com.spela.player.presentation.viewmodel.GamepadConfigIntent
+import com.spela.player.util.currentPlatform
 import com.spela.player.presentation.viewmodel.GamepadConfigViewModel
 import com.spela.player.presentation.viewmodel.KeyMappingViewModel
 
@@ -478,6 +479,11 @@ fun InGameOverlay(
             onSwapDown = { port ->
                 gamepadConfigViewModel.onIntent(GamepadConfigIntent.SwapPorts(port, port + 1))
             },
+            onSetStyleOverride = { port, style ->
+                gamepadConfigViewModel.onIntent(GamepadConfigIntent.SetStyleOverride(port, style))
+            },
+            // Keyboard key-mapping is desktop-only (Android gamepad input is positional).
+            showConfigureButton = currentPlatform() != "android",
             onDismiss = {
                 viewModel.onIntent(EmulationIntent.HideGamepadConfig)
             },

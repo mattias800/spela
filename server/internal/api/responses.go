@@ -1150,6 +1150,10 @@ type UserPreferencesResponse struct {
 type ConsoleKeyMappingDTO struct {
 	SelectedMapping string            `json:"selectedMapping"`
 	CustomMapping   map[string]string `json:"customMapping"`
+	// PositionMappings is the brand-independent positional gamepad mapping layer
+	// (#1334): GamepadPosition name -> libretro RetroPad id. Always present in
+	// responses (empty map when unset); platform-independent so it syncs as-is.
+	PositionMappings map[string]int `json:"positionMappings"`
 }
 
 // UserStatsResponse is the response for GET /api/user/stats.

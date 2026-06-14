@@ -1,8 +1,10 @@
 package com.spela.player.libretro
 
+import com.spela.player.domain.model.DefaultGamepadMapping
+import com.spela.player.domain.model.GamepadPosition
+import com.spela.player.domain.model.controllerStyleFromSdlType
 import com.spela.player.presentation.navigation.NavigationEventBus
 import com.spela.player.presentation.ui.gamepad.InputMode
-import com.spela.player.presentation.viewmodel.LibretroButtons
 import com.spela.player.presentation.viewmodel.LibretroController
 import java.util.concurrent.Executors
 import kotlinx.coroutines.CoroutineScope
@@ -32,9 +34,6 @@ class DesktopGamepadPoller(
 
         /** Axis dead zone (SDL range is -32768..32767, ~15% dead zone). */
         private const val AXIS_DEADZONE = 4800
-
-        /** Number of discrete buttons from SDL GameController. */
-        private const val NUM_BUTTONS = 16
 
         /** Number of axes: LX, LY, RX, RY, TriggerL, TriggerR. */
         private const val NUM_AXES = 6
@@ -107,7 +106,11 @@ class DesktopGamepadPoller(
             // Connect new devices
             if (state.controllerId !in knownControllers) {
                 knownControllers.add(state.controllerId)
-                gamepadPortManager.connectDevice(state.controllerId, state.name)
+                gamepadPortManager.connectDevice(
+                    state.controllerId,
+                    state.name,
+                    controllerStyleFromSdlType(state.type),
+                )
             }
 
             val port = gamepadPortManager.getPort(state.controllerId)
@@ -115,33 +118,41 @@ class DesktopGamepadPoller(
 
             var hasInput = false
 
-            // Route button states
-            for (buttonId in 0 until minOf(NUM_BUTTONS, state.buttons.size)) {
-                desktopController.setButton(port, buttonId, state.buttons[buttonId])
-                if (state.buttons[buttonId]) hasInput = true
+            // state.buttons is indexed by GamepadPosition ordinal (input layer).
+            // Triggers are analog (axes 4/5) — fold them into the L2/R2 position
+            // slots, which the C bridge leaves unset.
+            val positionPressed = BooleanArray(GamepadPosition.entries.size)
+            for (i in 0 until minOf(positionPressed.size, state.buttons.size)) {
+                positionPressed[i] = state.buttons[i]
+            }
+            if (state.axes.size >= NUM_AXES) {
+                positionPressed[GamepadPosition.L2.ordinal] = state.axes[4] > TRIGGER_THRESHOLD
+                positionPressed[GamepadPosition.R2.ordinal] = state.axes[5] > TRIGGER_THRESHOLD
             }
 
-            // Route analog axes
+            // Apply the configurable mapping layer (position -> RetroPad), with
+            // fan-in handled so a released position can't clobber another's press.
+            val mapping = gamepadPortManager.getGamepadMapping(port)
+                ?: DefaultGamepadMapping.POSITION_TO_RETRO
+            val retroPressed = GamepadButtonResolver.resolve(positionPressed, mapping)
+            for (retroId in retroPressed.indices) {
+                desktopController.setButton(port, retroId, retroPressed[retroId])
+                if (retroPressed[retroId]) hasInput = true
+            }
+
+            // Route analog stick axes (unmapped — sticks are not positional buttons).
             if (state.axes.size >= NUM_AXES) {
                 val lx = applyDeadzone(state.axes[0])
                 val ly = applyDeadzone(state.axes[1])
                 val rx = applyDeadzone(state.axes[2])
                 val ry = applyDeadzone(state.axes[3])
-                val triggerL = state.axes[4]
-                val triggerR = state.axes[5]
 
                 desktopController.setAnalog(port, 0, 0, lx.toShort())
                 desktopController.setAnalog(port, 0, 1, ly.toShort())
                 desktopController.setAnalog(port, 1, 0, rx.toShort())
                 desktopController.setAnalog(port, 1, 1, ry.toShort())
 
-                // Digital trigger buttons (L2/R2)
-                desktopController.setButton(port, LibretroButtons.L2, triggerL > TRIGGER_THRESHOLD)
-                desktopController.setButton(port, LibretroButtons.R2, triggerR > TRIGGER_THRESHOLD)
-
-                if (lx != 0 || ly != 0 || rx != 0 || ry != 0 ||
-                    triggerL > TRIGGER_THRESHOLD || triggerR > TRIGGER_THRESHOLD
-                ) {
+                if (lx != 0 || ly != 0 || rx != 0 || ry != 0) {
                     hasInput = true
                 }
             }

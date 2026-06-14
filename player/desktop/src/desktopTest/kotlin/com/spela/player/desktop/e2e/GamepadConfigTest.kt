@@ -177,6 +177,82 @@ class GamepadConfigTest {
     }
 
     @Test
+    fun detectedControllerStyleShownAsIdentity() = runComposeUiTest {
+        val harness = createLoggedInHarness()
+
+        setContent { harness.App() }
+        navigateToConsoleSettings(harness, "nes")
+
+        // A PlayStation-detected pad shows its style identity, not the raw name.
+        harness.gamepadPortManager.connectDevice(
+            1,
+            "Sony Interactive Wireless Controller",
+            com.spela.player.domain.model.ControllerStyle.PlayStation,
+        )
+        advance(harness)
+
+        onNodeWithContentDescription("Player 1: PlayStation Controller").assertExists()
+    }
+
+    @Test
+    fun styleOverridePickerChangesIdentity() = runComposeUiTest {
+        val harness = createLoggedInHarness()
+
+        setContent { harness.App() }
+        navigateToConsoleSettings(harness, "nes")
+
+        harness.gamepadPortManager.connectDevice(
+            1,
+            "Sony Interactive Wireless Controller",
+            com.spela.player.domain.model.ControllerStyle.PlayStation,
+        )
+        advance(harness)
+        onNodeWithContentDescription("Player 1: PlayStation Controller").assertExists()
+
+        // Open the per-controller type picker and override to Xbox.
+        onNodeWithContentDescription("Player 1 controller type").performClick()
+        advance(harness)
+        onNodeWithTag("controller_style_picker").assertExists()
+
+        // "Xbox Controller" text exists only in the picker at this point.
+        onNodeWithText("Xbox Controller").performClick()
+        advance(harness)
+
+        // Identity reflects the override; picker is dismissed.
+        onNodeWithContentDescription("Player 1: Xbox Controller").assertExists()
+        onNodeWithTag("controller_style_picker").assertDoesNotExist()
+    }
+
+    @Test
+    fun styleOverrideAutoRevertsToDetected() = runComposeUiTest {
+        val harness = createLoggedInHarness()
+
+        setContent { harness.App() }
+        navigateToConsoleSettings(harness, "nes")
+
+        harness.gamepadPortManager.connectDevice(
+            1,
+            "Sony Interactive Wireless Controller",
+            com.spela.player.domain.model.ControllerStyle.PlayStation,
+        )
+        advance(harness)
+
+        // Override to Xbox first.
+        onNodeWithContentDescription("Player 1 controller type").performClick()
+        advance(harness)
+        onNodeWithText("Xbox Controller").performClick()
+        advance(harness)
+        onNodeWithContentDescription("Player 1: Xbox Controller").assertExists()
+
+        // Re-open and choose Auto: identity reverts to the detected style.
+        onNodeWithContentDescription("Player 1 controller type").performClick()
+        advance(harness)
+        onNodeWithText("Auto").performClick()
+        advance(harness)
+        onNodeWithContentDescription("Player 1: PlayStation Controller").assertExists()
+    }
+
+    @Test
     fun portManagerTracksCorrectPortAfterSwap() {
         val harness = createLoggedInHarness()
 
