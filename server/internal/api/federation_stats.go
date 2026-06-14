@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 
@@ -12,6 +13,10 @@ import (
 	"github.com/spela/server/internal/db"
 	"github.com/spela/server/internal/federation"
 )
+
+// maxStatsResponseBytes caps an inbound friend stat payload (defense against a
+// hostile/misconfigured peer returning an unbounded body).
+const maxStatsResponseBytes = 4 << 20 // 4 MiB
 
 // statsClient fetches a peer's source-stamped stat rollup over a signed request.
 type statsClient interface {
@@ -40,10 +45,24 @@ func (httpStatsClient) FetchStats(baseURL, requestID string, id federation.Ident
 	var body struct {
 		Entries []federation.StatEntry `json:"entries"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+	if err := json.NewDecoder(io.LimitReader(resp.Body, maxStatsResponseBytes)).Decode(&body); err != nil {
 		return nil, err
 	}
 	return body.Entries, nil
+}
+
+// validPeerStatBatch enforces the 1-hop invariant on a friend's rollup: every
+// entry must originate from that friend (no claiming a third server's or our own
+// identity), be hop 0 on their side, and carry non-negative values. A friend
+// that violates this is misbehaving, so the whole batch is rejected rather than
+// cherry-picked.
+func validPeerStatBatch(entries []federation.StatEntry, peerFingerprint string) bool {
+	for _, e := range entries {
+		if e.OriginFingerprint != peerFingerprint || e.Hops != 0 || e.PlayTimeSeconds < 0 || e.Players < 0 {
+			return false
+		}
+	}
+	return true
 }
 
 // ginExportStats serves this server's source-stamped rollup (hop 0) to an
@@ -121,6 +140,17 @@ func (h *FederationHandler) HumaAggregatedStats(_ context.Context, in *Aggregate
 			})
 			continue
 		}
+		// Reject a misbehaving friend's batch wholesale (spoofed origin, wrong
+		// hop, or negative values would poison the aggregate).
+		if !validPeerStatBatch(entries, peer.Fingerprint) {
+			federation.RecordExchange(h.DB, federation.ExchangeRecord{
+				RequestID: reqID, PeerFingerprint: peer.Fingerprint, PeerName: peer.Name,
+				Direction: db.ExchangeOutbound, Operation: "stats_pull",
+				DataClass: string(federation.DataClassStats), Status: db.ExchangeRejected,
+				StartedAt: started, ItemCount: len(entries), Error: "invalid stat batch (origin/hop/value)",
+			})
+			continue
+		}
 		// Ingest: a friend's hop-0 datum is hop 1 from us.
 		for i := range entries {
 			entries[i].Hops++
@@ -146,6 +176,13 @@ func (h *FederationHandler) HumaAggregatedStats(_ context.Context, in *Aggregate
 	}
 	if in.Limit > 0 && len(aggregated) > in.Limit {
 		aggregated = aggregated[:in.Limit]
+	}
+
+	// Strip the per-source breakdown: it carries peer fingerprints, and the peer
+	// roster is admin-only elsewhere. Regular users get totals + labels only.
+	// (A future admin-only detailed view can expose Sources for anti-inflation.)
+	for i := range aggregated {
+		aggregated[i].Sources = nil
 	}
 
 	out := &AggregatedStatsOutput{}

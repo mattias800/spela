@@ -109,12 +109,39 @@ func TestAggregatedStats_MergesLocalAndFriend(t *testing.T) {
 	require.Len(t, out.Body.Stats, 1)
 	assert.Equal(t, "igdb:1", out.Body.Stats[0].Key)
 	assert.Equal(t, int64(350), out.Body.Stats[0].TotalPlayTime, "local 100 + friend 250")
-	require.Len(t, out.Body.Stats[0].Sources, 2)
+	assert.Empty(t, out.Body.Stats[0].Sources, "per-source breakdown stripped from the user-facing response")
 
 	// A successful pull was recorded in the ledger.
 	var pulls int64
 	database.Model(&db.FederationExchange{}).Where("operation = ? AND status = ?", "stats_pull", db.ExchangeOK).Count(&pulls)
 	assert.Equal(t, int64(1), pulls)
+}
+
+func TestAggregatedStats_RejectsSpoofedFriendBatch(t *testing.T) {
+	database := openAPIFedTestDB(t)
+	selfID, _ := federation.GenerateIdentity()
+	friendID, _ := federation.GenerateIdentity()
+	seedLocalPlay(t, database, "igdb:1", 100)
+	policyPeer(t, database, friendID, "Friend", "https://friend", true, true)
+
+	// The friend claims an entry that originates from a THIRD fingerprint (spoof)
+	// with an absurd play time — the whole batch must be rejected.
+	fake := fakeStatsClient{byBase: map[string][]federation.StatEntry{
+		"https://friend": {{
+			OriginFingerprint: "someoneelse", Hops: 0,
+			Metric: federation.MetricGamePlay, Key: "igdb:1", PlayTimeSeconds: 999999,
+		}},
+	}}
+	h := &FederationHandler{DB: database, Identity: selfID, Peers: federation.PeerStore{DB: database}, BaseURL: "https://self", StatsClient: fake}
+
+	out, err := h.HumaAggregatedStats(context.Background(), &AggregatedStatsInput{Metric: "game_play"})
+	require.NoError(t, err)
+	require.Len(t, out.Body.Stats, 1)
+	assert.Equal(t, int64(100), out.Body.Stats[0].TotalPlayTime, "spoofed batch rejected; local-only result")
+
+	var rejected int64
+	database.Model(&db.FederationExchange{}).Where("operation = ? AND status = ?", "stats_pull", db.ExchangeRejected).Count(&rejected)
+	assert.Equal(t, int64(1), rejected)
 }
 
 func TestAggregatedStats_SkipsFriendOnErrorButReturnsLocal(t *testing.T) {

@@ -53,16 +53,40 @@ func TestBuildLocalRollup_StampsGamesAndGatesPrivatePlayers(t *testing.T) {
 	assert.Equal(t, "selfFP", games[0].OriginFingerprint)
 	assert.Equal(t, 0, games[0].Hops)
 	assert.Equal(t, "igdb:111", games[0].Key)
-	assert.Equal(t, int64(300), games[0].PlayTimeSeconds, "both users' play time summed")
-	assert.Equal(t, int64(2), games[0].Players)
+	assert.Equal(t, int64(100), games[0].PlayTimeSeconds, "only the public user's play time counts toward the game total")
+	assert.Equal(t, int64(1), games[0].Players, "private user excluded from the game player count too")
 
 	require.Len(t, players, 1, "private user must be excluded from player_play")
 	assert.Equal(t, "publicguy", players[0].Key)
 	assert.Equal(t, int64(100), players[0].PlayTimeSeconds)
 }
 
-func TestGameStatKey_PrefersScraperThenCRCThenTitle(t *testing.T) {
-	assert.Equal(t, "igdb:5", gameStatKey(db.Game{ScraperID: "igdb:5", CRC32: "abc", Title: "T"}))
-	assert.Equal(t, "crc:abc", gameStatKey(db.Game{CRC32: "abc", Title: "T"}))
-	assert.Equal(t, "title:zelda", gameStatKey(db.Game{Title: "Zelda"}))
+func TestBuildLocalRollup_ExcludesDisabledAndPendingUsers(t *testing.T) {
+	database := openRollupTestDB(t)
+	disabled := db.User{Username: "banned", Email: "d@x.test", PasswordHash: "h", ProfileVisibility: "public", Disabled: true}
+	pending := db.User{Username: "newbie", Email: "p@x.test", PasswordHash: "h", ProfileVisibility: "public", PendingApproval: true}
+	require.NoError(t, database.Create(&disabled).Error)
+	require.NoError(t, database.Create(&pending).Error)
+
+	g := db.Game{Title: "G", ScraperID: "igdb:9", FilePath: "/g", ConsoleID: 1}
+	require.NoError(t, database.Create(&g).Error)
+	require.NoError(t, database.Create(&db.PlayHistory{UserID: disabled.ID, GameID: g.ID, PlayTime: 50}).Error)
+	require.NoError(t, database.Create(&db.PlayHistory{UserID: pending.ID, GameID: g.ID, PlayTime: 50}).Error)
+
+	entries, err := BuildLocalRollup(database, "selfFP")
+	require.NoError(t, err)
+	assert.Empty(t, entries, "disabled and pending-approval users must not federate (either metric)")
+}
+
+func TestGameStatKey_PrefersScraperThenCRC_SkipsUnidentifiable(t *testing.T) {
+	k, ok := gameStatKey(db.Game{ScraperID: "igdb:5", CRC32: "abc", Title: "T"})
+	assert.True(t, ok)
+	assert.Equal(t, "igdb:5", k)
+
+	k, ok = gameStatKey(db.Game{CRC32: "abc", Title: "T"})
+	assert.True(t, ok)
+	assert.Equal(t, "crc:abc", k)
+
+	_, ok = gameStatKey(db.Game{Title: "Zelda"})
+	assert.False(t, ok, "no scraper id / CRC32 => not federated (no title fallback)")
 }

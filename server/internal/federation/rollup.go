@@ -1,34 +1,39 @@
 package federation
 
 import (
-	"strings"
-
 	"github.com/spela/server/internal/db"
 	"gorm.io/gorm"
 )
 
-// gameStatKey derives the cross-server identity for a game: prefer the IGDB
-// scraper id, then CRC32, falling back to a normalized title. Games that share a
-// key across servers aggregate together.
-func gameStatKey(g db.Game) string {
+// gameStatKey derives the cross-server identity for a game: the IGDB scraper id,
+// else CRC32. Games sharing a key across servers aggregate together. Returns
+// ok=false when the game has no reliable cross-identifier — such games are NOT
+// federated (a title fallback would falsely merge distinct games, both locally
+// and across servers).
+func gameStatKey(g db.Game) (string, bool) {
 	if g.ScraperID != "" {
-		return g.ScraperID
+		return g.ScraperID, true
 	}
 	if g.CRC32 != "" {
-		return "crc:" + g.CRC32
+		return "crc:" + g.CRC32, true
 	}
-	return "title:" + strings.ToLower(strings.TrimSpace(g.Title))
+	return "", false
 }
 
+// publicActiveUserFilter restricts an aggregate to users who have consented to
+// public visibility AND are active accounts. This is the origin-side privacy
+// gate: private, disabled, and pending-approval users never enter the mesh — for
+// BOTH metrics. (Game totals therefore reflect public, active users only in
+// Phase 1; full totals protected by k-anonymity are a Phase 2 concern.)
+const publicActiveUserFilter = "users.profile_visibility = ? AND users.disabled = ? AND users.pending_approval = ?"
+
 // BuildLocalRollup computes this server's own aggregate stats as source-stamped
-// StatEntry values (origin = selfFingerprint, hop 0). Game play time + distinct
-// players are keyed by cross-server game identity; player play time is included
-// only for users whose ProfileVisibility is public — the origin-side consent
-// gate, so private users never enter the mesh.
+// StatEntry values (origin = selfFingerprint, hop 0). Both metrics are gated by
+// publicActiveUserFilter so private/disabled/pending users never federate.
 func BuildLocalRollup(database *gorm.DB, selfFingerprint string) ([]StatEntry, error) {
 	entries := []StatEntry{}
 
-	// --- game_play: play time + distinct players per game ---
+	// --- game_play: play time + distinct players per game (public users only) ---
 	type gameRow struct {
 		GameID   uint
 		Players  int64
@@ -36,8 +41,10 @@ func BuildLocalRollup(database *gorm.DB, selfFingerprint string) ([]StatEntry, e
 	}
 	var grows []gameRow
 	if err := database.Model(&db.PlayHistory{}).
-		Select("game_id, COUNT(DISTINCT user_id) as players, SUM(play_time) as play_time").
-		Group("game_id").
+		Joins("JOIN users ON users.id = play_histories.user_id").
+		Where(publicActiveUserFilter, "public", false, false).
+		Select("play_histories.game_id as game_id, COUNT(DISTINCT play_histories.user_id) as players, SUM(play_histories.play_time) as play_time").
+		Group("play_histories.game_id").
 		Scan(&grows).Error; err != nil {
 		return nil, err
 	}
@@ -67,7 +74,10 @@ func BuildLocalRollup(database *gorm.DB, selfFingerprint string) ([]StatEntry, e
 			if !ok {
 				continue
 			}
-			key := gameStatKey(g)
+			key, hasKey := gameStatKey(g)
+			if !hasKey {
+				continue // can't cross-identify this game — don't federate it
+			}
 			a, ok := byKey[key]
 			if !ok {
 				a = &agg{label: g.Title}
@@ -95,7 +105,7 @@ func BuildLocalRollup(database *gorm.DB, selfFingerprint string) ([]StatEntry, e
 	if err := database.Model(&db.PlayHistory{}).
 		Select("users.username as username, SUM(play_histories.play_time) as play_time").
 		Joins("JOIN users ON users.id = play_histories.user_id").
-		Where("users.profile_visibility = ?", "public").
+		Where(publicActiveUserFilter, "public", false, false).
 		Group("play_histories.user_id").
 		Scan(&prows).Error; err != nil {
 		return nil, err
