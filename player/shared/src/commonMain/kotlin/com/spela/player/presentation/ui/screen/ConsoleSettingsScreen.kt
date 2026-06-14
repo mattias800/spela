@@ -380,6 +380,9 @@ fun ConsoleSettingsScreen(
             // dead there. (#1334)
             if (currentPlatform() != "android") {
                 item {
+                    SettingsSectionHeader(title = "Keyboard")
+                }
+                item {
                     val selectedPort = gamepadConfigViewModel?.state?.collectAsState()?.value?.selectedPort
                     val portAssignment = gamepadConfigViewModel?.state?.collectAsState()?.value
                         ?.portAssignments?.find { it.port == selectedPort }

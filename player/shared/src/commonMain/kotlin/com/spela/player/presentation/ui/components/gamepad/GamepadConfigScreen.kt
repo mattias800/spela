@@ -123,7 +123,7 @@ private fun ControllerRow(
     onConfigure: (() -> Unit)?,
     onSwapUp: (() -> Unit)?,
     onSwapDown: (() -> Unit)?,
-    onPickStyle: (() -> Unit) ? = null,
+    onPickStyle: (() -> Unit)? = null,
 ) {
     // Show the effective controller identity (e.g. "Xbox Controller"). For an
     // unrecognized pad fall back to the raw OS device name. (#1334)
