@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -18,16 +19,24 @@ import (
 // hostile/misconfigured peer returning an unbounded body).
 const maxStatsResponseBytes = 4 << 20 // 4 MiB
 
-// statsClient fetches a peer's source-stamped stat rollup over a signed request.
+// maxStatEntriesPerPeer caps how many entries we accept from one friend per
+// refresh, bounding a friend's influence (a single friend can't flood the mesh).
+const maxStatEntriesPerPeer = 5000
+
+// statsClient fetches a peer's source-stamped rollup over a signed request,
+// asking for entries up to maxHops hops from that peer.
 type statsClient interface {
-	FetchStats(baseURL, requestID string, id federation.Identity, peerFingerprint string) ([]federation.StatEntry, error)
+	FetchStats(baseURL, requestID string, id federation.Identity, peerFingerprint string, maxHops int) ([]federation.StatEntry, error)
 }
 
 type httpStatsClient struct{}
 
-func (httpStatsClient) FetchStats(baseURL, requestID string, id federation.Identity, peerFingerprint string) ([]federation.StatEntry, error) {
+func (httpStatsClient) FetchStats(baseURL, requestID string, id federation.Identity, peerFingerprint string, maxHops int) ([]federation.StatEntry, error) {
 	const path = "/api/federation/stats"
-	req, err := http.NewRequest(http.MethodGet, baseURL+path, nil)
+	// maxHops rides in the query (not signed — it only bounds how much data comes
+	// back). The signature covers the path, which is identical on both ends.
+	url := fmt.Sprintf("%s%s?maxHops=%d", baseURL, path, maxHops)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -51,22 +60,36 @@ func (httpStatsClient) FetchStats(baseURL, requestID string, id federation.Ident
 	return body.Entries, nil
 }
 
-// validPeerStatBatch enforces the 1-hop invariant on a friend's rollup: every
-// entry must originate from that friend (no claiming a third server's or our own
-// identity), be hop 0 on their side, and carry non-negative values. A friend
-// that violates this is misbehaving, so the whole batch is rejected rather than
-// cherry-picked.
-func validPeerStatBatch(entries []federation.StatEntry, peerFingerprint string) bool {
+// sanitizeFriendBatch cleans a friend's transitive rollup before we ingest it:
+// drop entries that claim OUR origin (a loop — our local data is authoritative),
+// exceed the hop budget, carry negative values, or are missing an origin. Caps
+// the count per peer. (Phase 2 trusts a direct friend to have honestly
+// aggregated its own friends — a friend can still invent unknown origins; that
+// residual risk is bounded by this cap, dedupe-by-origin, and the per-friend
+// consume toggle. Cryptographic per-origin provenance is a later hardening.)
+func sanitizeFriendBatch(entries []federation.StatEntry, selfFingerprint string, maxAcceptedHops int) []federation.StatEntry {
+	out := make([]federation.StatEntry, 0, len(entries))
 	for _, e := range entries {
-		if e.OriginFingerprint != peerFingerprint || e.Hops != 0 || e.PlayTimeSeconds < 0 || e.Players < 0 {
-			return false
+		if e.OriginFingerprint == "" || e.OriginFingerprint == selfFingerprint {
+			continue
+		}
+		if e.Hops < 0 || e.Hops > maxAcceptedHops {
+			continue
+		}
+		if e.PlayTimeSeconds < 0 || e.Players < 0 {
+			continue
+		}
+		out = append(out, e)
+		if len(out) >= maxStatEntriesPerPeer {
+			break
 		}
 	}
-	return true
+	return out
 }
 
-// ginExportStats serves this server's source-stamped rollup (hop 0) to an
-// authenticated peer we share stats with. Behind VerifyFederationRequest.
+// ginExportStats serves this server's rollup (hop 0) PLUS its cached friend
+// rollups up to the requested hop distance, so a friend can re-aggregate
+// transitively. Behind VerifyFederationRequest + SharePolicy(stats).
 func (h *FederationHandler) ginExportStats(c *gin.Context) {
 	reqID := c.GetHeader(headerFedRequestID)
 	if reqID == "" {
@@ -81,56 +104,57 @@ func (h *FederationHandler) ginExportStats(c *gin.Context) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "stats not shared with this peer"})
 		return
 	}
-	entries, err := federation.BuildLocalRollup(h.DB, h.Identity.Fingerprint())
+
+	maxHops := federation.MaxFederationHops - 1
+	if q := c.Query("maxHops"); q != "" {
+		if n, err := strconv.Atoi(q); err == nil && n >= 0 && n < maxHops {
+			maxHops = n
+		}
+	}
+
+	local, err := federation.BuildLocalRollup(h.DB, h.Identity.Fingerprint())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to build rollup"})
 		return
 	}
+	// Re-serve cached friend data within the hop budget (maxHops counts the
+	// distance from THIS server; the requester adds 1 on ingest).
+	cached, err := h.Snapshots.EntriesWithinHops(maxHops)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to read snapshots"})
+		return
+	}
+	entries := append(local, cached...)
+
 	federation.RecordExchange(h.DB, federation.ExchangeRecord{
 		RequestID: reqID, PeerFingerprint: peer.Fingerprint, PeerName: peer.Name,
-		Direction: db.ExchangeInbound, Operation: "stats_export",
+		Direction: db.ExchangeInbound, Operation: "stats_export", MaxHops: maxHops,
 		DataClass: string(federation.DataClassStats), Status: db.ExchangeOK, ItemCount: len(entries),
 	})
 	c.JSON(http.StatusOK, gin.H{"entries": entries})
 }
 
-// --- Aggregated read (user-facing) -----------------------------------------
-
-type AggregatedStatsInput struct {
-	Metric string `query:"metric" enum:"game_play,player_play"`
-	Limit  int    `query:"limit"`
-}
-type AggregatedStatsOutput struct {
-	Body struct {
-		Stats []federation.AggregatedStat `json:"stats"`
-	}
-}
-
-// HumaAggregatedStats merges this server's rollup (hop 0) with each stats-
-// consumable active friend's rollup (hop 1) and returns the aggregated
-// leaderboard with per-source breakdown. Phase 1: direct friends only. A friend
-// that fails to respond is recorded and skipped (graceful degradation).
-func (h *FederationHandler) HumaAggregatedStats(_ context.Context, in *AggregatedStatsInput) (*AggregatedStatsOutput, error) {
-	all, err := federation.BuildLocalRollup(h.DB, h.Identity.Fingerprint())
-	if err != nil {
-		return nil, huma.Error500InternalServerError("failed to build local rollup")
-	}
-
+// RefreshFederationStats pulls each stats-consumable active friend's rollup
+// (bounded by the hop budget), sanitizes + increments hops, and replaces that
+// friend's cached snapshot. This is the periodic sync that powers transitive
+// re-serving. Returns (refreshed, failed) peer counts.
+func (h *FederationHandler) RefreshFederationStats() (int, int) {
 	peers, err := h.Peers.List()
 	if err != nil {
-		return nil, huma.Error500InternalServerError("failed to list peers")
+		return 0, 0
 	}
 	client := h.StatsClient
 	if client == nil {
 		client = httpStatsClient{}
 	}
+	refreshed, failed := 0, 0
 	for _, peer := range peers {
 		if peer.Status != db.PeerStatusActive || !federation.CanConsume(peer, federation.DataClassStats) {
 			continue
 		}
 		reqID := federation.NewRequestID()
 		started := time.Now()
-		entries, ferr := client.FetchStats(peer.BaseURL, reqID, h.Identity, peer.Fingerprint)
+		raw, ferr := client.FetchStats(peer.BaseURL, reqID, h.Identity, peer.Fingerprint, federation.MaxFederationHops-1)
 		if ferr != nil {
 			federation.RecordExchange(h.DB, federation.ExchangeRecord{
 				RequestID: reqID, PeerFingerprint: peer.Fingerprint, PeerName: peer.Name,
@@ -138,31 +162,84 @@ func (h *FederationHandler) HumaAggregatedStats(_ context.Context, in *Aggregate
 				DataClass: string(federation.DataClassStats), Status: db.ExchangeError,
 				StartedAt: started, Error: ferr.Error(),
 			})
+			failed++
 			continue
 		}
-		// Reject a misbehaving friend's batch wholesale (spoofed origin, wrong
-		// hop, or negative values would poison the aggregate).
-		if !validPeerStatBatch(entries, peer.Fingerprint) {
+		cleaned := sanitizeFriendBatch(raw, h.Identity.Fingerprint(), federation.MaxFederationHops-1)
+		for i := range cleaned {
+			cleaned[i].Hops++ // distance from us = distance from the friend + 1
+		}
+		if err := h.Snapshots.ReplacePeerSnapshot(peer.Fingerprint, cleaned, time.Now()); err != nil {
 			federation.RecordExchange(h.DB, federation.ExchangeRecord{
 				RequestID: reqID, PeerFingerprint: peer.Fingerprint, PeerName: peer.Name,
 				Direction: db.ExchangeOutbound, Operation: "stats_pull",
-				DataClass: string(federation.DataClassStats), Status: db.ExchangeRejected,
-				StartedAt: started, ItemCount: len(entries), Error: "invalid stat batch (origin/hop/value)",
+				DataClass: string(federation.DataClassStats), Status: db.ExchangeError,
+				StartedAt: started, Error: "store: " + err.Error(),
 			})
+			failed++
 			continue
 		}
-		// Ingest: a friend's hop-0 datum is hop 1 from us.
-		for i := range entries {
-			entries[i].Hops++
-		}
-		all = append(all, entries...)
 		federation.RecordExchange(h.DB, federation.ExchangeRecord{
 			RequestID: reqID, PeerFingerprint: peer.Fingerprint, PeerName: peer.Name,
 			Direction: db.ExchangeOutbound, Operation: "stats_pull",
 			DataClass: string(federation.DataClassStats), Status: db.ExchangeOK,
-			StartedAt: started, ItemCount: len(entries),
+			StartedAt: started, ItemCount: len(cleaned),
 		})
+		refreshed++
 	}
+	return refreshed, failed
+}
+
+// --- Refresh (admin trigger) -----------------------------------------------
+
+type RefreshStatsInput struct{}
+type RefreshStatsOutput struct {
+	Body struct {
+		Refreshed int `json:"refreshed"`
+		Failed    int `json:"failed"`
+	}
+}
+
+func (h *FederationHandler) HumaRefreshStats(_ context.Context, _ *RefreshStatsInput) (*RefreshStatsOutput, error) {
+	r, f := h.RefreshFederationStats()
+	out := &RefreshStatsOutput{}
+	out.Body.Refreshed = r
+	out.Body.Failed = f
+	return out, nil
+}
+
+// --- Aggregated read (user-facing) -----------------------------------------
+
+type AggregatedStatsInput struct {
+	Metric  string `query:"metric" enum:"game_play,player_play"`
+	Limit   int    `query:"limit"`
+	MaxHops int    `query:"maxHops"` // viewer reach: >=1 limits to that distance; <=0 = full reachable mesh
+}
+type AggregatedStatsOutput struct {
+	Body struct {
+		Stats []federation.AggregatedStat `json:"stats"`
+	}
+}
+
+// HumaAggregatedStats merges this server's rollup (hop 0) with its cached friend
+// snapshots (hop >= 1) and returns the aggregated mesh leaderboard. Reads from
+// the snapshot store (populated by RefreshFederationStats) — no live pulls — so
+// reach is unbounded in depth yet cheap. MaxHops bounds the viewer's reach.
+func (h *FederationHandler) HumaAggregatedStats(_ context.Context, in *AggregatedStatsInput) (*AggregatedStatsOutput, error) {
+	all, err := federation.BuildLocalRollup(h.DB, h.Identity.Fingerprint())
+	if err != nil {
+		return nil, huma.Error500InternalServerError("failed to build local rollup")
+	}
+
+	snapHops := -1 // full reachable mesh
+	if in.MaxHops >= 1 {
+		snapHops = in.MaxHops
+	}
+	cached, err := h.Snapshots.EntriesWithinHops(snapHops)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("failed to read snapshots")
+	}
+	all = append(all, cached...)
 
 	aggregated := federation.AggregateStatEntries(all)
 	if in.Metric != "" {
@@ -180,7 +257,6 @@ func (h *FederationHandler) HumaAggregatedStats(_ context.Context, in *Aggregate
 
 	// Strip the per-source breakdown: it carries peer fingerprints, and the peer
 	// roster is admin-only elsewhere. Regular users get totals + labels only.
-	// (A future admin-only detailed view can expose Sources for anti-inflation.)
 	for i := range aggregated {
 		aggregated[i].Sources = nil
 	}

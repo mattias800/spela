@@ -26,17 +26,17 @@ import (
 
 // Config holds configuration for the API router.
 type Config struct {
-	DB            *gorm.DB
-	JWTSecret     string
-	EncryptionKey []byte // separate AES key; falls back to DeriveEncryptionKey(JWTSecret) if nil
-	GameDirs      []string
-	Storage       *storage.Storage
-	Scanner       *scanner.Scanner
-	Scraper       *scraper.Scraper
-	Hub           *ws.Hub
-	NetplayHub    *ws.NetplayHub
-	CoreDir       string
-	FrontendDir   string // path to Vite dist/ output; empty = disabled
+	DB                           *gorm.DB
+	JWTSecret                    string
+	EncryptionKey                []byte // separate AES key; falls back to DeriveEncryptionKey(JWTSecret) if nil
+	GameDirs                     []string
+	Storage                      *storage.Storage
+	Scanner                      *scanner.Scanner
+	Scraper                      *scraper.Scraper
+	Hub                          *ws.Hub
+	NetplayHub                   *ws.NetplayHub
+	CoreDir                      string
+	FrontendDir                  string // path to Vite dist/ output; empty = disabled
 	CORSOrigins                  []string
 	RAClient                     *retroachievements.RAClient // optional; defaults to production RA client
 	ChallengeAttemptRateLimitSec int                         // 0 = disabled; default 30 in production
@@ -186,10 +186,11 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 		slog.Info("federation: identity ready", "fingerprint", federation.ShortFingerprint(fedIdentity.Fingerprint()))
 	}
 	federationHandler := &FederationHandler{
-		DB:       cfg.DB,
-		Identity: fedIdentity,
-		Peers:    federation.PeerStore{DB: cfg.DB},
-		BaseURL:  cfg.PublicBaseURL,
+		DB:        cfg.DB,
+		Identity:  fedIdentity,
+		Peers:     federation.PeerStore{DB: cfg.DB},
+		Snapshots: federation.SnapshotStore{DB: cfg.DB},
+		BaseURL:   cfg.PublicBaseURL,
 	}
 
 	socialHandler := &SocialHandler{DB: cfg.DB, Hub: cfg.Hub}
@@ -464,6 +465,25 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 		r.NoRoute(serveFrontend(cfg.FrontendDir))
 	}
 
+	// Periodic federation stats refresh (#1347): pull friends' rollups into the
+	// local snapshot cache so the mesh leaderboard stays current. Disable with
+	// SPELA_DISABLE_FEDERATION_REFRESH=1; force one anytime via the admin endpoint.
+	stopFedRefresh := make(chan struct{})
+	if fedErr == nil && os.Getenv("SPELA_DISABLE_FEDERATION_REFRESH") == "" {
+		go func() {
+			ticker := time.NewTicker(15 * time.Minute)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-stopFedRefresh:
+					return
+				case <-ticker.C:
+					federationHandler.RefreshFederationStats()
+				}
+			}
+		}()
+	}
+
 	cleanup := func() {
 		authLimiter.Close()
 		refreshLimiter.Close()
@@ -471,6 +491,7 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 		uploadLimiter.Close()
 		userLimiter.Close()
 		imageLimiter.Close()
+		close(stopFedRefresh)
 	}
 
 	return r, cleanup

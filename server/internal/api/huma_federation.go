@@ -20,7 +20,9 @@ type FederationHandler struct {
 	DB       *gorm.DB
 	Identity federation.Identity
 	Peers    federation.PeerStore
-	BaseURL  string // this server's own reachable federation endpoint
+	// Snapshots caches friends' rollups for transitive re-serving (#1347).
+	Snapshots federation.SnapshotStore
+	BaseURL   string // this server's own reachable federation endpoint
 	// PairClient performs the outbound pairing callback to a friend. Defaults to
 	// httpPairClient when nil; overridden in tests.
 	PairClient pairClient

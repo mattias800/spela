@@ -606,6 +606,26 @@ type FederationExchange struct {
 	Error           string    `gorm:"size:512" json:"error"`
 }
 
+// FederationStatSnapshot caches a stat datum pulled from a direct friend so this
+// server can re-serve it transitively (Phase 2, #1347) without re-pulling on
+// every request. SourcePeerFingerprint is the direct friend we got it from (used
+// to replace that peer's rows on refresh); OriginFingerprint is where the datum
+// actually originated, which may be several hops away. Hops is the distance from
+// THIS server to the origin.
+type FederationStatSnapshot struct {
+	ID                    uint      `gorm:"primarykey" json:"id"`
+	CreatedAt             time.Time `json:"createdAt"`
+	SourcePeerFingerprint string    `gorm:"size:64;index" json:"sourcePeerFingerprint"`
+	OriginFingerprint     string    `gorm:"size:64;index" json:"originFingerprint"`
+	Hops                  int       `json:"hops"`
+	Metric                string    `gorm:"size:32;index" json:"metric"`
+	Key                   string    `gorm:"size:255" json:"key"`
+	Label                 string    `gorm:"size:255" json:"label"`
+	PlayTimeSeconds       int64     `json:"playTimeSeconds"`
+	Players               int64     `json:"players"`
+	FetchedAt             time.Time `json:"fetchedAt"`
+}
+
 // ConsoleSaveStateChoice is the user's per-console save-state opt-out
 // state. Drives whether the in-game overlay shows the save/load
 // buttons or grays them out, and whether the first-launch prompt
