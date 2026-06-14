@@ -337,10 +337,23 @@ func RegisterFederationRoutes(api huma.API, h *FederationHandler, jwtSecret stri
 		Middlewares: adminMW,
 		Security:    sec,
 	}, h.HumaListExchanges)
+
+	// User-facing: the federated (mesh) leaderboard. Auth + rate limit, not admin.
+	huma.Register(api, huma.Operation{
+		OperationID: "federationAggregatedStats",
+		Method:      http.MethodGet,
+		Path:        "/api/federation/stats/aggregated",
+		Summary:     "Federated (mesh) aggregate stats across direct friends",
+		Tags:        []string{"federation", "stats"},
+		Middlewares: huma.Middlewares{requireAuth, rateLimit},
+		Security:    sec,
+	}, h.HumaAggregatedStats)
 }
 
 // RegisterFederationGinRoutes wires raw-gin federation routes: the signed ping
 // used by the connection-test diagnostic.
 func RegisterFederationGinRoutes(r *gin.Engine, h *FederationHandler) {
-	r.GET("/api/federation/ping", VerifyFederationRequest(h.DB, h.Identity.Fingerprint()), h.ginPing)
+	requireFedPeer := VerifyFederationRequest(h.DB, h.Identity.Fingerprint())
+	r.GET("/api/federation/ping", requireFedPeer, h.ginPing)
+	r.GET("/api/federation/stats", requireFedPeer, h.ginExportStats)
 }
