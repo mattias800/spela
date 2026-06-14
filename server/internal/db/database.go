@@ -232,6 +232,11 @@ func Initialize(dbPath string) (*gorm.DB, error) {
 		&ScrapeQueueItem{},
 		// Privacy: per-user block list (issue #1121)
 		&Block{},
+		// Federation (epic #1343): friend registry, pairing nonces, and the
+		// observability exchange ledger (#1350).
+		&FederationPeer{},
+		&FederationInviteNonce{},
+		&FederationExchange{},
 	)
 	if err != nil {
 		return nil, fmt.Errorf("running migrations: %w", err)

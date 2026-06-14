@@ -513,6 +513,99 @@ type ServerSetting struct {
 	Value string `gorm:"type:text" json:"value"`
 }
 
+// --- Federation (epic #1343) ------------------------------------------------
+
+// Peer pairing status values.
+const (
+	PeerStatusPending = "pending" // invite accepted locally, awaiting mutual confirmation
+	PeerStatusActive  = "active"  // mutually confirmed; federation requests honored
+)
+
+// FederationPeer is a friend server we have paired with. We communicate ONLY
+// with direct peers in this table; transitive reach is achieved by peers
+// re-serving (relaying/aggregating) on our behalf. A peer is identified by its
+// key fingerprint, not its address. See docs/federation-mesh-exploration.md.
+type FederationPeer struct {
+	ID        uint           `gorm:"primarykey" json:"id"`
+	CreatedAt time.Time      `json:"createdAt"`
+	UpdatedAt time.Time      `json:"updatedAt"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+	// Fingerprint is the peer's stable anonymous origin ID (base32 of
+	// SHA-256 of its public key).
+	Fingerprint string `gorm:"uniqueIndex;size:64;not null" json:"fingerprint"`
+	// PublicKey is the peer's Ed25519 public key, base64 (std) encoded.
+	PublicKey string `gorm:"size:128;not null" json:"publicKey"`
+	// Name is an operator-chosen label for the friend.
+	Name string `gorm:"size:128" json:"name"`
+	// BaseURL is the peer's reachable federation endpoint (direct friends only).
+	BaseURL string `gorm:"size:512;not null" json:"baseUrl"`
+	// Status is "pending" or "active".
+	Status string `gorm:"size:16;not null;default:pending" json:"status"`
+	// SharePolicy / ConsumePolicy are JSON maps of data-class -> bool: what we
+	// expose to this peer, and what we accept from it (bidirectional per-class
+	// consent). Empty/absent = deny.
+	SharePolicy   string `gorm:"type:text" json:"sharePolicy"`
+	ConsumePolicy string `gorm:"type:text" json:"consumePolicy"`
+
+	// --- Observability: per-peer health (#1350) ---
+	// LastContactAt is the last time we exchanged anything with the peer
+	// (success or failure); LastSuccessAt only on success. LastError captures
+	// the most recent failure reason for the admin health view.
+	LastContactAt *time.Time `json:"lastContactAt"`
+	LastSuccessAt *time.Time `json:"lastSuccessAt"`
+	LastError     string     `gorm:"size:512" json:"lastError"`
+	LastErrorAt   *time.Time `json:"lastErrorAt"`
+	// Reachable is the latest known reachability (true after a successful
+	// exchange, false after a failure).
+	Reachable bool `gorm:"default:false" json:"reachable"`
+}
+
+// FederationInviteNonce records a nonce embedded in an invite this server
+// issued, so the pairing callback can prove it holds a genuine invite from us.
+type FederationInviteNonce struct {
+	ID        uint      `gorm:"primarykey" json:"id"`
+	CreatedAt time.Time `json:"createdAt"`
+	Nonce     string    `gorm:"uniqueIndex;size:64;not null" json:"nonce"`
+	ExpiresAt time.Time `gorm:"not null;index" json:"expiresAt"`
+	Used      bool      `gorm:"default:false" json:"used"`
+}
+
+// Exchange direction and outcome values for FederationExchange (#1350).
+const (
+	ExchangeOutbound = "outbound" // we initiated the request to a peer
+	ExchangeInbound  = "inbound"  // a peer initiated the request to us
+
+	ExchangeOK       = "ok"       // completed successfully
+	ExchangeError    = "error"    // failed (network, peer error, internal)
+	ExchangeRejected = "rejected" // refused (bad signature, policy, expired nonce)
+)
+
+// FederationExchange is the per-interaction ledger powering admin visibility:
+// one row per cross-server interaction (handshake, stats pull, relay, ...), with
+// timing and outcome. High-volume by design — pruned on a retention window. The
+// "what data is being fetched, from whom, and when" record. See #1350.
+type FederationExchange struct {
+	ID        uint      `gorm:"primarykey" json:"id"`
+	CreatedAt time.Time `gorm:"index" json:"createdAt"`
+	// RequestID correlates both ends of one logical operation (also emitted in
+	// logs and propagated via the X-Spela-Request-Id header).
+	RequestID       string `gorm:"size:64;index" json:"requestId"`
+	PeerFingerprint string `gorm:"size:64;index" json:"peerFingerprint"`
+	PeerName        string `gorm:"size:128" json:"peerName"`
+	Direction       string `gorm:"size:16;index" json:"direction"`
+	Operation       string `gorm:"size:64;index" json:"operation"`
+	DataClass       string `gorm:"size:32" json:"dataClass"`
+	MaxHops         int    `json:"maxHops"`
+	Status          string `gorm:"size:16;index" json:"status"`
+	HTTPStatus      int    `json:"httpStatus"`
+	ItemCount       int    `json:"itemCount"`
+	Bytes           int64  `json:"bytes"`
+	DurationMs      int64  `json:"durationMs"`
+	StartedAt       time.Time `json:"startedAt"`
+	FinishedAt      time.Time `json:"finishedAt"`
+	Error           string    `gorm:"size:512" json:"error"`
+}
+
 // ConsoleSaveStateChoice is the user's per-console save-state opt-out
 // state. Drives whether the in-game overlay shows the save/load
 // buttons or grays them out, and whether the first-launch prompt
