@@ -4,6 +4,7 @@ import com.spela.player.domain.model.ButtonInfo
 import com.spela.player.domain.model.DefaultKeyMappings
 import com.spela.player.domain.model.GamepadPosition
 import com.spela.player.domain.repository.GamepadMappingRepository
+import com.spela.player.domain.repository.PreferencesRepository
 import com.spela.player.libretro.GamepadButtonResolver
 import com.spela.player.libretro.GamepadPortManager
 import com.spela.player.util.DispatcherProvider
@@ -43,6 +44,7 @@ sealed interface GamepadMappingIntent {
 class GamepadMappingViewModel(
     private val gamepadMappingRepository: GamepadMappingRepository,
     private val gamepadPortManager: GamepadPortManager,
+    private val preferencesRepository: PreferencesRepository,
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
 ) {
@@ -88,10 +90,12 @@ class GamepadMappingViewModel(
         }
     }
 
-    /** Reload the live port mapping and refresh the displayed effective mapping. */
+    /** Reload the live port mapping, refresh the displayed mapping, and sync the
+     *  positional layer to the server (best-effort) so it follows the user. */
     private suspend fun applyAndRefresh(consoleId: String, port: Int) {
         gamepadPortManager.loadAllGamepadMappings(consoleId)
         val mapping = gamepadMappingRepository.getEffectiveMapping(consoleId, port)
         _state.update { it.copy(mapping = mapping) }
+        preferencesRepository.pushKeyMappingsToServer()
     }
 }

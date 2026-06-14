@@ -283,6 +283,7 @@ class SpelaTestHarness(
     val gamepadMappingViewModel = GamepadMappingViewModel(
         gamepadMappingRepository = GamepadMappingRepositoryImpl(testDatabase),
         gamepadPortManager = gamepadPortManager,
+        preferencesRepository = preferencesRepo,
         dispatchers = dispatchers,
         scope = scope,
     )

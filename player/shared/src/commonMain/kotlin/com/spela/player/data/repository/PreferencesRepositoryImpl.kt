@@ -151,6 +151,25 @@ class PreferencesRepositoryImpl(
         runCatching {
             val prefs = apiClient.getPreferences()
 
+            // Import positional gamepad mappings (#1334) FIRST and independently:
+            // they are platform-independent (GamepadPosition -> RetroPad), so no
+            // key-code validation applies, and the keycode early-return below must
+            // not skip them. Only import when this device has no positional
+            // overrides yet, so a local edit is never clobbered.
+            if (database.spelaDatabaseQueries.getAllGamepadMappings().executeAsList().isEmpty()) {
+                for ((consoleId, mapping) in prefs.consoleKeyMappings) {
+                    for ((positionName, retroId) in mapping.positionMappings) {
+                        database.spelaDatabaseQueries.insertGamepadMapping(
+                            id = "$consoleId:0:$positionName",
+                            console_id = consoleId,
+                            port = 0,
+                            gamepad_position = positionName,
+                            libretro_button_id = retroId,
+                        )
+                    }
+                }
+            }
+
             // Only populate local DB if it's empty (first-device experience).
             // Key mappings are platform-specific (Android uses KEYCODE_*, desktop
             // uses AWT VK_* codes), so we validate that the server's key codes
@@ -235,17 +254,32 @@ class PreferencesRepositoryImpl(
                 .filter { it.console_id == DEFAULT_CONSOLE_ID }
                 .associate { it.libretro_button_id.toString() to it.platform_key_code.toString() }
 
-            // Build per-console mappings
-            val consoleGroups = allMappings
+            // Per-console keycode mappings.
+            val keycodeByConsole = allMappings
                 .filter { it.console_id != DEFAULT_CONSOLE_ID }
                 .groupBy { it.console_id }
+                .mapValues { (_, entities) ->
+                    entities.associate {
+                        it.libretro_button_id.toString() to it.platform_key_code.toString()
+                    }
+                }
 
-            val consoleMappings = consoleGroups.mapValues { (_, entities) ->
+            // Per-console positional gamepad mappings (#1334). Only the stored
+            // diffs from default are synced (port 0 = the synced primary);
+            // platform-independent, so no validation. Value is the RetroPad id.
+            val positionByConsole = database.spelaDatabaseQueries.getAllGamepadMappings().executeAsList()
+                .filter { it.port == 0L }
+                .groupBy { it.console_id }
+                .mapValues { (_, rows) -> rows.associate { it.gamepad_position to it.libretro_button_id } }
+
+            // A console is pushed if it has EITHER layer; the shared DTO requires
+            // both fields, so missing layers are sent empty (never null) and so a
+            // positional edit never wipes the keycode layer and vice-versa.
+            val consoleMappings = (keycodeByConsole.keys + positionByConsole.keys).associateWith { consoleId ->
                 ConsoleKeyMappingDTO(
                     selectedMapping = "",
-                    customMapping = entities.associate {
-                        it.libretro_button_id.toString() to it.platform_key_code.toString()
-                    },
+                    customMapping = keycodeByConsole[consoleId] ?: emptyMap(),
+                    positionMappings = positionByConsole[consoleId] ?: emptyMap(),
                 )
             }
 
