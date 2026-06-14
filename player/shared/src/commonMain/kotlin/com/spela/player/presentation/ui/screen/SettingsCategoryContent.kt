@@ -19,6 +19,8 @@ import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -49,6 +51,10 @@ import com.spela.player.presentation.viewmodel.SettingsViewModel
 import com.spela.player.presentation.viewmodel.SettingsState
 import com.spela.player.presentation.intent.KeyMappingIntent
 import com.spela.player.presentation.viewmodel.KeyMappingViewModel
+import com.spela.player.presentation.viewmodel.GamepadConfigIntent
+import com.spela.player.presentation.viewmodel.GamepadConfigViewModel
+import com.spela.player.presentation.ui.components.gamepad.GamepadConfigScreen
+import com.spela.player.util.currentPlatform
 import com.spela.player.presentation.state.KeyMappingState
 import com.spela.player.data.remote.SyncState
 import com.spela.player.data.remote.ConnectionState
@@ -67,6 +73,7 @@ fun SettingsCategoryContent(
     connectionState: ConnectionState,
     keyMappingViewModel: KeyMappingViewModel?,
     keyMappingState: KeyMappingState?,
+    gamepadConfigViewModel: GamepadConfigViewModel?,
     onNavigateToConsoleSettings: (String) -> Unit,
     onNavigateToLicenses: () -> Unit,
     onLogout: () -> Unit,
@@ -96,7 +103,7 @@ fun SettingsCategoryContent(
             SettingsCategory.GENERAL -> generalContent(state, viewModel)
             SettingsCategory.EMULATION -> emulationContent(state, viewModel)
             SettingsCategory.CONTROLS -> controlsContent(
-                state, viewModel, keyMappingViewModel, keyMappingState,
+                state, viewModel, keyMappingViewModel, keyMappingState, gamepadConfigViewModel,
             )
             SettingsCategory.CONSOLES -> consolesContent(state, onNavigateToConsoleSettings)
             SettingsCategory.ACHIEVEMENTS -> achievementsContent(state, viewModel)
@@ -259,10 +266,54 @@ private fun androidx.compose.foundation.lazy.LazyListScope.controlsContent(
     viewModel: SettingsViewModel,
     keyMappingViewModel: KeyMappingViewModel?,
     keyMappingState: KeyMappingState?,
+    gamepadConfigViewModel: GamepadConfigViewModel?,
 ) {
-    // Controls presets
-    if (keyMappingViewModel != null && keyMappingState != null) {
-        item { SettingsSectionHeader(title = "Default Controls") }
+    // Connected controllers: detected type + per-controller "Type:" override.
+    // This is the one global place to verify "which controller do I have" and
+    // correct a mis-detection (#1334 / #1353). Shown on every platform.
+    if (gamepadConfigViewModel != null) {
+        // GamepadConfigScreen renders its own "Controllers" heading, so no extra
+        // SettingsSectionHeader here (avoids a doubled heading).
+        item {
+            val gamepadConfigState by gamepadConfigViewModel.state.collectAsState()
+            SpCard(onGradient = true) {
+                GamepadConfigScreen(
+                    state = gamepadConfigState,
+                    onConfigurePort = {},
+                    onSwapUp = { port ->
+                        gamepadConfigViewModel.onIntent(GamepadConfigIntent.SwapPorts(port - 1, port))
+                    },
+                    onSwapDown = { port ->
+                        gamepadConfigViewModel.onIntent(GamepadConfigIntent.SwapPorts(port, port + 1))
+                    },
+                    onSetStyleOverride = { port, style ->
+                        gamepadConfigViewModel.onIntent(GamepadConfigIntent.SetStyleOverride(port, style))
+                    },
+                    // Per-port keyboard key-mapping isn't a global concept; gamepad
+                    // button mappings are edited per console (see below).
+                    showConfigureButton = false,
+                )
+            }
+        }
+        item {
+            Text(
+                text = "Gamepad button mappings are configured per console — open a console " +
+                    "(Consoles tab) to view and change which physical button does what.",
+                style = SpTypography.BodySmall,
+                color = SpColor.OnBackgroundTertiary,
+                modifier = Modifier.padding(
+                    horizontal = SpSpacing.Default,
+                    vertical = SpSpacing.Small,
+                ),
+            )
+        }
+    }
+
+    // Keyboard key mapping (keycode presets). Desktop-only: there is no keyboard
+    // on Android, and Android gamepad input is positional — so the keycode preset
+    // UI would be empty/dead there (#1353).
+    if (keyMappingViewModel != null && keyMappingState != null && currentPlatform() != "android") {
+        item { SettingsSectionHeader(title = "Keyboard") }
         controlsDefaultScopeItems(
             presets = keyMappingState.availablePresets,
             activePresetId = keyMappingState.activePresetId,

@@ -132,6 +132,26 @@ class SettingsConsoleNavigationTest {
         onAllNodesWithText("PER_CONSOLE").assertCountEquals(0)
     }
 
+    /**
+     * The Controls category is the controller "verify hub" (#1353): it renders
+     * the connected-controllers detection view (GamepadConfigScreen) so the user
+     * can verify which controller is detected and override its type. (The
+     * Android-only gating of the keyboard keycode section is platform-gated and
+     * verified on-device, not here.)
+     */
+    @Test
+    fun controlsCategoryShowsConnectedControllersVerifyHub() = runComposeUiTest {
+        val harness = createLoggedInHarness()
+
+        setContent { harness.App() }
+        navigateToSettings(harness)
+        onNodeWithContentDescription("Controls").performClick()
+        advanceQuick(harness)
+
+        onNodeWithContentDescription("Controllers heading").assertExists()
+        onNodeWithContentDescription("Player 1: No controller").assertExists()
+    }
+
     @Test
     fun backFromConsoleSettingsReturnsToPerConsoleNotGeneral() = runComposeUiTest {
         val harness = createLoggedInHarness()
