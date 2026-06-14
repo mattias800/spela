@@ -27,6 +27,7 @@ fun GamepadConfigDialog(
     onSwapUp: ((Int) -> Unit)? = null,
     onSwapDown: ((Int) -> Unit)? = null,
     onSetStyleOverride: ((Int, ControllerStyle?) -> Unit)? = null,
+    showConfigureButton: Boolean = true,
     onDismiss: () -> Unit,
 ) {
     Dialog(
@@ -52,6 +53,7 @@ fun GamepadConfigDialog(
                     onSwapUp = onSwapUp,
                     onSwapDown = onSwapDown,
                     onSetStyleOverride = onSetStyleOverride,
+                    showConfigureButton = showConfigureButton,
                 )
             }
         }

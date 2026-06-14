@@ -316,15 +316,18 @@ fun ConsoleSettingsScreen(
                                     GamepadConfigIntent.SetStyleOverride(port, style)
                                 )
                             },
+                            // Keyboard key-mapping is desktop-only; on Android the
+                            // positional "Controller buttons" editor is used instead.
+                            showConfigureButton = currentPlatform() != "android",
                         )
                     }
                 }
             }
 
-            // Desktop gamepad button remapping (#1334). Gated to desktop —
-            // Android's gamepad input isn't routed through the positional
-            // mapping layer yet (that lands with the Android phase).
-            if (gamepadMappingViewModel != null && currentPlatform() != "android") {
+            // Positional gamepad button remapping (#1334). Available on both
+            // platforms now that Android input also flows through the positional
+            // mapping layer.
+            if (gamepadMappingViewModel != null) {
                 item {
                     val gamepadMappingState by gamepadMappingViewModel.state.collectAsState()
                     var showGamepadMapping by remember { mutableStateOf(false) }
@@ -371,48 +374,54 @@ fun ConsoleSettingsScreen(
                 }
             }
 
-            item {
-                val selectedPort = gamepadConfigViewModel?.state?.collectAsState()?.value?.selectedPort
-                val portAssignment = gamepadConfigViewModel?.state?.collectAsState()?.value
-                    ?.portAssignments?.find { it.port == selectedPort }
-                val portLabel = if (selectedPort != null && portAssignment != null) {
-                    "Player ${selectedPort + 1} \u2014 ${portAssignment.deviceName}"
-                } else null
+            // Keyboard key mapping (keycode \u2192 RetroPad). Desktop-only: there's no
+            // keyboard on Android, and Android gamepad input is positional (the
+            // "Controller buttons" editor above), so the keycode editor would be
+            // dead there. (#1334)
+            if (currentPlatform() != "android") {
+                item {
+                    val selectedPort = gamepadConfigViewModel?.state?.collectAsState()?.value?.selectedPort
+                    val portAssignment = gamepadConfigViewModel?.state?.collectAsState()?.value
+                        ?.portAssignments?.find { it.port == selectedPort }
+                    val portLabel = if (selectedPort != null && portAssignment != null) {
+                        "Player ${selectedPort + 1} \u2014 ${portAssignment.deviceName}"
+                    } else null
 
-                SpCard(onGradient = true) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(560.dp)
-                            .padding(SpSpacing.Small)
-                            .testTag("key-mapping-card"),
-                    ) {
-                        KeyMappingScreen(
-                            layout = layout,
-                            state = keyMappingState,
-                            onButtonClick = { retroButtonId ->
-                                keyMappingViewModel.onIntent(
-                                    KeyMappingIntent.StartSingleButtonMap(retroButtonId)
-                                )
-                            },
-                            onStartWizard = {
-                                keyMappingViewModel.onIntent(
-                                    KeyMappingIntent.StartWizard(consoleId)
-                                )
-                            },
-                            onResetToDefaults = {
-                                keyMappingViewModel.onIntent(KeyMappingIntent.ResetAll)
-                            },
-                            onCancelMapping = {
-                                keyMappingViewModel.onIntent(KeyMappingIntent.CancelMapping)
-                            },
-                            onClearBinding = {
-                                keyMappingViewModel.onIntent(KeyMappingIntent.ClearCurrentBinding)
-                            },
-                            keyNameResolver = ::platformKeyName,
-                            portLabel = portLabel,
-                            modifier = Modifier.padding(SpSpacing.ScreenHorizontal),
-                        )
+                    SpCard(onGradient = true) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(560.dp)
+                                .padding(SpSpacing.Small)
+                                .testTag("key-mapping-card"),
+                        ) {
+                            KeyMappingScreen(
+                                layout = layout,
+                                state = keyMappingState,
+                                onButtonClick = { retroButtonId ->
+                                    keyMappingViewModel.onIntent(
+                                        KeyMappingIntent.StartSingleButtonMap(retroButtonId)
+                                    )
+                                },
+                                onStartWizard = {
+                                    keyMappingViewModel.onIntent(
+                                        KeyMappingIntent.StartWizard(consoleId)
+                                    )
+                                },
+                                onResetToDefaults = {
+                                    keyMappingViewModel.onIntent(KeyMappingIntent.ResetAll)
+                                },
+                                onCancelMapping = {
+                                    keyMappingViewModel.onIntent(KeyMappingIntent.CancelMapping)
+                                },
+                                onClearBinding = {
+                                    keyMappingViewModel.onIntent(KeyMappingIntent.ClearCurrentBinding)
+                                },
+                                keyNameResolver = ::platformKeyName,
+                                portLabel = portLabel,
+                                modifier = Modifier.padding(SpSpacing.ScreenHorizontal),
+                            )
+                        }
                     }
                 }
             }

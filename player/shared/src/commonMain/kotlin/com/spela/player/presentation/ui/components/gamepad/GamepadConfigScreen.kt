@@ -55,6 +55,9 @@ fun GamepadConfigScreen(
     onSwapUp: ((Int) -> Unit)? = null,
     onSwapDown: ((Int) -> Unit)? = null,
     onSetStyleOverride: ((Int, ControllerStyle?) -> Unit)? = null,
+    /** Shows the per-port "Configure" (keyboard key-mapping) button. Hidden on
+     *  Android, where gamepad input is positional and there's no keyboard. */
+    showConfigureButton: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     // Port whose controller-type picker is open, or null when closed.
@@ -79,7 +82,9 @@ fun GamepadConfigScreen(
             ControllerRow(
                 port = port,
                 assignment = assignment,
-                onConfigure = { onConfigurePort(port) },
+                onConfigure = if (showConfigureButton) {
+                    { onConfigurePort(port) }
+                } else null,
                 onSwapUp = if (port > 0 && assignment != null) {
                     { onSwapUp?.invoke(port) }
                 } else null,
@@ -115,10 +120,10 @@ fun GamepadConfigScreen(
 private fun ControllerRow(
     port: Int,
     assignment: PortAssignmentUi?,
-    onConfigure: () -> Unit,
+    onConfigure: (() -> Unit)?,
     onSwapUp: (() -> Unit)?,
     onSwapDown: (() -> Unit)?,
-    onPickStyle: (() -> Unit)? = null,
+    onPickStyle: (() -> Unit) ? = null,
 ) {
     // Show the effective controller identity (e.g. "Xbox Controller"). For an
     // unrecognized pad fall back to the raw OS device name. (#1334)
@@ -201,8 +206,8 @@ private fun ControllerRow(
             Spacer(Modifier.width(SpSpacing.Small))
         }
 
-        // Configure button
-        if (assignment != null) {
+        // Configure (keyboard key-mapping) button — omitted when onConfigure is null.
+        if (assignment != null && onConfigure != null) {
             SpSecondaryButton(
                 text = "Configure",
                 onClick = onConfigure,
