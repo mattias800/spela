@@ -10,6 +10,8 @@ import com.spela.client.models.UserPreferencesResponse
 import com.spela.player.data.remote.dto.toDomain
 import com.spela.player.domain.model.DEFAULT_CONSOLE_ID
 import com.spela.player.domain.model.ShaderPreset
+import com.spela.player.libretro.GamepadMappingMigration
+import com.spela.player.util.currentPlatform
 import com.spela.player.domain.model.UserPreferences
 import com.spela.player.domain.repository.KeyMappingRepository
 import com.spela.player.domain.repository.PreferencesRepository
@@ -26,6 +28,11 @@ class PreferencesRepositoryImpl(
 ) : PreferencesRepository {
 
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
+
+    private companion object {
+        /** Device-local flag marking the one-time legacy gamepad keycode → positional migration done. */
+        const val GAMEPAD_MIGRATION_FLAG = "gamepad_positional_migration_v1"
+    }
 
     override suspend fun getPreferences(): Result<UserPreferences> {
         return runCatching {
@@ -170,51 +177,88 @@ class PreferencesRepositoryImpl(
                 }
             }
 
-            // Only populate local DB if it's empty (first-device experience).
-            // Key mappings are platform-specific (Android uses KEYCODE_*, desktop
-            // uses AWT VK_* codes), so we validate that the server's key codes
-            // match this platform's default codes before importing. If they don't
-            // match (e.g. Android codes on desktop), skip the import and let
-            // ensureDefaultsApplied() seed the correct platform codes.
+            // Import keycode mappings only on the first-device experience (empty
+            // local DB). Key codes are platform-specific (Android KEYCODE_*,
+            // desktop AWT VK_*), so validate the server's codes match this
+            // platform before importing. NOTE: this is a nested guard, not an
+            // early return, so the legacy->positional migration below still runs
+            // on existing installs.
             val localMappings = database.spelaDatabaseQueries.getAllKeyMappings().executeAsList()
-            if (localMappings.isNotEmpty()) return
-
-            val platformDefaults = keyMappingRepository.getDefaultMapping()
-            val serverCodes = prefs.customKeyMapping.values.mapNotNull { it.toIntOrNull() }.toSet()
-            val platformCodes = platformDefaults.values.toSet()
-            if (serverCodes.isNotEmpty() && serverCodes.intersect(platformCodes).isEmpty()) {
-                // Server codes don't match this platform — skip import
-                return
-            }
-
-            // Import global default mapping from server
-            for ((retroButtonStr, keyCodeStr) in prefs.customKeyMapping) {
-                val retroButton = retroButtonStr.toIntOrNull() ?: continue
-                val keyCode = keyCodeStr.toIntOrNull() ?: continue
-                database.spelaDatabaseQueries.insertKeyMapping(
-                    id = Uuid.random().toString(),
-                    console_id = DEFAULT_CONSOLE_ID,
-                    port = 0,
-                    platform_key_code = keyCode.toLong(),
-                    libretro_button_id = retroButton.toLong(),
-                )
-            }
-
-            // Import per-console mappings from server
-            for ((consoleId, mapping) in prefs.consoleKeyMappings) {
-                for ((retroButtonStr, keyCodeStr) in mapping.customMapping.orEmpty()) {
-                    val retroButton = retroButtonStr.toIntOrNull() ?: continue
-                    val keyCode = keyCodeStr.toIntOrNull() ?: continue
-                    database.spelaDatabaseQueries.insertKeyMapping(
-                        id = Uuid.random().toString(),
-                        console_id = consoleId,
-                        port = 0,
-                        platform_key_code = keyCode.toLong(),
-                        libretro_button_id = retroButton.toLong(),
-                    )
+            if (localMappings.isEmpty()) {
+                val platformDefaults = keyMappingRepository.getDefaultMapping()
+                val serverCodes = prefs.customKeyMapping.values.mapNotNull { it.toIntOrNull() }.toSet()
+                val platformCodes = platformDefaults.values.toSet()
+                val platformMatches = serverCodes.isEmpty() || serverCodes.intersect(platformCodes).isNotEmpty()
+                if (platformMatches) {
+                    // Import global default mapping from server
+                    for ((retroButtonStr, keyCodeStr) in prefs.customKeyMapping) {
+                        val retroButton = retroButtonStr.toIntOrNull() ?: continue
+                        val keyCode = keyCodeStr.toIntOrNull() ?: continue
+                        database.spelaDatabaseQueries.insertKeyMapping(
+                            id = Uuid.random().toString(),
+                            console_id = DEFAULT_CONSOLE_ID,
+                            port = 0,
+                            platform_key_code = keyCode.toLong(),
+                            libretro_button_id = retroButton.toLong(),
+                        )
+                    }
+                    // Import per-console mappings from server
+                    for ((consoleId, mapping) in prefs.consoleKeyMappings) {
+                        for ((retroButtonStr, keyCodeStr) in mapping.customMapping.orEmpty()) {
+                            val retroButton = retroButtonStr.toIntOrNull() ?: continue
+                            val keyCode = keyCodeStr.toIntOrNull() ?: continue
+                            database.spelaDatabaseQueries.insertKeyMapping(
+                                id = Uuid.random().toString(),
+                                console_id = consoleId,
+                                port = 0,
+                                platform_key_code = keyCode.toLong(),
+                                libretro_button_id = retroButton.toLong(),
+                            )
+                        }
+                    }
                 }
             }
+
+            // Migrate any legacy per-console Android gamepad keycode mappings into
+            // the positional layer (#1334). One-time, Android-only, additive.
+            migrateLegacyGamepadKeycodeMappings()
         }
+    }
+
+    /**
+     * One-time, Android-only migration (#1334): convert legacy per-console
+     * gamepad key-code mappings into the positional layer, preserving genuine
+     * customizations. Additive (never deletes key-code rows nor clobbers an
+     * existing positional override) and guarded by a device-local flag so it
+     * runs at most once. Desktop is skipped — its KeyMappingEntity holds keyboard
+     * codes that must not be normalized as gamepad codes.
+     */
+    private fun migrateLegacyGamepadKeycodeMappings() {
+        if (currentPlatform() != "android") return
+        val queries = database.spelaDatabaseQueries
+        if (queries.getDeviceSetting(GAMEPAD_MIGRATION_FLAG).executeAsOneOrNull() != null) return
+
+        val legacy = queries.getAllKeyMappings().executeAsList().map {
+            GamepadMappingMigration.LegacyRow(
+                consoleId = it.console_id,
+                port = it.port.toInt(),
+                keyCode = it.platform_key_code.toInt(),
+                retroButtonId = it.libretro_button_id.toInt(),
+            )
+        }
+        val existing = queries.getAllGamepadMappings().executeAsList()
+            .map { Triple(it.console_id, it.port, it.gamepad_position) }.toSet()
+        for (entry in GamepadMappingMigration.split(legacy)) {
+            if (Triple(entry.consoleId, entry.port.toLong(), entry.position.name) in existing) continue
+            queries.insertGamepadMapping(
+                id = "${entry.consoleId}:${entry.port}:${entry.position.name}",
+                console_id = entry.consoleId,
+                port = entry.port.toLong(),
+                gamepad_position = entry.position.name,
+                libretro_button_id = entry.retroButtonId.toLong(),
+            )
+        }
+        queries.insertDeviceSetting(GAMEPAD_MIGRATION_FLAG, "done")
     }
 
     override fun getOrientationLock(): String {
