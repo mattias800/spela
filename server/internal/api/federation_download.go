@@ -43,6 +43,15 @@ type downloadClient interface {
 
 type httpDownloadClient struct{}
 
+// fedDownloadHTTPClient bounds the dial/TLS/response-header phase (so a dead or
+// stalling friend can't hold a goroutine + connection forever) but sets no
+// overall timeout — the body stream is large and legitimately slow.
+var fedDownloadHTTPClient = func() *http.Client {
+	tr := http.DefaultTransport.(*http.Transport).Clone()
+	tr.ResponseHeaderTimeout = 30 * time.Second
+	return &http.Client{Transport: tr}
+}()
+
 func (httpDownloadClient) FetchDownload(baseURL, requestID string, id federation.Identity, peerFingerprint, key string) (*http.Response, error) {
 	const path = "/api/federation/download"
 	u := baseURL + path + "?key=" + url.QueryEscape(key)
@@ -54,8 +63,7 @@ func (httpDownloadClient) FetchDownload(baseURL, requestID string, id federation
 	for k, v := range signedFederationHeaders(id, http.MethodGet, path, requestID, nil, peerFingerprint) {
 		req.Header.Set(k, v)
 	}
-	// No client timeout: ROM transfers can be large and slow.
-	return (&http.Client{}).Do(req)
+	return fedDownloadHTTPClient.Do(req)
 }
 
 // resolveLocalGameByKey finds a local game by its cross-server key (IGDB scraper

@@ -395,13 +395,15 @@ func RegisterFederationRoutes(api huma.API, h *FederationHandler, jwtSecret stri
 
 // RegisterFederationGinRoutes wires raw-gin federation routes: the signed ping
 // used by the connection-test diagnostic, plus the signed stat/catalog exports.
-func RegisterFederationGinRoutes(r *gin.Engine, h *FederationHandler) {
+func RegisterFederationGinRoutes(r *gin.Engine, h *FederationHandler, downloadLimiter *RateLimiter) {
 	requireFedPeer := VerifyFederationRequest(h.DB, h.Identity.Fingerprint())
 	r.GET("/api/federation/ping", requireFedPeer, h.ginPing)
 	r.GET("/api/federation/stats", requireFedPeer, h.ginExportStats)
 	r.GET("/api/federation/catalog", requireFedPeer, h.ginExportCatalog)
+	// Binary ROM transfer routes are bandwidth-sensitive — rate-limit them like
+	// the other download endpoints (#1348 Phase 3b-1).
 	// Serve a local ROM to a friend (peer-to-peer, SharePolicy(download)-gated).
-	r.GET("/api/federation/download", requireFedPeer, h.ginServeDownload)
-	// User-facing: download a game a direct friend offers (#1348 Phase 3b-1).
-	r.GET("/api/federation/games/download", AuthMiddleware(h.JWTSecret, h.DB), h.ginUserDownload)
+	r.GET("/api/federation/download", downloadLimiter.RateLimit(), requireFedPeer, h.ginServeDownload)
+	// User-facing: download a game a direct friend offers.
+	r.GET("/api/federation/games/download", downloadLimiter.RateLimit(), AuthMiddleware(h.JWTSecret, h.DB), h.ginUserDownload)
 }
