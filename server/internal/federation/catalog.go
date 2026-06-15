@@ -102,6 +102,20 @@ func (s CatalogSnapshotStore) RemovePeerSnapshot(sourcePeerFingerprint string) e
 		Delete(&db.FederationCatalogSnapshot{}).Error
 }
 
+// DirectSourcesForKey returns the fingerprints of DIRECT friends (hop 1) whose
+// catalog offers the given game key — i.e. friends we can download it from
+// directly, without forwarding. Used by Phase 3b-1 direct-friend download.
+func (s CatalogSnapshotStore) DirectSourcesForKey(key string) ([]string, error) {
+	var fps []string
+	if err := s.DB.Model(&db.FederationCatalogSnapshot{}).
+		Where("key = ? AND hops = ?", key, 1).
+		Distinct("source_peer_fingerprint").
+		Pluck("source_peer_fingerprint", &fps).Error; err != nil {
+		return nil, err
+	}
+	return fps, nil
+}
+
 func (s CatalogSnapshotStore) EntriesWithinHops(maxHops int) ([]CatalogEntry, error) {
 	q := s.DB.Model(&db.FederationCatalogSnapshot{})
 	if maxHops >= 0 {

@@ -38,6 +38,14 @@ type FederationHandler struct {
 	// CatalogClient fetches a friend's catalog. Defaults to httpCatalogClient
 	// when nil; overridden in tests.
 	CatalogClient catalogClient
+	// GameDirs / JWTSecret support direct-friend ROM download (#1348 Phase 3b):
+	// GameDirs resolves a local game file to serve; JWTSecret authenticates the
+	// user-facing download route.
+	GameDirs  []string
+	JWTSecret string
+	// DownloadClient fetches a ROM from a friend. Defaults to httpDownloadClient
+	// when nil; overridden in tests.
+	DownloadClient downloadClient
 	// refreshMu / catalogRefreshMu serialize the respective refreshes so the
 	// periodic ticker and an admin trigger can't race the snapshot stores.
 	refreshMu        sync.Mutex

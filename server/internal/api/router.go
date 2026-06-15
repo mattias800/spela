@@ -192,6 +192,8 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 		Peers:            federation.PeerStore{DB: cfg.DB},
 		Snapshots:        federation.SnapshotStore{DB: cfg.DB},
 		CatalogSnapshots: federation.CatalogSnapshotStore{DB: cfg.DB},
+		GameDirs:         cfg.GameDirs,
+		JWTSecret:        cfg.JWTSecret,
 		BaseURL:          cfg.PublicBaseURL,
 	}
 

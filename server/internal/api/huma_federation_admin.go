@@ -400,4 +400,8 @@ func RegisterFederationGinRoutes(r *gin.Engine, h *FederationHandler) {
 	r.GET("/api/federation/ping", requireFedPeer, h.ginPing)
 	r.GET("/api/federation/stats", requireFedPeer, h.ginExportStats)
 	r.GET("/api/federation/catalog", requireFedPeer, h.ginExportCatalog)
+	// Serve a local ROM to a friend (peer-to-peer, SharePolicy(download)-gated).
+	r.GET("/api/federation/download", requireFedPeer, h.ginServeDownload)
+	// User-facing: download a game a direct friend offers (#1348 Phase 3b-1).
+	r.GET("/api/federation/games/download", AuthMiddleware(h.JWTSecret, h.DB), h.ginUserDownload)
 }
