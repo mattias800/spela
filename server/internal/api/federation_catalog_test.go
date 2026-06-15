@@ -206,3 +206,25 @@ func TestAvailableGames_AggregatesAndFiltersRemoteOnly(t *testing.T) {
 	assert.Equal(t, "igdb:remote", remoteOnly.Body.Games[0].Key)
 	assert.False(t, remoteOnly.Body.Games[0].Local)
 }
+
+func TestAvailableGames_FiltersByQuery(t *testing.T) {
+	database := openAPIFedTestDB(t)
+	selfID, _ := federation.GenerateIdentity()
+	h := catalogHandler(database, selfID, nil)
+
+	require.NoError(t, h.CatalogSnapshots.ReplacePeerSnapshot("B", []federation.CatalogEntry{
+		{OriginFingerprint: "B", Hops: 1, Key: "igdb:1", Title: "Super Mario Bros", Console: "NES"},
+		{OriginFingerprint: "B", Hops: 1, Key: "igdb:2", Title: "Sonic the Hedgehog", Console: "MD"},
+	}, time.Unix(1, 0)))
+
+	// Case-insensitive substring match on title.
+	res, err := h.HumaAvailableGames(context.Background(), &AvailableGamesInput{Q: "mario"})
+	require.NoError(t, err)
+	require.Len(t, res.Body.Games, 1)
+	assert.Equal(t, "Super Mario Bros", res.Body.Games[0].Title)
+
+	// Blank query returns everything (no filter).
+	none, err := h.HumaAvailableGames(context.Background(), &AvailableGamesInput{Q: "   "})
+	require.NoError(t, err)
+	assert.Len(t, none.Body.Games, 2)
+}

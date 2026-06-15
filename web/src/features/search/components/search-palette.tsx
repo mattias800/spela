@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { Search, Loader2, Clock, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useSearch } from "@/hooks/use-search";
+import { useFederatedGameSearch } from "@/hooks/use-federation-search";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { useHotkey } from "@/hooks/use-hotkey";
 import { useRecentSearches } from "@/hooks/use-recent-searches";
@@ -17,6 +18,10 @@ export function SearchPalette() {
     useRecentSearches();
 
   const { data: results, isLoading, isFetching } = useSearch(debouncedQuery);
+  const { data: fedData, isFetching: fedFetching } =
+    useFederatedGameSearch(debouncedQuery);
+  const fedGames = fedData?.games ?? [];
+  const hasFedResults = fedGames.length > 0;
 
   const openPalette = useCallback(() => setOpen(true), []);
   const closePalette = useCallback(() => {
@@ -128,7 +133,7 @@ export function SearchPalette() {
             className="flex-1 bg-transparent py-4 text-base text-surface-100 placeholder:text-surface-500 focus:outline-none"
             aria-label="Search input"
           />
-          {isFetching && (
+          {(isFetching || fedFetching) && (
             <Loader2 className="h-4 w-4 text-surface-500 animate-spin flex-shrink-0" data-testid="search-loading" />
           )}
           <kbd className="hidden sm:inline-flex items-center gap-0.5 rounded border border-surface-700 bg-surface-800 px-1.5 py-0.5 text-xs text-surface-500">
@@ -203,8 +208,10 @@ export function SearchPalette() {
           {/* No results */}
           {debouncedQuery.length >= 2 &&
             !isLoading &&
+            !fedFetching &&
             results &&
-            !hasResults && (
+            !hasResults &&
+            !hasFedResults && (
               <div className="flex flex-col items-center py-8">
                 <Search className="h-8 w-8 text-surface-600 mb-2" />
                 <p className="text-sm text-surface-500">
@@ -213,11 +220,14 @@ export function SearchPalette() {
               </div>
             )}
 
-          {/* Results */}
-          {results && hasResults && (
+          {/* Results — federated games render independently of the local
+              query, so connected-server hits show even while the local
+              search is still loading or returns nothing. */}
+          {(hasResults || hasFedResults) && (
             <SearchResultsDisplay
               results={results}
               onNavigate={handleNavigate}
+              federatedGames={fedGames}
             />
           )}
         </div>

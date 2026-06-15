@@ -226,6 +226,46 @@ describe("SearchPalette", () => {
       });
     });
 
+    it("shows connected-server games in a read-only section, even while local search is still loading", async () => {
+      // Path-aware: local search never resolves (stays loading), federated
+      // catalog resolves with a match — the federated section must still show.
+      mockGet.mockImplementation((path: string) => {
+        if (
+          typeof path === "string" &&
+          path.includes("/api/federation/catalog/available")
+        ) {
+          return Promise.resolve({
+            games: [
+              {
+                key: "igdb:9",
+                title: "Chrono Trigger",
+                console: "SNES",
+                originCount: 2,
+                local: false,
+              },
+            ],
+          });
+        }
+        return new Promise(() => {}); // local search hangs
+      });
+
+      render(<SearchPalette />, { wrapper: createWrapper() });
+      act(() => pressMetaK());
+      await userEvent.type(screen.getByLabelText("Search input"), "chrono");
+
+      await waitFor(() => {
+        expect(
+          screen.getByTestId("federated-search-section"),
+        ).toBeInTheDocument();
+      });
+
+      const row = screen.getByTestId("federated-result-igdb:9");
+      expect(row).toHaveTextContent("Chrono Trigger");
+      expect(row).toHaveTextContent("on 2 connected servers");
+      // Read-only: no "No results" message despite empty local results.
+      expect(screen.queryByText(/No results for/)).not.toBeInTheDocument();
+    });
+
     it("navigates and closes when clicking a result", async () => {
       mockGet.mockResolvedValue(resultsWithGames());
 

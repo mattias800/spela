@@ -14148,6 +14148,7 @@ export interface operations {
             query?: {
                 maxHops?: number;
                 remoteOnly?: boolean;
+                q?: string;
             };
             header?: never;
             path?: never;

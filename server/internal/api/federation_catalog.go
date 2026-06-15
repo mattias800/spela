@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -186,8 +187,9 @@ func (h *FederationHandler) RefreshFederationCatalog() (int, int) {
 // --- Available games (user-facing discovery) -------------------------------
 
 type AvailableGamesInput struct {
-	MaxHops    int  `query:"maxHops"`    // viewer reach; <=0 = full reachable mesh
-	RemoteOnly bool `query:"remoteOnly"` // only games not available locally
+	MaxHops    int    `query:"maxHops"`    // viewer reach; <=0 = full reachable mesh
+	RemoteOnly bool   `query:"remoteOnly"` // only games not available locally
+	Q          string `query:"q"`          // case-insensitive title filter; empty = all
 }
 type AvailableGamesOutput struct {
 	Body struct {
@@ -217,6 +219,15 @@ func (h *FederationHandler) HumaAvailableGames(_ context.Context, in *AvailableG
 		filtered := make([]federation.CatalogAvailability, 0, len(games))
 		for _, g := range games {
 			if !g.Local {
+				filtered = append(filtered, g)
+			}
+		}
+		games = filtered
+	}
+	if q := strings.TrimSpace(strings.ToLower(in.Q)); q != "" {
+		filtered := make([]federation.CatalogAvailability, 0, len(games))
+		for _, g := range games {
+			if strings.Contains(strings.ToLower(g.Title), q) {
 				filtered = append(filtered, g)
 			}
 		}
