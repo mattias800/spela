@@ -1,6 +1,32 @@
 {
   "components": {
     "schemas": {
+      "AcceptInviteBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/AcceptInviteBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "invite": {
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 128,
+            "type": "string"
+          }
+        },
+        "required": [
+          "invite",
+          "name"
+        ],
+        "type": "object"
+      },
       "Achievement": {
         "additionalProperties": false,
         "properties": {
@@ -544,6 +570,67 @@
         ],
         "type": "object"
       },
+      "AggregatedStat": {
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "metric": {
+            "type": "string"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/StatEntry"
+            },
+            "type": "array"
+          },
+          "totalPlayTimeSeconds": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "totalPlayers": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "metric",
+          "key",
+          "label",
+          "totalPlayTimeSeconds",
+          "totalPlayers",
+          "sources"
+        ],
+        "type": "object"
+      },
+      "AggregatedStatsOutputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/AggregatedStatsOutputBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "stats": {
+            "items": {
+              "$ref": "#/components/schemas/AggregatedStat"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "stats"
+        ],
+        "type": "object"
+      },
       "AlmostDoneGame": {
         "additionalProperties": false,
         "properties": {
@@ -925,6 +1012,30 @@
         ],
         "type": "object"
       },
+      "AvailableGamesOutputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/AvailableGamesOutputBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "games": {
+            "items": {
+              "$ref": "#/components/schemas/CatalogAvailability"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "games"
+        ],
+        "type": "object"
+      },
       "BackfillImagesResponse": {
         "additionalProperties": false,
         "properties": {
@@ -1173,6 +1284,35 @@
         "required": [
           "deletedCount",
           "freedBytes"
+        ],
+        "type": "object"
+      },
+      "CatalogAvailability": {
+        "additionalProperties": false,
+        "properties": {
+          "console": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "local": {
+            "type": "boolean"
+          },
+          "originCount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "title",
+          "console",
+          "originCount",
+          "local"
         ],
         "type": "object"
       },
@@ -3555,6 +3695,176 @@
         ],
         "type": "object"
       },
+      "FederationExchange": {
+        "additionalProperties": false,
+        "properties": {
+          "bytes": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "dataClass": {
+            "type": "string"
+          },
+          "direction": {
+            "type": "string"
+          },
+          "durationMs": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "error": {
+            "type": "string"
+          },
+          "finishedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "httpStatus": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "id": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "itemCount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "maxHops": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "operation": {
+            "type": "string"
+          },
+          "peerFingerprint": {
+            "type": "string"
+          },
+          "peerName": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "startedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "createdAt",
+          "requestId",
+          "peerFingerprint",
+          "peerName",
+          "direction",
+          "operation",
+          "dataClass",
+          "maxHops",
+          "status",
+          "httpStatus",
+          "itemCount",
+          "bytes",
+          "durationMs",
+          "startedAt",
+          "finishedAt",
+          "error"
+        ],
+        "type": "object"
+      },
+      "FederationPeer": {
+        "additionalProperties": false,
+        "properties": {
+          "baseUrl": {
+            "type": "string"
+          },
+          "consumePolicy": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "fingerprint": {
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "lastContactAt": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "lastError": {
+            "type": "string"
+          },
+          "lastErrorAt": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "lastSuccessAt": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "publicKey": {
+            "type": "string"
+          },
+          "reachable": {
+            "type": "boolean"
+          },
+          "sharePolicy": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "createdAt",
+          "updatedAt",
+          "fingerprint",
+          "publicKey",
+          "name",
+          "baseUrl",
+          "status",
+          "sharePolicy",
+          "consumePolicy",
+          "lastContactAt",
+          "lastSuccessAt",
+          "lastError",
+          "lastErrorAt",
+          "reachable"
+        ],
+        "type": "object"
+      },
       "ForYouResponse": {
         "additionalProperties": false,
         "properties": {
@@ -4879,6 +5189,27 @@
         },
         "type": "object"
       },
+      "IssueInviteOutputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/IssueInviteOutputBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "invite": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "invite"
+        ],
+        "type": "object"
+      },
       "JoinByInviteCodeRequest": {
         "additionalProperties": false,
         "properties": {
@@ -5004,6 +5335,30 @@
         ],
         "type": "object"
       },
+      "ListExchangesOutputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/ListExchangesOutputBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "exchanges": {
+            "items": {
+              "$ref": "#/components/schemas/FederationExchange"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "exchanges"
+        ],
+        "type": "object"
+      },
       "ListMyNetplayInvitesResponse": {
         "additionalProperties": false,
         "properties": {
@@ -5030,6 +5385,30 @@
         "required": [
           "data",
           "total"
+        ],
+        "type": "object"
+      },
+      "ListPeersOutputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/ListPeersOutputBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "peers": {
+            "items": {
+              "$ref": "#/components/schemas/FederationPeer"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "peers"
         ],
         "type": "object"
       },
@@ -5998,6 +6377,76 @@
         ],
         "type": "object"
       },
+      "PairRequestBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/PairRequestBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "baseUrl": {
+            "type": "string"
+          },
+          "fingerprint": {
+            "type": "string"
+          },
+          "nonce": {
+            "type": "string"
+          },
+          "publicKey": {
+            "type": "string"
+          },
+          "sig": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "fingerprint",
+          "publicKey",
+          "baseUrl",
+          "nonce",
+          "sig"
+        ],
+        "type": "object"
+      },
+      "PairResponseBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/PairResponseBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "baseUrl": {
+            "type": "string"
+          },
+          "fingerprint": {
+            "type": "string"
+          },
+          "publicKey": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "fingerprint",
+          "publicKey",
+          "baseUrl",
+          "status"
+        ],
+        "type": "object"
+      },
       "ParentGameResponse": {
         "additionalProperties": false,
         "properties": {
@@ -6037,6 +6486,54 @@
         },
         "required": [
           "count"
+        ],
+        "type": "object"
+      },
+      "PingResult": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/PingResult.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "clockSkewSeconds": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "error": {
+            "type": "string"
+          },
+          "fingerprintMatch": {
+            "type": "boolean"
+          },
+          "latencyMs": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "peerFingerprint": {
+            "type": "string"
+          },
+          "peerUnixTime": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "reachable": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "reachable",
+          "peerFingerprint",
+          "fingerprintMatch",
+          "peerUnixTime",
+          "clockSkewSeconds",
+          "latencyMs",
+          "error"
         ],
         "type": "object"
       },
@@ -6818,6 +7315,33 @@
         ],
         "type": "object"
       },
+      "RefreshCatalogOutputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/RefreshCatalogOutputBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "failed": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "refreshed": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "refreshed",
+          "failed"
+        ],
+        "type": "object"
+      },
       "RefreshCoreResponse": {
         "additionalProperties": false,
         "properties": {
@@ -6867,6 +7391,33 @@
           "sizeBytes",
           "fetchedAt",
           "sourceUrl"
+        ],
+        "type": "object"
+      },
+      "RefreshStatsOutputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/RefreshStatsOutputBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "failed": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "refreshed": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "refreshed",
+          "failed"
         ],
         "type": "object"
       },
@@ -7104,6 +7655,27 @@
         },
         "required": [
           "reported"
+        ],
+        "type": "object"
+      },
+      "RevokePeerOutputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/RevokePeerOutputBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "revoked": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "revoked"
         ],
         "type": "object"
       },
@@ -9105,6 +9677,45 @@
         ],
         "type": "object"
       },
+      "StatEntry": {
+        "additionalProperties": false,
+        "properties": {
+          "hops": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "metric": {
+            "type": "string"
+          },
+          "originFingerprint": {
+            "type": "string"
+          },
+          "playTimeSeconds": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "players": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "originFingerprint",
+          "hops",
+          "metric",
+          "key",
+          "label",
+          "playTimeSeconds",
+          "players"
+        ],
+        "type": "object"
+      },
       "StatusMessageResponse": {
         "additionalProperties": false,
         "properties": {
@@ -11045,6 +11656,375 @@
         "tags": [
           "admin",
           "enrichment"
+        ]
+      }
+    },
+    "/api/admin/federation/catalog/refresh": {
+      "post": {
+        "operationId": "federationRefreshCatalog",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RefreshCatalogOutputBody"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Refresh cached friend game catalogs now",
+        "tags": [
+          "federation",
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/federation/exchanges": {
+      "get": {
+        "operationId": "federationListExchanges",
+        "parameters": [
+          {
+            "explode": false,
+            "in": "query",
+            "name": "peer",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "direction",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListExchangesOutputBody"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List the federation exchange ledger (observability)",
+        "tags": [
+          "federation",
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/federation/invite": {
+      "post": {
+        "operationId": "federationIssueInvite",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssueInviteOutputBody"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Issue a federation pairing invite",
+        "tags": [
+          "federation",
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/federation/peers": {
+      "get": {
+        "operationId": "federationListPeers",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListPeersOutputBody"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List federation peers (with health)",
+        "tags": [
+          "federation",
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/federation/peers/accept": {
+      "post": {
+        "operationId": "federationAcceptInvite",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptInviteBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PairResponseBody"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Accept a friend's invite and pair",
+        "tags": [
+          "federation",
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/federation/peers/{fingerprint}": {
+      "delete": {
+        "operationId": "federationRevokePeer",
+        "parameters": [
+          {
+            "description": "Peer fingerprint (base32).",
+            "in": "path",
+            "name": "fingerprint",
+            "required": true,
+            "schema": {
+              "description": "Peer fingerprint (base32).",
+              "maxLength": 64,
+              "pattern": "^[a-z2-7]{52}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevokePeerOutputBody"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Revoke a federation peer",
+        "tags": [
+          "federation",
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/federation/peers/{fingerprint}/test": {
+      "post": {
+        "operationId": "federationTestPeer",
+        "parameters": [
+          {
+            "description": "Peer fingerprint (base32).",
+            "in": "path",
+            "name": "fingerprint",
+            "required": true,
+            "schema": {
+              "description": "Peer fingerprint (base32).",
+              "maxLength": 64,
+              "pattern": "^[a-z2-7]{52}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PingResult"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Test connection to a peer",
+        "tags": [
+          "federation",
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/federation/stats/refresh": {
+      "post": {
+        "operationId": "federationRefreshStats",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RefreshStatsOutputBody"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Refresh cached friend stat rollups now",
+        "tags": [
+          "federation",
+          "admin"
         ]
       }
     },
@@ -17897,6 +18877,181 @@
         "summary": "Get personal gameplay anniversaries",
         "tags": [
           "explore"
+        ]
+      }
+    },
+    "/api/federation/catalog/available": {
+      "get": {
+        "operationId": "federationAvailableGames",
+        "parameters": [
+          {
+            "explode": false,
+            "in": "query",
+            "name": "maxHops",
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "remoteOnly",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AvailableGamesOutputBody"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Games available across the friend mesh, hop-bounded",
+        "tags": [
+          "federation",
+          "catalog"
+        ]
+      }
+    },
+    "/api/federation/pair": {
+      "post": {
+        "operationId": "federationPair",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Spela-Request-Id",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PairRequestBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PairResponseBody"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Pairing callback (server-to-server bootstrap)",
+        "tags": [
+          "federation"
+        ]
+      }
+    },
+    "/api/federation/stats/aggregated": {
+      "get": {
+        "operationId": "federationAggregatedStats",
+        "parameters": [
+          {
+            "explode": false,
+            "in": "query",
+            "name": "metric",
+            "schema": {
+              "enum": [
+                "game_play",
+                "player_play"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "maxHops",
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AggregatedStatsOutputBody"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Federated (mesh) aggregate stats, hop-bounded",
+        "tags": [
+          "federation",
+          "stats"
         ]
       }
     },
