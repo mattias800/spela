@@ -3,18 +3,15 @@ package com.spela.player.presentation.ui.components.keymapping
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -29,12 +26,11 @@ import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 
 /**
- * Direct-edit key mapping screen showing the controller visual with all current mappings.
- * Tapping any button enters single-button listening mode for just that button.
- *
- * Uses a responsive layout:
- * - Wide (>600dp): Controller visual on left, mapping list on right (side-by-side)
- * - Narrow (≤600dp): Controller visual on top, mapping list below (stacked)
+ * Direct-edit key mapping screen: a per-console labeled list of buttons and their
+ * current bindings (#1335). Tapping any row enters single-button listening mode for
+ * that button. (Replaced the old pictorial controller diagram, which rendered the
+ * wrong controller for most consoles; an approximate positional visual is a separate
+ * follow-up.)
  *
  * @param layout Console button layout
  * @param state Current key mapping state from the ViewModel
@@ -67,21 +63,11 @@ fun KeyMappingScreen(
     portLabel: String? = null,
     modifier: Modifier = Modifier,
 ) {
-    val buttonStates = remember(layout, state.currentBindings, state.currentMappingButton) {
-        buildButtonStates(layout, state.currentBindings, state.currentMappingButton)
-    }
-
-    val mappingLabels = remember(state.currentBindings) {
-        state.currentBindings.mapValues { (_, keyCode) -> keyNameResolver(keyCode) }
-    }
-
-    BoxWithConstraints(
+    Box(
         modifier = modifier
             .fillMaxSize()
             .background(SpColor.Background),
     ) {
-        val isWide = maxWidth > 600.dp
-
         Column(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -113,76 +99,24 @@ fun KeyMappingScreen(
 
             Spacer(Modifier.height(SpSpacing.Large))
 
-            if (isWide) {
-                // Side-by-side layout: controller left, list right
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                ) {
-                    // Controller visual
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight(),
-                    ) {
-                        ConsoleControllerVisual(
-                            layout = layout,
-                            buttonStates = buttonStates,
-                            highlightedButton = state.currentMappingButton,
-                            mappingLabels = mappingLabels,
-                            onButtonClick = onButtonClick,
-                            modifier = Modifier.fillMaxSize(),
-                        )
-                    }
+            // Per-console mapping as a labeled list (#1335): each row is a button
+            // and its current binding, tappable to remap. Replaces the old pictorial
+            // controller diagram (only 5 outlines for ~14 consoles, drifting hotspots,
+            // sticks drawn as disconnected dots). An approximate positional visual is
+            // a separate follow-up.
+            MappingListPanel(
+                layout = layout,
+                currentBindings = state.currentBindings,
+                highlightedButton = state.currentMappingButton,
+                onButtonClick = onButtonClick,
+                keyNameResolver = keyNameResolver,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .widthIn(max = 520.dp)
+                    .weight(1f),
+            )
 
-                    Spacer(Modifier.width(SpSpacing.Default))
-
-                    // Mapping list
-                    MappingListPanel(
-                        layout = layout,
-                        currentBindings = state.currentBindings,
-                        highlightedButton = state.currentMappingButton,
-                        onButtonClick = onButtonClick,
-                        keyNameResolver = keyNameResolver,
-                        modifier = Modifier
-                            .weight(0.8f)
-                            .fillMaxHeight(),
-                    )
-                }
-            } else {
-                // Stacked layout: controller on top, list below
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(220.dp),
-                ) {
-                    ConsoleControllerVisual(
-                        layout = layout,
-                        buttonStates = buttonStates,
-                        highlightedButton = state.currentMappingButton,
-                        mappingLabels = mappingLabels,
-                        onButtonClick = onButtonClick,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                }
-
-                Spacer(Modifier.height(SpSpacing.Medium))
-
-                // Mapping list takes remaining space
-                MappingListPanel(
-                    layout = layout,
-                    currentBindings = state.currentBindings,
-                    highlightedButton = state.currentMappingButton,
-                    onButtonClick = onButtonClick,
-                    keyNameResolver = keyNameResolver,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                )
-            }
-
-            // Listening prompt (shown only when not in the mapping list context)
+            // Listening prompt — shown below the list while a button is selected.
             if (state.currentMappingButton != null) {
                 val buttonLabel = layout.buttons
                     .find { it.retroButtonId == state.currentMappingButton }
@@ -219,9 +153,9 @@ fun KeyMappingScreen(
 
             Spacer(Modifier.height(SpSpacing.Medium))
 
-            // Action buttons
+            // Action buttons — capped to the list width so they stay aligned on wide screens.
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().widthIn(max = 520.dp),
                 horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
             ) {
                 SpSecondaryButton(
@@ -248,7 +182,7 @@ fun KeyMappingScreen(
             if (onSaveGameOverride != null) {
                 Spacer(Modifier.height(SpSpacing.Medium))
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().widthIn(max = 520.dp),
                     horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
                 ) {
                     SpButton(
