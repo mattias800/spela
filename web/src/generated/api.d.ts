@@ -5907,6 +5907,7 @@ export interface components {
         };
         CatalogAvailability: {
             console: string;
+            cover: string;
             key: string;
             local: boolean;
             /** Format: int64 */

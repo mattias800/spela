@@ -639,6 +639,7 @@ type FederationCatalogSnapshot struct {
 	Key                   string    `gorm:"size:255;index" json:"key"`
 	Title                 string    `gorm:"size:255" json:"title"`
 	Console               string    `gorm:"size:32" json:"console"`
+	Cover                 string    `gorm:"size:512" json:"cover"`
 	FetchedAt             time.Time `json:"fetchedAt"`
 }
 

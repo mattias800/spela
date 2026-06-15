@@ -70,6 +70,9 @@ func sanitizeCatalogBatch(entries []federation.CatalogEntry, selfFingerprint str
 		if len(e.Console) > 32 {
 			e.Console = e.Console[:32]
 		}
+		// Cover is a URL a peer chose — only keep it if it's a public IGDB CDN
+		// image, so a hostile peer can't point a consumer's browser elsewhere.
+		e.Cover = federation.SafeCoverURL(e.Cover)
 		out = append(out, e)
 		if len(out) >= maxStatEntriesPerPeer {
 			break

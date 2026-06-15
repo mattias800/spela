@@ -1,6 +1,7 @@
 package federation
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -91,4 +92,51 @@ func TestAggregateCatalog_CountsOriginsAndFlagsLocal(t *testing.T) {
 	assert.True(t, byKey["g1"].Local)
 	assert.Equal(t, 1, byKey["g2"].OriginCount)
 	assert.False(t, byKey["g2"].Local, "g2 only on a remote server")
+}
+
+func TestSafeCoverURL(t *testing.T) {
+	ok := "https://images.igdb.com/igdb/image/upload/t_cover_big/abc.jpg"
+	assert.Equal(t, ok, SafeCoverURL(ok), "public IGDB CDN URL is kept")
+	assert.Empty(t, SafeCoverURL("/api/images/local.jpg"), "local path dropped (no host leak)")
+	assert.Empty(t, SafeCoverURL("http://images.igdb.com/x.jpg"), "non-https dropped")
+	assert.Empty(t, SafeCoverURL("https://evil.example.com/x.jpg"), "non-IGDB host dropped")
+	assert.Empty(t, SafeCoverURL(""), "empty stays empty")
+	assert.Empty(t, SafeCoverURL(igdbCoverPrefix+strings.Repeat("a", 600)), "overlong dropped")
+}
+
+func TestBuildLocalCatalog_EmitsOnlyIgdbCovers(t *testing.T) {
+	database := openCatalogTestDB(t)
+	console := db.Console{Name: "Super Nintendo", Abbreviation: "SNES"}
+	require.NoError(t, database.Create(&console).Error)
+	const igdbCover = "https://images.igdb.com/igdb/image/upload/t_cover_big/abc.jpg"
+	require.NoError(t, database.Create(&db.Game{
+		Title: "Cover Game", ScraperID: "igdb:7", FilePath: "/a", ConsoleID: console.ID,
+		IGDBCoverURL: igdbCover,
+	}).Error)
+	require.NoError(t, database.Create(&db.Game{
+		Title: "Local Cover Game", ScraperID: "igdb:8", FilePath: "/b", ConsoleID: console.ID,
+		IGDBCoverURL: "/api/images/local.jpg", // local path — must not leak across the mesh
+	}).Error)
+
+	entries, err := BuildLocalCatalog(database, "selfFP")
+	require.NoError(t, err)
+	byKey := map[string]CatalogEntry{}
+	for _, e := range entries {
+		byKey[e.Key] = e
+	}
+	assert.Equal(t, igdbCover, byKey["igdb:7"].Cover)
+	assert.Empty(t, byKey["igdb:8"].Cover, "a local image path must not be emitted as a federated cover")
+
+	// Cover survives the snapshot round-trip and carries into the aggregate.
+	store := CatalogSnapshotStore{DB: database}
+	require.NoError(t, store.ReplacePeerSnapshot("B", []CatalogEntry{
+		{OriginFingerprint: "B", Hops: 1, Key: "igdb:9", Title: "Remote", Console: "NES", Cover: igdbCover},
+	}, time.Unix(1, 0)))
+	back, err := store.EntriesWithinHops(-1)
+	require.NoError(t, err)
+	require.Len(t, back, 1)
+	assert.Equal(t, igdbCover, back[0].Cover)
+	agg := AggregateCatalog(back, "selfFP")
+	require.Len(t, agg, 1)
+	assert.Equal(t, igdbCover, agg[0].Cover)
 }
