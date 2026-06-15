@@ -54,10 +54,11 @@ player_slot INTEGER NULL)`. Semantics:
 
 The stable key per platform:
 - **Android**: `InputDevice.descriptor` (stable per physical unit across reconnects).
-- **Desktop**: the SDL device **name** (consistent with `ControllerStyleOverride`'s
-  keying). Two *identical* desktop pads share a name and so can't hold distinct
-  persistent slots — a documented limitation; per-unit desktop persistence would
-  need SDL serial (a native/JNI change, deferred).
+- **Desktop**: the SDL **serial** (`SDL_GetGamepadSerial`, surfaced on
+  `GamepadState.serial` via the JNI bridge) when the pad exposes one, else the SDL
+  device **name** (#1361). Serial gives true per-unit identity so two *identical*
+  pads keep distinct slots; pads with no serial fall back to name (per-model, so
+  identical nameless pads still share — an inherent limit of those pads).
 
 **The repository is synchronous on purpose.** `GamepadPortManager` reads it from
 inside its `@Synchronized` critical sections on the input threads when a device

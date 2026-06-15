@@ -186,7 +186,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_spela_player_libretro_LibretroJni_native
     jclass stateClass = (*env)->FindClass(env, "com/spela/player/libretro/GamepadState");
     if (!stateClass) return NULL;
 
-    jmethodID ctor = (*env)->GetMethodID(env, stateClass, "<init>", "(ILjava/lang/String;[Z[II)V");
+    jmethodID ctor = (*env)->GetMethodID(env, stateClass, "<init>", "(ILjava/lang/String;[Z[IILjava/lang/String;)V");
     if (!ctor) return NULL;
 
     int attached_count = 0;
@@ -206,6 +206,11 @@ JNIEXPORT jobjectArray JNICALL Java_com_spela_player_libretro_LibretroJni_native
 
         const char *name = SDL_GetGamepadName(gc);
         jstring jname = (*env)->NewStringUTF(env, name ? name : "Unknown Controller");
+
+        /* Per-unit serial when the pad exposes one (#1361). Often NULL — Kotlin
+         * falls back to the name as the persistence key in that case. */
+        const char *serial = SDL_GetGamepadSerial(gc);
+        jstring jserial = (*env)->NewStringUTF(env, serial ? serial : "");
 
         jbooleanArray buttons = (*env)->NewBooleanArray(env, NUM_BUTTONS);
         jboolean btnValues[NUM_BUTTONS];
@@ -230,11 +235,12 @@ JNIEXPORT jobjectArray JNICALL Java_com_spela_player_libretro_LibretroJni_native
         (*env)->SetIntArrayRegion(env, axes, 0, NUM_AXES, axisValues);
 
         jint gpType = (jint)SDL_GetRealGamepadType(gc);
-        jobject stateObj = (*env)->NewObject(env, stateClass, ctor, controllerId, jname, buttons, axes, gpType);
+        jobject stateObj = (*env)->NewObject(env, stateClass, ctor, controllerId, jname, buttons, axes, gpType, jserial);
         (*env)->SetObjectArrayElement(env, result, out_index, stateObj);
         out_index++;
 
         (*env)->DeleteLocalRef(env, jname);
+        (*env)->DeleteLocalRef(env, jserial);
         (*env)->DeleteLocalRef(env, buttons);
         (*env)->DeleteLocalRef(env, axes);
         (*env)->DeleteLocalRef(env, stateObj);

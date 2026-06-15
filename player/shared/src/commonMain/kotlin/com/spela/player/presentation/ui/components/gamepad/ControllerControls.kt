@@ -33,7 +33,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
@@ -155,7 +154,8 @@ private fun ControllerListRow(
             .semantics {
                 role = Role.Button
                 contentDescription = "${controllerIdentity(controller)}, " +
-                    if (controller.slot != null) playerLabel(controller.slot) else "not assigned"
+                    (if (controller.slot != null) playerLabel(controller.slot) else "not assigned") +
+                    (if (controller.slot != null && controller.isActive) ", active" else "")
             },
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -238,7 +238,9 @@ private fun ControllerDetail(
             Text(
                 text = if (controller.slot != null) playerLabel(controller.slot) else "Not assigned",
                 style = SpTypography.BodyMedium,
-                color = if (controller.slot != null) SpColor.Primary else SpColor.OnBackgroundTertiary,
+                // PrimaryLight (not Primary) reads clearly on the dark card; the
+                // P-badge already carries the indigo accent (#1361).
+                color = if (controller.slot != null) SpColor.PrimaryLight else SpColor.OnBackgroundTertiary,
                 modifier = Modifier.weight(1f).testTag("controller_detail_player"),
             )
             SpButton(
@@ -413,7 +415,7 @@ private fun ActivityDot(isActive: Boolean) {
             .size(10.dp)
             .alpha(pulseAlpha)
             .clip(CircleShape)
-            .background(if (isActive) Color(0xFF4CAF50) else SpColor.OnBackgroundTertiary.copy(alpha = 0.3f))
+            .background(if (isActive) SpColor.Success else SpColor.OnBackgroundTertiary.copy(alpha = 0.3f))
             .semantics {
                 contentDescription = if (isActive) "Activity indicator active" else "Activity indicator inactive"
             },

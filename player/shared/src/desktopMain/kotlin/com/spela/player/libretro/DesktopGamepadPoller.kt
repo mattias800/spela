@@ -103,13 +103,16 @@ class DesktopGamepadPoller(
         for (state in states) {
             currentIds.add(state.controllerId)
 
-            // Connect new devices
+            // Connect new devices. Prefer the per-unit serial as the persistence
+            // stable key (#1361) so two identical pads keep distinct player slots;
+            // fall back to the name when the pad exposes no serial.
             if (state.controllerId !in knownControllers) {
                 knownControllers.add(state.controllerId)
                 gamepadPortManager.connectDevice(
                     state.controllerId,
                     state.name,
                     controllerStyleFromSdlType(state.type),
+                    stableKey = state.serial.ifBlank { state.name },
                 )
             }
 
