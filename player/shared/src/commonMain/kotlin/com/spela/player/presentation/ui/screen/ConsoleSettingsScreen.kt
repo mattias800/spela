@@ -45,13 +45,10 @@ import com.spela.player.presentation.ui.components.SpRadioOption
 import com.spela.player.presentation.ui.components.SpScreen
 import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.components.SpTopBar
-import com.spela.player.presentation.ui.components.gamepad.GamepadConfigScreen
 import com.spela.player.presentation.ui.components.gamepad.GamepadMappingDialog
 import com.spela.player.presentation.ui.components.keymapping.KeyMappingScreen
 import com.spela.player.presentation.ui.components.keymapping.platformKeyName
 import com.spela.player.presentation.ui.gamepad.gamepadFocusable
-import com.spela.player.presentation.viewmodel.GamepadConfigIntent
-import com.spela.player.presentation.viewmodel.GamepadConfigViewModel
 import com.spela.player.presentation.viewmodel.GamepadMappingIntent
 import com.spela.player.presentation.viewmodel.GamepadMappingViewModel
 import com.spela.player.presentation.ui.gamepad.InputMode
@@ -76,7 +73,6 @@ fun ConsoleSettingsScreen(
     consoleId: String,
     settingsViewModel: SettingsViewModel,
     keyMappingViewModel: KeyMappingViewModel,
-    gamepadConfigViewModel: GamepadConfigViewModel? = null,
     gamepadMappingViewModel: GamepadMappingViewModel? = null,
     onBack: () -> Unit,
 ) {
@@ -286,43 +282,9 @@ fun ConsoleSettingsScreen(
                 SettingsSectionHeader(title = "Controller Mapping")
             }
 
-            // Gamepad config (connected controllers with activity indicators)
-            if (gamepadConfigViewModel != null) {
-                item {
-                    val gamepadConfigState by gamepadConfigViewModel.state.collectAsState()
-                    SpCard(onGradient = true) {
-                        GamepadConfigScreen(
-                            state = gamepadConfigState,
-                            onConfigurePort = { port ->
-                                keyMappingViewModel.onIntent(
-                                    KeyMappingIntent.LoadMapping(consoleId, port)
-                                )
-                                gamepadConfigViewModel.onIntent(
-                                    GamepadConfigIntent.SelectPortForMapping(port)
-                                )
-                            },
-                            onSwapUp = { port ->
-                                gamepadConfigViewModel.onIntent(
-                                    GamepadConfigIntent.SwapPorts(port - 1, port)
-                                )
-                            },
-                            onSwapDown = { port ->
-                                gamepadConfigViewModel.onIntent(
-                                    GamepadConfigIntent.SwapPorts(port, port + 1)
-                                )
-                            },
-                            onSetStyleOverride = { port, style ->
-                                gamepadConfigViewModel.onIntent(
-                                    GamepadConfigIntent.SetStyleOverride(port, style)
-                                )
-                            },
-                            // Keyboard key-mapping is desktop-only; on Android the
-                            // positional "Controller buttons" editor is used instead.
-                            showConfigureButton = currentPlatform() != "android",
-                        )
-                    }
-                }
-            }
+            // Connected controllers, controller type, and player assignment are
+            // device-global settings — they live in Settings → Controls, not here.
+            // Per-Console keeps only the canonical→console button mapping (#1370).
 
             // Positional gamepad button remapping (#1334). Available on both
             // platforms now that Android input also flows through the positional
@@ -383,13 +345,6 @@ fun ConsoleSettingsScreen(
                     SettingsSectionHeader(title = "Keyboard")
                 }
                 item {
-                    val selectedPort = gamepadConfigViewModel?.state?.collectAsState()?.value?.selectedPort
-                    val portAssignment = gamepadConfigViewModel?.state?.collectAsState()?.value
-                        ?.portAssignments?.find { it.port == selectedPort }
-                    val portLabel = if (selectedPort != null && portAssignment != null) {
-                        "Player ${selectedPort + 1} \u2014 ${portAssignment.deviceName}"
-                    } else null
-
                     SpCard(onGradient = true) {
                         Box(
                             modifier = Modifier
@@ -421,7 +376,6 @@ fun ConsoleSettingsScreen(
                                     keyMappingViewModel.onIntent(KeyMappingIntent.ClearCurrentBinding)
                                 },
                                 keyNameResolver = ::platformKeyName,
-                                portLabel = portLabel,
                                 modifier = Modifier.padding(SpSpacing.ScreenHorizontal),
                             )
                         }

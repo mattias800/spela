@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -74,7 +75,11 @@ fun GamepadMappingDialog(
             Column(
                 modifier = Modifier
                     .fillMaxWidth(0.9f)
-                    .heightIn(max = 560.dp)
+                    // Cap to the available screen height so the action buttons are
+                    // never clipped on short landscape screens like the AYN Thor
+                    // (#1371). The position list below scrolls to fit.
+                    .fillMaxHeight(0.9f)
+                    .heightIn(max = 600.dp)
                     .clip(RoundedCornerShape(SpSpacing.RadiusPill))
                     .background(SpColor.SurfaceElevated)
                     .padding(SpSpacing.XLarge)
@@ -96,7 +101,9 @@ fun GamepadMappingDialog(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(max = 360.dp)
+                        // Take the remaining space (between header and the pinned
+                        // action buttons) and scroll within it (#1371).
+                        .weight(1f)
                         .verticalScroll(rememberScrollState()),
                 ) {
                     GamepadPosition.entries.forEachIndexed { index, position ->
