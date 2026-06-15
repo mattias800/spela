@@ -43,6 +43,27 @@ class GamepadMappingRepositoryImpl(
         )
     }
 
+    override suspend fun bindPositionExclusive(
+        consoleId: String,
+        port: Int,
+        position: GamepadPosition,
+        retroButtonId: Int,
+    ) {
+        // 1:1 (#1377): clear any OTHER position currently mapping to this button
+        // (it becomes UNMAPPED → does nothing), then bind this position. Setting
+        // this position also steals it from whatever button it used to trigger,
+        // since each position maps to exactly one button.
+        if (retroButtonId != GamepadMappingRepository.UNMAPPED) {
+            val effective = getEffectiveMapping(consoleId, port)
+            for ((p, id) in effective) {
+                if (id == retroButtonId && p != position) {
+                    setBinding(consoleId, port, p, GamepadMappingRepository.UNMAPPED)
+                }
+            }
+        }
+        setBinding(consoleId, port, position, retroButtonId)
+    }
+
     override suspend fun resetToDefault(consoleId: String, port: Int) {
         queries.deleteGamepadMappingsForConsole(consoleId, port.toLong())
     }

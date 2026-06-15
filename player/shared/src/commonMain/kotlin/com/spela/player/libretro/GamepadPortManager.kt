@@ -157,6 +157,32 @@ class GamepadPortManager(
         _pressedPositions.value = emptySet()
     }
 
+    /** Positions held during a hold-to-bind session, merged across ALL devices
+     *  and INCLUDING the D-pad (#1377). Distinct from the input tester, which is
+     *  per-device and excludes the D-pad: the binding editor lets the user assign
+     *  any physical button — including D-pad directions — using any controller. */
+    private val bindPressedByDevice = HashMap<Int, MutableSet<GamepadPosition>>()
+    private val _bindPressedPositions = MutableStateFlow<Set<GamepadPosition>>(emptySet())
+    val bindPressedPositions: StateFlow<Set<GamepadPosition>> = _bindPressedPositions.asStateFlow()
+
+    /** True while the per-console mapping editor is capturing a hold-to-bind press
+     *  (#1377). The input pipelines route every position (incl. D-pad) from any
+     *  device into [bindPressedPositions] and suppress navigation, so a press only
+     *  feeds the binder. Mutually exclusive with the input tester in practice (they
+     *  live on different screens). */
+    private val _bindCaptureActive = MutableStateFlow(false)
+    val bindCaptureActive: StateFlow<Boolean> = _bindCaptureActive.asStateFlow()
+
+    /** Set by the mapping editor when a hold-to-bind session starts/ends. Clears
+     *  any stale held positions on each transition. */
+    @Synchronized
+    fun setBindCaptureActive(active: Boolean) {
+        if (_bindCaptureActive.value == active) return
+        _bindCaptureActive.value = active
+        bindPressedByDevice.clear()
+        _bindPressedPositions.value = emptySet()
+    }
+
     /** Current input mode: TOUCH when touch input was last used, GAMEPAD when D-pad/buttons were. */
     private val _inputMode = MutableStateFlow(InputMode.TOUCH)
     val inputMode: StateFlow<InputMode> = _inputMode.asStateFlow()
@@ -339,6 +365,9 @@ class GamepadPortManager(
         if (pressedByDevice.remove(deviceId) != null && _testCaptureDeviceId.value == deviceId) {
             recomputePressedPositions()
         }
+        if (bindPressedByDevice.remove(deviceId) != null && _bindCaptureActive.value) {
+            recomputeBindPressed()
+        }
         if (!wasConnected) return
         _portActivity.value = buildActivityMap()
         emitConnectedControllers()
@@ -494,6 +523,42 @@ class GamepadPortManager(
     }
 
     /**
+     * Records a hold-to-bind press/release for [deviceId] during a binding session
+     * (#1377). Captures from ANY device and INCLUDES the D-pad — fed by the desktop
+     * poller and (on Android) the mapping dialog's key handler. No-op unless
+     * [bindCaptureActive] is set, so stray presses outside a session are ignored.
+     */
+    @Synchronized
+    fun reportBindPosition(deviceId: Int, position: GamepadPosition, pressed: Boolean) {
+        if (!_bindCaptureActive.value) return
+        val set = bindPressedByDevice.getOrPut(deviceId) { mutableSetOf() }
+        val changed = if (pressed) set.add(position) else set.remove(position)
+        if (changed) recomputeBindPressed()
+    }
+
+    /**
+     * Replaces the full set of held bind positions for [deviceId] (wholesale —
+     * used by the desktop poller, which has all positions each frame). Includes
+     * the D-pad. No-op unless [bindCaptureActive] is set.
+     */
+    @Synchronized
+    fun reportBindPressedPositions(deviceId: Int, positions: Set<GamepadPosition>) {
+        if (!_bindCaptureActive.value) return
+        val set = bindPressedByDevice.getOrPut(deviceId) { mutableSetOf() }
+        if (set == positions) return
+        set.clear()
+        set.addAll(positions)
+        recomputeBindPressed()
+    }
+
+    /** Must be called while holding the monitor. */
+    private fun recomputeBindPressed() {
+        val merged = mutableSetOf<GamepadPosition>()
+        for (positions in bindPressedByDevice.values) merged.addAll(positions)
+        _bindPressedPositions.value = merged
+    }
+
+    /**
      * Loads per-game key mapping for a specific port, with fallback chain:
      * per-game -> per-console -> global default -> hardcoded defaults.
      */
@@ -616,6 +681,9 @@ class GamepadPortManager(
         pressedByDevice.clear()
         _pressedPositions.value = emptySet()
         _testCaptureDeviceId.value = null
+        bindPressedByDevice.clear()
+        _bindPressedPositions.value = emptySet()
+        _bindCaptureActive.value = false
         _assignments.value = emptyList()
         _connectedControllers.value = emptyList()
         _portActivity.value = emptyMap()

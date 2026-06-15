@@ -450,6 +450,66 @@ class GamepadPortManagerTest {
         assertFalse(GamepadPosition.SOUTH in manager.pressedPositions.value)
     }
 
+    // ── Hold-to-bind capture: any-device + D-pad (#1377) ─────────────────────
+
+    @Test
+    fun bindCaptureTracksPressAndReleaseIncludingDpad() {
+        manager.setBindCaptureActive(true)
+        manager.reportBindPosition(10, GamepadPosition.DPAD_UP, pressed = true)
+        assertTrue(GamepadPosition.DPAD_UP in manager.bindPressedPositions.value)
+        manager.reportBindPosition(10, GamepadPosition.DPAD_UP, pressed = false)
+        assertFalse(GamepadPosition.DPAD_UP in manager.bindPressedPositions.value)
+    }
+
+    @Test
+    fun bindCaptureMergesAcrossDevices() {
+        manager.setBindCaptureActive(true)
+        manager.reportBindPosition(10, GamepadPosition.SOUTH, pressed = true)
+        // Unlike the tester, binding captures any controller — both presses show.
+        manager.reportBindPosition(20, GamepadPosition.NORTH, pressed = true)
+        assertEquals(
+            setOf(GamepadPosition.SOUTH, GamepadPosition.NORTH),
+            manager.bindPressedPositions.value,
+        )
+    }
+
+    @Test
+    fun bindCaptureIgnoresPressesWhenInactive() {
+        manager.reportBindPosition(10, GamepadPosition.SOUTH, pressed = true)
+        assertTrue(manager.bindPressedPositions.value.isEmpty())
+    }
+
+    @Test
+    fun deactivatingBindCaptureClearsHeldPositions() {
+        manager.setBindCaptureActive(true)
+        manager.reportBindPosition(10, GamepadPosition.SOUTH, pressed = true)
+        assertTrue(GamepadPosition.SOUTH in manager.bindPressedPositions.value)
+        manager.setBindCaptureActive(false)
+        assertTrue(manager.bindPressedPositions.value.isEmpty())
+    }
+
+    @Test
+    fun bindCaptureIsIndependentFromInputTester() {
+        // The tester (per-device, no D-pad) and the binder (any-device, incl D-pad)
+        // use separate signals and must not bleed into each other.
+        manager.setTestCaptureDevice(10)
+        manager.setBindCaptureActive(true)
+        manager.reportPositionInput(10, GamepadPosition.SOUTH, pressed = true)
+        manager.reportBindPosition(20, GamepadPosition.DPAD_LEFT, pressed = true)
+        assertEquals(setOf(GamepadPosition.SOUTH), manager.pressedPositions.value)
+        assertEquals(setOf(GamepadPosition.DPAD_LEFT), manager.bindPressedPositions.value)
+    }
+
+    @Test
+    fun disconnectClearsBindHeldPositions() {
+        manager.connectDevice(deviceId = 7, deviceName = "Pad")
+        manager.setBindCaptureActive(true)
+        manager.reportBindPosition(7, GamepadPosition.SOUTH, pressed = true)
+        assertTrue(GamepadPosition.SOUTH in manager.bindPressedPositions.value)
+        manager.disconnectDevice(7)
+        assertFalse(GamepadPosition.SOUTH in manager.bindPressedPositions.value)
+    }
+
     // ── Player-slot assignment (#1359) ───────────────────────────────────────
 
     @Test
