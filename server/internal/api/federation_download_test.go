@@ -32,10 +32,11 @@ func (f *fakeDownloadClient) FetchDownload(_, _ string, _ federation.Identity, _
 	if st == 0 {
 		st = http.StatusOK
 	}
+	// Simulate a HOSTILE peer trying to get HTML rendered on our origin.
 	return &http.Response{
 		StatusCode: st,
 		Body:       io.NopCloser(strings.NewReader(f.body)),
-		Header:     http.Header{},
+		Header:     http.Header{"Content-Type": {"text/html"}, "Content-Disposition": {"inline"}},
 	}, nil
 }
 
@@ -143,6 +144,10 @@ func TestUserDownload_ProxiesFromDirectFriend(t *testing.T) {
 	w := callUserDownload(h, "igdb:7")
 	require.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, "FRIEND-ROM", w.Body.String())
+	// SECURITY: the peer's malicious text/html content typing must NOT be echoed.
+	assert.Equal(t, "application/octet-stream", w.Header().Get("Content-Type"))
+	assert.Contains(t, w.Header().Get("Content-Disposition"), "attachment")
+	assert.Equal(t, "nosniff", w.Header().Get("X-Content-Type-Options"))
 }
 
 func TestUserDownload_NotFoundWhenNoConsumableSource(t *testing.T) {

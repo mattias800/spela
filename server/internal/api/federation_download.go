@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/url"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -14,6 +15,25 @@ import (
 	"github.com/spela/server/internal/storage"
 	"gorm.io/gorm"
 )
+
+// safeDownloadName turns a cross-server game key into a filesystem-safe download
+// filename (the peer's filename is untrusted and never used).
+func safeDownloadName(key string) string {
+	b := make([]byte, 0, len(key))
+	for i := 0; i < len(key); i++ {
+		c := key[i]
+		switch {
+		case c >= 'a' && c <= 'z', c >= 'A' && c <= 'Z', c >= '0' && c <= '9', c == '.', c == '-', c == '_':
+			b = append(b, c)
+		default:
+			b = append(b, '_')
+		}
+	}
+	if len(b) == 0 {
+		return "download.bin"
+	}
+	return string(b) + ".bin"
+}
 
 // downloadClient fetches a ROM from a friend over a signed request, returning
 // the raw response so the caller can stream the body. Faked in tests.
@@ -145,10 +165,17 @@ func (h *FederationHandler) ginUserDownload(c *gin.Context) {
 			})
 			continue
 		}
-		// Proxy the stream through to the user.
-		for _, hdr := range []string{"Content-Type", "Content-Disposition", "Content-Length"} {
-			if v := resp.Header.Get(hdr); v != "" {
-				c.Header(hdr, v)
+		// SECURITY: never echo the peer's Content-Type / Content-Disposition. A
+		// malicious friend could send text/html and have it rendered on OUR
+		// origin (stored XSS). Force a safe binary attachment; the client names
+		// the file from the catalog metadata it already has. Only Content-Length
+		// is forwarded, and only if it's a valid number.
+		c.Header("Content-Type", "application/octet-stream")
+		c.Header("Content-Disposition", `attachment; filename="`+safeDownloadName(key)+`"`)
+		c.Header("X-Content-Type-Options", "nosniff")
+		if cl := resp.Header.Get("Content-Length"); cl != "" {
+			if _, perr := strconv.ParseInt(cl, 10, 64); perr == nil {
+				c.Header("Content-Length", cl)
 			}
 		}
 		c.Status(http.StatusOK)
