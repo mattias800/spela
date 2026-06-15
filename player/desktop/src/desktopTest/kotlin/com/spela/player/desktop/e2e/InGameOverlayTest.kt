@@ -53,6 +53,27 @@ class InGameOverlayTest {
     }
 
     @Test
+    fun keyMappingOverlayShowsLabeledList() = runComposeUiTest {
+        val harness = createHarnessWithGameReady()
+        startGame(harness)
+
+        harness.emulationViewModel.onIntent(EmulationIntent.ShowKeyMapping)
+        advanceQuick(harness)
+
+        // The editor now shows a per-console labeled mapping list (#1335), not a
+        // pictorial controller diagram.
+        onNodeWithTag("mapping_list").assertExists()
+
+        // Tapping a button row enters single-button listening mode for it.
+        onNodeWithTag("mapping_list").onChildren().onFirst().performClick()
+        advanceQuick(harness)
+        assertTrue(
+            harness.keyMappingViewModel.state.value.currentMappingButton != null,
+            "Tapping a mapping row should enter listening mode",
+        )
+    }
+
+    @Test
     fun keyMappingOverlayOffersPerGameOverrideAndSaves() = runComposeUiTest {
         val harness = createHarnessWithGameReady()
         startGame(harness)

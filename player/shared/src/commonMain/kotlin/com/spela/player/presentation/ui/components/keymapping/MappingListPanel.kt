@@ -22,6 +22,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
@@ -72,7 +73,7 @@ fun MappingListPanel(
     }
 
     LazyColumn(
-        modifier = modifier,
+        modifier = modifier.testTag("mapping_list"),
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         items(layout.buttons, key = { it.retroButtonId }) { button ->
