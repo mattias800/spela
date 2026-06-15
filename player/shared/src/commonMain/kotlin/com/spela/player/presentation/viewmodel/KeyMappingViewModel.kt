@@ -273,6 +273,9 @@ class KeyMappingViewModel(
         _state.update { it.copy(isLoading = true, gameId = gameId, consoleId = consoleId) }
         scope.launch(dispatchers.io) {
             try {
+                // Pull this game's server-side override (if any) into the local
+                // store first, so an override made on another device shows here (#1336).
+                preferencesRepository.syncGameKeyMappingFromServer(gameId)
                 val layout = DefaultKeyMappings.getLayoutForConsole(consoleId)
                 val effectiveMapping = keyMappingRepository.getEffectiveMappingForGame(gameId, consoleId)
                 val hasOverride = keyMappingRepository.hasGameMapping(gameId)
@@ -300,6 +303,8 @@ class KeyMappingViewModel(
         scope.launch(dispatchers.io) {
             try {
                 keyMappingRepository.setGameMapping(gameId, bindings)
+                // Sync the override to the server so it reaches other devices (#1336).
+                preferencesRepository.pushGameKeyMappingToServer(gameId, bindings)
                 _state.update { it.copy(hasGameOverride = true) }
             } catch (e: Exception) {
                 _state.update { it.copy(error = "Failed to save game override: ${e.message}") }
@@ -312,6 +317,8 @@ class KeyMappingViewModel(
         scope.launch(dispatchers.io) {
             try {
                 keyMappingRepository.clearGameMapping(gameId)
+                // Mirror the clear to the server (#1336).
+                preferencesRepository.deleteGameKeyMappingOnServer(gameId)
                 val effectiveMapping = keyMappingRepository.getEffectiveMappingForGame(gameId, consoleId)
                 _state.update {
                     it.copy(

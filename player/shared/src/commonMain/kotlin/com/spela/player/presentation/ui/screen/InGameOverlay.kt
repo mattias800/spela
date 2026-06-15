@@ -526,6 +526,14 @@ fun InGameOverlay(
             onClearBinding = {
                 keyMappingViewModel.onIntent(KeyMappingIntent.ClearCurrentBinding)
             },
+            // Per-game override affordance (#1336): only when a game is loaded.
+            onSaveGameOverride = if (gameId.isNotEmpty()) {
+                { keyMappingViewModel.onIntent(KeyMappingIntent.SaveAsGameOverride(gameId)) }
+            } else null,
+            onClearGameOverride = if (gameId.isNotEmpty()) {
+                { keyMappingViewModel.onIntent(KeyMappingIntent.ClearGameOverride(gameId)) }
+            } else null,
+            hasGameOverride = keyMappingState.hasGameOverride,
             onDismiss = {
                 keyMappingViewModel.onIntent(KeyMappingIntent.FinishMapping)
                 viewModel.onIntent(EmulationIntent.HideKeyMapping)

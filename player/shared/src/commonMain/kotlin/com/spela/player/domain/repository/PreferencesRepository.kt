@@ -38,6 +38,17 @@ interface PreferencesRepository {
     suspend fun pushDeviceShaderOverridesToServer()
     suspend fun syncKeyMappingsFromServer()
     suspend fun pushKeyMappingsToServer()
+
+    /**
+     * Per-game key-mapping sync (#1336). Console/global mappings ride inside the
+     * bulk preferences endpoint; per-game overrides have dedicated endpoints, so
+     * they sync per game on save/clear/load. All best-effort — a network failure
+     * leaves the local override intact (offline-first).
+     */
+    suspend fun pushGameKeyMappingToServer(gameId: String, bindings: Map<Int, Int>)
+    suspend fun deleteGameKeyMappingOnServer(gameId: String)
+    /** Pulls the server's per-game override into the local store, if any. */
+    suspend fun syncGameKeyMappingFromServer(gameId: String)
     fun getOrientationLock(): String
     fun setOrientationLock(mode: String)
     fun getControlTab(consoleId: String): String

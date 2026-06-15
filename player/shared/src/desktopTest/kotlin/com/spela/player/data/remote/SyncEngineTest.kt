@@ -176,6 +176,9 @@ class SyncEngineTest {
         override suspend fun resolveShader(consoleId: String) = ShaderPreset.NONE
         override suspend fun syncKeyMappingsFromServer() {}
         override suspend fun pushKeyMappingsToServer() {}
+        override suspend fun pushGameKeyMappingToServer(gameId: String, bindings: Map<Int, Int>) {}
+        override suspend fun deleteGameKeyMappingOnServer(gameId: String) {}
+        override suspend fun syncGameKeyMappingFromServer(gameId: String) {}
         override fun getOrientationLock(): String = "auto"
         override fun setOrientationLock(mode: String) {}
         override fun getControlTab(consoleId: String): String =
@@ -221,6 +224,9 @@ class SyncEngineTest {
         override suspend fun resolveShader(consoleId: String) = ShaderPreset.NONE
         override suspend fun syncKeyMappingsFromServer() {}
         override suspend fun pushKeyMappingsToServer() {}
+        override suspend fun pushGameKeyMappingToServer(gameId: String, bindings: Map<Int, Int>) {}
+        override suspend fun deleteGameKeyMappingOnServer(gameId: String) {}
+        override suspend fun syncGameKeyMappingFromServer(gameId: String) {}
         override fun getOrientationLock(): String = "auto"
         override fun setOrientationLock(mode: String) {}
         override fun getControlTab(consoleId: String): String =
@@ -270,6 +276,9 @@ class SyncEngineTest {
         override suspend fun resolveShader(consoleId: String) = ShaderPreset.NONE
         override suspend fun syncKeyMappingsFromServer() {}
         override suspend fun pushKeyMappingsToServer() {}
+        override suspend fun pushGameKeyMappingToServer(gameId: String, bindings: Map<Int, Int>) {}
+        override suspend fun deleteGameKeyMappingOnServer(gameId: String) {}
+        override suspend fun syncGameKeyMappingFromServer(gameId: String) {}
         override fun getOrientationLock(): String = "auto"
         override fun setOrientationLock(mode: String) {}
         override fun getControlTab(consoleId: String): String =
