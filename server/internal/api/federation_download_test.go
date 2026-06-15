@@ -24,7 +24,7 @@ type fakeDownloadClient struct {
 	err    error
 }
 
-func (f *fakeDownloadClient) FetchDownload(_, _ string, _ federation.Identity, _, _ string) (*http.Response, error) {
+func (f *fakeDownloadClient) FetchDownload(_, _ string, _ federation.Identity, _, _ string, _ int) (*http.Response, error) {
 	if f.err != nil {
 		return nil, f.err
 	}
@@ -175,7 +175,120 @@ func TestUserDownload_NotFoundWhenNoConsumableSource(t *testing.T) {
 
 type downloadClientFunc func()
 
-func (f downloadClientFunc) FetchDownload(_, _ string, _ federation.Identity, _, _ string) (*http.Response, error) {
+func (f downloadClientFunc) FetchDownload(_, _ string, _ federation.Identity, _, _ string, _ int) (*http.Response, error) {
 	f()
 	return &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(strings.NewReader("")), Header: http.Header{}}, nil
+}
+
+// --- Multi-hop relay (#1348 Phase 3b-2) ------------------------------------
+
+func setRelayEnabled(t *testing.T, database *gorm.DB, on bool) {
+	t.Helper()
+	v := "false"
+	if on {
+		v = "true"
+	}
+	require.NoError(t, database.Save(&db.ServerSetting{Key: "federation_relay_enabled", Value: v}).Error)
+}
+
+// relaySetup wires: a requester peer (shares nothing back, just asks us) and a
+// source friend that offers the key (we consume downloads from them). Returns
+// the requester peer to pass into the serve handler.
+func relaySetup(t *testing.T, database *gorm.DB, key string) (*db.FederationPeer, federation.Identity) {
+	t.Helper()
+	requesterID, _ := federation.GenerateIdentity()
+	sourceID, _ := federation.GenerateIdentity()
+
+	// We must share downloads with the requester (so CanShare passes).
+	sp, _ := federation.MarshalPolicy(map[federation.DataClass]bool{federation.DataClassDownload: true})
+	requester := &db.FederationPeer{Fingerprint: requesterID.Fingerprint(), Name: "Requester", SharePolicy: sp, Status: db.PeerStatusActive}
+
+	// The source friend offers the key and we consume downloads from them.
+	dp, _ := federation.MarshalPolicy(map[federation.DataClass]bool{federation.DataClassDownload: true})
+	require.NoError(t, federation.PeerStore{DB: database}.Upsert(&db.FederationPeer{
+		Fingerprint: sourceID.Fingerprint(), PublicKey: b64(sourceID.PublicKey), Name: "Source",
+		BaseURL: "https://source", Status: db.PeerStatusActive, ConsumePolicy: dp,
+	}))
+	require.NoError(t, federation.CatalogSnapshotStore{DB: database}.ReplacePeerSnapshot(sourceID.Fingerprint(), []federation.CatalogEntry{
+		{OriginFingerprint: sourceID.Fingerprint(), Hops: 1, Key: key, Title: "Relayed", Console: "NES"},
+	}, time.Unix(1, 0)))
+	return requester, sourceID
+}
+
+func TestServeDownload_RelayForwardsWhenEnabled(t *testing.T) {
+	database := openAPIFedTestDB(t)
+	selfID, _ := federation.GenerateIdentity()
+	setRelayEnabled(t, database, true)
+	requester, _ := relaySetup(t, database, "igdb:far")
+
+	// We don't have igdb:far locally (no GameDirs/game), so we must relay it.
+	h := downloadHandler(database, selfID, []string{t.TempDir()}, &fakeDownloadClient{body: "RELAYED-ROM"})
+
+	w := callServeDownload(h, requester, "igdb:far")
+	require.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "RELAYED-ROM", w.Body.String())
+	assert.Equal(t, "application/octet-stream", w.Header().Get("Content-Type"))
+
+	var relays int64
+	database.Model(&db.FederationExchange{}).Where("operation = ? AND status = ?", "download_relay", db.ExchangeOK).Count(&relays)
+	assert.Equal(t, int64(1), relays)
+}
+
+func TestServeDownload_NoForwardWhenRelayDisabled(t *testing.T) {
+	database := openAPIFedTestDB(t)
+	selfID, _ := federation.GenerateIdentity()
+	// relay NOT enabled (default)
+	requester, _ := relaySetup(t, database, "igdb:far")
+	called := false
+	h := downloadHandler(database, selfID, []string{t.TempDir()}, downloadClientFunc(func() { called = true }))
+
+	w := callServeDownload(h, requester, "igdb:far")
+	assert.Equal(t, http.StatusNotFound, w.Code)
+	assert.False(t, called, "relay disabled → never forwards")
+}
+
+func TestServeDownload_RelayLoopGuard(t *testing.T) {
+	database := openAPIFedTestDB(t)
+	selfID, _ := federation.GenerateIdentity()
+	setRelayEnabled(t, database, true)
+
+	// The ONLY catalog source for the key is the requester itself → must not
+	// forward back to them (loop guard) → 404.
+	requesterID, _ := federation.GenerateIdentity()
+	sp, _ := federation.MarshalPolicy(map[federation.DataClass]bool{federation.DataClassDownload: true})
+	dp, _ := federation.MarshalPolicy(map[federation.DataClass]bool{federation.DataClassDownload: true})
+	require.NoError(t, federation.PeerStore{DB: database}.Upsert(&db.FederationPeer{
+		Fingerprint: requesterID.Fingerprint(), PublicKey: b64(requesterID.PublicKey), Name: "Requester",
+		BaseURL: "https://req", Status: db.PeerStatusActive, SharePolicy: sp, ConsumePolicy: dp,
+	}))
+	require.NoError(t, federation.CatalogSnapshotStore{DB: database}.ReplacePeerSnapshot(requesterID.Fingerprint(), []federation.CatalogEntry{
+		{OriginFingerprint: requesterID.Fingerprint(), Hops: 1, Key: "igdb:loop", Title: "Loop", Console: "NES"},
+	}, time.Unix(1, 0)))
+	requester, _ := federation.PeerStore{DB: database}.GetByFingerprint(requesterID.Fingerprint())
+
+	called := false
+	h := downloadHandler(database, selfID, []string{t.TempDir()}, downloadClientFunc(func() { called = true }))
+
+	w := callServeDownload(h, requester, "igdb:loop")
+	assert.Equal(t, http.StatusNotFound, w.Code)
+	assert.False(t, called, "must not forward back to the requester")
+}
+
+func TestServeDownload_NoForwardWhenBudgetExhausted(t *testing.T) {
+	database := openAPIFedTestDB(t)
+	selfID, _ := federation.GenerateIdentity()
+	setRelayEnabled(t, database, true)
+	requester, _ := relaySetup(t, database, "igdb:far")
+	called := false
+	h := downloadHandler(database, selfID, []string{t.TempDir()}, downloadClientFunc(func() { called = true }))
+
+	// hops=0 → no budget to forward.
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	r.GET("/x", func(c *gin.Context) { c.Set(fedPeerContextKey, requester); h.ginServeDownload(c) })
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/x?key=igdb:far&hops=0", nil))
+
+	assert.Equal(t, http.StatusNotFound, w.Code)
+	assert.False(t, called, "hops=0 → no forwarding")
 }

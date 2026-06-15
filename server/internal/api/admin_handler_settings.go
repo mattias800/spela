@@ -58,4 +58,7 @@ var allowedSettingKeys = map[string]bool{
 	"default_region":           true,
 	"hide_pre_release_default": true,
 	"ra_api_key":               true,
+	// Federation ROM relay (#1348 Phase 3b-2): forwards friends-of-friends'
+	// game files. Default-off; an admin must explicitly enable it.
+	"federation_relay_enabled": true,
 }

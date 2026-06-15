@@ -8,20 +8,22 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestDirectSourcesForKey_OnlyHop1(t *testing.T) {
+func TestSourcePeersForKey_AnyHop(t *testing.T) {
 	store := CatalogSnapshotStore{DB: openCatalogTestDB(t)}
+	// B relays a friend-of-friend's game (hop 2); D has it directly (hop 1).
 	require.NoError(t, store.ReplacePeerSnapshot("B", []CatalogEntry{
-		{OriginFingerprint: "B", Hops: 1, Key: "g1", Title: "T"},        // direct friend has it
-		{OriginFingerprint: "C", Hops: 2, Key: "g1", Title: "T"},        // friend-of-friend (not direct)
-		{OriginFingerprint: "B", Hops: 1, Key: "other", Title: "Other"}, // different game
+		{OriginFingerprint: "C", Hops: 2, Key: "deep", Title: "Deep"},
+	}, time.Unix(1, 0)))
+	require.NoError(t, store.ReplacePeerSnapshot("D", []CatalogEntry{
+		{OriginFingerprint: "D", Hops: 1, Key: "deep", Title: "Deep"},
 	}, time.Unix(1, 0)))
 
-	sources, err := store.DirectSourcesForKey("g1")
+	sources, err := store.SourcePeersForKey("deep")
 	require.NoError(t, err)
-	require.Len(t, sources, 1, "only the hop-1 source qualifies for direct download")
-	assert.Equal(t, "B", sources[0])
+	// Both direct friends are askable, regardless of how deep the origin is.
+	assert.ElementsMatch(t, []string{"B", "D"}, sources)
 
-	none, err := store.DirectSourcesForKey("missing")
+	none, err := store.SourcePeersForKey("missing")
 	require.NoError(t, err)
 	assert.Empty(t, none)
 }
