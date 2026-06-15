@@ -239,6 +239,8 @@ func Initialize(dbPath string) (*gorm.DB, error) {
 		&FederationExchange{},
 		// Phase 2 (#1347): cached friend rollups for transitive re-serving.
 		&FederationStatSnapshot{},
+		// Phase 3 (#1348): cached friend catalogs for game discovery.
+		&FederationCatalogSnapshot{},
 	)
 	if err != nil {
 		return nil, fmt.Errorf("running migrations: %w", err)

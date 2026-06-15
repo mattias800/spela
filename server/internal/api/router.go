@@ -187,11 +187,12 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 		slog.Info("federation: identity ready", "fingerprint", federation.ShortFingerprint(fedIdentity.Fingerprint()))
 	}
 	federationHandler := &FederationHandler{
-		DB:        cfg.DB,
-		Identity:  fedIdentity,
-		Peers:     federation.PeerStore{DB: cfg.DB},
-		Snapshots: federation.SnapshotStore{DB: cfg.DB},
-		BaseURL:   cfg.PublicBaseURL,
+		DB:               cfg.DB,
+		Identity:         fedIdentity,
+		Peers:            federation.PeerStore{DB: cfg.DB},
+		Snapshots:        federation.SnapshotStore{DB: cfg.DB},
+		CatalogSnapshots: federation.CatalogSnapshotStore{DB: cfg.DB},
+		BaseURL:          cfg.PublicBaseURL,
 	}
 
 	socialHandler := &SocialHandler{DB: cfg.DB, Hub: cfg.Hub}
@@ -483,6 +484,7 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 					return
 				case <-ticker.C:
 					federationHandler.RefreshFederationStats()
+					federationHandler.RefreshFederationCatalog()
 				}
 			}
 		}()

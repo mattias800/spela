@@ -158,6 +158,10 @@ func (h *FederationHandler) HumaRevokePeer(_ context.Context, in *RevokePeerInpu
 		slog.Warn("federation: failed to drop revoked peer snapshot", "component", "federation",
 			"peer", federation.ShortFingerprint(in.Fingerprint), "error", err)
 	}
+	if err := h.CatalogSnapshots.RemovePeerSnapshot(in.Fingerprint); err != nil {
+		slog.Warn("federation: failed to drop revoked peer catalog snapshot", "component", "federation",
+			"peer", federation.ShortFingerprint(in.Fingerprint), "error", err)
+	}
 	slog.Info("federation: revoked peer", "component", "federation",
 		"peer", federation.ShortFingerprint(in.Fingerprint))
 	out := &RevokePeerOutput{}
@@ -365,12 +369,35 @@ func RegisterFederationRoutes(api huma.API, h *FederationHandler, jwtSecret stri
 		Middlewares: adminMW,
 		Security:    sec,
 	}, h.HumaRefreshStats)
+
+	// User-facing: mesh game catalog (which games are available across friends).
+	huma.Register(api, huma.Operation{
+		OperationID: "federationAvailableGames",
+		Method:      http.MethodGet,
+		Path:        "/api/federation/catalog/available",
+		Summary:     "Games available across the friend mesh, hop-bounded",
+		Tags:        []string{"federation", "catalog"},
+		Middlewares: huma.Middlewares{requireAuth, rateLimit},
+		Security:    sec,
+	}, h.HumaAvailableGames)
+
+	// Admin: force a refresh of cached friend catalogs (also runs periodically).
+	huma.Register(api, huma.Operation{
+		OperationID: "federationRefreshCatalog",
+		Method:      http.MethodPost,
+		Path:        "/api/admin/federation/catalog/refresh",
+		Summary:     "Refresh cached friend game catalogs now",
+		Tags:        []string{"federation", "admin"},
+		Middlewares: adminMW,
+		Security:    sec,
+	}, h.HumaRefreshCatalog)
 }
 
 // RegisterFederationGinRoutes wires raw-gin federation routes: the signed ping
-// used by the connection-test diagnostic.
+// used by the connection-test diagnostic, plus the signed stat/catalog exports.
 func RegisterFederationGinRoutes(r *gin.Engine, h *FederationHandler) {
 	requireFedPeer := VerifyFederationRequest(h.DB, h.Identity.Fingerprint())
 	r.GET("/api/federation/ping", requireFedPeer, h.ginPing)
 	r.GET("/api/federation/stats", requireFedPeer, h.ginExportStats)
+	r.GET("/api/federation/catalog", requireFedPeer, h.ginExportCatalog)
 }

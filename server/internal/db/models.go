@@ -626,6 +626,22 @@ type FederationStatSnapshot struct {
 	FetchedAt             time.Time `json:"fetchedAt"`
 }
 
+// FederationCatalogSnapshot caches a "game available on some server" record
+// pulled from a direct friend, for transitive catalog discovery (Phase 3,
+// #1348). Same source/origin/hops semantics as FederationStatSnapshot. Key is
+// the cross-server game id (IGDB scraper id / CRC32).
+type FederationCatalogSnapshot struct {
+	ID                    uint      `gorm:"primarykey" json:"id"`
+	CreatedAt             time.Time `json:"createdAt"`
+	SourcePeerFingerprint string    `gorm:"size:64;index" json:"sourcePeerFingerprint"`
+	OriginFingerprint     string    `gorm:"size:64;index" json:"originFingerprint"`
+	Hops                  int       `json:"hops"`
+	Key                   string    `gorm:"size:255;index" json:"key"`
+	Title                 string    `gorm:"size:255" json:"title"`
+	Console               string    `gorm:"size:32" json:"console"`
+	FetchedAt             time.Time `json:"fetchedAt"`
+}
+
 // ConsoleSaveStateChoice is the user's per-console save-state opt-out
 // state. Drives whether the in-game overlay shows the save/load
 // buttons or grays them out, and whether the first-launch prompt
