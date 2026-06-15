@@ -195,6 +195,17 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 		GameDirs:         cfg.GameDirs,
 		JWTSecret:        cfg.JWTSecret,
 		BaseURL:          cfg.PublicBaseURL,
+		// Covers for connected-server games are resolved locally from the
+		// cross-key via this server's IGDB client (read lazily so a runtime
+		// re-config of the scraper's client is picked up).
+		CoverResolver: newIGDBCoverResolver(func() igdbGameFetcher {
+			// Literal nil (not a typed-nil *igdb.Client) when unavailable, so
+			// the resolver's f == nil check works.
+			if cfg.Scraper != nil && cfg.Scraper.IGDBClient != nil {
+				return cfg.Scraper.IGDBClient
+			}
+			return nil
+		}),
 	}
 
 	socialHandler := &SocialHandler{DB: cfg.DB, Hub: cfg.Hub}

@@ -2,7 +2,6 @@ package federation
 
 import (
 	"sort"
-	"strings"
 	"time"
 
 	"github.com/spela/server/internal/db"
@@ -11,32 +10,14 @@ import (
 
 // CatalogEntry is a source-stamped record that a game is available on some
 // server in the mesh. Key is the cross-server game id (IGDB scraper id / CRC32).
+// Cover art is NOT carried here — the catalog stays metadata-only; a consuming
+// server resolves covers locally from Key (see the api cover resolver).
 type CatalogEntry struct {
 	OriginFingerprint string `json:"originFingerprint"`
 	Hops              int    `json:"hops"`
 	Key               string `json:"key"`
 	Title             string `json:"title"`
 	Console           string `json:"console"` // console abbreviation, e.g. "SNES"
-	Cover             string `json:"cover"`   // public IGDB CDN cover URL, or "" (see SafeCoverURL)
-}
-
-// igdbCoverPrefix is the only host we trust for federated cover art. Cover URLs
-// flow across the mesh as plain strings, so locking them to the IGDB CDN does
-// double duty: a hostile peer can't inject an arbitrary URL into a consumer's
-// browser, and an origin never leaks its own hostname via a local image path.
-const igdbCoverPrefix = "https://images.igdb.com/"
-
-// SafeCoverURL returns the cover URL only if it's a public IGDB CDN image URL,
-// else "". Applied on both sides: the origin emits only IGDB covers (never its
-// local /api/images paths), and a consumer drops any peer cover that isn't one.
-func SafeCoverURL(raw string) string {
-	if len(raw) > 512 {
-		return ""
-	}
-	if strings.HasPrefix(raw, igdbCoverPrefix) {
-		return raw
-	}
-	return ""
 }
 
 // crossGameKey derives a game's cross-server identity from its scraper id /
@@ -58,15 +39,14 @@ func crossGameKey(scraperID, crc32 string) (string, bool) {
 // gate — exposure is governed per-friend by SharePolicy(catalog).
 func BuildLocalCatalog(database *gorm.DB, selfFingerprint string) ([]CatalogEntry, error) {
 	type row struct {
-		ScraperID    string
-		CRC32        string
-		Title        string
-		Console      string
-		IGDBCoverURL string
+		ScraperID string
+		CRC32     string
+		Title     string
+		Console   string
 	}
 	var rows []row
 	if err := database.Model(&db.Game{}).
-		Select("games.scraper_id as scraper_id, games.crc32 as crc32, games.title as title, games.igdb_cover_url as igdb_cover_url, consoles.abbreviation as console").
+		Select("games.scraper_id as scraper_id, games.crc32 as crc32, games.title as title, consoles.abbreviation as console").
 		Joins("JOIN consoles ON consoles.id = games.console_id").
 		Scan(&rows).Error; err != nil {
 		return nil, err
@@ -83,7 +63,6 @@ func BuildLocalCatalog(database *gorm.DB, selfFingerprint string) ([]CatalogEntr
 		out = append(out, CatalogEntry{
 			OriginFingerprint: selfFingerprint, Hops: 0,
 			Key: key, Title: r.Title, Console: r.Console,
-			Cover: SafeCoverURL(r.IGDBCoverURL),
 		})
 	}
 	return out, nil
@@ -113,7 +92,6 @@ func (s CatalogSnapshotStore) ReplacePeerSnapshot(sourcePeerFingerprint string, 
 				Key:                   e.Key,
 				Title:                 e.Title,
 				Console:               e.Console,
-				Cover:                 e.Cover,
 				FetchedAt:             fetchedAt,
 			})
 		}
@@ -155,10 +133,6 @@ func (s CatalogSnapshotStore) EntriesWithinHops(maxHops int) ([]CatalogEntry, er
 		out = append(out, CatalogEntry{
 			OriginFingerprint: r.OriginFingerprint, Hops: r.Hops,
 			Key: r.Key, Title: r.Title, Console: r.Console,
-			// Re-validate on the way out: this slice is both shown locally and
-			// re-served onward to other peers, so a cover that ever reached the
-			// DB by a path bypassing sanitizeCatalogBatch can't propagate.
-			Cover: SafeCoverURL(r.Cover),
 		})
 	}
 	return out, nil
@@ -168,10 +142,12 @@ func (s CatalogSnapshotStore) EntriesWithinHops(maxHops int) ([]CatalogEntry, er
 // reach have it, and whether THIS server already has it. Peer fingerprints are
 // not exposed (admin-only) — only counts.
 type CatalogAvailability struct {
-	Key         string `json:"key"`
-	Title       string `json:"title"`
-	Console     string `json:"console"`
-	Cover       string `json:"cover"`       // public IGDB CDN cover URL, or ""
+	Key     string `json:"key"`
+	Title   string `json:"title"`
+	Console string `json:"console"`
+	// Cover is a public IGDB CDN URL or "". It is NOT part of the federated
+	// catalog — the consuming server fills it in by resolving Key locally.
+	Cover       string `json:"cover"`
 	OriginCount int    `json:"originCount"` // distinct servers (incl. local) that have it
 	Local       bool   `json:"local"`       // does this server have it
 }
@@ -183,7 +159,6 @@ func AggregateCatalog(entries []CatalogEntry, selfFingerprint string) []CatalogA
 	type acc struct {
 		title   string
 		console string
-		cover   string
 		origins map[string]bool
 		local   bool
 	}
@@ -209,9 +184,6 @@ func AggregateCatalog(entries []CatalogEntry, selfFingerprint string) []CatalogA
 		if a.console == "" {
 			a.console = e.Console
 		}
-		if a.cover == "" && e.Cover != "" {
-			a.cover = e.Cover
-		}
 		a.origins[e.OriginFingerprint] = true
 		if e.OriginFingerprint == selfFingerprint {
 			a.local = true
@@ -222,7 +194,7 @@ func AggregateCatalog(entries []CatalogEntry, selfFingerprint string) []CatalogA
 	for _, key := range order {
 		a := byKey[key]
 		out = append(out, CatalogAvailability{
-			Key: key, Title: a.title, Console: a.console, Cover: a.cover,
+			Key: key, Title: a.title, Console: a.console,
 			OriginCount: len(a.origins), Local: a.local,
 		})
 	}

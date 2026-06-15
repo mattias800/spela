@@ -207,6 +207,37 @@ func TestAvailableGames_AggregatesAndFiltersRemoteOnly(t *testing.T) {
 	assert.False(t, remoteOnly.Body.Games[0].Local)
 }
 
+// fakeCoverResolver maps catalog keys to cover URLs for tests.
+type fakeCoverResolver struct{ byKey map[string]string }
+
+func (f fakeCoverResolver) CoverURL(key string) string { return f.byKey[key] }
+
+// Catalog entries carry NO cover (metadata-only, as in production — this is the
+// realistic shape that the earlier IGDBCoverURL-based approach got wrong). The
+// consuming server fills covers in from each key via its resolver; keys it
+// can't resolve (crc:*) stay coverless.
+func TestAvailableGames_PopulatesCoversFromResolver(t *testing.T) {
+	database := openAPIFedTestDB(t)
+	selfID, _ := federation.GenerateIdentity()
+	h := catalogHandler(database, selfID, nil)
+	const cover = "https://images.igdb.com/igdb/image/upload/t_cover_big/co1.jpg"
+	h.CoverResolver = fakeCoverResolver{byKey: map[string]string{"igdb:1": cover}}
+
+	require.NoError(t, h.CatalogSnapshots.ReplacePeerSnapshot("B", []federation.CatalogEntry{
+		{OriginFingerprint: "B", Hops: 1, Key: "igdb:1", Title: "Has Cover", Console: "NES"},
+		{OriginFingerprint: "B", Hops: 1, Key: "crc:x", Title: "No Cover", Console: "NES"},
+	}, time.Unix(1, 0)))
+
+	out, err := h.HumaAvailableGames(context.Background(), &AvailableGamesInput{})
+	require.NoError(t, err)
+	byKey := map[string]federation.CatalogAvailability{}
+	for _, g := range out.Body.Games {
+		byKey[g.Key] = g
+	}
+	assert.Equal(t, cover, byKey["igdb:1"].Cover, "resolver-supplied cover is attached")
+	assert.Empty(t, byKey["crc:x"].Cover, "an unresolvable key stays coverless")
+}
+
 func TestAvailableGames_FiltersByQuery(t *testing.T) {
 	database := openAPIFedTestDB(t)
 	selfID, _ := federation.GenerateIdentity()

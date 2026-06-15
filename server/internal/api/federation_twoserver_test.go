@@ -40,18 +40,21 @@ func TestTwoServers_CatalogDiscoveryWithCoverOverHTTP(t *testing.T) {
 
 	consoleB := db.Console{Name: "Super Nintendo", Abbreviation: "SNES"}
 	require.NoError(t, dbB.Create(&consoleB).Error)
-	const cover = "https://images.igdb.com/igdb/image/upload/t_cover_big/zelda.jpg"
 	require.NoError(t, dbB.Create(&db.Game{
 		Title: "The Legend of Zelda", ScraperID: "igdb:1022", FilePath: "/z",
-		ConsoleID: consoleB.ID, IGDBCoverURL: cover,
+		ConsoleID: consoleB.ID,
 	}).Error)
 
 	// --- Server A (consumer). CatalogClient nil => real signed HTTP to B.
+	// A resolves covers locally from the cross-key via its own IGDB client
+	// (faked here), not from anything B sent — covers are not federated.
+	const cover = "https://images.igdb.com/igdb/image/upload/t_cover_big/zelda.jpg"
 	dbA := openAPIFedTestDB(t)
 	idA, _ := federation.GenerateIdentity()
 	hA := &FederationHandler{
 		DB: dbA, Identity: idA, Peers: federation.PeerStore{DB: dbA},
 		Snapshots: federation.SnapshotStore{DB: dbA}, CatalogSnapshots: federation.CatalogSnapshotStore{DB: dbA},
+		CoverResolver: fakeCoverResolver{byKey: map[string]string{"igdb:1022": cover}},
 	}
 
 	// Mutual pairing with catalog policy: A consumes from B; B shares with A.
@@ -63,7 +66,7 @@ func TestTwoServers_CatalogDiscoveryWithCoverOverHTTP(t *testing.T) {
 	require.Equal(t, 0, failed, "no failed pulls")
 	require.Equal(t, 1, refreshed, "A pulled B's catalog")
 
-	// A's discovery view surfaces B's game, remote-only, with the cover carried across.
+	// A's discovery view surfaces B's game, remote-only, with A's own cover.
 	out, err := hA.HumaAvailableGames(context.Background(), &AvailableGamesInput{RemoteOnly: true})
 	require.NoError(t, err)
 	require.Len(t, out.Body.Games, 1)
@@ -73,7 +76,7 @@ func TestTwoServers_CatalogDiscoveryWithCoverOverHTTP(t *testing.T) {
 	assert.Equal(t, "SNES", g.Console)
 	assert.False(t, g.Local, "A does not have this game locally")
 	assert.Equal(t, 1, g.OriginCount)
-	assert.Equal(t, cover, g.Cover, "the IGDB cover URL flowed across the mesh")
+	assert.Equal(t, cover, g.Cover, "A resolved the cover locally from the cross-key")
 
 	// And the q-filter (the search slice) finds it by title.
 	hit, err := hA.HumaAvailableGames(context.Background(), &AvailableGamesInput{RemoteOnly: true, Q: "zelda"})
