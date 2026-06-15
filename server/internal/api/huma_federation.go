@@ -38,6 +38,9 @@ type FederationHandler struct {
 	// CatalogClient fetches a friend's catalog. Defaults to httpCatalogClient
 	// when nil; overridden in tests.
 	CatalogClient catalogClient
+	// CoverResolver resolves cover art for a catalog key (consumer-side, via
+	// this server's own IGDB client). Nil = no covers (placeholder in the UI).
+	CoverResolver coverResolver
 	// GameDirs / JWTSecret support direct-friend ROM download (#1348 Phase 3b):
 	// GameDirs resolves a local game file to serve; JWTSecret authenticates the
 	// user-facing download route.

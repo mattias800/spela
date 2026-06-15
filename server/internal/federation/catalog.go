@@ -10,6 +10,8 @@ import (
 
 // CatalogEntry is a source-stamped record that a game is available on some
 // server in the mesh. Key is the cross-server game id (IGDB scraper id / CRC32).
+// Cover art is NOT carried here — the catalog stays metadata-only; a consuming
+// server resolves covers locally from Key (see the api cover resolver).
 type CatalogEntry struct {
 	OriginFingerprint string `json:"originFingerprint"`
 	Hops              int    `json:"hops"`
@@ -140,9 +142,12 @@ func (s CatalogSnapshotStore) EntriesWithinHops(maxHops int) ([]CatalogEntry, er
 // reach have it, and whether THIS server already has it. Peer fingerprints are
 // not exposed (admin-only) — only counts.
 type CatalogAvailability struct {
-	Key         string `json:"key"`
-	Title       string `json:"title"`
-	Console     string `json:"console"`
+	Key     string `json:"key"`
+	Title   string `json:"title"`
+	Console string `json:"console"`
+	// Cover is a public IGDB CDN URL or "". It is NOT part of the federated
+	// catalog — the consuming server fills it in by resolving Key locally.
+	Cover       string `json:"cover"`
 	OriginCount int    `json:"originCount"` // distinct servers (incl. local) that have it
 	Local       bool   `json:"local"`       // does this server have it
 }

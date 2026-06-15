@@ -371,13 +371,23 @@ function GameRow({
   );
 }
 
-// Connected-server game: discovery row. No cover art is carried in the
-// federated catalog (metadata only), so the cover slot is a placeholder.
+// Connected-server game: discovery row. Box art is the origin server's public
+// IGDB cover URL when the federated catalog carries one, else a placeholder —
+// covers aren't guaranteed for every connected-server game.
 function FederatedGameRow({ game }: { game: CatalogAvailability }) {
   const servers = game.originCount;
+  const icon = game.cover ? (
+    <img
+      src={game.cover}
+      alt=""
+      className="h-10 w-8 rounded object-cover flex-shrink-0"
+    />
+  ) : (
+    <div className="h-10 w-8 rounded bg-surface-700 flex-shrink-0" />
+  );
   return (
     <SearchResultRow
-      icon={<div className="h-10 w-8 rounded bg-surface-700 flex-shrink-0" />}
+      icon={icon}
       title={game.title}
       subtitle={`on ${servers} connected ${servers === 1 ? "server" : "servers"}`}
       rightContent={

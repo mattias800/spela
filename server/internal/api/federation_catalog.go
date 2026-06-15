@@ -234,6 +234,17 @@ func (h *FederationHandler) HumaAvailableGames(_ context.Context, in *AvailableG
 		games = filtered
 	}
 
+	// Fill in cover art locally from each game's cross-key — no covers are
+	// carried across the mesh. The resolver caches results (so repeats are free)
+	// and only "igdb:" keys ever reach IGDB, which self-rate-limits; the one
+	// caller today is the q-filtered search, so result sets are small. A future
+	// unfiltered browse should paginate rather than resolve a whole catalog.
+	if h.CoverResolver != nil {
+		for i := range games {
+			games[i].Cover = h.CoverResolver.CoverURL(games[i].Key)
+		}
+	}
+
 	out := &AvailableGamesOutput{}
 	out.Body.Games = games
 	return out, nil

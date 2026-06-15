@@ -240,6 +240,8 @@ describe("SearchPalette", () => {
                 key: "igdb:9",
                 title: "Chrono Trigger",
                 console: "SNES",
+                cover:
+                  "https://images.igdb.com/igdb/image/upload/t_cover_big/ct.jpg",
                 originCount: 2,
                 local: false,
               },
@@ -262,6 +264,12 @@ describe("SearchPalette", () => {
       const row = screen.getByTestId("federated-result-igdb:9");
       expect(row).toHaveTextContent("Chrono Trigger");
       expect(row).toHaveTextContent("on 2 connected servers");
+      // Box art: the origin's IGDB cover URL is rendered.
+      const img = row.querySelector("img");
+      expect(img).toHaveAttribute(
+        "src",
+        "https://images.igdb.com/igdb/image/upload/t_cover_big/ct.jpg",
+      );
       // Read-only: no "No results" message despite empty local results.
       expect(screen.queryByText(/No results for/)).not.toBeInTheDocument();
     });
