@@ -1,26 +1,39 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
+import { ToastProvider } from "@/components/ui";
 
 vi.mock("@/hooks/use-federation", () => ({
   useFederationPeers: vi.fn(),
   useFederationExchanges: vi.fn(),
   useTestFederationPeer: vi.fn(),
+  useIssueFederationInvite: vi.fn(),
+  useAcceptFederationInvite: vi.fn(),
+  useRevokeFederationPeer: vi.fn(),
 }));
 
 import {
   useFederationPeers,
   useFederationExchanges,
   useTestFederationPeer,
+  useIssueFederationInvite,
+  useAcceptFederationInvite,
+  useRevokeFederationPeer,
 } from "@/hooks/use-federation";
 import { AdminFederationPage } from "../federation-page";
 
 const mockUsePeers = useFederationPeers as ReturnType<typeof vi.fn>;
 const mockUseExchanges = useFederationExchanges as ReturnType<typeof vi.fn>;
 const mockUseTest = useTestFederationPeer as ReturnType<typeof vi.fn>;
+const mockUseIssue = useIssueFederationInvite as ReturnType<typeof vi.fn>;
+const mockUseAccept = useAcceptFederationInvite as ReturnType<typeof vi.fn>;
+const mockUseRevoke = useRevokeFederationPeer as ReturnType<typeof vi.fn>;
 const mockTestMutate = vi.fn();
+const mockIssueMutate = vi.fn();
+const mockAcceptMutate = vi.fn();
+const mockRevokeMutate = vi.fn();
 
 function renderPage() {
   const queryClient = new QueryClient({
@@ -28,35 +41,44 @@ function renderPage() {
   });
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter>
-        <AdminFederationPage />
-      </MemoryRouter>
+      <ToastProvider>
+        <MemoryRouter>
+          <AdminFederationPage />
+        </MemoryRouter>
+      </ToastProvider>
     </QueryClientProvider>,
   );
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockUsePeers.mockReturnValue({ data: { peers: [] }, isLoading: false });
+  mockUseExchanges.mockReturnValue({ data: { exchanges: [] }, isLoading: false });
   mockUseTest.mockReturnValue({ mutate: mockTestMutate, isPending: false });
+  mockUseIssue.mockReturnValue({ mutate: mockIssueMutate, isPending: false });
+  mockUseAccept.mockReturnValue({ mutate: mockAcceptMutate, isPending: false });
+  mockUseRevoke.mockReturnValue({ mutate: mockRevokeMutate, isPending: false });
 });
+
+const onePeer = {
+  data: {
+    peers: [
+      {
+        fingerprint: "abcdef1234567890xyz",
+        name: "Alice's Server",
+        status: "active",
+        reachable: true,
+        lastError: "",
+        lastContactAt: "2026-06-15T00:00:00Z",
+      },
+    ],
+  },
+  isLoading: false,
+};
 
 describe("AdminFederationPage", () => {
   it("renders peers with a status badge and an exchange row", () => {
-    mockUsePeers.mockReturnValue({
-      data: {
-        peers: [
-          {
-            fingerprint: "abcdef1234567890xyz",
-            name: "Alice's Server",
-            status: "active",
-            reachable: true,
-            lastError: "",
-            lastContactAt: "2026-06-15T00:00:00Z",
-          },
-        ],
-      },
-      isLoading: false,
-    });
+    mockUsePeers.mockReturnValue(onePeer);
     mockUseExchanges.mockReturnValue({
       data: {
         exchanges: [
@@ -84,9 +106,6 @@ describe("AdminFederationPage", () => {
   });
 
   it("shows empty states when there are no peers or activity", () => {
-    mockUsePeers.mockReturnValue({ data: { peers: [] }, isLoading: false });
-    mockUseExchanges.mockReturnValue({ data: { exchanges: [] }, isLoading: false });
-
     renderPage();
 
     expect(screen.getByText("No friend servers")).toBeInTheDocument();
@@ -102,7 +121,6 @@ describe("AdminFederationPage", () => {
       error: new Error("network down"),
       refetch: refetchPeers,
     });
-    mockUseExchanges.mockReturnValue({ data: { exchanges: [] }, isLoading: false });
 
     renderPage();
 
@@ -131,13 +149,60 @@ describe("AdminFederationPage", () => {
       },
       isLoading: false,
     });
-    mockUseExchanges.mockReturnValue({ data: { exchanges: [] }, isLoading: false });
 
     renderPage();
     await userEvent.setup().click(screen.getByTestId("test-connection-button"));
 
     expect(mockTestMutate).toHaveBeenCalledWith(
       "fp-to-test-0000000",
+      expect.anything(),
+    );
+  });
+
+  it("opens the pair dialog on the accept-invite panel and generates an invite", async () => {
+    mockIssueMutate.mockImplementation((_vars, opts) =>
+      opts.onSuccess({ invite: "INVITE-XYZ" }),
+    );
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByTestId("pair-friend-button"));
+    expect(screen.getByTestId("accept-invite-panel")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("tab", { name: "Invite a friend" }));
+    await user.click(screen.getByTestId("generate-invite-button"));
+
+    expect(mockIssueMutate).toHaveBeenCalled();
+    expect(screen.getByTestId("generated-invite")).toHaveValue("INVITE-XYZ");
+  });
+
+  it("submits an accepted invite with the pasted string and name", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByTestId("pair-friend-button"));
+    await user.type(screen.getByTestId("accept-invite-input"), "friend-invite");
+    await user.type(screen.getByTestId("accept-invite-name"), "Carol");
+    await user.click(screen.getByTestId("accept-invite-submit"));
+
+    expect(mockAcceptMutate).toHaveBeenCalledWith(
+      { invite: "friend-invite", name: "Carol" },
+      expect.anything(),
+    );
+  });
+
+  it("revokes a peer only after confirmation", async () => {
+    mockUsePeers.mockReturnValue(onePeer);
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByTestId("revoke-peer-button"));
+    // Confirmation modal — confirm button lives inside the dialog.
+    const dialog = screen.getByRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: "Revoke" }));
+
+    expect(mockRevokeMutate).toHaveBeenCalledWith(
+      "abcdef1234567890xyz",
       expect.anything(),
     );
   });

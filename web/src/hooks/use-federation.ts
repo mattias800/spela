@@ -42,3 +42,46 @@ export function useTestFederationPeer() {
     },
   });
 }
+
+// Issue a one-time pairing invite to hand to a friend's admin out-of-band.
+// Does not change our peer list — the friend appears only after they accept
+// and call our /pair callback (picked up by the 10s peer poll).
+export function useIssueFederationInvite() {
+  return useMutation({
+    mutationFn: () => unwrap(typedApi.POST("/api/admin/federation/invite")),
+  });
+}
+
+// Accept a friend's invite: verifies it, calls them back, and stores them as
+// an active peer immediately — so refresh peers + activity on success.
+export function useAcceptFederationInvite() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { invite: string; name: string }) =>
+      unwrap(
+        typedApi.POST("/api/admin/federation/peers/accept", { body }),
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "federation", "peers"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "federation", "exchanges"] });
+    },
+  });
+}
+
+// Revoke a peer. The server also drops the peer's cached stat/catalog
+// snapshots, so its mesh contribution vanishes immediately.
+export function useRevokeFederationPeer() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (fingerprint: string) =>
+      unwrap(
+        typedApi.DELETE("/api/admin/federation/peers/{fingerprint}", {
+          params: { path: { fingerprint } },
+        }),
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "federation", "peers"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "federation", "exchanges"] });
+    },
+  });
+}

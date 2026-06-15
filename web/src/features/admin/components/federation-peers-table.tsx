@@ -9,6 +9,7 @@ interface FederationPeersTableProps {
   isLoading: boolean;
   testingFingerprint: string | null;
   onTest: (fingerprint: string) => void;
+  onRevoke: (peer: FederationPeer) => void;
 }
 
 const HEADERS = ["Friend", "Status", "Last contact", "Last error", ""];
@@ -18,6 +19,7 @@ export function FederationPeersTable({
   isLoading,
   testingFingerprint,
   onTest,
+  onRevoke,
 }: FederationPeersTableProps) {
   return (
     <Section>
@@ -74,16 +76,26 @@ export function FederationPeersTable({
                   <td className="px-5 py-3 text-sm text-surface-400 max-w-xs truncate">
                     {peer.lastError || "—"}
                   </td>
-                  <td className="px-5 py-3 text-right">
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      loading={testingFingerprint === peer.fingerprint}
-                      onClick={() => onTest(peer.fingerprint)}
-                      data-testid="test-connection-button"
-                    >
-                      Test connection
-                    </Button>
+                  <td className="px-5 py-3">
+                    <div className="flex items-center justify-end gap-2">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        loading={testingFingerprint === peer.fingerprint}
+                        onClick={() => onTest(peer.fingerprint)}
+                        data-testid="test-connection-button"
+                      >
+                        Test connection
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onRevoke(peer)}
+                        data-testid="revoke-peer-button"
+                      >
+                        Revoke
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))
