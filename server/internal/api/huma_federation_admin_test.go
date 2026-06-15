@@ -115,7 +115,10 @@ func TestRevokePeer_RemovesIt(t *testing.T) {
 	require.NoError(t, store.Upsert(&db.FederationPeer{
 		Fingerprint: "fp-x", PublicKey: "k", BaseURL: "https://x", Status: db.PeerStatusActive,
 	}))
-	h := &FederationHandler{DB: database, Identity: selfID, Peers: store, Snapshots: federation.SnapshotStore{DB: database}, BaseURL: "https://self"}
+	h := &FederationHandler{DB: database, Identity: selfID, Peers: store,
+		Snapshots:        federation.SnapshotStore{DB: database},
+		CatalogSnapshots: federation.CatalogSnapshotStore{DB: database},
+		BaseURL:          "https://self"}
 
 	_, err := h.HumaRevokePeer(context.Background(), &RevokePeerInput{Fingerprint: "fp-x"})
 	require.NoError(t, err)

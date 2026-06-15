@@ -23,7 +23,9 @@ type FederationHandler struct {
 	Peers    federation.PeerStore
 	// Snapshots caches friends' rollups for transitive re-serving (#1347).
 	Snapshots federation.SnapshotStore
-	BaseURL   string // this server's own reachable federation endpoint
+	// CatalogSnapshots caches friends' game catalogs for discovery (#1348).
+	CatalogSnapshots federation.CatalogSnapshotStore
+	BaseURL          string // this server's own reachable federation endpoint
 	// PairClient performs the outbound pairing callback to a friend. Defaults to
 	// httpPairClient when nil; overridden in tests.
 	PairClient pairClient
@@ -33,9 +35,13 @@ type FederationHandler struct {
 	// StatsClient fetches a friend's stat rollup. Defaults to httpStatsClient
 	// when nil; overridden in tests.
 	StatsClient statsClient
-	// refreshMu serializes RefreshFederationStats so the periodic ticker and an
-	// admin trigger can't run concurrently and race on the snapshot store.
-	refreshMu sync.Mutex
+	// CatalogClient fetches a friend's catalog. Defaults to httpCatalogClient
+	// when nil; overridden in tests.
+	CatalogClient catalogClient
+	// refreshMu / catalogRefreshMu serialize the respective refreshes so the
+	// periodic ticker and an admin trigger can't race the snapshot stores.
+	refreshMu        sync.Mutex
+	catalogRefreshMu sync.Mutex
 }
 
 // pairClient performs the outbound pairing callback to a friend.

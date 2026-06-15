@@ -26,8 +26,10 @@ func openAPIFedTestDB(t *testing.T) *gorm.DB {
 		&db.FederationInviteNonce{},
 		&db.FederationExchange{},
 		&db.FederationStatSnapshot{},
-		// For stats rollup tests.
+		&db.FederationCatalogSnapshot{},
+		// For stats rollup + catalog tests.
 		&db.User{},
+		&db.Console{},
 		&db.Game{},
 		&db.PlayHistory{},
 	))
