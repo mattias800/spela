@@ -322,15 +322,27 @@ fun ConsoleSettingsScreen(
                     if (showGamepadMapping) {
                         GamepadMappingDialog(
                             state = gamepadMappingState,
-                            onSetBinding = { position, retroButtonId ->
+                            onStartBinding = { output ->
                                 gamepadMappingViewModel.onIntent(
-                                    GamepadMappingIntent.SetBinding(position, retroButtonId)
+                                    GamepadMappingIntent.StartBinding(output)
                                 )
+                            },
+                            onBindKey = { position, pressed ->
+                                gamepadMappingViewModel.onIntent(
+                                    GamepadMappingIntent.ReportBindInput(position, pressed)
+                                )
+                            },
+                            onCancelBinding = {
+                                gamepadMappingViewModel.onIntent(GamepadMappingIntent.CancelBinding)
                             },
                             onResetToDefaults = {
                                 gamepadMappingViewModel.onIntent(GamepadMappingIntent.ResetAll)
                             },
-                            onDismiss = { showGamepadMapping = false },
+                            onDismiss = {
+                                // End any in-flight hold-to-bind before closing.
+                                gamepadMappingViewModel.onIntent(GamepadMappingIntent.CancelBinding)
+                                showGamepadMapping = false
+                            },
                         )
                     }
                 }

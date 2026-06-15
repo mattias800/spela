@@ -141,6 +141,18 @@ class DesktopGamepadPoller(
                 )
             }
 
+            // Hold-to-bind capture (#1377): any controller, INCLUDING the D-pad, so
+            // the user can rebind D-pad directions. Reported for every controller —
+            // the editor binds with whichever pad the user holds a button on.
+            if (gamepadPortManager.bindCaptureActive.value) {
+                gamepadPortManager.reportBindPressedPositions(
+                    state.controllerId,
+                    GamepadPosition.entries.filterTo(mutableSetOf()) {
+                        positionPressed[it.ordinal]
+                    },
+                )
+            }
+
             // Emulation routing requires an assigned player port; unassigned
             // controllers stop here (they only feed the tester above).
             val port = gamepadPortManager.getPort(state.controllerId)
@@ -187,8 +199,15 @@ class DesktopGamepadPoller(
         // normally — and the D-pad always navigates, so the user can move off the
         // tester.
         val testTarget = gamepadPortManager.testCaptureDeviceId.value
-        val navStates = if (testTarget != null) {
-            Array(states.size) { idx ->
+        val navStates = when {
+            // During a hold-to-bind session every press (incl. D-pad) feeds the
+            // binder, so mask ALL buttons on ALL controllers from navigation — a
+            // press must never also move focus or trigger back (#1377).
+            gamepadPortManager.bindCaptureActive.value -> Array(states.size) { idx ->
+                val st = states[idx]
+                st.copy(buttons = BooleanArray(st.buttons.size))
+            }
+            testTarget != null -> Array(states.size) { idx ->
                 val st = states[idx]
                 if (st.controllerId != testTarget) {
                     st
@@ -199,8 +218,7 @@ class DesktopGamepadPoller(
                     st.copy(buttons = masked)
                 }
             }
-        } else {
-            states
+            else -> states
         }
         uiNavigator.handle(navStates)
 

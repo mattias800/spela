@@ -266,6 +266,20 @@ class MainActivity : ComponentActivity() {
         return true
     }
 
+    /**
+     * Hold-to-bind capture (#1377): while the per-console mapping editor has a
+     * binding session open, capture EVERY gamepad button — including the D-pad —
+     * from ANY controller and feed it to the binder, consuming the event so a
+     * press only binds (never navigates). No-op when no session is active.
+     */
+    private fun captureBindInput(event: KeyEvent?, keyCode: Int, pressed: Boolean): Boolean {
+        if (!gamepadPortManager.bindCaptureActive.value) return false
+        val deviceId = event?.deviceId ?: return false
+        val position = AndroidGamepadNormalizer.normalize(keyCode) ?: return false
+        gamepadPortManager.reportBindPosition(deviceId, position, pressed)
+        return true
+    }
+
     /** Key codes that are gamepad-relevant and should be captured during key mapping. */
     private fun isGamepadCapturable(keyCode: Int): Boolean = when (keyCode) {
         KeyEvent.KEYCODE_BUTTON_A, KeyEvent.KEYCODE_BUTTON_B,
@@ -298,6 +312,10 @@ class MainActivity : ComponentActivity() {
         if (event != null) {
             ensureDeviceConnected(event.deviceId)
         }
+
+        // Hold-to-bind capture (#1377): when the mapping editor is awaiting a
+        // press, capture every button (incl. D-pad) from any pad and consume it.
+        if (captureBindInput(event, keyCode, pressed = true)) return true
 
         // Live input tester (#1355): when its element is focused, capture test
         // buttons (face/shoulder/trigger/stick — never the D-pad) and consume
@@ -405,6 +423,9 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onKeyUp(keyCode: Int, event: KeyEvent?): Boolean {
+        // Hold-to-bind capture (#1377): release feeds the binder (resets the hold).
+        if (captureBindInput(event, keyCode, pressed = false)) return true
+
         // Live input tester (#1355): release the captured test button.
         if (captureTestInput(event, keyCode, pressed = false)) return true
 

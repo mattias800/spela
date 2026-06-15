@@ -77,6 +77,7 @@ class AndroidGamepadNormalizerTest {
     ) : GamepadMappingRepository {
         override suspend fun getEffectiveMapping(consoleId: String, port: Int) = mapping
         override suspend fun setBinding(consoleId: String, port: Int, position: GamepadPosition, retroButtonId: Int) {}
+        override suspend fun bindPositionExclusive(consoleId: String, port: Int, position: GamepadPosition, retroButtonId: Int) {}
         override suspend fun resetToDefault(consoleId: String, port: Int) {}
         override fun getDefaultMapping() = DefaultGamepadMapping.POSITION_TO_RETRO
     }
