@@ -58,8 +58,16 @@ func sanitizeCatalogBatch(entries []federation.CatalogEntry, selfFingerprint str
 		if e.OriginFingerprint == "" || e.OriginFingerprint == selfFingerprint {
 			continue
 		}
-		if e.Hops < 0 || e.Hops > maxAcceptedHops || e.Key == "" {
+		if e.Hops < 0 || e.Hops > maxAcceptedHops || e.Key == "" || len(e.Key) > 255 {
 			continue
+		}
+		// Bound untrusted string fields — SQLite ignores the VARCHAR size hints,
+		// so a hostile peer could otherwise store arbitrarily long Title/Console.
+		if len(e.Title) > 255 {
+			e.Title = e.Title[:255]
+		}
+		if len(e.Console) > 32 {
+			e.Console = e.Console[:32]
 		}
 		out = append(out, e)
 		if len(out) >= maxStatEntriesPerPeer {

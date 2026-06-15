@@ -148,6 +148,28 @@ func TestRefreshCatalog_SanitizesLoopAndOverBudget(t *testing.T) {
 	assert.Equal(t, "Y", cached[0].OriginFingerprint)
 }
 
+func TestRefreshCatalog_TruncatesOversizedStrings(t *testing.T) {
+	database := openAPIFedTestDB(t)
+	selfID, _ := federation.GenerateIdentity()
+	friendID, _ := federation.GenerateIdentity()
+	catalogPolicyPeer(t, database, friendID, "Friend", "https://friend", true, true)
+
+	longTitle := make([]byte, 1000)
+	for i := range longTitle {
+		longTitle[i] = 'A'
+	}
+	fake := &fakeCatalogClient{byBase: map[string][]federation.CatalogEntry{
+		"https://friend": {{OriginFingerprint: friendID.Fingerprint(), Hops: 0, Key: "igdb:9", Title: string(longTitle), Console: "NES"}},
+	}}
+	h := catalogHandler(database, selfID, fake)
+
+	_, _ = h.RefreshFederationCatalog()
+	cached, err := h.CatalogSnapshots.EntriesWithinHops(-1)
+	require.NoError(t, err)
+	require.Len(t, cached, 1)
+	assert.LessOrEqual(t, len(cached[0].Title), 255, "oversized title bounded before storage")
+}
+
 func TestRefreshCatalog_RecordsErrorOnFailure(t *testing.T) {
 	database := openAPIFedTestDB(t)
 	selfID, _ := federation.GenerateIdentity()
