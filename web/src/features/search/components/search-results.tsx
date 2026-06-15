@@ -19,10 +19,18 @@ import type {
   SeriesSearchResult,
   FranchiseSearchResult,
 } from "@/hooks/use-search";
+import type { CatalogAvailability } from "@/generated/schemas";
+
+// Cap the connected-servers teaser so it never crowds out local results.
+const FEDERATED_LIMIT = 6;
 
 interface SearchResultsDisplayProps {
-  results: SearchResults;
+  // Optional: federated results can render before the local search resolves.
+  results?: SearchResults;
   onNavigate: (path: string) => void;
+  // Games found on connected servers (not in the local library). Read-only —
+  // listed for discovery; not navigable or downloadable yet.
+  federatedGames?: CatalogAvailability[];
 }
 
 interface ResultSection {
@@ -127,8 +135,10 @@ function buildSections(results: SearchResults): ResultSection[] {
 export function SearchResultsDisplay({
   results,
   onNavigate,
+  federatedGames,
 }: SearchResultsDisplayProps) {
-  const sections = buildSections(results);
+  const sections = results ? buildSections(results) : [];
+  const fedGames = federatedGames ?? [];
   const allItems = sections.flatMap((s) => s.items);
   const [highlightIndex, setHighlightIndex] = useState(-1);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -181,7 +191,7 @@ export function SearchResultsDisplay({
     }
   }, [highlightIndex]);
 
-  if (sections.length === 0) return null;
+  if (sections.length === 0 && fedGames.length === 0) return null;
 
   let globalIndex = 0;
 
@@ -219,6 +229,31 @@ export function SearchResultsDisplay({
           })}
         </div>
       ))}
+
+      {fedGames.length > 0 && (
+        <div className="py-2" data-testid="federated-search-section">
+          <div className="px-4 py-1.5 flex items-center justify-between">
+            <span className="text-xs font-semibold uppercase tracking-wider text-surface-500">
+              On connected servers
+            </span>
+            {fedGames.length > FEDERATED_LIMIT && (
+              <span className="text-xs text-surface-500">
+                {fedGames.length} total
+              </span>
+            )}
+          </div>
+          {fedGames.slice(0, FEDERATED_LIMIT).map((game) => (
+            // Read-only: discovery only — not navigable or downloadable yet.
+            <div
+              key={game.key}
+              data-testid={`federated-result-${game.key}`}
+              className="px-4 py-1.5"
+            >
+              <FederatedGameRow game={game} />
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -332,6 +367,25 @@ function GameRow({
         </span>
       }
       highlighted={highlighted}
+    />
+  );
+}
+
+// Connected-server game: discovery row. No cover art is carried in the
+// federated catalog (metadata only), so the cover slot is a placeholder.
+function FederatedGameRow({ game }: { game: CatalogAvailability }) {
+  const servers = game.originCount;
+  return (
+    <SearchResultRow
+      icon={<div className="h-10 w-8 rounded bg-surface-700 flex-shrink-0" />}
+      title={game.title}
+      subtitle={`on ${servers} connected ${servers === 1 ? "server" : "servers"}`}
+      rightContent={
+        <span className="text-xs font-medium px-2 py-0.5 rounded bg-surface-800 text-surface-400 uppercase flex-shrink-0">
+          {game.console}
+        </span>
+      }
+      highlighted={false}
     />
   );
 }
