@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -15,6 +16,21 @@ import (
 	"github.com/spela/server/internal/storage"
 	"gorm.io/gorm"
 )
+
+// relayEnabledSettingKey gates the multi-hop ROM relay (#1348 Phase 3b-2). The
+// relay forwards a friend-of-friend's game file through us — copyright-sensitive,
+// so it is OFF unless an admin explicitly enables it.
+const relayEnabledSettingKey = "federation_relay_enabled"
+
+// relayEnabled reports whether this server will forward (relay) ROMs it doesn't
+// have locally. Default false.
+func (h *FederationHandler) relayEnabled() bool {
+	var s db.ServerSetting
+	if err := h.DB.Where("key = ?", relayEnabledSettingKey).First(&s).Error; err != nil {
+		return false
+	}
+	return s.Value == "true"
+}
 
 // safeDownloadName turns a cross-server game key into a filesystem-safe download
 // filename (the peer's filename is untrusted and never used).
@@ -35,10 +51,28 @@ func safeDownloadName(key string) string {
 	return string(b) + ".bin"
 }
 
-// downloadClient fetches a ROM from a friend over a signed request, returning
-// the raw response so the caller can stream the body. Faked in tests.
+// streamSafeDownload proxies a fetched ROM response to c with a FORCED safe
+// disposition — never trusting the upstream's Content-Type/Disposition (a
+// malicious peer could send text/html → XSS on our origin). Returns bytes sent.
+func streamSafeDownload(c *gin.Context, resp *http.Response, key string) int64 {
+	c.Header("Content-Type", "application/octet-stream")
+	c.Header("Content-Disposition", `attachment; filename="`+safeDownloadName(key)+`"`)
+	c.Header("X-Content-Type-Options", "nosniff")
+	if cl := resp.Header.Get("Content-Length"); cl != "" {
+		if _, err := strconv.ParseInt(cl, 10, 64); err == nil {
+			c.Header("Content-Length", cl)
+		}
+	}
+	c.Status(http.StatusOK)
+	n, _ := io.Copy(c.Writer, resp.Body)
+	return n
+}
+
+// downloadClient fetches a ROM from a friend over a signed request, returning the
+// raw response so the caller can stream the body. hops is the remaining forward
+// budget the friend may use. Faked in tests.
 type downloadClient interface {
-	FetchDownload(baseURL, requestID string, id federation.Identity, peerFingerprint, key string) (*http.Response, error)
+	FetchDownload(baseURL, requestID string, id federation.Identity, peerFingerprint, key string, hops int) (*http.Response, error)
 }
 
 type httpDownloadClient struct{}
@@ -52,14 +86,14 @@ var fedDownloadHTTPClient = func() *http.Client {
 	return &http.Client{Transport: tr}
 }()
 
-func (httpDownloadClient) FetchDownload(baseURL, requestID string, id federation.Identity, peerFingerprint, key string) (*http.Response, error) {
+func (httpDownloadClient) FetchDownload(baseURL, requestID string, id federation.Identity, peerFingerprint, key string, hops int) (*http.Response, error) {
 	const path = "/api/federation/download"
-	u := baseURL + path + "?key=" + url.QueryEscape(key)
+	u := fmt.Sprintf("%s%s?key=%s&hops=%d", baseURL, path, url.QueryEscape(key), hops)
 	req, err := http.NewRequest(http.MethodGet, u, nil)
 	if err != nil {
 		return nil, err
 	}
-	// Sign the path (query is excluded from the signature, matching the verifier).
+	// Sign the path only (query is excluded from the signature, matching the verifier).
 	for k, v := range signedFederationHeaders(id, http.MethodGet, path, requestID, nil, peerFingerprint) {
 		req.Header.Set(k, v)
 	}
@@ -87,9 +121,11 @@ func (h *FederationHandler) resolveLocalGameByKey(key string) (db.Game, string, 
 	return game, abs, true
 }
 
-// ginServeDownload streams a LOCAL ROM to a friend that we share downloads with.
-// Behind VerifyFederationRequest + SharePolicy(download). Phase 3b-1 does NOT
-// forward (relay) games we don't have — that's the opt-in multi-hop relay.
+// ginServeDownload serves a ROM to a requesting friend (signed +
+// SharePolicy(download)). If we have it locally, stream it. Otherwise, IF the
+// relay is enabled and there's hop budget, forward it from a friend that offers
+// it (multi-hop relay, #1348 Phase 3b-2). Default-off: with relay disabled this
+// is the direct-only behaviour from 3b-1.
 func (h *FederationHandler) ginServeDownload(c *gin.Context) {
 	reqID := c.GetHeader(headerFedRequestID)
 	if reqID == "" {
@@ -110,36 +146,108 @@ func (h *FederationHandler) ginServeDownload(c *gin.Context) {
 		return
 	}
 
-	game, absPath, found := h.resolveLocalGameByKey(key)
-	if !found {
+	// 1. Serve a local game directly.
+	if game, absPath, found := h.resolveLocalGameByKey(key); found {
 		federation.RecordExchange(h.DB, federation.ExchangeRecord{
 			RequestID: reqID, PeerFingerprint: peer.Fingerprint, PeerName: peer.Name,
 			Direction: db.ExchangeInbound, Operation: "download_serve",
-			DataClass: string(federation.DataClassDownload), Status: db.ExchangeError,
-			Error: "not available locally (no forwarding in 3b-1)",
+			DataClass: string(federation.DataClassDownload), Status: db.ExchangeOK, ItemCount: 1,
 		})
-		c.JSON(http.StatusNotFound, gin.H{"error": "game not available here"})
+		c.FileAttachment(absPath, filepath.Base(game.FilePath))
+		return
+	}
+
+	// 2. Relay (forward) from a friend, if enabled and within the hop budget.
+	// A missing ?hops defaults to 0 (NO relay): in-mesh requests always carry the
+	// budget, so a peer that omits it gets local-or-404 rather than a budget reset
+	// to max — keeping the hop cap authoritative from the origin.
+	hops := 0
+	if q := c.Query("hops"); q != "" {
+		if n, err := strconv.Atoi(q); err == nil && n >= 0 && n <= federation.MaxFederationHops {
+			hops = n
+		}
+	}
+	if h.relayEnabled() && hops > 0 && h.relayForward(c, reqID, peer, key, hops) {
+		federation.RecordExchange(h.DB, federation.ExchangeRecord{
+			RequestID: reqID, PeerFingerprint: peer.Fingerprint, PeerName: peer.Name,
+			Direction: db.ExchangeInbound, Operation: "download_serve",
+			DataClass: string(federation.DataClassDownload), Status: db.ExchangeOK,
+			MaxHops: hops, ItemCount: 1,
+		})
 		return
 	}
 
 	federation.RecordExchange(h.DB, federation.ExchangeRecord{
 		RequestID: reqID, PeerFingerprint: peer.Fingerprint, PeerName: peer.Name,
 		Direction: db.ExchangeInbound, Operation: "download_serve",
-		DataClass: string(federation.DataClassDownload), Status: db.ExchangeOK, ItemCount: 1,
+		DataClass: string(federation.DataClassDownload), Status: db.ExchangeError,
+		Error: "not available locally and no relay path (relay off, no budget, or no source)",
 	})
-	c.FileAttachment(absPath, filepath.Base(game.FilePath))
+	c.JSON(http.StatusNotFound, gin.H{"error": "game not available here"})
 }
 
-// ginUserDownload lets a local user download a game that a DIRECT friend offers.
-// Finds a hop-1 friend with the key whose ConsumePolicy(download) is set, fetches
-// from them, and streams the bytes through. Behind user auth.
+// relayForward fetches the key from a friend that offers it (excluding the
+// requester, to avoid a loop) and streams it through. Returns true if it served
+// the response. hops is the budget; the onward request gets hops-1.
+func (h *FederationHandler) relayForward(c *gin.Context, reqID string, requester *db.FederationPeer, key string, hops int) bool {
+	sources, err := h.CatalogSnapshots.SourcePeersForKey(key)
+	if err != nil {
+		return false
+	}
+	client := h.DownloadClient
+	if client == nil {
+		client = httpDownloadClient{}
+	}
+	for _, fp := range sources {
+		if fp == requester.Fingerprint {
+			continue // loop guard: never forward back to the requester
+		}
+		src, err := h.Peers.GetByFingerprint(fp)
+		if err != nil || src.Status != db.PeerStatusActive || !federation.CanConsume(*src, federation.DataClassDownload) {
+			continue
+		}
+		started := time.Now()
+		resp, ferr := client.FetchDownload(src.BaseURL, reqID, h.Identity, src.Fingerprint, key, hops-1)
+		if ferr != nil || resp.StatusCode != http.StatusOK {
+			if resp != nil {
+				resp.Body.Close()
+			}
+			errMsg := "relay fetch failed"
+			if ferr != nil {
+				errMsg = ferr.Error()
+			}
+			federation.RecordExchange(h.DB, federation.ExchangeRecord{
+				RequestID: reqID, PeerFingerprint: src.Fingerprint, PeerName: src.Name,
+				Direction: db.ExchangeOutbound, Operation: "download_relay",
+				DataClass: string(federation.DataClassDownload), Status: db.ExchangeError,
+				StartedAt: started, MaxHops: hops - 1, Error: errMsg,
+			})
+			continue
+		}
+		n := streamSafeDownload(c, resp, key)
+		resp.Body.Close()
+		federation.RecordExchange(h.DB, federation.ExchangeRecord{
+			RequestID: reqID, PeerFingerprint: src.Fingerprint, PeerName: src.Name,
+			Direction: db.ExchangeOutbound, Operation: "download_relay",
+			DataClass: string(federation.DataClassDownload), Status: db.ExchangeOK,
+			StartedAt: started, MaxHops: hops - 1, Bytes: n,
+		})
+		return true
+	}
+	return false
+}
+
+// ginUserDownload lets a local user download a game a friend offers — directly
+// from a friend that has it, or via that friend's relay for a friend-of-friend's
+// game. Picks a friend whose catalog offers the key and whose ConsumePolicy
+// allows downloads, then proxies the (safely re-typed) stream. Behind user auth.
 func (h *FederationHandler) ginUserDownload(c *gin.Context) {
 	key := c.Query("key")
 	if key == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "missing key"})
 		return
 	}
-	sources, err := h.CatalogSnapshots.DirectSourcesForKey(key)
+	sources, err := h.CatalogSnapshots.SourcePeersForKey(key)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to look up sources"})
 		return
@@ -156,7 +264,7 @@ func (h *FederationHandler) ginUserDownload(c *gin.Context) {
 		}
 		reqID := federation.NewRequestID()
 		started := time.Now()
-		resp, ferr := client.FetchDownload(peer.BaseURL, reqID, h.Identity, peer.Fingerprint, key)
+		resp, ferr := client.FetchDownload(peer.BaseURL, reqID, h.Identity, peer.Fingerprint, key, federation.MaxFederationHops-1)
 		if ferr != nil || resp.StatusCode != http.StatusOK {
 			if resp != nil {
 				resp.Body.Close()
@@ -173,21 +281,7 @@ func (h *FederationHandler) ginUserDownload(c *gin.Context) {
 			})
 			continue
 		}
-		// SECURITY: never echo the peer's Content-Type / Content-Disposition. A
-		// malicious friend could send text/html and have it rendered on OUR
-		// origin (stored XSS). Force a safe binary attachment; the client names
-		// the file from the catalog metadata it already has. Only Content-Length
-		// is forwarded, and only if it's a valid number.
-		c.Header("Content-Type", "application/octet-stream")
-		c.Header("Content-Disposition", `attachment; filename="`+safeDownloadName(key)+`"`)
-		c.Header("X-Content-Type-Options", "nosniff")
-		if cl := resp.Header.Get("Content-Length"); cl != "" {
-			if _, perr := strconv.ParseInt(cl, 10, 64); perr == nil {
-				c.Header("Content-Length", cl)
-			}
-		}
-		c.Status(http.StatusOK)
-		n, _ := io.Copy(c.Writer, resp.Body)
+		n := streamSafeDownload(c, resp, key)
 		resp.Body.Close()
 		federation.RecordExchange(h.DB, federation.ExchangeRecord{
 			RequestID: reqID, PeerFingerprint: peer.Fingerprint, PeerName: peer.Name,
@@ -197,5 +291,5 @@ func (h *FederationHandler) ginUserDownload(c *gin.Context) {
 		})
 		return
 	}
-	c.JSON(http.StatusNotFound, gin.H{"error": "not available from any direct friend"})
+	c.JSON(http.StatusNotFound, gin.H{"error": "not available from any friend"})
 }
