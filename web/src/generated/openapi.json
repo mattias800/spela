@@ -10577,6 +10577,60 @@
         },
         "type": "object"
       },
+      "UpdatePeerPolicyBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/UpdatePeerPolicyBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "consumePolicy": {
+            "additionalProperties": {
+              "type": "boolean"
+            },
+            "description": "Data classes we accept from this peer (class -\u003e allowed).",
+            "type": "object"
+          },
+          "sharePolicy": {
+            "additionalProperties": {
+              "type": "boolean"
+            },
+            "description": "Data classes we expose to this peer (class -\u003e allowed).",
+            "type": "object"
+          }
+        },
+        "required": [
+          "sharePolicy",
+          "consumePolicy"
+        ],
+        "type": "object"
+      },
+      "UpdatePeerPolicyOutputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/UpdatePeerPolicyOutputBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "peer": {
+            "$ref": "#/components/schemas/FederationPeer"
+          }
+        },
+        "required": [
+          "peer"
+        ],
+        "type": "object"
+      },
       "UpdatePreferencesRequest": {
         "additionalProperties": false,
         "properties": {
@@ -11934,6 +11988,67 @@
           }
         ],
         "summary": "Revoke a federation peer",
+        "tags": [
+          "federation",
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/federation/peers/{fingerprint}/policy": {
+      "put": {
+        "operationId": "federationUpdatePeerPolicy",
+        "parameters": [
+          {
+            "description": "Peer fingerprint (base32).",
+            "in": "path",
+            "name": "fingerprint",
+            "required": true,
+            "schema": {
+              "description": "Peer fingerprint (base32).",
+              "maxLength": 64,
+              "pattern": "^[a-z2-7]{52}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePeerPolicyBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdatePeerPolicyOutputBody"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update a peer's share/consume policy",
         "tags": [
           "federation",
           "admin"

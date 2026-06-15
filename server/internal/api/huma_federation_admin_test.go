@@ -126,6 +126,65 @@ func TestRevokePeer_RemovesIt(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestUpdatePeerPolicy_SetsShareAndConsume(t *testing.T) {
+	database := openAPIFedTestDB(t)
+	selfID, _ := federation.GenerateIdentity()
+	store := federation.PeerStore{DB: database}
+	require.NoError(t, store.Upsert(&db.FederationPeer{
+		Fingerprint: "fp-pol", PublicKey: "k", BaseURL: "https://x", Status: db.PeerStatusActive,
+	}))
+	h := &FederationHandler{DB: database, Identity: selfID, Peers: store, BaseURL: "https://self"}
+
+	out, err := h.HumaUpdatePeerPolicy(context.Background(), &UpdatePeerPolicyInput{
+		Fingerprint: "fp-pol",
+		Body: UpdatePeerPolicyBody{
+			SharePolicy:   map[string]bool{"stats": true, "catalog": false},
+			ConsumePolicy: map[string]bool{"download": true},
+		},
+	})
+	require.NoError(t, err)
+	assert.True(t, federation.CanShare(out.Body.Peer, federation.DataClassStats))
+	assert.False(t, federation.CanShare(out.Body.Peer, federation.DataClassCatalog))
+	assert.True(t, federation.CanConsume(out.Body.Peer, federation.DataClassDownload))
+
+	// Persisted, not just echoed in the response.
+	got, err := store.GetByFingerprint("fp-pol")
+	require.NoError(t, err)
+	assert.True(t, federation.CanShare(*got, federation.DataClassStats))
+	assert.True(t, federation.CanConsume(*got, federation.DataClassDownload))
+}
+
+func TestUpdatePeerPolicy_RejectsUnknownClass(t *testing.T) {
+	database := openAPIFedTestDB(t)
+	selfID, _ := federation.GenerateIdentity()
+	store := federation.PeerStore{DB: database}
+	require.NoError(t, store.Upsert(&db.FederationPeer{
+		Fingerprint: "fp-pol", PublicKey: "k", BaseURL: "https://x", Status: db.PeerStatusActive,
+	}))
+	h := &FederationHandler{DB: database, Identity: selfID, Peers: store, BaseURL: "https://self"}
+
+	_, err := h.HumaUpdatePeerPolicy(context.Background(), &UpdatePeerPolicyInput{
+		Fingerprint: "fp-pol",
+		Body:        UpdatePeerPolicyBody{SharePolicy: map[string]bool{"bogus": true}},
+	})
+	assert.Error(t, err, "unknown data class must be rejected")
+
+	// A rejected update leaves the stored policy untouched.
+	got, err := store.GetByFingerprint("fp-pol")
+	require.NoError(t, err)
+	assert.Empty(t, got.SharePolicy)
+}
+
+func TestUpdatePeerPolicy_NotFound(t *testing.T) {
+	database := openAPIFedTestDB(t)
+	selfID, _ := federation.GenerateIdentity()
+	h := &FederationHandler{DB: database, Identity: selfID, Peers: federation.PeerStore{DB: database}, BaseURL: "https://self"}
+	_, err := h.HumaUpdatePeerPolicy(context.Background(), &UpdatePeerPolicyInput{
+		Fingerprint: "nope", Body: UpdatePeerPolicyBody{},
+	})
+	assert.Error(t, err)
+}
+
 func TestTestPeer_RunsDiagnosticAndUpdatesHealth(t *testing.T) {
 	database := openAPIFedTestDB(t)
 	selfID, _ := federation.GenerateIdentity()
