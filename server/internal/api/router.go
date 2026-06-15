@@ -192,6 +192,8 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 		Peers:            federation.PeerStore{DB: cfg.DB},
 		Snapshots:        federation.SnapshotStore{DB: cfg.DB},
 		CatalogSnapshots: federation.CatalogSnapshotStore{DB: cfg.DB},
+		GameDirs:         cfg.GameDirs,
+		JWTSecret:        cfg.JWTSecret,
 		BaseURL:          cfg.PublicBaseURL,
 	}
 
@@ -256,7 +258,7 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 	RegisterCoreRoutes(humaAPI, coreHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterStatsRoutes(humaAPI, statsHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterFederationRoutes(humaAPI, federationHandler, cfg.JWTSecret, cfg.DB, userLimiter)
-	RegisterFederationGinRoutes(r, federationHandler)
+	RegisterFederationGinRoutes(r, federationHandler, downloadLimiter)
 	RegisterConsoleRoutes(humaAPI, consoleHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterUserRoutes(humaAPI, userHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterUserMutationRoutes(humaAPI, userHandler, cfg.JWTSecret, cfg.DB, userLimiter, authLimiter)
