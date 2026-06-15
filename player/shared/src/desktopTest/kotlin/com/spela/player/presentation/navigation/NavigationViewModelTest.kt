@@ -344,7 +344,7 @@ class NavigationViewModelTest {
     }
 
     @Test
-    fun goBackFromConsolesTabReturnsToHome() = runTest(testDispatcher) {
+    fun goBackAtConsolesTabRootIsNoOp() = runTest(testDispatcher) {
         val vm = createViewModel()
         advanceUntilIdle()
         simulateLoggedIn(vm)
@@ -354,14 +354,14 @@ class NavigationViewModelTest {
         assertEquals(BottomNavTab.CONSOLES, vm.state.value.activeTab)
         assertEquals(SpScreen.Consoles, vm.state.value.currentScreen)
 
-        // GoBack from tab root → Home
+        // GoBack at a tab root does nothing — stays on the tab, never jumps to Home (#1372).
         vm.onIntent(NavigationIntent.GoBack)
-        assertEquals(BottomNavTab.HOME, vm.state.value.activeTab)
-        assertEquals(SpScreen.Home, vm.state.value.currentScreen)
+        assertEquals(BottomNavTab.CONSOLES, vm.state.value.activeTab)
+        assertEquals(SpScreen.Consoles, vm.state.value.currentScreen)
     }
 
     @Test
-    fun goBackFromCollectionsTabReturnsToHome() = runTest(testDispatcher) {
+    fun goBackAtCollectionsTabRootIsNoOp() = runTest(testDispatcher) {
         val vm = createViewModel()
         advanceUntilIdle()
 
@@ -369,7 +369,7 @@ class NavigationViewModelTest {
         assertEquals(BottomNavTab.COLLECTIONS, vm.state.value.activeTab)
 
         vm.onIntent(NavigationIntent.GoBack)
-        assertEquals(BottomNavTab.HOME, vm.state.value.activeTab)
+        assertEquals(BottomNavTab.COLLECTIONS, vm.state.value.activeTab)
     }
 
     @Test

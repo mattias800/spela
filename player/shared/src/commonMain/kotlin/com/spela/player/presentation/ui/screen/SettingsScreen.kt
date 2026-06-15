@@ -48,6 +48,7 @@ fun SettingsScreen(
     onBack: () -> Unit = {},
     onLogout: () -> Unit,
     onNavigateToConsoleSettings: (String) -> Unit = {},
+    onNavigateToControllerDetail: (Int) -> Unit = {},
     onNavigateToLicenses: () -> Unit = {},
 ) {
     val state by viewModel.state.collectAsState()
@@ -112,6 +113,7 @@ fun SettingsScreen(
                         keyMappingState = keyMappingState?.value,
                         gamepadConfigViewModel = gamepadConfigViewModel,
                         onNavigateToConsoleSettings = onNavigateToConsoleSettings,
+                        onNavigateToControllerDetail = onNavigateToControllerDetail,
                         onNavigateToLicenses = onNavigateToLicenses,
                         onLogout = onLogout,
                         modifier = Modifier.weight(1f).fillMaxHeight(),
@@ -133,6 +135,7 @@ fun SettingsScreen(
                         keyMappingState = keyMappingState?.value,
                         gamepadConfigViewModel = gamepadConfigViewModel,
                         onNavigateToConsoleSettings = onNavigateToConsoleSettings,
+                        onNavigateToControllerDetail = onNavigateToControllerDetail,
                         onNavigateToLicenses = onNavigateToLicenses,
                         onLogout = onLogout,
                         modifier = Modifier.fillMaxSize(),

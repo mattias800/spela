@@ -74,6 +74,7 @@ fun SettingsCategoryContent(
     keyMappingState: KeyMappingState?,
     gamepadConfigViewModel: GamepadConfigViewModel?,
     onNavigateToConsoleSettings: (String) -> Unit,
+    onNavigateToControllerDetail: (Int) -> Unit,
     onNavigateToLicenses: () -> Unit,
     onLogout: () -> Unit,
     modifier: Modifier = Modifier,
@@ -103,6 +104,7 @@ fun SettingsCategoryContent(
             SettingsCategory.EMULATION -> emulationContent(state, viewModel)
             SettingsCategory.CONTROLS -> controlsContent(
                 state, viewModel, keyMappingViewModel, keyMappingState, gamepadConfigViewModel,
+                onNavigateToControllerDetail,
             )
             SettingsCategory.CONSOLES -> consolesContent(state, onNavigateToConsoleSettings)
             SettingsCategory.ACHIEVEMENTS -> achievementsContent(state, viewModel)
@@ -266,6 +268,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.controlsContent(
     keyMappingViewModel: KeyMappingViewModel?,
     keyMappingState: KeyMappingState?,
     gamepadConfigViewModel: GamepadConfigViewModel?,
+    onNavigateToControllerDetail: (Int) -> Unit,
 ) {
     // Per-controller configuration (#1359): a list of connected controllers,
     // each drilling into a detail subscreen to edit its profile/type, assign or
@@ -278,7 +281,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.controlsContent(
             SpCard(onGradient = true) {
                 ControllerControls(
                     state = gamepadConfigState,
-                    onIntent = gamepadConfigViewModel::onIntent,
+                    onSelectController = onNavigateToControllerDetail,
                 )
             }
         }

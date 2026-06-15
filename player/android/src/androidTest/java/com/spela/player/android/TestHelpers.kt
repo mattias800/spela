@@ -1211,6 +1211,17 @@ internal fun ComposeRule.navigateBackToHome() {
             Thread.sleep(500)
         }
     }
+    // Back no longer crosses tab roots (#1372): B/back at a tab root is a no-op,
+    // so unwinding from a sibling tab (e.g. Settings) never reaches Home via back.
+    // Fall back to tapping the Home tab directly — same approach as
+    // navigateToGameAndPlay's reset.
+    if (!runCatching { isOnHomeScreen() }.getOrDefault(false)) {
+        runCatching {
+            onAllNodes(hasTestTag(TestTags.NAV_HOME))[0].performClick()
+            waitForIdle()
+            Thread.sleep(500)
+        }
+    }
 }
 
 /**

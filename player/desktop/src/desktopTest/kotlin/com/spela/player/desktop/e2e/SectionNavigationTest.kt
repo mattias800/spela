@@ -161,7 +161,7 @@ class SectionNavigationTest {
     }
 
     @Test
-    fun goBackFromConsolesReturnsToHome() = runComposeUiTest {
+    fun goBackAtConsolesTabRootIsNoOp() = runComposeUiTest {
         val harness = createLoggedInHarness()
 
         setContent { harness.App() }
@@ -172,13 +172,14 @@ class SectionNavigationTest {
         harness.navigationViewModel.onIntent(NavigationIntent.NextSection)
         assertEquals(SpScreen.Consoles, harness.navigationViewModel.state.value.currentScreen)
 
-        // GoBack with empty backstack from Consoles should go to Home
+        // GoBack at a tab root is a no-op (#1372): each tab owns its stack and the
+        // root is the floor — B never leaves the tab, so we stay on Consoles.
         harness.navigationViewModel.onIntent(NavigationIntent.GoBack)
-        assertEquals(SpScreen.Home, harness.navigationViewModel.state.value.currentScreen)
+        assertEquals(SpScreen.Consoles, harness.navigationViewModel.state.value.currentScreen)
     }
 
     @Test
-    fun goBackFromCollectionsReturnsToHome() = runComposeUiTest {
+    fun goBackAtCollectionsTabRootIsNoOp() = runComposeUiTest {
         val harness = createLoggedInHarness()
 
         setContent { harness.App() }
@@ -190,8 +191,8 @@ class SectionNavigationTest {
         harness.navigationViewModel.onIntent(NavigationIntent.NextSection)
         assertEquals(SpScreen.Collections, harness.navigationViewModel.state.value.currentScreen)
 
-        // GoBack with empty backstack from Collections should go to Home
+        // GoBack at a tab root is a no-op (#1372) — we stay on Collections.
         harness.navigationViewModel.onIntent(NavigationIntent.GoBack)
-        assertEquals(SpScreen.Home, harness.navigationViewModel.state.value.currentScreen)
+        assertEquals(SpScreen.Collections, harness.navigationViewModel.state.value.currentScreen)
     }
 }

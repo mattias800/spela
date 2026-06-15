@@ -12,6 +12,7 @@ import com.spela.player.presentation.intent.NetplayIntent
 import com.spela.player.presentation.navigation.NavigationIntent
 import com.spela.player.presentation.navigation.NavigationState
 import com.spela.player.presentation.navigation.SpScreen
+import com.spela.player.presentation.ui.components.gamepad.ControllerDetailScreen
 import com.spela.player.presentation.ui.screen.ActivityScreen
 import com.spela.player.presentation.ui.screen.AllGamesScreen
 import com.spela.player.presentation.ui.screen.ChallengeDetailScreen
@@ -750,6 +751,11 @@ fun ScreenRouter(
                                             NavigationIntent.NavigateTo(SpScreen.ConsoleSettings(consoleId))
                                         )
                                     },
+                                    onNavigateToControllerDetail = { deviceId ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.ControllerDetail(deviceId))
+                                        )
+                                    },
                                     onNavigateToLicenses = {
                                         navigationViewModel.onIntent(
                                             NavigationIntent.NavigateTo(SpScreen.Licenses)
@@ -768,6 +774,20 @@ fun ScreenRouter(
                                         navigationViewModel.onIntent(NavigationIntent.GoBack)
                                     },
                                 )
+                            }
+
+                            is SpScreen.ControllerDetail -> {
+                                if (gamepadConfigViewModel != null) {
+                                    val gamepadConfigState by gamepadConfigViewModel.state.collectAsState()
+                                    ControllerDetailScreen(
+                                        deviceId = screen.deviceId,
+                                        state = gamepadConfigState,
+                                        onIntent = gamepadConfigViewModel::onIntent,
+                                        onBack = {
+                                            navigationViewModel.onIntent(NavigationIntent.GoBack)
+                                        },
+                                    )
+                                }
                             }
 
                             is SpScreen.UserProfile -> {

@@ -24,8 +24,6 @@ data class GamepadConfigState(
     /** All connected controllers and their player-slot assignment (#1359) — the
      *  source for the per-controller list/detail UI in Settings → Controls. */
     val controllers: List<ControllerUi> = emptyList(),
-    /** The controller whose detail subscreen is open, or null for the list (#1359). */
-    val selectedDeviceId: Int? = null,
     /** A pending player-slot conflict awaiting the user's switch/cancel (#1359). */
     val conflict: SlotConflict? = null,
 )
@@ -85,13 +83,7 @@ sealed interface GamepadConfigIntent {
      */
     data class SetStyleOverride(val port: Int, val style: ControllerStyle?) : GamepadConfigIntent
 
-    // --- Per-controller list/detail (#1359) ---
-
-    /** Open the detail subscreen for [deviceId]. */
-    data class SelectController(val deviceId: Int) : GamepadConfigIntent
-
-    /** Close the detail subscreen back to the controller list. */
-    data object CloseDetail : GamepadConfigIntent
+    // --- Per-controller list/detail (#1359; detail is its own page #1372) ---
 
     /** Assign [deviceId] to player [slot] (0-based). Raises a [SlotConflict] when
      *  another controller holds the slot, instead of assigning immediately. */
@@ -110,8 +102,8 @@ sealed interface GamepadConfigIntent {
      *  identified by [deviceId] — works for unassigned controllers too. */
     data class SetStyleOverrideForController(val deviceId: Int, val style: ControllerStyle?) : GamepadConfigIntent
 
-    /** Toggle input-test capture for the open controller's detail (tester focus). */
-    data class SetInputTestActive(val active: Boolean) : GamepadConfigIntent
+    /** Toggle input-test capture for [deviceId]'s detail page (tester focus). */
+    data class SetInputTestActive(val deviceId: Int, val active: Boolean) : GamepadConfigIntent
 }
 
 class GamepadConfigViewModel(
@@ -179,13 +171,6 @@ class GamepadConfigViewModel(
                     ?: return
                 persistStyleOverride(deviceName, intent.style)
             }
-            is GamepadConfigIntent.SelectController -> {
-                _state.update { it.copy(selectedDeviceId = intent.deviceId) }
-            }
-            GamepadConfigIntent.CloseDetail -> {
-                gamepadPortManager.setTestCaptureDevice(null)
-                _state.update { it.copy(selectedDeviceId = null) }
-            }
             is GamepadConfigIntent.AssignPlayer -> {
                 val occupant = gamepadPortManager.deviceOnSlot(intent.slot)
                 if (occupant != null && occupant != intent.deviceId) {
@@ -228,9 +213,7 @@ class GamepadConfigViewModel(
                 persistStyleOverride(deviceName, intent.style)
             }
             is GamepadConfigIntent.SetInputTestActive -> {
-                gamepadPortManager.setTestCaptureDevice(
-                    if (intent.active) _state.value.selectedDeviceId else null,
-                )
+                gamepadPortManager.setTestCaptureDevice(if (intent.active) intent.deviceId else null)
             }
         }
     }
