@@ -30,7 +30,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -218,7 +217,7 @@ private fun ControllerRow(
 
 @Composable
 private fun ActivityIndicator(isActive: Boolean) {
-    val targetColor = if (isActive) Color(0xFF4CAF50) else SpColor.OnBackgroundTertiary.copy(alpha = 0.3f)
+    val targetColor = if (isActive) SpColor.Success else SpColor.OnBackgroundTertiary.copy(alpha = 0.3f)
     val color by animateColorAsState(
         targetValue = targetColor,
         animationSpec = tween(durationMillis = 150),
