@@ -130,6 +130,17 @@ class DesktopGamepadPoller(
                 positionPressed[GamepadPosition.R2.ordinal] = state.axes[5] > TRIGGER_THRESHOLD
             }
 
+            // Live input tester (#1355): only while the tester element is focused,
+            // report pressed test positions (D-pad excluded — it always navigates).
+            if (gamepadPortManager.testCaptureActive.value) {
+                gamepadPortManager.reportPressedPositions(
+                    port,
+                    GamepadPosition.entries.filterTo(mutableSetOf()) {
+                        positionPressed[it.ordinal] && !it.isDpad
+                    },
+                )
+            }
+
             // Apply the configurable mapping layer (position -> RetroPad), with
             // fan-in handled so a released position can't clobber another's press.
             val mapping = gamepadPortManager.getGamepadMapping(port)
@@ -162,7 +173,22 @@ class DesktopGamepadPoller(
             }
         }
 
-        uiNavigator.handle(states)
+        // While the input tester is focused, mask the test buttons (everything
+        // except the D-pad) from UI navigation so e.g. the right face button
+        // doesn't trigger "back" while the user is testing it (#1355). The D-pad
+        // still navigates, so the user can move off the tester.
+        val navStates = if (gamepadPortManager.testCaptureActive.value) {
+            Array(states.size) { idx ->
+                val st = states[idx]
+                val masked = BooleanArray(st.buttons.size) { i ->
+                    st.buttons[i] && i in GamepadPosition.DPAD_UP.ordinal..GamepadPosition.DPAD_RIGHT.ordinal
+                }
+                st.copy(buttons = masked)
+            }
+        } else {
+            states
+        }
+        uiNavigator.handle(navStates)
 
         // Detect disconnections
         val disconnected = knownControllers - currentIds

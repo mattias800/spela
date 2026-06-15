@@ -1,6 +1,8 @@
 package com.spela.player.desktop.e2e
 
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.*
+import com.spela.player.domain.model.GamepadPosition
 import com.spela.player.presentation.navigation.NavigationIntent
 import com.spela.player.presentation.navigation.SpScreen
 import com.spela.player.presentation.viewmodel.SettingsIntent
@@ -150,6 +152,41 @@ class SettingsConsoleNavigationTest {
 
         onNodeWithContentDescription("Controllers heading").assertExists()
         onNodeWithContentDescription("Player 1: No controller").assertExists()
+    }
+
+    /**
+     * The live input tester (#1355): a simulated press of a canonical input
+     * position lights up its chip, so the user can verify the detected type by
+     * pressing physical buttons. Driven via GamepadPortManager (the same signal
+     * the desktop poller / Android key dispatch feed on-device).
+     */
+    @Test
+    fun inputTesterHighlightsPressedPosition() = runComposeUiTest {
+        val harness = createLoggedInHarness()
+
+        setContent { harness.App() }
+        navigateToSettings(harness)
+        onNodeWithContentDescription("Controls").performClick()
+        advanceQuick(harness)
+
+        onNodeWithTag("settings_category_content_list")
+            .performScrollToNode(hasTestTag("tester_pos_SOUTH"))
+        onNodeWithTag("tester_pos_SOUTH")
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Not pressed"))
+
+        // Simulate pressing the bottom (SOUTH) physical button.
+        harness.gamepadPortManager.reportPositionInput(0, GamepadPosition.SOUTH, pressed = true)
+        advanceQuick(harness)
+        onNodeWithTag("tester_pos_SOUTH")
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Pressed"))
+        onNodeWithTag("tester_pos_EAST")
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Not pressed"))
+
+        // Release.
+        harness.gamepadPortManager.reportPositionInput(0, GamepadPosition.SOUTH, pressed = false)
+        advanceQuick(harness)
+        onNodeWithTag("tester_pos_SOUTH")
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Not pressed"))
     }
 
     @Test
