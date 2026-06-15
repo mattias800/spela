@@ -6,16 +6,17 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDedupeStatEntries_SameSourceCountedOnce_KeepsMinHop(t *testing.T) {
-	// Same origin/metric/key arriving via two paths (e.g. a diamond in Phase 2):
-	// hop 3 via one friend, hop 1 via another. Must collapse to one, min hop.
+func TestDedupeStatEntries_SameSourceCountedOnce_KeepsFirstSeen(t *testing.T) {
+	// Same origin/metric/key arriving via two paths (a diamond): must collapse to
+	// ONE. We keep the first occurrence (NOT the nearest) so a near malicious
+	// relay can't override a distant origin's legitimate copy via a hop tiebreak.
 	entries := []StatEntry{
 		{OriginFingerprint: "C", Hops: 3, Metric: MetricGamePlay, Key: "g1", PlayTimeSeconds: 500, Players: 2},
 		{OriginFingerprint: "C", Hops: 1, Metric: MetricGamePlay, Key: "g1", PlayTimeSeconds: 500, Players: 2},
 	}
 	out := DedupeStatEntries(entries)
 	assert.Len(t, out, 1)
-	assert.Equal(t, 1, out[0].Hops)
+	assert.Equal(t, 3, out[0].Hops, "first occurrence kept, not the nearest")
 	assert.Equal(t, int64(500), out[0].PlayTimeSeconds)
 }
 

@@ -152,6 +152,12 @@ func (h *FederationHandler) HumaRevokePeer(_ context.Context, in *RevokePeerInpu
 	if err := h.Peers.Remove(in.Fingerprint); err != nil {
 		return nil, huma.Error500InternalServerError("failed to revoke peer")
 	}
+	// Drop the revoked friend's cached rollup so its contribution vanishes
+	// immediately (clean blast radius).
+	if err := h.Snapshots.RemovePeerSnapshot(in.Fingerprint); err != nil {
+		slog.Warn("federation: failed to drop revoked peer snapshot", "component", "federation",
+			"peer", federation.ShortFingerprint(in.Fingerprint), "error", err)
+	}
 	slog.Info("federation: revoked peer", "component", "federation",
 		"peer", federation.ShortFingerprint(in.Fingerprint))
 	out := &RevokePeerOutput{}
@@ -343,11 +349,22 @@ func RegisterFederationRoutes(api huma.API, h *FederationHandler, jwtSecret stri
 		OperationID: "federationAggregatedStats",
 		Method:      http.MethodGet,
 		Path:        "/api/federation/stats/aggregated",
-		Summary:     "Federated (mesh) aggregate stats across direct friends",
+		Summary:     "Federated (mesh) aggregate stats, hop-bounded",
 		Tags:        []string{"federation", "stats"},
 		Middlewares: huma.Middlewares{requireAuth, rateLimit},
 		Security:    sec,
 	}, h.HumaAggregatedStats)
+
+	// Admin: force a refresh of cached friend rollups (also runs periodically).
+	huma.Register(api, huma.Operation{
+		OperationID: "federationRefreshStats",
+		Method:      http.MethodPost,
+		Path:        "/api/admin/federation/stats/refresh",
+		Summary:     "Refresh cached friend stat rollups now",
+		Tags:        []string{"federation", "admin"},
+		Middlewares: adminMW,
+		Security:    sec,
+	}, h.HumaRefreshStats)
 }
 
 // RegisterFederationGinRoutes wires raw-gin federation routes: the signed ping

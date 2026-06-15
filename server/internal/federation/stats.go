@@ -37,27 +37,29 @@ type statDedupeKey struct {
 }
 
 // DedupeStatEntries removes duplicate (origin, metric, key) entries, keeping the
-// copy with the smallest hop count. This is what makes mesh aggregation correct
-// when one source is reachable via more than one friend (the diamond case): a
-// source must not be counted twice. Idempotent —
-// DedupeStatEntries(DedupeStatEntries(x)) == DedupeStatEntries(x).
+// FIRST occurrence. This is what makes mesh aggregation correct when one source
+// is reachable via more than one friend (the diamond case): a source must not be
+// counted twice. Idempotent — DedupeStatEntries(DedupeStatEntries(x)) ==
+// DedupeStatEntries(x).
+//
+// We deliberately do NOT prefer the lowest-hop copy: that would let a *near*
+// (possibly malicious) friend's claimed copy of an origin override that origin's
+// legitimate data arriving via a longer path (proximity-as-authority). The kept
+// copy's hop value isn't used downstream — reach filtering happens at the
+// snapshot-store level before aggregation — so first-seen is both safe and
+// sufficient. Honest copies of one origin are identical, so the choice only
+// matters under a misbehaving relay, where first-seen removes the reliable
+// overwrite vector. (Full mitigation = per-origin cryptographic provenance.)
 func DedupeStatEntries(entries []StatEntry) []StatEntry {
-	best := make(map[statDedupeKey]StatEntry, len(entries))
-	order := make([]statDedupeKey, 0, len(entries))
+	seen := make(map[statDedupeKey]bool, len(entries))
+	out := make([]StatEntry, 0, len(entries))
 	for _, e := range entries {
 		k := statDedupeKey{e.OriginFingerprint, e.Metric, e.Key}
-		if existing, ok := best[k]; ok {
-			if e.Hops < existing.Hops {
-				best[k] = e
-			}
+		if seen[k] {
 			continue
 		}
-		best[k] = e
-		order = append(order, k)
-	}
-	out := make([]StatEntry, 0, len(order))
-	for _, k := range order {
-		out = append(out, best[k])
+		seen[k] = true
+		out = append(out, e)
 	}
 	return out
 }
