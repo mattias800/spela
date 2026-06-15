@@ -23,6 +23,7 @@ import {
   GitCompareArrows,
   Puzzle,
   ShieldAlert,
+  Network,
   Binary,
 } from "lucide-react";
 import { Sidebar } from "@/components/ui";
@@ -163,6 +164,11 @@ export function AppLayout() {
                 to: "/admin/system-events",
                 icon: ShieldAlert,
                 label: "System Events",
+              },
+              {
+                to: "/admin/federation",
+                icon: Network,
+                label: "Federation",
               },
             ],
           },

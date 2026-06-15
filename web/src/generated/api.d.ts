@@ -184,6 +184,142 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/federation/catalog/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Refresh cached friend game catalogs now */
+        post: operations["federationRefreshCatalog"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/federation/exchanges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the federation exchange ledger (observability) */
+        get: operations["federationListExchanges"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/federation/invite": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Issue a federation pairing invite */
+        post: operations["federationIssueInvite"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/federation/peers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List federation peers (with health) */
+        get: operations["federationListPeers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/federation/peers/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Accept a friend's invite and pair */
+        post: operations["federationAcceptInvite"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/federation/peers/{fingerprint}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Revoke a federation peer */
+        delete: operations["federationRevokePeer"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/federation/peers/{fingerprint}/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Test connection to a peer */
+        post: operations["federationTestPeer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/federation/stats/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Refresh cached friend stat rollups now */
+        post: operations["federationRefreshStats"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/games/scan": {
         parameters: {
             query?: never;
@@ -2516,6 +2652,57 @@ export interface paths {
          * @description Returns games the caller played roughly 1..10 years ago (within a 3-day window of today's date).
          */
         get: operations["getYourAnniversaries"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/federation/catalog/available": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Games available across the friend mesh, hop-bounded */
+        get: operations["federationAvailableGames"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/federation/pair": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Pairing callback (server-to-server bootstrap) */
+        post: operations["federationPair"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/federation/stats/aggregated": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Federated (mesh) aggregate stats, hop-bounded */
+        get: operations["federationAggregatedStats"];
         put?: never;
         post?: never;
         delete?: never;
@@ -5225,6 +5412,16 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AcceptInviteBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/AcceptInviteBody.json
+             */
+            readonly $schema?: string;
+            invite: string;
+            name: string;
+        };
         Achievement: {
             badgeUrl: string;
             description: string;
@@ -5425,6 +5622,25 @@ export interface components {
             category: string;
             rating: string;
         };
+        AggregatedStat: {
+            key: string;
+            label: string;
+            metric: string;
+            sources: components["schemas"]["StatEntry"][];
+            /** Format: int64 */
+            totalPlayTimeSeconds: number;
+            /** Format: int64 */
+            totalPlayers: number;
+        };
+        AggregatedStatsOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/AggregatedStatsOutputBody.json
+             */
+            readonly $schema?: string;
+            stats: components["schemas"]["AggregatedStat"][];
+        };
         AlmostDoneGame: {
             /** Format: double */
             completionPercent: number;
@@ -5574,6 +5790,15 @@ export interface components {
             /** @description Registered user profile. */
             user?: components["schemas"]["UserResponse"];
         };
+        AvailableGamesOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/AvailableGamesOutputBody.json
+             */
+            readonly $schema?: string;
+            games: components["schemas"]["CatalogAvailability"][];
+        };
         BackfillImagesResponse: {
             /**
              * Format: uri
@@ -5662,6 +5887,14 @@ export interface components {
             deletedCount: number;
             /** Format: int64 */
             freedBytes: number;
+        };
+        CatalogAvailability: {
+            console: string;
+            key: string;
+            local: boolean;
+            /** Format: int64 */
+            originCount: number;
+            title: string;
         };
         ChallengeAttemptResponse: {
             /**
@@ -6461,6 +6694,57 @@ export interface components {
             /** Format: int64 */
             totalGames: number;
         };
+        FederationExchange: {
+            /** Format: int64 */
+            bytes: number;
+            /** Format: date-time */
+            createdAt: string;
+            dataClass: string;
+            direction: string;
+            /** Format: int64 */
+            durationMs: number;
+            error: string;
+            /** Format: date-time */
+            finishedAt: string;
+            /** Format: int64 */
+            httpStatus: number;
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            itemCount: number;
+            /** Format: int64 */
+            maxHops: number;
+            operation: string;
+            peerFingerprint: string;
+            peerName: string;
+            requestId: string;
+            /** Format: date-time */
+            startedAt: string;
+            status: string;
+        };
+        FederationPeer: {
+            baseUrl: string;
+            consumePolicy: string;
+            /** Format: date-time */
+            createdAt: string;
+            fingerprint: string;
+            /** Format: int64 */
+            id: number;
+            /** Format: date-time */
+            lastContactAt: string | null;
+            lastError: string;
+            /** Format: date-time */
+            lastErrorAt: string | null;
+            /** Format: date-time */
+            lastSuccessAt: string | null;
+            name: string;
+            publicKey: string;
+            reachable: boolean;
+            sharePolicy: string;
+            status: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
         ForYouResponse: {
             /**
              * Format: uri
@@ -6909,6 +7193,15 @@ export interface components {
             readonly $schema?: string;
             username?: string;
         };
+        IssueInviteOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/IssueInviteOutputBody.json
+             */
+            readonly $schema?: string;
+            invite: string;
+        };
         JoinByInviteCodeRequest: {
             /**
              * Format: uri
@@ -6957,6 +7250,15 @@ export interface components {
             readonly $schema?: string;
             blocked: components["schemas"]["BlockedUserResponse"][];
         };
+        ListExchangesOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/ListExchangesOutputBody.json
+             */
+            readonly $schema?: string;
+            exchanges: components["schemas"]["FederationExchange"][];
+        };
         ListMyNetplayInvitesResponse: {
             /**
              * Format: uri
@@ -6967,6 +7269,15 @@ export interface components {
             data: components["schemas"]["NetplayInviteResponse"][];
             /** Format: int64 */
             total: number;
+        };
+        ListPeersOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/ListPeersOutputBody.json
+             */
+            readonly $schema?: string;
+            peers: components["schemas"]["FederationPeer"][];
         };
         LongestGameResponse: {
             consoleId: string;
@@ -7298,6 +7609,31 @@ export interface components {
             /** Format: int64 */
             total: number;
         };
+        PairRequestBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/PairRequestBody.json
+             */
+            readonly $schema?: string;
+            baseUrl: string;
+            fingerprint: string;
+            nonce: string;
+            publicKey: string;
+            sig: string;
+        };
+        PairResponseBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/PairResponseBody.json
+             */
+            readonly $schema?: string;
+            baseUrl: string;
+            fingerprint: string;
+            publicKey: string;
+            status: string;
+        };
         ParentGameResponse: {
             coverUrl: string;
             id: string;
@@ -7312,6 +7648,24 @@ export interface components {
             readonly $schema?: string;
             /** Format: int64 */
             count: number;
+        };
+        PingResult: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/PingResult.json
+             */
+            readonly $schema?: string;
+            /** Format: int64 */
+            clockSkewSeconds: number;
+            error: string;
+            fingerprintMatch: boolean;
+            /** Format: int64 */
+            latencyMs: number;
+            peerFingerprint: string;
+            /** Format: int64 */
+            peerUnixTime: number;
+            reachable: boolean;
         };
         PlatformCount: {
             consoleId: string;
@@ -7563,6 +7917,18 @@ export interface components {
             game: string;
             message: string;
         };
+        RefreshCatalogOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/RefreshCatalogOutputBody.json
+             */
+            readonly $schema?: string;
+            /** Format: int64 */
+            failed: number;
+            /** Format: int64 */
+            refreshed: number;
+        };
         RefreshCoreResponse: {
             /**
              * Format: uri
@@ -7588,6 +7954,18 @@ export interface components {
             sizeBytes: number;
             /** @description Source URL persisted on the row. Empty for buildbot-default cores. */
             sourceUrl: string;
+        };
+        RefreshStatsOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/RefreshStatsOutputBody.json
+             */
+            readonly $schema?: string;
+            /** Format: int64 */
+            failed: number;
+            /** Format: int64 */
+            refreshed: number;
         };
         RegisterDeviceRequest: {
             /**
@@ -7671,6 +8049,15 @@ export interface components {
              */
             readonly $schema?: string;
             reported: boolean;
+        };
+        RevokePeerOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/RevokePeerOutputBody.json
+             */
+            readonly $schema?: string;
+            revoked: boolean;
         };
         RomHackGameResponse: {
             coverUrl: string;
@@ -8336,6 +8723,18 @@ export interface components {
             status: string;
             title: string;
             verificationStatus: string;
+        };
+        StatEntry: {
+            /** Format: int64 */
+            hops: number;
+            key: string;
+            label: string;
+            metric: string;
+            originFingerprint: string;
+            /** Format: int64 */
+            playTimeSeconds: number;
+            /** Format: int64 */
+            players: number;
         };
         StatusMessageResponse: {
             /**
@@ -9181,6 +9580,253 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EnrichmentStatusResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    federationRefreshCatalog: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RefreshCatalogOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    federationListExchanges: {
+        parameters: {
+            query?: {
+                peer?: string;
+                direction?: string;
+                status?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListExchangesOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    federationIssueInvite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IssueInviteOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    federationListPeers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListPeersOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    federationAcceptInvite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AcceptInviteBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PairResponseBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    federationRevokePeer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Peer fingerprint (base32). */
+                fingerprint: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RevokePeerOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    federationTestPeer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Peer fingerprint (base32). */
+                fingerprint: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PingResult"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    federationRefreshStats: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RefreshStatsOutputBody"];
                 };
             };
             /** @description Error */
@@ -13406,6 +14052,106 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AnniversariesResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    federationAvailableGames: {
+        parameters: {
+            query?: {
+                maxHops?: number;
+                remoteOnly?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AvailableGamesOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    federationPair: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Spela-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PairRequestBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PairResponseBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    federationAggregatedStats: {
+        parameters: {
+            query?: {
+                metric?: "game_play" | "player_play";
+                limit?: number;
+                maxHops?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AggregatedStatsOutputBody"];
                 };
             };
             /** @description Error */
