@@ -2,6 +2,7 @@ package federation
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/spela/server/internal/db"
 )
@@ -24,6 +25,30 @@ const (
 var AllDataClasses = []DataClass{
 	DataClassStats, DataClassTopPlayers, DataClassCatalog, DataClassDownload,
 	DataClassPresence, DataClassReviews, DataClassAchievement,
+}
+
+// knownDataClasses is the set form of AllDataClasses for O(1) validation.
+var knownDataClasses = func() map[DataClass]bool {
+	m := make(map[DataClass]bool, len(AllDataClasses))
+	for _, c := range AllDataClasses {
+		m[c] = true
+	}
+	return m
+}()
+
+// ValidatePolicyMap converts a raw class->allowed map (e.g. from an admin API
+// request) into a typed policy, rejecting any unknown data class so a typo or
+// hostile payload can't silently persist a meaningless key.
+func ValidatePolicyMap(raw map[string]bool) (map[DataClass]bool, error) {
+	out := make(map[DataClass]bool, len(raw))
+	for k, v := range raw {
+		dc := DataClass(k)
+		if !knownDataClasses[dc] {
+			return nil, fmt.Errorf("unknown data class %q", k)
+		}
+		out[dc] = v
+	}
+	return out, nil
 }
 
 // MarshalPolicy serializes a data-class -> allowed map to JSON for storage.

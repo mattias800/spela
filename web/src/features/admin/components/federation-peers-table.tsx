@@ -9,6 +9,7 @@ interface FederationPeersTableProps {
   isLoading: boolean;
   testingFingerprint: string | null;
   onTest: (fingerprint: string) => void;
+  onEditPolicy: (peer: FederationPeer) => void;
   onRevoke: (peer: FederationPeer) => void;
 }
 
@@ -19,6 +20,7 @@ export function FederationPeersTable({
   isLoading,
   testingFingerprint,
   onTest,
+  onEditPolicy,
   onRevoke,
 }: FederationPeersTableProps) {
   return (
@@ -86,6 +88,14 @@ export function FederationPeersTable({
                         data-testid="test-connection-button"
                       >
                         Test connection
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onEditPolicy(peer)}
+                        data-testid="edit-policy-button"
+                      >
+                        Sharing
                       </Button>
                       <Button
                         variant="ghost"

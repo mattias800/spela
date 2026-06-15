@@ -85,3 +85,28 @@ export function useRevokeFederationPeer() {
     },
   });
 }
+
+// Set a peer's per-class share/consume policy (what we expose to / accept
+// from them). Refresh peers so the table reflects the new policy.
+export function useUpdateFederationPolicy() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: {
+      fingerprint: string;
+      sharePolicy: Record<string, boolean>;
+      consumePolicy: Record<string, boolean>;
+    }) =>
+      unwrap(
+        typedApi.PUT("/api/admin/federation/peers/{fingerprint}/policy", {
+          params: { path: { fingerprint: vars.fingerprint } },
+          body: {
+            sharePolicy: vars.sharePolicy,
+            consumePolicy: vars.consumePolicy,
+          },
+        }),
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "federation", "peers"] });
+    },
+  });
+}

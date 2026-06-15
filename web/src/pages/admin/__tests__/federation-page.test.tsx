@@ -12,6 +12,12 @@ vi.mock("@/hooks/use-federation", () => ({
   useIssueFederationInvite: vi.fn(),
   useAcceptFederationInvite: vi.fn(),
   useRevokeFederationPeer: vi.fn(),
+  useUpdateFederationPolicy: vi.fn(),
+}));
+
+vi.mock("@/hooks/use-admin", () => ({
+  useServerSettings: vi.fn(),
+  useUpdateSettings: vi.fn(),
 }));
 
 import {
@@ -21,7 +27,9 @@ import {
   useIssueFederationInvite,
   useAcceptFederationInvite,
   useRevokeFederationPeer,
+  useUpdateFederationPolicy,
 } from "@/hooks/use-federation";
+import { useServerSettings, useUpdateSettings } from "@/hooks/use-admin";
 import { AdminFederationPage } from "../federation-page";
 
 const mockUsePeers = useFederationPeers as ReturnType<typeof vi.fn>;
@@ -30,10 +38,15 @@ const mockUseTest = useTestFederationPeer as ReturnType<typeof vi.fn>;
 const mockUseIssue = useIssueFederationInvite as ReturnType<typeof vi.fn>;
 const mockUseAccept = useAcceptFederationInvite as ReturnType<typeof vi.fn>;
 const mockUseRevoke = useRevokeFederationPeer as ReturnType<typeof vi.fn>;
+const mockUsePolicy = useUpdateFederationPolicy as ReturnType<typeof vi.fn>;
+const mockUseSettings = useServerSettings as ReturnType<typeof vi.fn>;
+const mockUseUpdateSettings = useUpdateSettings as ReturnType<typeof vi.fn>;
 const mockTestMutate = vi.fn();
 const mockIssueMutate = vi.fn();
 const mockAcceptMutate = vi.fn();
 const mockRevokeMutate = vi.fn();
+const mockPolicyMutate = vi.fn();
+const mockUpdateSettingsMutate = vi.fn();
 
 function renderPage() {
   const queryClient = new QueryClient({
@@ -58,6 +71,12 @@ beforeEach(() => {
   mockUseIssue.mockReturnValue({ mutate: mockIssueMutate, isPending: false });
   mockUseAccept.mockReturnValue({ mutate: mockAcceptMutate, isPending: false });
   mockUseRevoke.mockReturnValue({ mutate: mockRevokeMutate, isPending: false });
+  mockUsePolicy.mockReturnValue({ mutate: mockPolicyMutate, isPending: false });
+  mockUseSettings.mockReturnValue({ data: { federation_relay_enabled: "false" } });
+  mockUseUpdateSettings.mockReturnValue({
+    mutate: mockUpdateSettingsMutate,
+    isPending: false,
+  });
 });
 
 const onePeer = {
@@ -203,6 +222,40 @@ describe("AdminFederationPage", () => {
 
     expect(mockRevokeMutate).toHaveBeenCalledWith(
       "abcdef1234567890xyz",
+      expect.anything(),
+    );
+  });
+
+  it("edits a peer's sharing policy and saves it", async () => {
+    mockUsePeers.mockReturnValue(onePeer);
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByTestId("edit-policy-button"));
+    expect(screen.getByTestId("policy-row-stats")).toBeInTheDocument();
+
+    await user.click(screen.getByTestId("share-stats"));
+    await user.click(screen.getByTestId("consume-download"));
+    await user.click(screen.getByTestId("save-policy-button"));
+
+    expect(mockPolicyMutate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        fingerprint: "abcdef1234567890xyz",
+        sharePolicy: { stats: true },
+        consumePolicy: { download: true },
+      }),
+      expect.anything(),
+    );
+  });
+
+  it("toggles the server-wide ROM relay setting", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByTestId("relay-toggle"));
+
+    expect(mockUpdateSettingsMutate).toHaveBeenCalledWith(
+      { federation_relay_enabled: "true" },
       expect.anything(),
     );
   });

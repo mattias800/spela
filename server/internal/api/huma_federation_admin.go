@@ -169,6 +169,62 @@ func (h *FederationHandler) HumaRevokePeer(_ context.Context, in *RevokePeerInpu
 	return out, nil
 }
 
+// --- Update peer policy ----------------------------------------------------
+
+type UpdatePeerPolicyBody struct {
+	SharePolicy   map[string]bool `json:"sharePolicy" doc:"Data classes we expose to this peer (class -> allowed)."`
+	ConsumePolicy map[string]bool `json:"consumePolicy" doc:"Data classes we accept from this peer (class -> allowed)."`
+}
+type UpdatePeerPolicyInput struct {
+	Fingerprint string `path:"fingerprint" pattern:"^[a-z2-7]{52}$" maxLength:"64" doc:"Peer fingerprint (base32)."`
+	Body        UpdatePeerPolicyBody
+}
+type UpdatePeerPolicyOutput struct {
+	Body struct {
+		Peer db.FederationPeer `json:"peer"`
+	}
+}
+
+// HumaUpdatePeerPolicy sets the per-friend share/consume policy — which data
+// classes we expose to and accept from this peer. Unknown data classes are
+// rejected so a typo or hostile payload can't persist a meaningless key.
+func (h *FederationHandler) HumaUpdatePeerPolicy(_ context.Context, in *UpdatePeerPolicyInput) (*UpdatePeerPolicyOutput, error) {
+	peer, err := h.Peers.GetByFingerprint(in.Fingerprint)
+	if err != nil {
+		return nil, huma.Error404NotFound("peer not found")
+	}
+	share, err := federation.ValidatePolicyMap(in.Body.SharePolicy)
+	if err != nil {
+		return nil, huma.Error400BadRequest(err.Error())
+	}
+	consume, err := federation.ValidatePolicyMap(in.Body.ConsumePolicy)
+	if err != nil {
+		return nil, huma.Error400BadRequest(err.Error())
+	}
+	shareJSON, err := federation.MarshalPolicy(share)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("failed to encode share policy")
+	}
+	consumeJSON, err := federation.MarshalPolicy(consume)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("failed to encode consume policy")
+	}
+	if err := h.Peers.SetPolicies(in.Fingerprint, shareJSON, consumeJSON); err != nil {
+		return nil, huma.Error500InternalServerError("failed to update policy")
+	}
+	// Re-read so the response carries the freshly-bumped UpdatedAt, not the
+	// pre-update timestamp from the existence check above.
+	peer, err = h.Peers.GetByFingerprint(in.Fingerprint)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("failed to read updated peer")
+	}
+	slog.Info("federation: updated peer policy", "component", "federation",
+		"peer", federation.ShortFingerprint(in.Fingerprint))
+	out := &UpdatePeerPolicyOutput{}
+	out.Body.Peer = *peer
+	return out, nil
+}
+
 // --- Test connection (active diagnostic) -----------------------------------
 
 type TestPeerInput struct {
@@ -337,6 +393,16 @@ func RegisterFederationRoutes(api huma.API, h *FederationHandler, jwtSecret stri
 		Middlewares: adminMW,
 		Security:    sec,
 	}, h.HumaRevokePeer)
+
+	huma.Register(api, huma.Operation{
+		OperationID: "federationUpdatePeerPolicy",
+		Method:      http.MethodPut,
+		Path:        "/api/admin/federation/peers/{fingerprint}/policy",
+		Summary:     "Update a peer's share/consume policy",
+		Tags:        []string{"federation", "admin"},
+		Middlewares: adminMW,
+		Security:    sec,
+	}, h.HumaUpdatePeerPolicy)
 
 	huma.Register(api, huma.Operation{
 		OperationID: "federationListExchanges",

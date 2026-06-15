@@ -6,6 +6,8 @@ import { FederationPeersTable } from "@/features/admin/components/federation-pee
 import { FederationExchangeTable } from "@/features/admin/components/federation-exchange-table";
 import { FederationErrorBlock } from "@/features/admin/components/federation-error-block";
 import { PairFriendDialog } from "@/features/admin/components/pair-friend-dialog";
+import { PolicyEditorDialog } from "@/features/admin/components/policy-editor-dialog";
+import { FederationRelayToggle } from "@/features/admin/components/federation-relay-toggle";
 import {
   useFederationPeers,
   useFederationExchanges,
@@ -34,6 +36,7 @@ export function AdminFederationPage() {
   const revokePeer = useRevokeFederationPeer();
   const [testing, setTesting] = useState<string | null>(null);
   const [pairOpen, setPairOpen] = useState(false);
+  const [policyTarget, setPolicyTarget] = useState<FederationPeer | null>(null);
   const [revokeTarget, setRevokeTarget] = useState<FederationPeer | null>(null);
 
   const handleTest = (fingerprint: string) => {
@@ -87,9 +90,14 @@ export function AdminFederationPage() {
               isLoading={peersLoading}
               testingFingerprint={testing}
               onTest={handleTest}
+              onEditPolicy={setPolicyTarget}
               onRevoke={setRevokeTarget}
             />
           )}
+        </TitledSection>
+
+        <TitledSection title="ROM relay">
+          <FederationRelayToggle />
         </TitledSection>
 
         <TitledSection title="Recent activity">
@@ -109,6 +117,13 @@ export function AdminFederationPage() {
       </SectionList>
 
       <PairFriendDialog open={pairOpen} onClose={() => setPairOpen(false)} />
+
+      {policyTarget && (
+        <PolicyEditorDialog
+          peer={policyTarget}
+          onClose={() => setPolicyTarget(null)}
+        />
+      )}
 
       <ConfirmDeleteModal
         open={revokeTarget !== null}

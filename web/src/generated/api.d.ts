@@ -286,6 +286,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/federation/peers/{fingerprint}/policy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update a peer's share/consume policy */
+        put: operations["federationUpdatePeerPolicy"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/federation/peers/{fingerprint}/test": {
         parameters: {
             query?: never;
@@ -9055,6 +9072,31 @@ export interface components {
             /** Format: int64 */
             inputDelay?: number;
         };
+        UpdatePeerPolicyBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/UpdatePeerPolicyBody.json
+             */
+            readonly $schema?: string;
+            /** @description Data classes we accept from this peer (class -> allowed). */
+            consumePolicy: {
+                [key: string]: boolean;
+            };
+            /** @description Data classes we expose to this peer (class -> allowed). */
+            sharePolicy: {
+                [key: string]: boolean;
+            };
+        };
+        UpdatePeerPolicyOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/UpdatePeerPolicyOutputBody.json
+             */
+            readonly $schema?: string;
+            peer: components["schemas"]["FederationPeer"];
+        };
         UpdatePreferencesRequest: {
             /**
              * Format: uri
@@ -9766,6 +9808,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RevokePeerOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    federationUpdatePeerPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Peer fingerprint (base32). */
+                fingerprint: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdatePeerPolicyBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdatePeerPolicyOutputBody"];
                 };
             };
             /** @description Error */

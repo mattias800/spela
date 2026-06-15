@@ -44,6 +44,17 @@ func (s PeerStore) SetStatus(fp, status string) error {
 		Update("status", status).Error
 }
 
+// SetPolicies updates only a peer's share/consume policy JSON. Targeted update
+// (not Upsert) so the rest of the peer row — identity, status, health — is
+// untouched.
+func (s PeerStore) SetPolicies(fp, sharePolicy, consumePolicy string) error {
+	return s.DB.Model(&db.FederationPeer{}).Where("fingerprint = ?", fp).
+		Updates(map[string]interface{}{
+			"share_policy":   sharePolicy,
+			"consume_policy": consumePolicy,
+		}).Error
+}
+
 // Remove hard-deletes a peer (revocation). After this, signed requests from the
 // peer no longer verify.
 //
