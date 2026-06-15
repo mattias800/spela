@@ -5,6 +5,7 @@ import com.spela.player.data.device.DeviceManager
 import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.client.models.ConsoleKeyMappingDTO
 import com.spela.client.models.UpdateDevicePreferencesRequest
+import com.spela.client.models.UpdateGameKeyMappingRequest
 import com.spela.client.models.UpdatePreferencesRequest
 import com.spela.client.models.UserPreferencesResponse
 import com.spela.player.data.remote.dto.toDomain
@@ -333,6 +334,37 @@ class PreferencesRepositoryImpl(
                     consoleKeyMappings = consoleMappings,
                 )
             )
+        }
+    }
+
+    override suspend fun pushGameKeyMappingToServer(gameId: String, bindings: Map<Int, Int>) {
+        runCatching {
+            apiClient.updateGameKeyMapping(
+                gameId,
+                UpdateGameKeyMappingRequest(
+                    customMapping = bindings.entries.associate { it.key.toString() to it.value.toString() },
+                ),
+            )
+        }
+    }
+
+    override suspend fun deleteGameKeyMappingOnServer(gameId: String) {
+        runCatching { apiClient.deleteGameKeyMapping(gameId) }
+    }
+
+    override suspend fun syncGameKeyMappingFromServer(gameId: String) {
+        runCatching {
+            val response = apiClient.getGameKeyMapping(gameId)
+            val bindings = response.customMapping.entries.mapNotNull { (retro, key) ->
+                val r = retro.toIntOrNull() ?: return@mapNotNull null
+                val k = key.toIntOrNull() ?: return@mapNotNull null
+                r to k
+            }.toMap()
+            // Only import a real server override; never wipe a local-only override
+            // when the server has none (e.g. an offline save not yet pushed).
+            if (bindings.isNotEmpty()) {
+                keyMappingRepository.setGameMapping(gameId, bindings)
+            }
         }
     }
 }

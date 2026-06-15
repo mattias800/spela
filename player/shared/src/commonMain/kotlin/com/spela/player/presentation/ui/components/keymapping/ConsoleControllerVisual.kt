@@ -239,8 +239,8 @@ private fun ControllerButton(
 
 /**
  * Builds a map of button visual states from a layout and mapping state.
- * Used by both KeyMappingScreen and KeyMappingWizard to determine which
- * buttons are mapped, highlighted, or unmapped.
+ * Used by KeyMappingScreen to determine which buttons are mapped,
+ * highlighted, or unmapped.
  */
 internal fun buildButtonStates(
     layout: ConsoleButtonLayout,

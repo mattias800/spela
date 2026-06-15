@@ -356,11 +356,13 @@ func (h *UserHandler) HumaUpdatePreferences(ctx context.Context, in *UpdatePrefe
 			if err := h.DB.Where("LOWER(abbreviation) = LOWER(?)", consoleAbbr).First(&console).Error; err != nil {
 				continue
 			}
-			// Only delete the row when the user has cleared BOTH layers: the
-			// keycode mapping (empty selectedMapping) and the positional gamepad
-			// mapping (#1334). A console may carry positional bindings with no
-			// keyboard preset, so selectedMapping alone must not wipe the row.
-			if km.SelectedMapping == "" && len(km.PositionMappings) == 0 {
+			// Only delete the row when the user has cleared ALL layers: the
+			// selected preset, the custom keycode map, and the positional gamepad
+			// map (#1334/#1336). The client always sends selectedMapping="" and
+			// carries real data in customMapping / positionMappings, so guarding on
+			// selectedMapping alone (or without customMapping) wrongly deletes a
+			// console that has a custom keycode or positional mapping.
+			if km.SelectedMapping == "" && len(km.CustomMapping) == 0 && len(km.PositionMappings) == 0 {
 				h.DB.Unscoped().Where("user_id = ? AND console_id = ?", uid, console.ID).
 					Delete(&db.ConsoleKeyMappingPreference{})
 			} else {

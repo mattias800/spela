@@ -47,6 +47,7 @@ class KeyMappingViewModelTest {
         Dispatchers.setMain(testDispatcher)
         fakeRepo = FakeKeyMappingRepository()
         fakePrefsRepo = FakePreferencesRepository()
+        fakePrefsRepo.keyMappingRepo = fakeRepo
     }
 
     @AfterTest
@@ -83,6 +84,55 @@ class KeyMappingViewModelTest {
         assertEquals(DefaultKeyMappings.NES.buttons.size, state.buttonsForConsole.size)
         // Should have the default mapping
         assertEquals(fakeRepo.getDefaultMapping(), state.currentBindings)
+    }
+
+    @Test
+    fun saveAsGameOverridePushesToServer() = runTest(testDispatcher) {
+        val vm = createViewModel()
+        vm.onIntent(KeyMappingIntent.LoadGameMapping("game-1", "nes"))
+        advanceUntilIdle()
+        vm.onIntent(KeyMappingIntent.StartSingleButtonMap(8))
+        advanceUntilIdle()
+        vm.onIntent(KeyMappingIntent.CaptureButton(99))
+        advanceUntilIdle()
+
+        vm.onIntent(KeyMappingIntent.SaveAsGameOverride("game-1"))
+        advanceUntilIdle()
+
+        // Local + server both updated (#1336).
+        assertTrue(vm.state.value.hasGameOverride)
+        assertEquals("game-1", fakePrefsRepo.pushedGameMapping?.first)
+        assertEquals(99, fakePrefsRepo.pushedGameMapping?.second?.get(8))
+    }
+
+    @Test
+    fun clearGameOverrideDeletesOnServer() = runTest(testDispatcher) {
+        val vm = createViewModel()
+        vm.onIntent(KeyMappingIntent.LoadGameMapping("game-1", "nes"))
+        advanceUntilIdle()
+        vm.onIntent(KeyMappingIntent.SaveAsGameOverride("game-1"))
+        advanceUntilIdle()
+
+        vm.onIntent(KeyMappingIntent.ClearGameOverride("game-1"))
+        advanceUntilIdle()
+
+        assertFalse(vm.state.value.hasGameOverride)
+        assertEquals("game-1", fakePrefsRepo.deletedGameMappingId)
+    }
+
+    @Test
+    fun loadGameMappingPullsServerOverride() = runTest(testDispatcher) {
+        // Another device's override lives only on the server.
+        fakePrefsRepo.serverGameMapping = mapOf(8 to 77)
+        val vm = createViewModel()
+
+        vm.onIntent(KeyMappingIntent.LoadGameMapping("game-1", "nes"))
+        advanceUntilIdle()
+
+        // The pull ran and imported the server override into the effective mapping.
+        assertTrue(fakePrefsRepo.syncedGameMappingIds.contains("game-1"))
+        assertTrue(vm.state.value.hasGameOverride)
+        assertEquals(77, vm.state.value.currentBindings[8])
     }
 
     @Test
@@ -387,6 +437,11 @@ class KeyMappingViewModelTest {
 
     private class FakePreferencesRepository : PreferencesRepository {
         var pushKeyMappingsCalled = false
+        var pushedGameMapping: Pair<String, Map<Int, Int>>? = null
+        var deletedGameMappingId: String? = null
+        val syncedGameMappingIds = mutableListOf<String>()
+        var serverGameMapping: Map<Int, Int> = emptyMap()
+        var keyMappingRepo: KeyMappingRepository? = null
         override suspend fun getPreferences(): Result<UserPreferences> = Result.success(UserPreferences())
         override suspend fun updatePreferences(
             showPerformanceOverlay: Boolean?, autoSaveEnabled: Boolean?, autoLoadSaveEnabled: Boolean?,
@@ -404,6 +459,14 @@ class KeyMappingViewModelTest {
         override suspend fun pushDeviceShaderOverridesToServer() {}
         override suspend fun syncKeyMappingsFromServer() {}
         override suspend fun pushKeyMappingsToServer() { pushKeyMappingsCalled = true }
+        override suspend fun pushGameKeyMappingToServer(gameId: String, bindings: Map<Int, Int>) {
+            pushedGameMapping = gameId to bindings
+        }
+        override suspend fun deleteGameKeyMappingOnServer(gameId: String) { deletedGameMappingId = gameId }
+        override suspend fun syncGameKeyMappingFromServer(gameId: String) {
+            syncedGameMappingIds.add(gameId)
+            if (serverGameMapping.isNotEmpty()) keyMappingRepo?.setGameMapping(gameId, serverGameMapping)
+        }
         override fun getOrientationLock(): String = "auto"
         override fun setOrientationLock(mode: String) {}
         override fun getControlTab(consoleId: String): String =

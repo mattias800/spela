@@ -572,6 +572,9 @@ private class StubPreferencesRepository : PreferencesRepository {
     override suspend fun pushDeviceShaderOverridesToServer() = Unit
     override suspend fun syncKeyMappingsFromServer() = Unit
     override suspend fun pushKeyMappingsToServer() = Unit
+    override suspend fun pushGameKeyMappingToServer(gameId: String, bindings: Map<Int, Int>) = Unit
+    override suspend fun deleteGameKeyMappingOnServer(gameId: String) = Unit
+    override suspend fun syncGameKeyMappingFromServer(gameId: String) = Unit
     override fun getOrientationLock(): String = "auto"
     override fun setOrientationLock(mode: String) = Unit
     override fun getControlTab(consoleId: String): String = "gamepad"

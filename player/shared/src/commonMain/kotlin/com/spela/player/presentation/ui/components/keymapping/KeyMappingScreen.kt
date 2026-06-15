@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.ConsoleButtonLayout
 import com.spela.player.presentation.state.KeyMappingState
@@ -56,6 +57,12 @@ fun KeyMappingScreen(
     onLoadPreset: (() -> Unit)? = null,
     onCancelMapping: (() -> Unit)? = null,
     onClearBinding: (() -> Unit)? = null,
+    /** When non-null, a game is loaded and the current bindings can be saved as a
+     *  per-game override (#1336). */
+    onSaveGameOverride: (() -> Unit)? = null,
+    /** When non-null and [hasGameOverride], the per-game override can be cleared. */
+    onClearGameOverride: (() -> Unit)? = null,
+    hasGameOverride: Boolean = false,
     keyNameResolver: (Int) -> String = { "Key $it" },
     portLabel: String? = null,
     modifier: Modifier = Modifier,
@@ -235,6 +242,29 @@ fun KeyMappingScreen(
                     style = SpButtonStyle.Ghost,
                     modifier = Modifier.weight(1f),
                 )
+            }
+
+            // Per-game override affordance (#1336): only when a game is loaded.
+            if (onSaveGameOverride != null) {
+                Spacer(Modifier.height(SpSpacing.Medium))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+                ) {
+                    SpButton(
+                        text = "Save for this game",
+                        onClick = onSaveGameOverride,
+                        modifier = Modifier.weight(1f).testTag("save_game_override"),
+                    )
+                    if (hasGameOverride && onClearGameOverride != null) {
+                        SpButton(
+                            text = "Clear game override",
+                            onClick = onClearGameOverride,
+                            style = SpButtonStyle.Ghost,
+                            modifier = Modifier.weight(1f).testTag("clear_game_override"),
+                        )
+                    }
+                }
             }
 
             Spacer(Modifier.height(SpSpacing.Default))

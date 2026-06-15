@@ -884,6 +884,104 @@ func TestUpdatePreferences_SetConsolePositionMappings(t *testing.T) {
 	assertPositionMappings(prefs)
 }
 
+// TestUpdatePreferences_SetConsoleCustomKeycodeMapping verifies a console carrying
+// ONLY a custom keycode mapping (selectedMapping empty, no positional layer) is
+// preserved, not deleted — the #1336 sync bug where selectedMapping="" was treated
+// as a delete even with a non-empty customMapping (the client always sends
+// selectedMapping="" and carries the real mapping in customMapping).
+func TestUpdatePreferences_SetConsoleCustomKeycodeMapping(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	token := registerAndGetToken(t, router)
+
+	// Custom keycode map: RetroPad A (id "8") -> platform keycode "99".
+	body, _ := json.Marshal(map[string]interface{}{
+		"consoleKeyMappings": map[string]interface{}{
+			"nes": map[string]interface{}{
+				"selectedMapping":  "",
+				"customMapping":    map[string]string{"8": "99"},
+				"positionMappings": map[string]int{},
+			},
+		},
+	})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("PUT", "/api/user/preferences", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	assertCustomMapping := func(prefs map[string]interface{}) {
+		ckm, ok := prefs["consoleKeyMappings"].(map[string]interface{})
+		assert.True(t, ok, "consoleKeyMappings present")
+		nes, ok := ckm["nes"].(map[string]interface{})
+		assert.True(t, ok, "nes mapping present (custom-keycode-only row not deleted)")
+		cm, ok := nes["customMapping"].(map[string]interface{})
+		assert.True(t, ok, "customMapping present")
+		assert.Equal(t, "99", cm["8"])
+	}
+
+	var prefs map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &prefs)
+	assertCustomMapping(prefs)
+
+	// GET to verify persistence across requests / devices.
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/user/preferences", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	prefs = map[string]interface{}{}
+	json.Unmarshal(w.Body.Bytes(), &prefs)
+	assertCustomMapping(prefs)
+}
+
+// TestUpdatePreferences_ClearConsoleKeyMapping verifies that pushing an
+// all-empty console mapping (no preset, no custom keycodes, no positional layer)
+// still deletes the row — the genuine "cleared" case must remain a delete.
+func TestUpdatePreferences_ClearConsoleKeyMapping(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	token := registerAndGetToken(t, router)
+
+	put := func(custom map[string]string, pos map[string]int) {
+		body, _ := json.Marshal(map[string]interface{}{
+			"consoleKeyMappings": map[string]interface{}{
+				"nes": map[string]interface{}{
+					"selectedMapping":  "",
+					"customMapping":    custom,
+					"positionMappings": pos,
+				},
+			},
+		})
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest("PUT", "/api/user/preferences", bytes.NewReader(body))
+		req.Header.Set("Authorization", "Bearer "+token)
+		req.Header.Set("Content-Type", "application/json")
+		router.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusOK, w.Code)
+	}
+
+	// First set a custom mapping, then clear it.
+	put(map[string]string{"8": "99"}, map[string]int{})
+	put(map[string]string{}, map[string]int{})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/user/preferences", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var prefs map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &prefs)
+	ckm, _ := prefs["consoleKeyMappings"].(map[string]interface{})
+	_, present := ckm["nes"]
+	assert.False(t, present, "cleared console mapping row should be deleted")
+}
+
 func TestUpdatePreferences_RemoveConsoleShader(t *testing.T) {
 	_, cfg := setupTestEnv(t)
 	router, cleanup := NewRouter(*cfg)

@@ -53,6 +53,27 @@ class InGameOverlayTest {
     }
 
     @Test
+    fun keyMappingOverlayOffersPerGameOverrideAndSaves() = runComposeUiTest {
+        val harness = createHarnessWithGameReady()
+        startGame(harness)
+
+        // Open the in-game key-mapping editor.
+        harness.emulationViewModel.onIntent(EmulationIntent.ShowKeyMapping)
+        advanceQuick(harness)
+
+        // A game is loaded, so the per-game override affordance is offered (#1336).
+        onNodeWithTag("save_game_override").assertExists()
+
+        onNodeWithTag("save_game_override").performClick()
+        advanceQuick(harness)
+
+        assertTrue(
+            harness.keyMappingViewModel.state.value.hasGameOverride,
+            "Saving in the overlay should create a per-game override",
+        )
+    }
+
+    @Test
     fun saveTriggersSerialization() = runComposeUiTest {
         val harness = createHarnessWithGameReady()
         startGame(harness)
