@@ -25,6 +25,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,6 +44,9 @@ import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.ControllerStyle
 import com.spela.player.libretro.GamepadPortManager
 import com.spela.player.presentation.ui.components.PlatformBackHandler
+import com.spela.player.presentation.ui.components.SpScreen
+import com.spela.player.presentation.ui.components.SpScreenTopSpacer
+import com.spela.player.presentation.ui.components.SpScrollableContent
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpConfirmDialog
@@ -55,51 +59,74 @@ import com.spela.player.presentation.viewmodel.GamepadConfigIntent
 import com.spela.player.presentation.viewmodel.GamepadConfigState
 
 /**
- * Per-controller configuration for Settings → Controls (#1359): a list of every
- * connected controller, drilling into a detail subscreen where the user can edit
- * the controller's profile/type, assign or clear its player number, and test its
- * buttons live. The list ⇄ detail toggle is driven by [GamepadConfigState.selectedDeviceId];
- * the player-slot conflict prompt is driven by [GamepadConfigState.conflict].
+ * Per-controller list for Settings → Controls (#1359): every connected controller,
+ * each row drilling into [ControllerDetailScreen] (a real navigation page, #1372)
+ * to edit its profile/type, assign or clear its player number, and test its buttons
+ * live. Selecting a row calls [onSelectController] with the controller's device id.
  */
 @Composable
 fun ControllerControls(
     state: GamepadConfigState,
-    onIntent: (GamepadConfigIntent) -> Unit,
+    onSelectController: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val selected = state.selectedDeviceId?.let { id -> state.controllers.find { it.deviceId == id } }
-    if (selected != null) {
-        ControllerDetail(
-            controller = selected,
-            pressedPositions = state.pressedPositions,
-            onBack = { onIntent(GamepadConfigIntent.CloseDetail) },
-            onSelectStyle = { style ->
-                onIntent(GamepadConfigIntent.SetStyleOverrideForController(selected.deviceId, style))
-            },
-            onAssignSlot = { slot -> onIntent(GamepadConfigIntent.AssignPlayer(selected.deviceId, slot)) },
-            onClear = { onIntent(GamepadConfigIntent.ClearPlayer(selected.deviceId)) },
-            onTestActiveChange = { active -> onIntent(GamepadConfigIntent.SetInputTestActive(active)) },
-            modifier = modifier,
-        )
-    } else {
-        ControllerList(
-            controllers = state.controllers,
-            onSelect = { id -> onIntent(GamepadConfigIntent.SelectController(id)) },
-            modifier = modifier,
-        )
-    }
+    ControllerList(
+        controllers = state.controllers,
+        onSelect = onSelectController,
+        modifier = modifier,
+    )
+}
 
-    val conflict = state.conflict
-    if (conflict != null) {
-        SpConfirmDialog(
-            title = "Switch player?",
-            message = "${playerLabel(conflict.slot)} is currently ${conflict.currentDeviceName}. " +
-                "Switch ${playerLabel(conflict.slot)} to this controller? " +
-                "${conflict.currentDeviceName} will become unassigned.",
-            confirmText = "Switch",
-            onConfirm = { onIntent(GamepadConfigIntent.ConfirmConflict) },
-            onDismiss = { onIntent(GamepadConfigIntent.DismissConflict) },
-        )
+/**
+ * Per-controller detail PAGE (#1372): profile/type, player assignment, and the
+ * live input tester for one controller. A real navigation screen, so gamepad B
+ * pops it like any other screen (no in-screen back special-casing). Pops back
+ * automatically if the controller disconnects while open.
+ */
+@Composable
+fun ControllerDetailScreen(
+    deviceId: Int,
+    state: GamepadConfigState,
+    onIntent: (GamepadConfigIntent) -> Unit,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    PlatformBackHandler { onBack() }
+    val controller = state.controllers.find { it.deviceId == deviceId }
+    SpScreen {
+        if (controller == null) {
+            LaunchedEffect(Unit) { onBack() }
+        } else {
+            SpScrollableContent(modifier = modifier) {
+                // Clear the section-indicator pill in gamepad mode (no-op in touch),
+                // matching sibling detail screens like ConsoleSettingsScreen.
+                SpScreenTopSpacer()
+                ControllerDetail(
+                    controller = controller,
+                    pressedPositions = state.pressedPositions,
+                    onBack = onBack,
+                    onSelectStyle = { style ->
+                        onIntent(GamepadConfigIntent.SetStyleOverrideForController(deviceId, style))
+                    },
+                    onAssignSlot = { slot -> onIntent(GamepadConfigIntent.AssignPlayer(deviceId, slot)) },
+                    onClear = { onIntent(GamepadConfigIntent.ClearPlayer(deviceId)) },
+                    onTestActiveChange = { active -> onIntent(GamepadConfigIntent.SetInputTestActive(deviceId, active)) },
+                )
+            }
+
+            val conflict = state.conflict
+            if (conflict != null) {
+                SpConfirmDialog(
+                    title = "Switch player?",
+                    message = "${playerLabel(conflict.slot)} is currently ${conflict.currentDeviceName}. " +
+                        "Switch ${playerLabel(conflict.slot)} to this controller? " +
+                        "${conflict.currentDeviceName} will become unassigned.",
+                    confirmText = "Switch",
+                    onConfirm = { onIntent(GamepadConfigIntent.ConfirmConflict) },
+                    onDismiss = { onIntent(GamepadConfigIntent.DismissConflict) },
+                )
+            }
+        }
     }
 }
 
@@ -196,12 +223,9 @@ private fun ControllerDetail(
     var showStylePicker by remember { mutableStateOf(false) }
     var showSlotPicker by remember { mutableStateOf(false) }
 
-    // Hardware back / B closes the detail (returns to the list) rather than
-    // leaving Settings. Dialogs (style/slot pickers) intercept back themselves.
-    PlatformBackHandler(enabled = true) { onBack() }
-
     Column(modifier = modifier.fillMaxWidth().padding(SpSpacing.Default)) {
-        // Back affordance — first focusable, so the recovery moveFocus(Next) lands here.
+        // On-screen back affordance (touch). Gamepad B pops the page via the nav
+        // stack; it's also the first focusable, so moveFocus(Next) lands here.
         BackRow(onBack = onBack)
         Spacer(Modifier.height(SpSpacing.Small))
         Text(

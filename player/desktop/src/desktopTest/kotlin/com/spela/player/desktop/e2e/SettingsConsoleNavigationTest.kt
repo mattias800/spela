@@ -187,20 +187,23 @@ class SettingsConsoleNavigationTest {
         navigateToSettings(harness)
         openControlsCategory(harness)
 
-        // Drill into the controller's detail.
+        // Drill into the controller's detail — now a real navigation page (#1372).
         onNodeWithTag("controller_row_500").performClick()
         advanceQuick(harness)
+        assertEquals(
+            SpScreen.ControllerDetail(500),
+            harness.navigationViewModel.state.value.currentScreen,
+        )
         onNodeWithTag("controller_detail_title").assertExists()
 
         // On-device the tester captures when its element is focused; here we
         // activate it directly for the selected controller.
-        harness.gamepadConfigViewModel.onIntent(GamepadConfigIntent.SetInputTestActive(true))
+        harness.gamepadConfigViewModel.onIntent(GamepadConfigIntent.SetInputTestActive(500, true))
         harness.gamepadPortManager.reportPositionInput(500, GamepadPosition.SOUTH, pressed = true)
         advanceQuick(harness)
 
-        onNodeWithTag("settings_category_content_list")
-            .performScrollToNode(hasTestTag("tester_pos_SOUTH"))
         onNodeWithTag("tester_pos_SOUTH")
+            .performScrollTo()
             .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Pressed"))
         onNodeWithTag("tester_pos_EAST")
             .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Not pressed"))
@@ -220,10 +223,14 @@ class SettingsConsoleNavigationTest {
         navigateToSettings(harness)
         openControlsCategory(harness)
 
-        // In Pad B's detail, try to take P1 (held by Pad A).
+        // In Pad B's detail (a real navigation page, #1372), try to take P1 (held by Pad A).
         onNodeWithTag("controller_row_600").performClick()
         advanceQuick(harness)
-        onNodeWithTag("controller_detail_change_player").performClick()
+        assertEquals(
+            SpScreen.ControllerDetail(600),
+            harness.navigationViewModel.state.value.currentScreen,
+        )
+        onNodeWithTag("controller_detail_change_player").performScrollTo().performClick()
         advanceQuick(harness)
         onNodeWithTag("slot_chip_0").performClick()
         advanceQuick(harness)
@@ -250,7 +257,11 @@ class SettingsConsoleNavigationTest {
 
         onNodeWithTag("controller_row_500").performClick()
         advanceQuick(harness)
-        onNodeWithTag("controller_detail_clear_player").performClick()
+        assertEquals(
+            SpScreen.ControllerDetail(500),
+            harness.navigationViewModel.state.value.currentScreen,
+        )
+        onNodeWithTag("controller_detail_clear_player").performScrollTo().performClick()
         advanceQuick(harness)
 
         assertEquals(-1, harness.gamepadPortManager.getPort(500))

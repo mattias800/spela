@@ -21,6 +21,9 @@ sealed class SpScreen(val route: String) {
     data object Downloads : SpScreen("downloads")
     data object Settings : SpScreen("settings")
     data class ConsoleSettings(val consoleId: String) : SpScreen("console_settings/$consoleId")
+    /** Per-controller detail (#1377): profile/type, player assignment, input tester.
+     *  A real navigation page so gamepad B pops it like any screen (#1372). */
+    data class ControllerDetail(val deviceId: Int) : SpScreen("controller_detail/$deviceId")
     data class UserProfile(val userId: String) : SpScreen("user/$userId")
     data object SharedSessions : SpScreen("sharedSessions")
     data class SharedSessionDetail(val sharedSessionId: String) : SpScreen("sharedSession/$sharedSessionId")

@@ -77,15 +77,10 @@ class NavigationViewModel(
                 isTabSwitch = false,
             )
         }
-        // Stack has only the root — go to Home tab if not already there
-        if (state.activeTab != BottomNavTab.HOME) {
-            return state.copy(
-                activeTab = BottomNavTab.HOME,
-                isGoingBack = true,
-                isTabSwitch = false,
-            )
-        }
-        return null // Home root — nothing to do (platform handles app exit)
+        // Stack has only the root — nothing to pop. Back does nothing at a tab
+        // root: it never leaves the current tab or jumps to Home (#1372). Each
+        // tab owns its own stack; that tab's root is the floor.
+        return null
     }
 
     fun onIntent(intent: NavigationIntent) {
