@@ -3,6 +3,7 @@ package com.spela.player.libretro
 import com.spela.player.domain.model.ControllerStyle
 import com.spela.player.domain.model.DefaultGamepadMapping
 import com.spela.player.domain.model.GamepadPosition
+import com.spela.player.domain.repository.ControllerAssignmentRepository
 import com.spela.player.domain.repository.GamepadMappingRepository
 import com.spela.player.domain.repository.KeyMappingRepository
 import com.spela.player.presentation.ui.gamepad.InputMode
@@ -41,6 +42,14 @@ class GamepadPortManager(
      * the historical fixed behavior. Desktop wires the real repository (#1334).
      */
     private val gamepadMappingRepository: GamepadMappingRepository? = null,
+    /**
+     * Device-local persistence of which physical controller is which player
+     * (#1359). Null disables persistence (tests / in-game keyboard-only setups):
+     * connections then auto-claim the lowest free slot per session without
+     * remembering. When wired, a controller restores its remembered slot (or its
+     * remembered "cleared" state) on reconnect.
+     */
+    private val controllerAssignmentRepository: ControllerAssignmentRepository? = null,
 ) {
     companion object {
         const val MAX_PORTS = 8
@@ -58,7 +67,34 @@ class GamepadPortManager(
         val style: ControllerStyle = ControllerStyle.Generic,
     )
 
-    /** Current port assignments, keyed by device ID. */
+    /**
+     * A connected physical controller and its current player-slot assignment
+     * (#1359). [slot] is null when the controller is connected but unassigned
+     * (explicitly cleared, or its remembered slot was taken) — it is polled for
+     * the input tester but routes no input to any game port.
+     */
+    data class ConnectedController(
+        val deviceId: Int,
+        val deviceName: String,
+        val stableKey: String,
+        val style: ControllerStyle,
+        val slot: Int?,
+    )
+
+    /** Identity of every connected device, assigned or not, in connect order. */
+    private data class DeviceIdentity(
+        val deviceId: Int,
+        val deviceName: String,
+        val stableKey: String,
+        val style: ControllerStyle,
+    )
+
+    private val connectedDevices = LinkedHashMap<Int, DeviceIdentity>()
+
+    /** Lazily-loaded cache of persisted assignments: stableKey -> slot (null = cleared). */
+    private var assignmentCache: MutableMap<String, Int?>? = null
+
+    /** Current port assignments, keyed by device ID (assigned devices only). */
     private val deviceToPort = LinkedHashMap<Int, PortAssignment>()
 
     /** Tracks which ports are occupied. */
@@ -87,31 +123,38 @@ class GamepadPortManager(
     private val _assignments = MutableStateFlow<List<PortAssignment>>(emptyList())
     val assignments: StateFlow<List<PortAssignment>> = _assignments.asStateFlow()
 
-    /** Currently-pressed canonical input positions per port (the input layer).
-     *  Fed by the desktop poller and Android key dispatch; consumed by the live
-     *  input tester so a user can press a button and see which GamepadPosition it
-     *  normalizes to (#1355). */
-    private val pressedByPort = HashMap<Int, MutableSet<GamepadPosition>>()
+    /** Observable list of all connected controllers and their player-slot
+     *  assignment (#1359) — the source for the per-controller list/detail UI. */
+    private val _connectedControllers = MutableStateFlow<List<ConnectedController>>(emptyList())
+    val connectedControllers: StateFlow<List<ConnectedController>> = _connectedControllers.asStateFlow()
+
+    /** Currently-pressed canonical input positions, keyed by device id (the input
+     *  layer). Fed by the desktop poller and Android key dispatch; consumed by the
+     *  live input tester so a user can press a button and see which GamepadPosition
+     *  it normalizes to (#1355). Per-device so the per-controller tester (#1359)
+     *  shows only the controller under test, even when it's unassigned. */
+    private val pressedByDevice = HashMap<Int, MutableSet<GamepadPosition>>()
     private val _pressedPositions = MutableStateFlow<Set<GamepadPosition>>(emptySet())
-    /** Union of currently-pressed positions across all connected controllers. */
+    /** Positions held on the controller currently under test ([testCaptureDeviceId]),
+     *  or empty when no tester is focused. */
     val pressedPositions: StateFlow<Set<GamepadPosition>> = _pressedPositions.asStateFlow()
 
-    /** True only while the input-tester element is focused. The input pipelines
-     *  (Android key dispatch, desktop poller) capture test buttons for the tester
-     *  ONLY when this is set, and the D-pad is never captured — so navigation is
-     *  never disrupted by the tester being on screen (#1355). */
-    private val _testCaptureActive = MutableStateFlow(false)
-    val testCaptureActive: StateFlow<Boolean> = _testCaptureActive.asStateFlow()
+    /** The controller whose buttons the input tester is currently capturing, or
+     *  null when no tester element is focused. Non-null = capture active for
+     *  exactly that device: the input pipelines (Android key dispatch, desktop
+     *  poller) route+consume its non-D-pad buttons and never capture the D-pad,
+     *  so navigation is never disrupted by the tester being on screen (#1355/#1359). */
+    private val _testCaptureDeviceId = MutableStateFlow<Int?>(null)
+    val testCaptureDeviceId: StateFlow<Int?> = _testCaptureDeviceId.asStateFlow()
 
-    /** Set by the tester UI on focus gain/loss. Clears stale highlights on exit. */
+    /** Set by the tester UI on focus gain/loss (device id while focused, null on
+     *  blur). Switching/closing the tester clears stale highlights. */
     @Synchronized
-    fun setTestCaptureActive(active: Boolean) {
-        if (_testCaptureActive.value == active) return
-        _testCaptureActive.value = active
-        if (!active && pressedByPort.isNotEmpty()) {
-            pressedByPort.clear()
-            _pressedPositions.value = emptySet()
-        }
+    fun setTestCaptureDevice(deviceId: Int?) {
+        if (_testCaptureDeviceId.value == deviceId) return
+        _testCaptureDeviceId.value = deviceId
+        pressedByDevice.clear()
+        _pressedPositions.value = emptySet()
     }
 
     /** Current input mode: TOUCH when touch input was last used, GAMEPAD when D-pad/buttons were. */
@@ -130,26 +173,145 @@ class GamepadPortManager(
     }
 
     /**
-     * Assigns a device to the next available port.
-     * Returns the assigned port, or -1 if all ports are full.
-     * If the device is already assigned, returns its existing port.
+     * Registers a connected controller and resolves its player slot (#1359):
+     * - a controller with a remembered slot restores it (if still free),
+     * - a controller remembered as *cleared* stays unassigned,
+     * - a never-seen controller auto-claims the lowest free slot (preserving
+     *   plug-and-play) and remembers it.
+     *
+     * Returns the assigned slot, or -1 when the controller is connected but
+     * unassigned (cleared, no free slot, or its remembered slot was taken).
+     * Idempotent: re-registering an already-connected device returns its current
+     * slot without re-claiming.
+     *
+     * [stableKey] identifies the physical controller for persistence; it defaults
+     * to [deviceName] (the desktop identity) — Android passes the device descriptor.
      */
     @Synchronized
-    fun connectDevice(deviceId: Int, deviceName: String = "", style: ControllerStyle = ControllerStyle.Generic): Int {
-        // Already assigned?
-        deviceToPort[deviceId]?.let { return it.port }
+    fun connectDevice(
+        deviceId: Int,
+        deviceName: String = "",
+        style: ControllerStyle = ControllerStyle.Generic,
+        stableKey: String = deviceName,
+    ): Int {
+        if (connectedDevices.containsKey(deviceId)) return deviceToPort[deviceId]?.port ?: -1
 
-        // Find the first available port
-        val port = occupiedPorts.indexOfFirst { !it }
-        if (port == -1) return -1
+        ensureCacheLoaded()
+        connectedDevices[deviceId] = DeviceIdentity(deviceId, deviceName, stableKey, style)
 
-        occupiedPorts[port] = true
-        val assignment = PortAssignment(deviceId = deviceId, port = port, deviceName = deviceName, style = style)
-        deviceToPort[deviceId] = assignment
-        _assignments.value = deviceToPort.values.toList()
+        val cache = assignmentCache!!
+        val targetSlot: Int? = when {
+            // A blank key can't reliably identify a physical controller, so don't
+            // persist or restore under it — just auto-claim for this session.
+            stableKey.isBlank() -> occupiedPorts.indexOfFirst { !it }.takeIf { it >= 0 }
+            // Remembered: restore the slot if free; honor an explicit clear (null).
+            cache.containsKey(stableKey) -> cache[stableKey]?.takeIf { !occupiedPorts[it] }
+            // Never seen: auto-claim the lowest free slot and remember it.
+            else -> occupiedPorts.indexOfFirst { !it }.takeIf { it >= 0 }
+                ?.also { rememberAssignment(stableKey, it) }
+        }
+        if (targetSlot != null) assignToPort(deviceId, targetSlot)
+
+        emitConnectedControllers()
         emitControllerStatus()
         startActivityRefreshIfNeeded()
-        return port
+        return targetSlot ?: -1
+    }
+
+    /**
+     * Assigns [deviceId] to player [slot] (0-based), with move-and-clear conflict
+     * resolution (#1359): if another controller holds [slot], it is cleared
+     * (unassigned + remembered as cleared) before this one takes the slot. The
+     * caller is responsible for confirming the switch with the user first (see
+     * [deviceOnSlot]). No-op for an out-of-range slot or unknown device.
+     */
+    @Synchronized
+    fun assignSlot(deviceId: Int, slot: Int) {
+        if (slot < 0 || slot >= MAX_PORTS) return
+        val identity = connectedDevices[deviceId] ?: return
+
+        deviceToPort.entries.firstOrNull { it.value.port == slot && it.key != deviceId }?.key
+            ?.let { clearAssignmentInternal(it) }
+        freeAssignedPort(deviceId)
+
+        assignToPort(deviceId, slot)
+        rememberAssignment(identity.stableKey, slot)
+        _portActivity.value = buildActivityMap()
+        emitConnectedControllers()
+        emitControllerStatus()
+        startActivityRefreshIfNeeded()
+    }
+
+    /**
+     * Clears [deviceId]'s player assignment (#1359): the controller stays
+     * connected (still testable) but routes no input to any game port, and the
+     * cleared state is remembered so it stays cleared on reconnect.
+     */
+    @Synchronized
+    fun clearAssignment(deviceId: Int) {
+        if (connectedDevices[deviceId] == null) return
+        clearAssignmentInternal(deviceId)
+        _portActivity.value = buildActivityMap()
+        emitConnectedControllers()
+        emitControllerStatus()
+        stopActivityRefreshIfNotNeeded()
+    }
+
+    /** The device currently assigned to [slot], or null when the slot is free. */
+    @Synchronized
+    fun deviceOnSlot(slot: Int): Int? =
+        deviceToPort.entries.firstOrNull { it.value.port == slot }?.key
+
+    /** Loads the persisted-assignment cache on first use. Must hold the monitor. */
+    private fun ensureCacheLoaded() {
+        if (assignmentCache == null) {
+            assignmentCache = controllerAssignmentRepository?.getAll()?.toMutableMap() ?: mutableMapOf()
+        }
+    }
+
+    /** Remembers [slot] (or null = cleared) for [stableKey]. Must hold the monitor. */
+    private fun rememberAssignment(stableKey: String, slot: Int?) {
+        ensureCacheLoaded()
+        assignmentCache!![stableKey] = slot
+        controllerAssignmentRepository?.put(stableKey, slot)
+    }
+
+    /** Marks [port] occupied and records the assignment. Must hold the monitor. */
+    private fun assignToPort(deviceId: Int, port: Int) {
+        val identity = connectedDevices[deviceId] ?: return
+        occupiedPorts[port] = true
+        deviceToPort[deviceId] = PortAssignment(deviceId, port, identity.deviceName, identity.style)
+        _assignments.value = deviceToPort.values.toList()
+    }
+
+    /** Frees the device's assigned port (mappings, activity), if any. Must hold the monitor. */
+    private fun freeAssignedPort(deviceId: Int) {
+        val assignment = deviceToPort.remove(deviceId) ?: return
+        occupiedPorts[assignment.port] = false
+        portKeyMappings[assignment.port] = null
+        portGamepadMappings[assignment.port] = null
+        lastActivityMs[assignment.port] = 0L
+        _assignments.value = deviceToPort.values.toList()
+    }
+
+    /** Frees the port and remembers the device as cleared. Must hold the monitor. */
+    private fun clearAssignmentInternal(deviceId: Int) {
+        val identity = connectedDevices[deviceId]
+        freeAssignedPort(deviceId)
+        if (identity != null) rememberAssignment(identity.stableKey, null)
+    }
+
+    /** Rebuilds and emits the connected-controllers snapshot. Must hold the monitor. */
+    private fun emitConnectedControllers() {
+        _connectedControllers.value = connectedDevices.values.map { id ->
+            ConnectedController(
+                deviceId = id.deviceId,
+                deviceName = id.deviceName,
+                stableKey = id.stableKey,
+                style = id.style,
+                slot = deviceToPort[id.deviceId]?.port,
+            )
+        }
     }
 
     /**
@@ -166,18 +328,20 @@ class GamepadPortManager(
     }
 
     /**
-     * Disconnects a device and frees its port for reuse.
+     * Disconnects a device: frees its port (if assigned) for reuse and drops it
+     * from the connected list. Its persisted assignment is kept, so reconnecting
+     * restores its slot (or cleared state). No-op for an unknown device.
      */
     @Synchronized
     fun disconnectDevice(deviceId: Int) {
-        val assignment = deviceToPort.remove(deviceId) ?: return
-        occupiedPorts[assignment.port] = false
-        portKeyMappings[assignment.port] = null
-        portGamepadMappings[assignment.port] = null
-        lastActivityMs[assignment.port] = 0L
-        if (pressedByPort.remove(assignment.port) != null) recomputePressedPositions()
-        _assignments.value = deviceToPort.values.toList()
+        val wasConnected = connectedDevices.remove(deviceId) != null
+        freeAssignedPort(deviceId)
+        if (pressedByDevice.remove(deviceId) != null && _testCaptureDeviceId.value == deviceId) {
+            recomputePressedPositions()
+        }
+        if (!wasConnected) return
         _portActivity.value = buildActivityMap()
+        emitConnectedControllers()
         emitControllerStatus()
         stopActivityRefreshIfNotNeeded()
     }
@@ -296,37 +460,37 @@ class GamepadPortManager(
     }
 
     /**
-     * Records that a single canonical [position] was pressed/released on [port]
-     * (incremental — used by the Android key dispatch). Feeds [pressedPositions]
-     * for the live input tester (#1355).
+     * Records that a single canonical [position] was pressed/released on
+     * [deviceId] (incremental — used by the Android key dispatch). Feeds
+     * [pressedPositions] for the live input tester when [deviceId] is the one
+     * under test (#1355/#1359).
      */
     @Synchronized
-    fun reportPositionInput(port: Int, position: GamepadPosition, pressed: Boolean) {
-        if (port < 0 || port >= MAX_PORTS) return
-        val set = pressedByPort.getOrPut(port) { mutableSetOf() }
+    fun reportPositionInput(deviceId: Int, position: GamepadPosition, pressed: Boolean) {
+        val set = pressedByDevice.getOrPut(deviceId) { mutableSetOf() }
         val changed = if (pressed) set.add(position) else set.remove(position)
-        if (changed) recomputePressedPositions()
+        if (changed && _testCaptureDeviceId.value == deviceId) recomputePressedPositions()
     }
 
     /**
-     * Replaces the full set of currently-pressed positions for [port] (wholesale
-     * — used by the desktop poller, which has all positions each frame). Only
-     * emits when the union actually changes, so the 120 Hz poll loop doesn't
-     * churn [pressedPositions].
+     * Replaces the full set of currently-pressed positions for [deviceId]
+     * (wholesale — used by the desktop poller, which has all positions each
+     * frame). Only emits when the set for the device under test actually changes,
+     * so the 120 Hz poll loop doesn't churn [pressedPositions].
      */
     @Synchronized
-    fun reportPressedPositions(port: Int, positions: Set<GamepadPosition>) {
-        if (port < 0 || port >= MAX_PORTS) return
-        val set = pressedByPort.getOrPut(port) { mutableSetOf() }
+    fun reportPressedPositions(deviceId: Int, positions: Set<GamepadPosition>) {
+        val set = pressedByDevice.getOrPut(deviceId) { mutableSetOf() }
         if (set == positions) return
         set.clear()
         set.addAll(positions)
-        recomputePressedPositions()
+        if (_testCaptureDeviceId.value == deviceId) recomputePressedPositions()
     }
 
     /** Must be called while holding the monitor. */
     private fun recomputePressedPositions() {
-        _pressedPositions.value = pressedByPort.values.flatMapTo(mutableSetOf()) { it }
+        val id = _testCaptureDeviceId.value
+        _pressedPositions.value = if (id != null) pressedByDevice[id]?.toSet() ?: emptySet() else emptySet()
     }
 
     /**
@@ -382,10 +546,10 @@ class GamepadPortManager(
     }
 
     /**
-     * Returns the number of currently connected devices.
+     * Returns the number of currently connected devices (assigned or not).
      */
     @Synchronized
-    fun connectedDeviceCount(): Int = deviceToPort.size
+    fun connectedDeviceCount(): Int = connectedDevices.size
 
     /**
      * Swaps device assignments, key mappings, and activity timestamps
@@ -432,6 +596,7 @@ class GamepadPortManager(
 
         _assignments.value = deviceToPort.values.toList()
         _portActivity.value = buildActivityMap()
+        emitConnectedControllers()
         emitControllerStatus()
     }
 
@@ -441,15 +606,18 @@ class GamepadPortManager(
     @Synchronized
     fun clear() {
         deviceToPort.clear()
+        connectedDevices.clear()
         occupiedPorts.fill(false)
         portKeyMappings.fill(null)
         portGamepadMappings.fill(null)
         fallbackKeyMapping = null
         fallbackGamepadMapping = null
         lastActivityMs.fill(0L)
-        pressedByPort.clear()
+        pressedByDevice.clear()
         _pressedPositions.value = emptySet()
+        _testCaptureDeviceId.value = null
         _assignments.value = emptyList()
+        _connectedControllers.value = emptyList()
         _portActivity.value = emptyMap()
         emitControllerStatus()
         stopActivityRefresh()

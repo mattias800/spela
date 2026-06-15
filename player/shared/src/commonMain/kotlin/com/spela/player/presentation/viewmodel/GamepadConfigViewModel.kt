@@ -18,9 +18,46 @@ import kotlinx.coroutines.launch
 data class GamepadConfigState(
     val portAssignments: List<PortAssignmentUi> = emptyList(),
     val selectedPort: Int? = null,
-    /** Canonical input positions currently held down (any controller) — drives
-     *  the live input tester (#1355). */
+    /** Canonical input positions currently held down on the controller under
+     *  test — drives the live input tester (#1355/#1359). */
     val pressedPositions: Set<GamepadPosition> = emptySet(),
+    /** All connected controllers and their player-slot assignment (#1359) — the
+     *  source for the per-controller list/detail UI in Settings → Controls. */
+    val controllers: List<ControllerUi> = emptyList(),
+    /** The controller whose detail subscreen is open, or null for the list (#1359). */
+    val selectedDeviceId: Int? = null,
+    /** A pending player-slot conflict awaiting the user's switch/cancel (#1359). */
+    val conflict: SlotConflict? = null,
+)
+
+/**
+ * A connected controller for the per-controller list/detail UI (#1359). [slot] is
+ * the assigned 0-based player port, or null when the controller is connected but
+ * unassigned (cleared) — testable, but routing no input to any game port.
+ */
+data class ControllerUi(
+    val deviceId: Int,
+    val deviceName: String,
+    val slot: Int?,
+    val isActive: Boolean,
+    /** Effective controller style: the user's override if set, else detection. */
+    val style: ControllerStyle = ControllerStyle.Generic,
+    /** Raw detected style, independent of any override (labels the "Auto" choice). */
+    val detectedStyle: ControllerStyle = ControllerStyle.Generic,
+    /** The user's explicit style override, or null when Auto (defer to detection). */
+    val styleOverride: ControllerStyle? = null,
+)
+
+/**
+ * A pending player-slot assignment that collides with another controller (#1359).
+ * The UI confirms the switch: confirming moves [slot] to [deviceId] and clears
+ * [currentDeviceId]; cancelling leaves everything as-is.
+ */
+data class SlotConflict(
+    val deviceId: Int,
+    val slot: Int,
+    val currentDeviceId: Int,
+    val currentDeviceName: String,
 )
 
 data class PortAssignmentUi(
@@ -47,6 +84,34 @@ sealed interface GamepadConfigIntent {
      * controller-style override for the controller on [port].
      */
     data class SetStyleOverride(val port: Int, val style: ControllerStyle?) : GamepadConfigIntent
+
+    // --- Per-controller list/detail (#1359) ---
+
+    /** Open the detail subscreen for [deviceId]. */
+    data class SelectController(val deviceId: Int) : GamepadConfigIntent
+
+    /** Close the detail subscreen back to the controller list. */
+    data object CloseDetail : GamepadConfigIntent
+
+    /** Assign [deviceId] to player [slot] (0-based). Raises a [SlotConflict] when
+     *  another controller holds the slot, instead of assigning immediately. */
+    data class AssignPlayer(val deviceId: Int, val slot: Int) : GamepadConfigIntent
+
+    /** Confirm the pending [SlotConflict]: move the slot (clearing the old controller). */
+    data object ConfirmConflict : GamepadConfigIntent
+
+    /** Dismiss the pending [SlotConflict] without changing anything. */
+    data object DismissConflict : GamepadConfigIntent
+
+    /** Clear [deviceId]'s player assignment (it stays connected, routes no input). */
+    data class ClearPlayer(val deviceId: Int) : GamepadConfigIntent
+
+    /** Set (or clear, with style == null) the style override for the controller
+     *  identified by [deviceId] — works for unassigned controllers too. */
+    data class SetStyleOverrideForController(val deviceId: Int, val style: ControllerStyle?) : GamepadConfigIntent
+
+    /** Toggle input-test capture for the open controller's detail (tester focus). */
+    data class SetInputTestActive(val active: Boolean) : GamepadConfigIntent
 }
 
 class GamepadConfigViewModel(
@@ -94,13 +159,6 @@ class GamepadConfigViewModel(
         }
     }
 
-    /** Toggle input-test capture (called by the tester element on focus change).
-     *  While active, the input pipelines route test buttons to [pressedPositions]
-     *  and consume them so they don't navigate; the D-pad is never captured. */
-    fun setInputTestActive(active: Boolean) {
-        gamepadPortManager.setTestCaptureActive(active)
-    }
-
     fun onIntent(intent: GamepadConfigIntent) {
         when (intent) {
             is GamepadConfigIntent.SwapPorts -> {
@@ -119,13 +177,71 @@ class GamepadConfigViewModel(
                     ?.deviceName
                     ?.takeIf { it.isNotEmpty() }
                     ?: return
-                scope.launch(dispatchers.io) {
-                    styleOverrideRepository.setOverride(deviceName, intent.style)
-                    _overrides.update { current ->
-                        if (intent.style == null) current - deviceName
-                        else current + (deviceName to intent.style)
+                persistStyleOverride(deviceName, intent.style)
+            }
+            is GamepadConfigIntent.SelectController -> {
+                _state.update { it.copy(selectedDeviceId = intent.deviceId) }
+            }
+            GamepadConfigIntent.CloseDetail -> {
+                gamepadPortManager.setTestCaptureDevice(null)
+                _state.update { it.copy(selectedDeviceId = null) }
+            }
+            is GamepadConfigIntent.AssignPlayer -> {
+                val occupant = gamepadPortManager.deviceOnSlot(intent.slot)
+                if (occupant != null && occupant != intent.deviceId) {
+                    val name = gamepadPortManager.connectedControllers.value
+                        .find { it.deviceId == occupant }?.deviceName.orEmpty()
+                    _state.update {
+                        it.copy(
+                            conflict = SlotConflict(
+                                deviceId = intent.deviceId,
+                                slot = intent.slot,
+                                currentDeviceId = occupant,
+                                currentDeviceName = name.ifEmpty { "another controller" },
+                            ),
+                        )
                     }
+                } else {
+                    gamepadPortManager.assignSlot(intent.deviceId, intent.slot)
+                    refreshState()
                 }
+            }
+            GamepadConfigIntent.ConfirmConflict -> {
+                val conflict = _state.value.conflict ?: return
+                gamepadPortManager.assignSlot(conflict.deviceId, conflict.slot)
+                _state.update { it.copy(conflict = null) }
+                refreshState()
+            }
+            GamepadConfigIntent.DismissConflict -> {
+                _state.update { it.copy(conflict = null) }
+            }
+            is GamepadConfigIntent.ClearPlayer -> {
+                gamepadPortManager.clearAssignment(intent.deviceId)
+                refreshState()
+            }
+            is GamepadConfigIntent.SetStyleOverrideForController -> {
+                val deviceName = gamepadPortManager.connectedControllers.value
+                    .find { it.deviceId == intent.deviceId }
+                    ?.deviceName
+                    ?.takeIf { it.isNotEmpty() }
+                    ?: return
+                persistStyleOverride(deviceName, intent.style)
+            }
+            is GamepadConfigIntent.SetInputTestActive -> {
+                gamepadPortManager.setTestCaptureDevice(
+                    if (intent.active) _state.value.selectedDeviceId else null,
+                )
+            }
+        }
+    }
+
+    /** Writes the device-local style override and reflects it in the in-memory cache. */
+    private fun persistStyleOverride(deviceName: String, style: ControllerStyle?) {
+        scope.launch(dispatchers.io) {
+            styleOverrideRepository.setOverride(deviceName, style)
+            _overrides.update { current ->
+                if (style == null) current - deviceName
+                else current + (deviceName to style)
             }
         }
     }
@@ -174,6 +290,32 @@ class GamepadConfigViewModel(
             )
         }.sortedBy { it.port }
 
-        _state.update { it.copy(portAssignments = portAssignments) }
+        // Per-controller list (#1359): every connected controller, assigned or not.
+        val connected = gamepadPortManager.connectedControllers.value
+        for (controller in connected) {
+            val name = controller.deviceName
+            if (name.isNotEmpty() && requestedLoads.add(name)) {
+                scope.launch(dispatchers.io) {
+                    val stored = styleOverrideRepository.getOverride(name) ?: return@launch
+                    _overrides.update { it + (name to stored) }
+                }
+            }
+        }
+        val controllers = connected.map { controller ->
+            val lastActivity = controller.slot?.let { activity[it] } ?: 0L
+            val isActive = lastActivity > 0L && (now - lastActivity) < ACTIVITY_TIMEOUT_MS
+            val override = overrides[controller.deviceName]
+            ControllerUi(
+                deviceId = controller.deviceId,
+                deviceName = controller.deviceName.ifEmpty { "Controller" },
+                slot = controller.slot,
+                isActive = isActive,
+                style = override ?: controller.style,
+                detectedStyle = controller.style,
+                styleOverride = override,
+            )
+        }
+
+        _state.update { it.copy(portAssignments = portAssignments, controllers = controllers) }
     }
 }

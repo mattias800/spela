@@ -51,10 +51,8 @@ import com.spela.player.presentation.viewmodel.SettingsViewModel
 import com.spela.player.presentation.viewmodel.SettingsState
 import com.spela.player.presentation.intent.KeyMappingIntent
 import com.spela.player.presentation.viewmodel.KeyMappingViewModel
-import com.spela.player.presentation.viewmodel.GamepadConfigIntent
 import com.spela.player.presentation.viewmodel.GamepadConfigViewModel
-import com.spela.player.presentation.ui.components.gamepad.GamepadConfigScreen
-import com.spela.player.presentation.ui.components.gamepad.GamepadInputTester
+import com.spela.player.presentation.ui.components.gamepad.ControllerControls
 import com.spela.player.util.currentPlatform
 import com.spela.player.presentation.state.KeyMappingState
 import com.spela.player.data.remote.SyncState
@@ -269,43 +267,18 @@ private fun androidx.compose.foundation.lazy.LazyListScope.controlsContent(
     keyMappingState: KeyMappingState?,
     gamepadConfigViewModel: GamepadConfigViewModel?,
 ) {
-    // Connected controllers: detected type + per-controller "Type:" override.
-    // This is the one global place to verify "which controller do I have" and
-    // correct a mis-detection (#1334 / #1353). Shown on every platform.
+    // Per-controller configuration (#1359): a list of connected controllers,
+    // each drilling into a detail subscreen to edit its profile/type, assign or
+    // clear its player number, and test its buttons live. This is the one global
+    // place to verify "which controller do I have", set who's which player, and
+    // correct a mis-detection (#1334 / #1353 / #1355). Shown on every platform.
     if (gamepadConfigViewModel != null) {
-        // GamepadConfigScreen renders its own "Controllers" heading, so no extra
-        // SettingsSectionHeader here (avoids a doubled heading).
         item {
             val gamepadConfigState by gamepadConfigViewModel.state.collectAsState()
             SpCard(onGradient = true) {
-                GamepadConfigScreen(
+                ControllerControls(
                     state = gamepadConfigState,
-                    onConfigurePort = {},
-                    onSwapUp = { port ->
-                        gamepadConfigViewModel.onIntent(GamepadConfigIntent.SwapPorts(port - 1, port))
-                    },
-                    onSwapDown = { port ->
-                        gamepadConfigViewModel.onIntent(GamepadConfigIntent.SwapPorts(port, port + 1))
-                    },
-                    onSetStyleOverride = { port, style ->
-                        gamepadConfigViewModel.onIntent(GamepadConfigIntent.SetStyleOverride(port, style))
-                    },
-                    // Per-port keyboard key-mapping isn't a global concept; gamepad
-                    // button mappings are edited per console (see below).
-                    showConfigureButton = false,
-                )
-            }
-        }
-
-        // Live input tester (#1355): press a button, see which canonical input
-        // position lights up — verifies the detected type/normalization.
-        item { SettingsSectionHeader(title = "Test controller input") }
-        item {
-            val gamepadConfigState by gamepadConfigViewModel.state.collectAsState()
-            SpCard(onGradient = true) {
-                GamepadInputTester(
-                    pressedPositions = gamepadConfigState.pressedPositions,
-                    onActiveChange = { gamepadConfigViewModel.setInputTestActive(it) },
+                    onIntent = gamepadConfigViewModel::onIntent,
                 )
             }
         }

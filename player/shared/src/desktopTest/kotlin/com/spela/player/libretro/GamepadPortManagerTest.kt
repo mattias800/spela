@@ -387,51 +387,152 @@ class GamepadPortManagerTest {
         assertTrue(after.ports[1].connected)
     }
 
-    // ── Live input tester: pressedPositions (#1355) ──────────────────────────
+    // ── Live input tester: per-device pressedPositions (#1355/#1359) ──────────
 
     @Test
-    fun reportPositionInputTracksPressAndRelease() {
-        manager.reportPositionInput(0, GamepadPosition.SOUTH, pressed = true)
+    fun reportPositionInputTracksPressAndReleaseForDeviceUnderTest() {
+        manager.setTestCaptureDevice(10)
+        manager.reportPositionInput(10, GamepadPosition.SOUTH, pressed = true)
         assertTrue(GamepadPosition.SOUTH in manager.pressedPositions.value)
-        manager.reportPositionInput(0, GamepadPosition.SOUTH, pressed = false)
+        manager.reportPositionInput(10, GamepadPosition.SOUTH, pressed = false)
         assertFalse(GamepadPosition.SOUTH in manager.pressedPositions.value)
     }
 
     @Test
-    fun reportPressedPositionsReplacesPortSet() {
-        manager.reportPressedPositions(0, setOf(GamepadPosition.SOUTH, GamepadPosition.EAST))
+    fun reportPressedPositionsReplacesSetForDeviceUnderTest() {
+        manager.setTestCaptureDevice(10)
+        manager.reportPressedPositions(10, setOf(GamepadPosition.SOUTH, GamepadPosition.EAST))
         assertEquals(setOf(GamepadPosition.SOUTH, GamepadPosition.EAST), manager.pressedPositions.value)
-        manager.reportPressedPositions(0, setOf(GamepadPosition.WEST))
+        manager.reportPressedPositions(10, setOf(GamepadPosition.WEST))
         assertEquals(setOf(GamepadPosition.WEST), manager.pressedPositions.value)
     }
 
     @Test
-    fun pressedPositionsUnionAcrossPortsAndReleaseIsIsolated() {
-        manager.reportPositionInput(0, GamepadPosition.SOUTH, pressed = true)
-        manager.reportPositionInput(1, GamepadPosition.NORTH, pressed = true)
-        assertEquals(setOf(GamepadPosition.SOUTH, GamepadPosition.NORTH), manager.pressedPositions.value)
-        // Releasing port 0's button doesn't clear port 1's.
-        manager.reportPositionInput(0, GamepadPosition.SOUTH, pressed = false)
-        assertEquals(setOf(GamepadPosition.NORTH), manager.pressedPositions.value)
+    fun pressedPositionsReflectsOnlyDeviceUnderTest() {
+        manager.setTestCaptureDevice(10)
+        manager.reportPositionInput(10, GamepadPosition.SOUTH, pressed = true)
+        // Input from a different controller must not leak into the tester.
+        manager.reportPositionInput(20, GamepadPosition.NORTH, pressed = true)
+        assertEquals(setOf(GamepadPosition.SOUTH), manager.pressedPositions.value)
     }
 
     @Test
-    fun deactivatingTestCaptureClearsHighlights() {
-        manager.setTestCaptureActive(true)
-        manager.reportPositionInput(0, GamepadPosition.SOUTH, pressed = true)
-        assertTrue(GamepadPosition.SOUTH in manager.pressedPositions.value)
-        // Leaving the tester (focus lost) clears stale highlights.
-        manager.setTestCaptureActive(false)
+    fun noPressedPositionsWhenNoDeviceUnderTest() {
+        manager.reportPositionInput(10, GamepadPosition.SOUTH, pressed = true)
         assertTrue(manager.pressedPositions.value.isEmpty())
     }
 
     @Test
-    fun disconnectClearsPressedPositionsForThatPort() {
+    fun switchingTestDeviceClearsPreviousHighlights() {
+        manager.setTestCaptureDevice(10)
+        manager.reportPositionInput(10, GamepadPosition.SOUTH, pressed = true)
+        assertEquals(setOf(GamepadPosition.SOUTH), manager.pressedPositions.value)
+        manager.setTestCaptureDevice(20)
+        assertTrue(manager.pressedPositions.value.isEmpty())
+    }
+
+    @Test
+    fun deactivatingTestCaptureClearsHighlights() {
+        manager.setTestCaptureDevice(10)
+        manager.reportPositionInput(10, GamepadPosition.SOUTH, pressed = true)
+        assertTrue(GamepadPosition.SOUTH in manager.pressedPositions.value)
+        manager.setTestCaptureDevice(null)
+        assertTrue(manager.pressedPositions.value.isEmpty())
+    }
+
+    @Test
+    fun disconnectClearsPressedPositionsForDeviceUnderTest() {
         manager.connectDevice(deviceId = 7, deviceName = "Pad")
-        manager.reportPositionInput(0, GamepadPosition.SOUTH, pressed = true)
+        manager.setTestCaptureDevice(7)
+        manager.reportPositionInput(7, GamepadPosition.SOUTH, pressed = true)
         assertTrue(GamepadPosition.SOUTH in manager.pressedPositions.value)
         manager.disconnectDevice(7)
         assertFalse(GamepadPosition.SOUTH in manager.pressedPositions.value)
+    }
+
+    // ── Player-slot assignment (#1359) ───────────────────────────────────────
+
+    @Test
+    fun newControllerAutoClaimsLowestFreeSlot() {
+        assertEquals(0, manager.connectDevice(100, "Xbox"))
+        assertEquals(1, manager.connectDevice(200, "PS5"))
+        assertEquals(listOf(0, 1), manager.connectedControllers.value.map { it.slot })
+    }
+
+    @Test
+    fun deviceOnSlotReportsOccupant() {
+        manager.connectDevice(100, "Xbox")
+        assertEquals(100, manager.deviceOnSlot(0))
+        assertNull(manager.deviceOnSlot(1))
+    }
+
+    @Test
+    fun assignSlotMovesControllerFromItsOldSlot() {
+        manager.connectDevice(100, "Xbox") // slot 0
+        manager.assignSlot(100, 3)
+        assertEquals(3, manager.getPort(100))
+        assertNull(manager.deviceOnSlot(0))
+    }
+
+    @Test
+    fun assignSlotToOccupiedSlotMovesAndClearsOldController() {
+        manager.connectDevice(100, "Xbox") // -> P1 (slot 0)
+        manager.connectDevice(200, "PS5") // -> P2 (slot 1)
+        manager.assignSlot(200, 0) // move PS5 to P1, clearing Xbox
+        assertEquals(0, manager.getPort(200))
+        assertEquals(-1, manager.getPort(100))
+        // Xbox stays connected, just unassigned.
+        assertTrue(manager.connectedControllers.value.any { it.deviceId == 100 && it.slot == null })
+    }
+
+    @Test
+    fun clearAssignmentUnassignsButKeepsConnected() {
+        manager.connectDevice(100, "Xbox") // -> P1
+        manager.clearAssignment(100)
+        assertEquals(-1, manager.getPort(100))
+        assertTrue(manager.connectedControllers.value.any { it.deviceId == 100 && it.slot == null })
+        // The freed slot 0 is available for a newly connected controller.
+        assertEquals(0, manager.connectDevice(200, "PS5"))
+    }
+
+    // ── Persistence across reconnect (#1359) ─────────────────────────────────
+
+    @Test
+    fun persistedSlotIsRestoredOnReconnect() {
+        val m = GamepadPortManager(fakeRepo, controllerAssignmentRepository = FakeControllerAssignmentRepo())
+        m.connectDevice(100, "Xbox", stableKey = "key-xbox") // auto-claims 0, remembers
+        m.assignSlot(100, 2) // remembers key-xbox -> 2
+        m.disconnectDevice(100)
+        // Reconnect with a new ephemeral id but the same stable key.
+        assertEquals(2, m.connectDevice(101, "Xbox", stableKey = "key-xbox"))
+    }
+
+    @Test
+    fun clearedStateIsRememberedAcrossReconnect() {
+        val m = GamepadPortManager(fakeRepo, controllerAssignmentRepository = FakeControllerAssignmentRepo())
+        m.connectDevice(100, "Xbox", stableKey = "key-xbox") // -> 0
+        m.clearAssignment(100) // remembers key-xbox -> cleared
+        m.disconnectDevice(100)
+        assertEquals(-1, m.connectDevice(101, "Xbox", stableKey = "key-xbox"))
+    }
+
+    @Test
+    fun rememberedSlotTakenByAnotherLeavesReconnectUnassigned() {
+        val m = GamepadPortManager(fakeRepo, controllerAssignmentRepository = FakeControllerAssignmentRepo())
+        m.connectDevice(100, "Xbox", stableKey = "key-xbox") // remembers 0
+        m.disconnectDevice(100)
+        m.connectDevice(200, "PS5", stableKey = "key-ps5") // claims freed slot 0
+        // Xbox reconnects, but its remembered slot 0 is taken -> unassigned.
+        assertEquals(-1, m.connectDevice(101, "Xbox", stableKey = "key-xbox"))
+    }
+
+    private class FakeControllerAssignmentRepo :
+        com.spela.player.domain.repository.ControllerAssignmentRepository {
+        private val store = mutableMapOf<String, Int?>()
+        override fun getAll(): Map<String, Int?> = store.toMap()
+        override fun put(stableKey: String, slot: Int?) {
+            store[stableKey] = slot
+        }
     }
 
     private class FakeKeyMappingRepo : KeyMappingRepository {
