@@ -17,6 +17,7 @@ object ExpectedSchema {
         "KeyMappingEntity" to setOf("id", "console_id", "port", "platform_key_code", "libretro_button_id"),
         "GameKeyMappingEntity" to setOf("id", "game_id", "libretro_button_id", "platform_key_code"),
         "GamepadMappingEntity" to setOf("id", "console_id", "port", "gamepad_position", "libretro_button_id"),
+        "ControllerAssignmentEntity" to setOf("stable_key", "player_slot"),
         "DeviceInfoEntity" to setOf("id", "device_uuid", "device_name", "server_device_id"),
         "CachedPreferencesEntity" to setOf("id", "json_data", "updated_at"),
         "CachedConsoleEntity" to setOf(

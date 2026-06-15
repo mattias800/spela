@@ -1,0 +1,10 @@
+-- Migration from schema version 6 to 7: add ControllerAssignmentEntity, the
+-- device-local per-controller player-slot assignment (#1359). stable_key keys a
+-- physical controller across reconnects (Android InputDevice.descriptor; desktop
+-- SDL device name). player_slot NULL = explicitly cleared (remembered as "no
+-- player"); an absent row = never seen (a new controller auto-claims the lowest
+-- free slot). Never synced.
+CREATE TABLE ControllerAssignmentEntity (
+    stable_key TEXT NOT NULL PRIMARY KEY,
+    player_slot INTEGER
+);

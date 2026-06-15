@@ -79,7 +79,10 @@ class MainActivity : ComponentActivity() {
 
     private val inputDeviceListener = object : InputManager.InputDeviceListener {
         override fun onInputDeviceAdded(deviceId: Int) {
-            // Device will be connected via ensureDeviceConnected on first input
+            // Register hot-plugged gamepads immediately so the controller list
+            // (Settings → Controls, #1359) shows them without a button press.
+            // Non-gamepad devices are filtered out inside ensureDeviceConnected.
+            ensureDeviceConnected(deviceId)
         }
 
         override fun onInputDeviceRemoved(deviceId: Int) {
@@ -91,11 +94,23 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * Registers every already-connected gamepad up front (#1359) so the
+     * controller list is populated on entry, not only after the first input.
+     * Idempotent and gamepad-filtered (via [ensureDeviceConnected]).
+     */
+    private fun enumerateConnectedGamepads() {
+        for (deviceId in InputDevice.getDeviceIds()) {
+            ensureDeviceConnected(deviceId)
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         val inputManager = getSystemService(INPUT_SERVICE) as InputManager
         inputManager.registerInputDeviceListener(inputDeviceListener, null)
+        enumerateConnectedGamepads()
 
         // Apply initial orientation lock
         applyOrientationLock(preferencesRepository.getOrientationLock())
@@ -196,7 +211,10 @@ class MainActivity : ComponentActivity() {
         // Detect the controller style (#1334) so input is normalized positionally
         // and the identity display is correct. Vendor/product with a name fallback.
         val style = ControllerClassifier.fromVendorProduct(device.vendorId, device.productId, deviceName)
-        val port = gamepadPortManager.connectDevice(deviceId, deviceName, style)
+        // descriptor is stable per physical controller across reconnects (#1359),
+        // so player-slot assignments persist. Fall back to the name if absent.
+        val stableKey = device.descriptor ?: deviceName
+        val port = gamepadPortManager.connectDevice(deviceId, deviceName, style, stableKey)
         if (port >= 0) {
             val consoleId = emulationViewModel.state.value.consoleId
             if (consoleId.isNotEmpty()) {
@@ -230,21 +248,21 @@ class MainActivity : ComponentActivity() {
     }
 
     /**
-     * Routes a test button to the live input tester (#1355) — but ONLY while the
-     * tester element is focused, and never the D-pad. Returns true when it
-     * captured the event so the caller consumes it (the button must not also
-     * navigate/select). When the tester isn't focused this is a no-op and input
-     * routing is unchanged, so navigation is never disrupted by the tester being
-     * on screen. The D-pad always falls through to navigation.
+     * Routes a test button to the live input tester (#1355/#1359) — but ONLY for
+     * the specific controller currently under test (the one whose detail tester is
+     * focused), and never the D-pad. Returns true when it captured the event so the
+     * caller consumes it (the button must not also navigate/select). When no tester
+     * is focused, or the event is from a different controller, this is a no-op and
+     * input routing is unchanged, so navigation is never disrupted. The D-pad always
+     * falls through to navigation.
      */
     private fun captureTestInput(event: KeyEvent?, keyCode: Int, pressed: Boolean): Boolean {
-        if (!gamepadPortManager.testCaptureActive.value) return false
+        val target = gamepadPortManager.testCaptureDeviceId.value ?: return false
         val deviceId = event?.deviceId ?: return false
-        val port = gamepadPortManager.getPort(deviceId)
-        if (port < 0) return false
+        if (deviceId != target) return false
         val position = AndroidGamepadNormalizer.normalize(keyCode) ?: return false
         if (position.isDpad) return false
-        gamepadPortManager.reportPositionInput(port, position, pressed)
+        gamepadPortManager.reportPositionInput(deviceId, position, pressed)
         return true
     }
 

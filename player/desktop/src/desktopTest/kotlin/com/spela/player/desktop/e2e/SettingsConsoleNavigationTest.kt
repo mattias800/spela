@@ -2,9 +2,11 @@ package com.spela.player.desktop.e2e
 
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.*
+import com.spela.player.domain.model.ControllerStyle
 import com.spela.player.domain.model.GamepadPosition
 import com.spela.player.presentation.navigation.NavigationIntent
 import com.spela.player.presentation.navigation.SpScreen
+import com.spela.player.presentation.viewmodel.GamepadConfigIntent
 import com.spela.player.presentation.viewmodel.SettingsIntent
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -134,59 +136,124 @@ class SettingsConsoleNavigationTest {
         onAllNodesWithText("PER_CONSOLE").assertCountEquals(0)
     }
 
-    /**
-     * The Controls category is the controller "verify hub" (#1353): it renders
-     * the connected-controllers detection view (GamepadConfigScreen) so the user
-     * can verify which controller is detected and override its type. (The
-     * Android-only gating of the keyboard keycode section is platform-gated and
-     * verified on-device, not here.)
-     */
-    @Test
-    fun controlsCategoryShowsConnectedControllersVerifyHub() = runComposeUiTest {
-        val harness = createLoggedInHarness()
-
-        setContent { harness.App() }
-        navigateToSettings(harness)
+    private fun ComposeUiTest.openControlsCategory(harness: SpelaTestHarness) {
         onNodeWithContentDescription("Controls").performClick()
         advanceQuick(harness)
-
-        onNodeWithContentDescription("Controllers heading").assertExists()
-        onNodeWithContentDescription("Player 1: No controller").assertExists()
     }
 
     /**
-     * The live input tester (#1355): a simulated press of a canonical input
-     * position lights up its chip, so the user can verify the detected type by
-     * pressing physical buttons. Driven via GamepadPortManager (the same signal
-     * the desktop poller / Android key dispatch feed on-device).
+     * The Controls category lists connected controllers (#1359). With none
+     * connected, the heading shows plus an empty-state hint.
      */
     @Test
-    fun inputTesterHighlightsPressedPosition() = runComposeUiTest {
+    fun controlsCategoryShowsEmptyControllerList() = runComposeUiTest {
         val harness = createLoggedInHarness()
 
         setContent { harness.App() }
         navigateToSettings(harness)
-        onNodeWithContentDescription("Controls").performClick()
+        openControlsCategory(harness)
+
+        onNodeWithContentDescription("Controllers heading").assertExists()
+        onNodeWithTag("controller_list_empty").assertExists()
+    }
+
+    /**
+     * A connected controller appears as a row in the list (#1359).
+     */
+    @Test
+    fun controlsCategoryListsConnectedController() = runComposeUiTest {
+        val harness = createLoggedInHarness()
+        harness.gamepadPortManager.connectDevice(500, "Test Pad", ControllerStyle.Xbox)
+
+        setContent { harness.App() }
+        navigateToSettings(harness)
+        openControlsCategory(harness)
+
+        onNodeWithTag("controller_row_500").assertExists()
+    }
+
+    /**
+     * The per-controller detail tester (#1355/#1359): with this controller under
+     * test, a simulated press of a canonical position lights up its chip — and
+     * only that position. Driven via GamepadPortManager (the same signal the
+     * desktop poller / Android key dispatch feed on-device).
+     */
+    @Test
+    fun controllerDetailInputTesterHighlightsPressedPosition() = runComposeUiTest {
+        val harness = createLoggedInHarness()
+        harness.gamepadPortManager.connectDevice(500, "Test Pad", ControllerStyle.Xbox)
+
+        setContent { harness.App() }
+        navigateToSettings(harness)
+        openControlsCategory(harness)
+
+        // Drill into the controller's detail.
+        onNodeWithTag("controller_row_500").performClick()
+        advanceQuick(harness)
+        onNodeWithTag("controller_detail_title").assertExists()
+
+        // On-device the tester captures when its element is focused; here we
+        // activate it directly for the selected controller.
+        harness.gamepadConfigViewModel.onIntent(GamepadConfigIntent.SetInputTestActive(true))
+        harness.gamepadPortManager.reportPositionInput(500, GamepadPosition.SOUTH, pressed = true)
         advanceQuick(harness)
 
         onNodeWithTag("settings_category_content_list")
             .performScrollToNode(hasTestTag("tester_pos_SOUTH"))
         onNodeWithTag("tester_pos_SOUTH")
-            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Not pressed"))
-
-        // Simulate pressing the bottom (SOUTH) physical button.
-        harness.gamepadPortManager.reportPositionInput(0, GamepadPosition.SOUTH, pressed = true)
-        advanceQuick(harness)
-        onNodeWithTag("tester_pos_SOUTH")
             .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Pressed"))
         onNodeWithTag("tester_pos_EAST")
             .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Not pressed"))
+    }
 
-        // Release.
-        harness.gamepadPortManager.reportPositionInput(0, GamepadPosition.SOUTH, pressed = false)
+    /**
+     * Assigning a player number already held by another controller raises a
+     * conflict prompt; confirming moves the slot and clears the old controller (#1359).
+     */
+    @Test
+    fun assigningOccupiedSlotShowsConflictThenSwitches() = runComposeUiTest {
+        val harness = createLoggedInHarness()
+        harness.gamepadPortManager.connectDevice(500, "Pad A", ControllerStyle.Xbox) // P1
+        harness.gamepadPortManager.connectDevice(600, "Pad B", ControllerStyle.PlayStation) // P2
+
+        setContent { harness.App() }
+        navigateToSettings(harness)
+        openControlsCategory(harness)
+
+        // In Pad B's detail, try to take P1 (held by Pad A).
+        onNodeWithTag("controller_row_600").performClick()
         advanceQuick(harness)
-        onNodeWithTag("tester_pos_SOUTH")
-            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Not pressed"))
+        onNodeWithTag("controller_detail_change_player").performClick()
+        advanceQuick(harness)
+        onNodeWithTag("slot_chip_0").performClick()
+        advanceQuick(harness)
+
+        onNodeWithText("Switch player?").assertExists()
+        onNodeWithTag("dialog_confirm").performClick()
+        advanceQuick(harness)
+
+        assertEquals(0, harness.gamepadPortManager.getPort(600))
+        assertEquals(-1, harness.gamepadPortManager.getPort(500))
+    }
+
+    /**
+     * Clearing a controller's player number unassigns it (#1359).
+     */
+    @Test
+    fun clearingPlayerUnassignsController() = runComposeUiTest {
+        val harness = createLoggedInHarness()
+        harness.gamepadPortManager.connectDevice(500, "Pad A", ControllerStyle.Xbox) // P1
+
+        setContent { harness.App() }
+        navigateToSettings(harness)
+        openControlsCategory(harness)
+
+        onNodeWithTag("controller_row_500").performClick()
+        advanceQuick(harness)
+        onNodeWithTag("controller_detail_clear_player").performClick()
+        advanceQuick(harness)
+
+        assertEquals(-1, harness.gamepadPortManager.getPort(500))
     }
 
     @Test

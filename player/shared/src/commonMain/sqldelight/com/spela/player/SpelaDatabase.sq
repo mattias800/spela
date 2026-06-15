@@ -227,6 +227,22 @@ DELETE FROM GamepadMappingEntity WHERE console_id = ? AND port = ? AND gamepad_p
 getAllGamepadMappings:
 SELECT * FROM GamepadMappingEntity;
 
+-- Per-physical-controller player-slot assignment (#1359), device-local, never
+-- synced. stable_key identifies the controller across reconnects (Android
+-- InputDevice.descriptor; desktop SDL device name). A row with player_slot NULL
+-- means the controller was explicitly cleared (remembered as "no player"); an
+-- absent row means never-seen, so a new controller auto-claims the lowest free slot.
+CREATE TABLE ControllerAssignmentEntity (
+    stable_key TEXT NOT NULL PRIMARY KEY,
+    player_slot INTEGER
+);
+
+upsertControllerAssignment:
+INSERT OR REPLACE INTO ControllerAssignmentEntity(stable_key, player_slot) VALUES (?, ?);
+
+getAllControllerAssignments:
+SELECT * FROM ControllerAssignmentEntity;
+
 -- Device info (singleton row for this device's identity)
 CREATE TABLE DeviceInfoEntity (
     id INTEGER PRIMARY KEY DEFAULT 1,

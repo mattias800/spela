@@ -71,12 +71,20 @@ val commonModule = module {
     single<PendingSaveUploadRepository> { PendingSaveUploadRepositoryImpl(get()) }
     single<OnboardingRepository> { OnboardingRepositoryImpl(get()) }
     single<ControllerStyleOverrideRepository> { ControllerStyleOverrideRepositoryImpl(get()) }
+    single<ControllerAssignmentRepository> { ControllerAssignmentRepositoryImpl(get()) }
     single<GamepadMappingRepository> { GamepadMappingRepositoryImpl(get()) }
     single<SessionRepository> { SessionRepositoryImpl(get(), get()) }
     single<ExploreRepository> { ExploreRepositoryImpl(get()) }
     single<SearchRepository> { SearchRepositoryImpl(get(), get()) }
     single { BiosRepository(get(), get()) }
-    single { GamepadPortManager(get(), get(), gamepadMappingRepository = get()) }
+    single {
+        GamepadPortManager(
+            get(),
+            get(),
+            gamepadMappingRepository = get(),
+            controllerAssignmentRepository = get(),
+        )
+    }
 
     /* Use Cases */
     factory { LoginUseCase(get(), get()) }
