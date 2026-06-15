@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -73,7 +74,10 @@ func callServeDownload(h *FederationHandler, peer *db.FederationPeer, key string
 		h.ginServeDownload(c)
 	})
 	w := httptest.NewRecorder()
-	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/x?key="+key, nil))
+	// In-mesh requests always carry the hop budget; mirror that here so relay
+	// paths are exercised (budget-exhaustion is tested separately with hops=0).
+	url := fmt.Sprintf("/x?key=%s&hops=%d", key, federation.MaxFederationHops)
+	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, url, nil))
 	return w
 }
 

@@ -158,9 +158,12 @@ func (h *FederationHandler) ginServeDownload(c *gin.Context) {
 	}
 
 	// 2. Relay (forward) from a friend, if enabled and within the hop budget.
-	hops := federation.MaxFederationHops
+	// A missing ?hops defaults to 0 (NO relay): in-mesh requests always carry the
+	// budget, so a peer that omits it gets local-or-404 rather than a budget reset
+	// to max — keeping the hop cap authoritative from the origin.
+	hops := 0
 	if q := c.Query("hops"); q != "" {
-		if n, err := strconv.Atoi(q); err == nil && n >= 0 && n <= hops {
+		if n, err := strconv.Atoi(q); err == nil && n >= 0 && n <= federation.MaxFederationHops {
 			hops = n
 		}
 	}
