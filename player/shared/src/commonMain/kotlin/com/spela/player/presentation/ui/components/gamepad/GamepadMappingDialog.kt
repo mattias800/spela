@@ -47,6 +47,7 @@ import com.spela.player.domain.model.GamepadPosition
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.feature.settings.SettingsDivider
+import com.spela.player.presentation.ui.gamepad.RightStickScroll
 import com.spela.player.presentation.ui.gamepad.gamepadFocusable
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -146,13 +147,16 @@ private fun androidx.compose.foundation.layout.ColumnScope.MappingList(
 
     Spacer(Modifier.height(SpSpacing.Medium))
 
+    val listScroll = rememberScrollState()
+    // Right analog stick scrolls the button list in gamepad mode (#1362).
+    RightStickScroll(listScroll)
     Column(
         modifier = Modifier
             .fillMaxWidth()
             // Take the remaining space (between header and the pinned action
             // buttons) and scroll within it (#1371).
             .weight(1f)
-            .verticalScroll(rememberScrollState()),
+            .verticalScroll(listScroll),
     ) {
         state.outputs.forEachIndexed { index, output ->
             OutputRow(

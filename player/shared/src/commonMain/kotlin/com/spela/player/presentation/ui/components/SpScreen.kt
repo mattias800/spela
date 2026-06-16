@@ -23,6 +23,7 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import com.spela.player.presentation.ui.gamepad.RightStickScroll
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.spScreenBackground
 
@@ -109,6 +110,8 @@ fun SpScrollableContent(
 ) {
     val scrollState = rememberScrollState()
     CompositionLocalProvider(LocalScrollState provides scrollState) {
+        // Right analog stick scrolls this viewport in gamepad mode (#1362).
+        RightStickScroll(scrollState)
         Column(
             modifier = modifier
                 .fillMaxSize()

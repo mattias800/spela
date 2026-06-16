@@ -187,6 +187,18 @@ class GamepadPortManager(
     private val _inputMode = MutableStateFlow(InputMode.TOUCH)
     val inputMode: StateFlow<InputMode> = _inputMode.asStateFlow()
 
+    /** Normalized right-stick vertical position (-1 fully up .. +1 fully down, 0 at
+     *  rest after deadzone), published by the platform input layers for continuous
+     *  viewport scrolling (#1362). The UI reads the latest value each frame. */
+    private val _rightStickScroll = MutableStateFlow(0f)
+    val rightStickScroll: StateFlow<Float> = _rightStickScroll.asStateFlow()
+
+    /** Report the right-stick vertical position (already deadzoned by the caller). */
+    fun setRightStickScroll(normalizedY: Float) {
+        if (_rightStickScroll.value == normalizedY) return
+        _rightStickScroll.value = normalizedY
+    }
+
     /** Observable controller status for UI indicators. */
     private val _controllerStatus = MutableStateFlow(ControllerStatusState.Empty)
     val controllerStatus: StateFlow<ControllerStatusState> = _controllerStatus.asStateFlow()
@@ -684,6 +696,7 @@ class GamepadPortManager(
         bindPressedByDevice.clear()
         _bindPressedPositions.value = emptySet()
         _bindCaptureActive.value = false
+        _rightStickScroll.value = 0f
         _assignments.value = emptyList()
         _connectedControllers.value = emptyList()
         _portActivity.value = emptyMap()
