@@ -24,6 +24,7 @@ import kotlinx.serialization.encoding.*
  * 
  *
  * @param avatarUrl 
+ * @param canImportGames 
  * @param createdAt 
  * @param disabled 
  * @param email 
@@ -39,6 +40,8 @@ import kotlinx.serialization.encoding.*
 data class UserResponse (
 
     @SerialName(value = "avatarUrl") @Required val avatarUrl: kotlin.String,
+
+    @SerialName(value = "canImportGames") @Required val canImportGames: kotlin.Boolean,
 
     @SerialName(value = "createdAt") @Required val createdAt: kotlinx.datetime.Instant,
 

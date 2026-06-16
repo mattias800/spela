@@ -11,6 +11,7 @@ import com.spela.client.apis.DevicesApi
 import com.spela.client.apis.EnrichmentApi
 import com.spela.client.apis.ExploreApi
 import com.spela.client.apis.FavoritesApi
+import com.spela.client.apis.FederationApi
 import com.spela.client.apis.GamesApi
 import com.spela.client.apis.NetplayApi
 import com.spela.client.apis.PlayLaterApi
@@ -226,6 +227,7 @@ class SpelaApiClient(
     private lateinit var enrichmentApi: EnrichmentApi
     private lateinit var exploreApi: ExploreApi
     private lateinit var favoritesApi: FavoritesApi
+    private lateinit var federationApi: FederationApi
     private lateinit var gamesApi: GamesApi
     private lateinit var netplayApi: NetplayApi
     private lateinit var playLaterApi: PlayLaterApi
@@ -258,6 +260,7 @@ class SpelaApiClient(
         enrichmentApi = EnrichmentApi(baseUrl, client)
         exploreApi = ExploreApi(baseUrl, client)
         favoritesApi = FavoritesApi(baseUrl, client)
+        federationApi = FederationApi(baseUrl, client)
         gamesApi = GamesApi(baseUrl, client)
         netplayApi = NetplayApi(baseUrl, client)
         playLaterApi = PlayLaterApi(baseUrl, client)
@@ -334,6 +337,29 @@ class SpelaApiClient(
 
     suspend fun logout() {
         authApi.authLogout().body()
+    }
+
+    // Federation (connected-server games + imports)
+
+    suspend fun getFederationConsoles(): com.spela.client.models.CatalogConsolesOutputBody {
+        return federationApi.federationCatalogConsoles(remoteOnly = true).body()
+    }
+
+    suspend fun getFederationAvailableGames(
+        console: String? = null,
+        key: String? = null,
+    ): com.spela.client.models.AvailableGamesOutputBody {
+        return federationApi.federationAvailableGames(remoteOnly = true, console = console, key = key).body()
+    }
+
+    suspend fun startFederationImport(
+        body: com.spela.client.models.StartImportInputBody,
+    ): com.spela.client.models.StartImportOutputBody {
+        return federationApi.federationStartImport(body).body()
+    }
+
+    suspend fun getFederationImports(): com.spela.client.models.ListImportsOutputBody {
+        return federationApi.federationListImports().body()
     }
 
     // Consoles & Games

@@ -33,6 +33,7 @@ fun UserDto.toDomain(): User = User(
     email = email,
     role = role,
     avatarUrl = avatarUrl,
+    canImportGames = canImportGames,
 )
 
 fun com.spela.client.models.ConsoleResponse.toDomain(): Console = Console(
@@ -1298,4 +1299,32 @@ fun com.spela.client.models.SearchResponse.toDomain() = GlobalSearchResult(
         results = franchises.results.map { it.toDomain() },
         total = franchises.total.toInt(),
     ),
+)
+
+// --- Federation (connected-server games + imports) -------------------------
+
+fun com.spela.client.models.CatalogAvailability.toDomain(): RemoteGame = RemoteGame(
+    key = key,
+    title = title,
+    console = console,
+    coverUrl = cover.ifEmpty { null },
+    originCount = originCount.toInt(),
+    local = local,
+)
+
+fun com.spela.client.models.CatalogConsoleCount.toDomain(): ConnectedConsole = ConnectedConsole(
+    console = console,
+    count = count.toInt(),
+)
+
+fun com.spela.client.models.ImportJob.toDomain(): ImportJob = ImportJob(
+    id = id,
+    status = ImportStatus.fromWire(status),
+    key = key,
+    title = title,
+    console = console,
+    bytesDownloaded = bytesDownloaded,
+    totalBytes = totalBytes,
+    errorMessage = errorMessage.ifEmpty { null },
+    gameId = gameId,
 )

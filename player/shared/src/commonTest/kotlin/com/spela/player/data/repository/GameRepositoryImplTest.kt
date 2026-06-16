@@ -541,6 +541,7 @@ class GameRepositoryImplTest {
             refreshToken = "refresh456",
             user = UserDto(
                 avatarUrl = "",
+                canImportGames = false,
                 createdAt = now,
                 disabled = false,
                 email = "test@example.com",

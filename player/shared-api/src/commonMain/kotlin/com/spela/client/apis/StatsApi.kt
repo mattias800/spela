@@ -15,6 +15,7 @@
 
 package com.spela.client.apis
 
+import com.spela.client.models.AggregatedStatsOutputBody
 import com.spela.client.models.HeatmapEntry
 import com.spela.client.models.HumaError
 import com.spela.client.models.MostActivePlayersResponse
@@ -44,6 +45,59 @@ open class StatsApi : ApiClient {
         baseUrl: String,
         httpClient: HttpClient
     ): super(baseUrl = baseUrl, httpClient = httpClient)
+
+
+    /**
+     * enum for parameter metric
+     */
+    @Serializable
+    enum class MetricFederationAggregatedStats(val value: kotlin.String) {
+        
+        @SerialName(value = "game_play")
+        game_play("game_play"),
+        
+        @SerialName(value = "player_play")
+        player_play("player_play")
+        
+    }
+
+    /**
+     * Federated (mesh) aggregate stats, hop-bounded
+     * 
+     * @param metric  (optional)
+     * @param limit  (optional)
+     * @param maxHops  (optional)
+     * @return AggregatedStatsOutputBody
+     */
+    @Suppress("UNCHECKED_CAST")
+    open suspend fun federationAggregatedStats(metric: MetricFederationAggregatedStats? = null, limit: kotlin.Long? = null, maxHops: kotlin.Long? = null): HttpResponse<AggregatedStatsOutputBody> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody = 
+            io.ktor.client.utils.EmptyContent
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        metric?.apply { localVariableQuery["metric"] = listOf("${ metric.value }") }
+        limit?.apply { localVariableQuery["limit"] = listOf("$limit") }
+        maxHops?.apply { localVariableQuery["maxHops"] = listOf("$maxHops") }
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.GET,
+            "/api/federation/stats/aggregated",
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return request(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
 
     /**
      * Most active players
