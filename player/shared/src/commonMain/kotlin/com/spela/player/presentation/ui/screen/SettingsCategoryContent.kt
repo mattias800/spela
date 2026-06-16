@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -53,6 +54,7 @@ import com.spela.player.presentation.intent.KeyMappingIntent
 import com.spela.player.presentation.viewmodel.KeyMappingViewModel
 import com.spela.player.presentation.viewmodel.GamepadConfigViewModel
 import com.spela.player.presentation.ui.components.gamepad.ControllerControls
+import com.spela.player.presentation.ui.gamepad.RightStickScroll
 import com.spela.player.util.currentPlatform
 import com.spela.player.presentation.state.KeyMappingState
 import com.spela.player.data.remote.SyncState
@@ -80,7 +82,11 @@ fun SettingsCategoryContent(
     modifier: Modifier = Modifier,
     topPadding: Dp = 0.dp,
 ) {
+    val listState = rememberLazyListState()
+    // Right analog stick scrolls the settings content in gamepad mode (#1362).
+    RightStickScroll(listState)
     LazyColumn(
+        state = listState,
         modifier = modifier.fillMaxSize().testTag("settings_category_content_list"),
         contentPadding = PaddingValues(
             start = SpSpacing.ScreenHorizontal,

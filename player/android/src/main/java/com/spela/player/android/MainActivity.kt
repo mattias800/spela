@@ -561,22 +561,13 @@ class MainActivity : ComponentActivity() {
         analogDpadUp = nowUp
         analogDpadDown = nowDown
 
-        if (Math.abs(rY) > 0.15f) {
-            val props = MotionEvent.PointerProperties().apply {
-                id = 0
-                toolType = MotionEvent.TOOL_TYPE_MOUSE
-            }
-            val coords = MotionEvent.PointerCoords().apply {
-                setAxisValue(MotionEvent.AXIS_VSCROLL, -rY * 0.5f)
-            }
-            val scrollEvent = MotionEvent.obtain(
-                event.downTime, event.eventTime, MotionEvent.ACTION_SCROLL,
-                1, arrayOf(props), arrayOf(coords),
-                0, 0, 1f, 1f, event.deviceId, 0, InputDevice.SOURCE_MOUSE, 0
-            )
-            super.dispatchGenericMotionEvent(scrollEvent)
-            scrollEvent.recycle()
-        }
+        // Right-stick viewport scrolling (#1362): publish the deadzoned stick
+        // position to the shared signal that the UI's RightStickScroll effect
+        // consumes and applies directly to the active scroll container. Report 0 at
+        // rest so releasing the stick stops the scroll. (Replaces an earlier
+        // synthesized ACTION_SCROLL approach that routed by pointer position and so
+        // missed the focused pane on multi-pane screens like Settings.)
+        gamepadPortManager.setRightStickScroll(if (Math.abs(rY) > 0.15f) rY else 0f)
 
         return true
     }

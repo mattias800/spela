@@ -78,6 +78,7 @@ import com.spela.player.presentation.ui.gamepad.LocalIsForwardNavigation
 import com.spela.player.presentation.ui.gamepad.LocalIsTabSwitch
 import com.spela.player.presentation.ui.gamepad.InputModeClassifier
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
+import com.spela.player.presentation.ui.gamepad.LocalRightStickScroll
 import com.spela.player.presentation.ui.gamepad.resolveGamepadNavStyle
 import com.spela.player.presentation.ui.components.LocalScrapeService
 import com.spela.player.presentation.ui.theme.SpelaTheme
@@ -95,6 +96,7 @@ fun SpelaApp(deps: SpelaAppDependencies) = with(deps) {
     CompositionLocalProvider(
         LocalScrapeService provides scrapeService,
         LocalInputMode provides inputMode,
+        LocalRightStickScroll provides gamepadPortManager?.rightStickScroll,
     ) {
         val navState by navigationViewModel.state.collectAsState()
 

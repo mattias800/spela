@@ -13,6 +13,7 @@ import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 
 /**
  * Polls connected gamepads via SDL2 (JNI) and routes their input
@@ -34,6 +35,9 @@ class DesktopGamepadPoller(
 
         /** Axis dead zone (SDL range is -32768..32767, ~15% dead zone). */
         private const val AXIS_DEADZONE = 4800
+
+        /** SDL axis magnitude, for normalizing to -1..1 (#1362 right-stick scroll). */
+        private const val AXIS_RANGE = 32768f
 
         /** Number of axes: LX, LY, RX, RY, TriggerL, TriggerR. */
         private const val NUM_AXES = 6
@@ -100,6 +104,10 @@ class DesktopGamepadPoller(
         // Track which controllers are present this frame
         val currentIds = mutableSetOf<Int>()
 
+        // Largest right-stick Y deflection across all pads, for UI viewport
+        // scrolling (#1362) — works for assigned and unassigned controllers alike.
+        var uiScrollY = 0f
+
         for (state in states) {
             currentIds.add(state.controllerId)
 
@@ -153,6 +161,14 @@ class DesktopGamepadPoller(
                 )
             }
 
+            // Right-stick viewport scroll (#1362): track the largest right-stick Y
+            // deflection across pads (before the port check, so an unassigned pad
+            // still scrolls the UI). The UI's RightStickScroll effect consumes it.
+            if (state.axes.size >= NUM_AXES) {
+                val ry = applyDeadzone(state.axes[3]) / AXIS_RANGE
+                if (abs(ry) > abs(uiScrollY)) uiScrollY = ry
+            }
+
             // Emulation routing requires an assigned player port; unassigned
             // controllers stop here (they only feed the tester above).
             val port = gamepadPortManager.getPort(state.controllerId)
@@ -191,6 +207,9 @@ class DesktopGamepadPoller(
                 gamepadPortManager.reportActivity(port)
             }
         }
+
+        // Publish the frame's right-stick deflection for UI viewport scroll (#1362).
+        gamepadPortManager.setRightStickScroll(uiScrollY)
 
         // While a controller is under test, mask its test buttons (everything
         // except the D-pad) from UI navigation so e.g. the right face button

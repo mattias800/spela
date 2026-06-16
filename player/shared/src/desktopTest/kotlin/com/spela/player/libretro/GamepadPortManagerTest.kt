@@ -510,6 +510,17 @@ class GamepadPortManagerTest {
         assertFalse(GamepadPosition.SOUTH in manager.bindPressedPositions.value)
     }
 
+    // ── Right-stick viewport scroll signal (#1362) ───────────────────────────
+
+    @Test
+    fun rightStickScrollDefaultsToZeroAndReportsValue() {
+        assertEquals(0f, manager.rightStickScroll.value)
+        manager.setRightStickScroll(0.7f)
+        assertEquals(0.7f, manager.rightStickScroll.value)
+        manager.setRightStickScroll(0f)
+        assertEquals(0f, manager.rightStickScroll.value)
+    }
+
     // ── Player-slot assignment (#1359) ───────────────────────────────────────
 
     @Test
