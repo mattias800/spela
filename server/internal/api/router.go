@@ -208,6 +208,23 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 		}),
 	}
 
+	// Game-import worker (#1350): needs the scrape queue to enqueue metadata
+	// scraping after an imported ROM is ingested. Disabled when no scraper is
+	// configured (the import endpoints then return 503).
+	var importer *ImportService
+	if cfg.Scraper != nil {
+		importer = &ImportService{
+			DB:       cfg.DB,
+			Peers:    federation.PeerStore{DB: cfg.DB},
+			Catalog:  federation.CatalogSnapshotStore{DB: cfg.DB},
+			Identity: fedIdentity,
+			GameDirs: cfg.GameDirs,
+			Queue:    cfg.Scraper.Queue,
+		}
+		importer.Start()
+		federationHandler.Imports = importer
+	}
+
 	socialHandler := &SocialHandler{DB: cfg.DB, Hub: cfg.Hub}
 	ratingHandler := &RatingHandler{DB: cfg.DB, Hub: cfg.Hub}
 	sharedSaveHandler := &SharedSaveHandler{DB: cfg.DB, Storage: cfg.Storage, Hub: cfg.Hub}
@@ -515,6 +532,10 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 		// double close; only close if the goroutine was actually started.
 		if fedRefreshStarted {
 			stopFedRefreshOnce.Do(func() { close(stopFedRefresh) })
+		}
+		// Stop the import worker (Stop is itself idempotent).
+		if importer != nil {
+			importer.Stop()
 		}
 	}
 

@@ -668,6 +668,7 @@ type UserResponse struct {
 	AvatarURL       string    `json:"avatarUrl"`
 	Disabled        bool      `json:"disabled"`
 	PendingApproval bool      `json:"pendingApproval"`
+	CanImportGames  bool      `json:"canImportGames"`
 	CreatedAt       time.Time `json:"createdAt"`
 	UpdatedAt       time.Time `json:"updatedAt"`
 }
@@ -682,6 +683,7 @@ func ToUserResponse(u db.User) UserResponse {
 		AvatarURL:       u.AvatarURL,
 		Disabled:        u.Disabled,
 		PendingApproval: u.PendingApproval,
+		CanImportGames:  u.CanImportGames,
 		CreatedAt:       u.CreatedAt,
 		UpdatedAt:       u.UpdatedAt,
 	}

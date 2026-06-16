@@ -45,6 +45,10 @@ type User struct {
 	ShowPerfOverlay     bool           `gorm:"default:false" json:"showPerformanceOverlay"`
 	AutoSaveEnabled     bool           `gorm:"default:true" json:"autoSaveEnabled"`
 	AutoLoadSaveEnabled bool           `gorm:"default:true" json:"autoLoadSaveEnabled"`
+	// CanImportGames grants a non-admin user the ability to import games from
+	// connected federation servers into the shared library. Admins always can;
+	// this flag opts a specific user in, granted by an admin. See #1350.
+	CanImportGames bool `gorm:"default:false" json:"canImportGames"`
 	// When true, the player silently re-downloads a cached core binary
 	// whose sha256 no longer matches the server's current fingerprint.
 	// When false, the player trusts its local cache even if the server

@@ -533,6 +533,9 @@
             "readOnly": true,
             "type": "string"
           },
+          "canImportGames": {
+            "type": "boolean"
+          },
           "disabled": {
             "type": "boolean"
           },
@@ -5133,6 +5136,91 @@
         ],
         "type": "object"
       },
+      "ImportJob": {
+        "additionalProperties": false,
+        "properties": {
+          "bytesDownloaded": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "completedAt": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "console": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "errorMessage": {
+            "type": "string"
+          },
+          "gameId": {
+            "format": "int64",
+            "minimum": 0,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "id": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "key": {
+            "type": "string"
+          },
+          "requestedByUserId": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "startedAt": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "totalBytes": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "createdAt",
+          "updatedAt",
+          "status",
+          "key",
+          "title",
+          "console",
+          "bytesDownloaded",
+          "totalBytes",
+          "errorMessage",
+          "gameId",
+          "requestedByUserId",
+          "startedAt",
+          "completedAt"
+        ],
+        "type": "object"
+      },
       "ImportResult": {
         "additionalProperties": false,
         "properties": {
@@ -5360,6 +5448,30 @@
         },
         "required": [
           "exchanges"
+        ],
+        "type": "object"
+      },
+      "ListImportsOutputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/ListImportsOutputBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "imports": {
+            "items": {
+              "$ref": "#/components/schemas/ImportJob"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "imports"
         ],
         "type": "object"
       },
@@ -9681,6 +9793,59 @@
         ],
         "type": "object"
       },
+      "StartImportInputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/StartImportInputBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "console": {
+            "description": "Console abbreviation, e.g. SNES.",
+            "type": "string"
+          },
+          "key": {
+            "description": "Cross-server game key (igdb:\u003cid\u003e or crc:\u003ccrc32\u003e).",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 255,
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "title",
+          "console"
+        ],
+        "type": "object"
+      },
+      "StartImportOutputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/StartImportOutputBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "job": {
+            "$ref": "#/components/schemas/ImportJob"
+          }
+        },
+        "required": [
+          "job"
+        ],
+        "type": "object"
+      },
       "StatEntry": {
         "additionalProperties": false,
         "properties": {
@@ -11042,6 +11207,9 @@
           "avatarUrl": {
             "type": "string"
           },
+          "canImportGames": {
+            "type": "boolean"
+          },
           "createdAt": {
             "format": "date-time",
             "type": "string"
@@ -11077,6 +11245,7 @@
           "avatarUrl",
           "disabled",
           "pendingApproval",
+          "canImportGames",
           "createdAt",
           "updatedAt"
         ],
@@ -19057,6 +19226,101 @@
           }
         ],
         "summary": "Games available across the friend mesh, hop-bounded",
+        "tags": [
+          "federation",
+          "catalog"
+        ]
+      }
+    },
+    "/api/federation/import": {
+      "post": {
+        "operationId": "federationStartImport",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartImportInputBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StartImportOutputBody"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Import a connected-server game into the local library",
+        "tags": [
+          "federation",
+          "catalog"
+        ]
+      }
+    },
+    "/api/federation/imports": {
+      "get": {
+        "operationId": "federationListImports",
+        "parameters": [
+          {
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListImportsOutputBody"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List game imports with status and progress",
         "tags": [
           "federation",
           "catalog"

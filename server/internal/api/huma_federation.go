@@ -41,6 +41,9 @@ type FederationHandler struct {
 	// CoverResolver resolves cover art for a catalog key (consumer-side, via
 	// this server's own IGDB client). Nil = no covers (placeholder in the UI).
 	CoverResolver coverResolver
+	// Imports runs game imports from connected servers (#1350). Nil disables
+	// the import endpoints (e.g. when no scraper/queue is configured).
+	Imports *ImportService
 	// GameDirs / JWTSecret support direct-friend ROM download (#1348 Phase 3b):
 	// GameDirs resolves a local game file to serve; JWTSecret authenticates the
 	// user-facing download route.
