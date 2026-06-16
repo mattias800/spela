@@ -259,3 +259,29 @@ func TestAvailableGames_FiltersByQuery(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, none.Body.Games, 2)
 }
+
+func TestAvailableGames_FiltersByKey(t *testing.T) {
+	database := openAPIFedTestDB(t)
+	selfID, _ := federation.GenerateIdentity()
+	h := catalogHandler(database, selfID, nil)
+	const cover = "https://images.igdb.com/igdb/image/upload/t_cover_big/co1.jpg"
+	h.CoverResolver = fakeCoverResolver{byKey: map[string]string{"igdb:1": cover}}
+
+	require.NoError(t, h.CatalogSnapshots.ReplacePeerSnapshot("B", []federation.CatalogEntry{
+		{OriginFingerprint: "B", Hops: 1, Key: "igdb:1", Title: "Super Mario Bros", Console: "NES"},
+		{OriginFingerprint: "B", Hops: 1, Key: "igdb:2", Title: "Sonic the Hedgehog", Console: "MD"},
+	}, time.Unix(1, 0)))
+
+	// Exact key match returns just that entry, with its cover resolved — this
+	// is how the remote-game page fetches a single entry on a deep link.
+	res, err := h.HumaAvailableGames(context.Background(), &AvailableGamesInput{Key: "igdb:1"})
+	require.NoError(t, err)
+	require.Len(t, res.Body.Games, 1)
+	assert.Equal(t, "Super Mario Bros", res.Body.Games[0].Title)
+	assert.Equal(t, cover, res.Body.Games[0].Cover)
+
+	// A key offered by no connected server returns nothing.
+	none, err := h.HumaAvailableGames(context.Background(), &AvailableGamesInput{Key: "igdb:999"})
+	require.NoError(t, err)
+	assert.Empty(t, none.Body.Games)
+}
