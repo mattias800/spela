@@ -377,10 +377,17 @@ class MainActivity : ComponentActivity() {
                 return true
             }
             KeyEvent.KEYCODE_BUTTON_L1 -> {
+                // Switching tabs via the bumpers is a gamepad action: force Compose
+                // into keyboard input mode so the destination tab's focusRestoreItem
+                // default/restore fires and the D-pad is live on arrival (#1382).
+                // The hardware bumper (source=0) doesn't flip the mode on its own,
+                // same as the d-pad case below.
+                ComposeFocusBridge.requestKeyboardMode?.invoke()
                 navigationViewModel.onIntent(NavigationIntent.PreviousSection)
                 return true
             }
             KeyEvent.KEYCODE_BUTTON_R1 -> {
+                ComposeFocusBridge.requestKeyboardMode?.invoke()
                 navigationViewModel.onIntent(NavigationIntent.NextSection)
                 return true
             }
