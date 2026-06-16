@@ -53,8 +53,12 @@ import com.spela.player.presentation.viewmodel.SettingsState
 import com.spela.player.presentation.intent.KeyMappingIntent
 import com.spela.player.presentation.viewmodel.KeyMappingViewModel
 import com.spela.player.presentation.viewmodel.GamepadConfigViewModel
+import androidx.compose.runtime.CompositionLocalProvider
 import com.spela.player.presentation.ui.components.gamepad.ControllerControls
+import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
 import com.spela.player.presentation.ui.gamepad.RightStickScroll
+import com.spela.player.presentation.ui.gamepad.focusRestoreItem
+import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
 import com.spela.player.util.currentPlatform
 import com.spela.player.presentation.state.KeyMappingState
 import com.spela.player.data.remote.SyncState
@@ -85,6 +89,10 @@ fun SettingsCategoryContent(
     val listState = rememberLazyListState()
     // Right analog stick scrolls the settings content in gamepad mode (#1362).
     RightStickScroll(listState)
+    // Screen-scoped focus memory for the content pane (#1382), so e.g. drilling
+    // into a console's settings and pressing B restores focus to that console row.
+    val contentFocusMemory = rememberFocusMemoryState()
+    CompositionLocalProvider(LocalFocusMemory provides contentFocusMemory) {
     LazyColumn(
         state = listState,
         modifier = modifier.fillMaxSize().testTag("settings_category_content_list"),
@@ -125,6 +133,7 @@ fun SettingsCategoryContent(
         // Bottom spacing
         item { Spacer(Modifier.height(SpSpacing.XXXLarge)) }
     }
+    } // CompositionLocalProvider(LocalFocusMemory)
 }
 
 // --- Category content functions (LazyListScope extensions) ---
@@ -328,13 +337,25 @@ private fun androidx.compose.foundation.lazy.LazyListScope.consolesContent(
     state: SettingsState,
     onNavigateToConsoleSettings: (String) -> Unit,
 ) {
-    if (state.consoles.isNotEmpty()) {
+    // Only list consoles the server actually has games for (#1383) — there's
+    // nothing to configure for an empty console, and the empty-state below already
+    // promises "with games".
+    val consoles = state.consoles.filter { it.gameCount > 0 }.sortedForConsoleList()
+    if (consoles.isNotEmpty()) {
+        val firstConsoleId = consoles.first().id
         items(
-            items = state.consoles.sortedForConsoleList(),
+            items = consoles,
             key = { "console_${it.id}" },
         ) { console ->
             SpCard(
-                modifier = Modifier.testTag("console_settings_row_${console.id}"),
+                // Restore focus to this row on back from its ConsoleSettings, and
+                // default-focus the first console on first entry (#1382).
+                modifier = Modifier
+                    .testTag("console_settings_row_${console.id}")
+                    .focusRestoreItem(
+                        key = "console_settings_${console.id}",
+                        isDefault = console.id == firstConsoleId,
+                    ),
                 onClick = { onNavigateToConsoleSettings(console.id) },
                 onGradient = true,
             ) {
