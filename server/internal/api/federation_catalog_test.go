@@ -285,3 +285,38 @@ func TestAvailableGames_FiltersByKey(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, none.Body.Games)
 }
+
+func TestAvailableGames_FiltersByConsole(t *testing.T) {
+	database := openAPIFedTestDB(t)
+	selfID, _ := federation.GenerateIdentity()
+	h := catalogHandler(database, selfID, nil)
+
+	require.NoError(t, h.CatalogSnapshots.ReplacePeerSnapshot("B", []federation.CatalogEntry{
+		{OriginFingerprint: "B", Hops: 1, Key: "igdb:1", Title: "Super Mario", Console: "NES"},
+		{OriginFingerprint: "B", Hops: 1, Key: "igdb:2", Title: "Chrono Trigger", Console: "SNES"},
+	}, time.Unix(1, 0)))
+
+	res, err := h.HumaAvailableGames(context.Background(), &AvailableGamesInput{Console: "SNES"})
+	require.NoError(t, err)
+	require.Len(t, res.Body.Games, 1)
+	assert.Equal(t, "Chrono Trigger", res.Body.Games[0].Title)
+}
+
+func TestCatalogConsoles_GroupsAndCounts(t *testing.T) {
+	database := openAPIFedTestDB(t)
+	selfID, _ := federation.GenerateIdentity()
+	h := catalogHandler(database, selfID, nil)
+
+	require.NoError(t, h.CatalogSnapshots.ReplacePeerSnapshot("B", []federation.CatalogEntry{
+		{OriginFingerprint: "B", Hops: 1, Key: "igdb:1", Title: "A", Console: "NES"},
+		{OriginFingerprint: "B", Hops: 1, Key: "igdb:2", Title: "B", Console: "NES"},
+		{OriginFingerprint: "B", Hops: 1, Key: "igdb:3", Title: "C", Console: "SNES"},
+	}, time.Unix(1, 0)))
+
+	out, err := h.HumaCatalogConsoles(context.Background(), &CatalogConsolesInput{RemoteOnly: true})
+	require.NoError(t, err)
+	// Sorted by console abbreviation: NES (2 games) before SNES (1 game).
+	require.Len(t, out.Body.Consoles, 2)
+	assert.Equal(t, CatalogConsoleCount{Console: "NES", Count: 2}, out.Body.Consoles[0])
+	assert.Equal(t, CatalogConsoleCount{Console: "SNES", Count: 1}, out.Body.Consoles[1])
+}

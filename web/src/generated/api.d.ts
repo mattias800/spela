@@ -2694,6 +2694,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/federation/catalog/consoles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Per-console game counts across the connected-server mesh */
+        get: operations["federationCatalogConsoles"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/federation/import": {
         parameters: {
             query?: never;
@@ -5948,6 +5965,20 @@ export interface components {
             /** Format: int64 */
             originCount: number;
             title: string;
+        };
+        CatalogConsoleCount: {
+            console: string;
+            /** Format: int64 */
+            count: number;
+        };
+        CatalogConsolesOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/CatalogConsolesOutputBody.json
+             */
+            readonly $schema?: string;
+            consoles: components["schemas"]["CatalogConsoleCount"][];
         };
         ChallengeAttemptResponse: {
             /**
@@ -14243,6 +14274,7 @@ export interface operations {
                 remoteOnly?: boolean;
                 q?: string;
                 key?: string;
+                console?: string;
             };
             header?: never;
             path?: never;
@@ -14257,6 +14289,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AvailableGamesOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    federationCatalogConsoles: {
+        parameters: {
+            query?: {
+                maxHops?: number;
+                remoteOnly?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogConsolesOutputBody"];
                 };
             };
             /** @description Error */
