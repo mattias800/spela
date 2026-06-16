@@ -127,7 +127,7 @@ describe("AdminFederationPage", () => {
   it("shows empty states when there are no peers or activity", () => {
     renderPage();
 
-    expect(screen.getByText("No friend servers")).toBeInTheDocument();
+    expect(screen.getByText("No connected servers")).toBeInTheDocument();
     expect(screen.getByText("No federation activity yet")).toBeInTheDocument();
   });
 
@@ -144,7 +144,7 @@ describe("AdminFederationPage", () => {
     renderPage();
 
     const errorBlock = screen.getByTestId("federation-error");
-    expect(errorBlock).toHaveTextContent("Failed to load friend servers");
+    expect(errorBlock).toHaveTextContent("Failed to load connected servers");
     expect(errorBlock).toHaveTextContent("network down");
     expect(screen.queryByTestId("federation-peer-row")).not.toBeInTheDocument();
 
@@ -188,7 +188,7 @@ describe("AdminFederationPage", () => {
     await user.click(screen.getByTestId("pair-friend-button"));
     expect(screen.getByTestId("accept-invite-panel")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("tab", { name: "Invite a friend" }));
+    await user.click(screen.getByRole("tab", { name: "Generate an invite" }));
     await user.click(screen.getByTestId("generate-invite-button"));
 
     expect(mockIssueMutate).toHaveBeenCalled();

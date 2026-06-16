@@ -13,7 +13,7 @@ interface FederationPeersTableProps {
   onRevoke: (peer: FederationPeer) => void;
 }
 
-const HEADERS = ["Friend", "Status", "Last contact", "Last error", ""];
+const HEADERS = ["Server", "Status", "Last contact", "Last error", ""];
 
 export function FederationPeersTable({
   peers,
@@ -49,8 +49,8 @@ export function FederationPeersTable({
                 <td colSpan={HEADERS.length}>
                   <EmptyState
                     icon={Network}
-                    title="No friend servers"
-                    description="Pair with a friend server to start sharing across the mesh."
+                    title="No connected servers"
+                    description="Add a connected server to start sharing across the mesh."
                   />
                 </td>
               </tr>
@@ -63,7 +63,7 @@ export function FederationPeersTable({
                 >
                   <td className="px-5 py-3">
                     <div className="text-sm font-medium text-surface-200">
-                      {peer.name || "Unnamed friend"}
+                      {peer.name || "Unnamed server"}
                     </div>
                     <div className="font-mono text-xs text-surface-500">
                       {peer.fingerprint.slice(0, 16)}…
