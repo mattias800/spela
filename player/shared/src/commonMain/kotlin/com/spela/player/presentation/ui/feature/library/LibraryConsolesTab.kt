@@ -73,6 +73,9 @@ internal fun LibraryConsolesTab(
         SpColor.AccentDark.darken(0.80f),
     )
 
+    // Only show consoles the server has games for (#1383) — empty consoles aren't
+    // browsable. (Loading uses the raw list so the skeleton still shows on first load.)
+    val visibleConsoles = state.consoles.filter { it.gameCount > 0 }
     SpScreen(gradientColors = gradientColors) {
         if (state.isLoading && state.consoles.isEmpty()) {
             SpScrollableContent {
@@ -93,7 +96,7 @@ internal fun LibraryConsolesTab(
                 onRefresh = { viewModel.onIntent(GameListIntent.LoadConsoles) },
                 modifier = Modifier.fillMaxSize(),
             ) {
-                if (state.consoles.isEmpty()) {
+                if (visibleConsoles.isEmpty()) {
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center,
@@ -111,7 +114,7 @@ internal fun LibraryConsolesTab(
                             Spacer(Modifier.height(SpSpacing.Medium))
                             BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
                                 ConsolesGrid(
-                                    consoles = state.consoles,
+                                    consoles = visibleConsoles,
                                     onConsoleSelected = onConsoleSelected,
                                     consolesWithMissingBios = state.consolesWithMissingBios,
                                     columnsPerRow = consoleColumnsForWidth(maxWidth),

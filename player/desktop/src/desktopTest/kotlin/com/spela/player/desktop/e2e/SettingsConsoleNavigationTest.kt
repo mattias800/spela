@@ -6,6 +6,7 @@ import com.spela.player.domain.model.ControllerStyle
 import com.spela.player.domain.model.GamepadPosition
 import com.spela.player.presentation.navigation.NavigationIntent
 import com.spela.player.presentation.navigation.SpScreen
+import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.viewmodel.GamepadConfigIntent
 import com.spela.player.presentation.viewmodel.SettingsIntent
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -294,6 +295,35 @@ class SettingsConsoleNavigationTest {
         // The console rows are only rendered in the Per-Console category content;
         // before the rememberSaveable fix this reset to General and the rows were gone.
         onNodeWithText("Nintendo Entertainment System").assertIsDisplayed()
+    }
+
+    /**
+     * Back from a console's settings restores focus to that console row (#1382),
+     * so D-pad navigation continues from there. Uses SNES (not the default first
+     * console) to prove restoration, not just default focus.
+     */
+    @Test
+    fun backFromConsoleSettingsRestoresFocusToThatConsole() = runComposeUiTest {
+        val harness = createLoggedInHarness()
+        setContent { harness.App() }
+        navigateToSettings(harness)
+        navigateToControlsCategory(harness)
+        harness.gamepadPortManager.setInputMode(InputMode.GAMEPAD)
+        advanceQuick(harness)
+
+        // Focus + drill into SNES (by row tag, scrolled into view if needed).
+        onNodeWithTag("console_settings_row_snes").performScrollTo().performClick()
+        advance(harness)
+        assertEquals(
+            SpScreen.ConsoleSettings("snes"),
+            harness.navigationViewModel.state.value.currentScreen,
+        )
+
+        // Back → focus restored to the SNES row.
+        harness.navigationViewModel.onIntent(NavigationIntent.GoBack)
+        advance(harness)
+
+        onNodeWithTag("console_settings_row_snes").assertIsFocused()
     }
 
     @Test
