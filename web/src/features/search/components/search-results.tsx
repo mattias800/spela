@@ -28,8 +28,8 @@ interface SearchResultsDisplayProps {
   // Optional: federated results can render before the local search resolves.
   results?: SearchResults;
   onNavigate: (path: string) => void;
-  // Games found on connected servers (not in the local library). Read-only —
-  // listed for discovery; not navigable or downloadable yet.
+  // Games found on connected servers (not in the local library). Navigable to
+  // the remote-game page, where an import-capable user can pull them in.
   federatedGames?: CatalogAvailability[];
 }
 
@@ -43,6 +43,9 @@ interface ResultSection {
 interface ResultItem {
   id: string;
   path: string;
+  // Router navigation state — federated rows carry their catalog entry so the
+  // remote-game page can render instantly without a refetch.
+  state?: CatalogAvailability;
   render: (highlighted: boolean) => React.ReactNode;
 }
 
@@ -138,8 +141,17 @@ export function SearchResultsDisplay({
   federatedGames,
 }: SearchResultsDisplayProps) {
   const sections = results ? buildSections(results) : [];
-  const fedGames = federatedGames ?? [];
-  const allItems = sections.flatMap((s) => s.items);
+  const allFedGames = Array.isArray(federatedGames) ? federatedGames : [];
+  const fedGames = allFedGames.slice(0, FEDERATED_LIMIT);
+  const allItems: ResultItem[] = [
+    ...sections.flatMap((s) => s.items),
+    ...fedGames.map((game) => ({
+      id: `federated-${game.key}`,
+      path: `/remote-games/${encodeURIComponent(game.key)}`,
+      state: game,
+      render: (hl: boolean) => <FederatedGameRow game={game} highlighted={hl} />,
+    })),
+  ];
   const [highlightIndex, setHighlightIndex] = useState(-1);
   const scrollRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -168,7 +180,11 @@ export function SearchResultsDisplay({
         const item = allItems[highlightIndex];
         if (item) {
           onNavigate(item.path);
-          navigate(item.path);
+          if (item.state) {
+            navigate(item.path, { state: item.state });
+          } else {
+            navigate(item.path);
+          }
         }
       }
     },
@@ -219,7 +235,11 @@ export function SearchResultsDisplay({
                 className="w-full text-left px-4 py-1.5 cursor-pointer"
                 onClick={() => {
                   onNavigate(item.path);
-                  navigate(item.path);
+                  if (item.state) {
+                    navigate(item.path, { state: item.state });
+                  } else {
+                    navigate(item.path);
+                  }
                 }}
                 onMouseEnter={() => setHighlightIndex(currentIndex)}
               >
@@ -236,22 +256,34 @@ export function SearchResultsDisplay({
             <span className="text-xs font-semibold uppercase tracking-wider text-surface-500">
               On connected servers
             </span>
-            {fedGames.length > FEDERATED_LIMIT && (
+            {allFedGames.length > FEDERATED_LIMIT && (
               <span className="text-xs text-surface-500">
-                {fedGames.length} total
+                {allFedGames.length} total
               </span>
             )}
           </div>
-          {fedGames.slice(0, FEDERATED_LIMIT).map((game) => (
-            // Read-only: discovery only — not navigable or downloadable yet.
-            <div
-              key={game.key}
-              data-testid={`federated-result-${game.key}`}
-              className="px-4 py-1.5"
-            >
-              <FederatedGameRow game={game} />
-            </div>
-          ))}
+          {fedGames.map((game) => {
+            const currentIndex = globalIndex++;
+            return (
+              <button
+                key={game.key}
+                data-result-index={currentIndex}
+                data-testid={`federated-result-${game.key}`}
+                className="w-full text-left px-4 py-1.5 cursor-pointer"
+                onClick={() => {
+                  const path = `/remote-games/${encodeURIComponent(game.key)}`;
+                  onNavigate(path);
+                  navigate(path, { state: game });
+                }}
+                onMouseEnter={() => setHighlightIndex(currentIndex)}
+              >
+                <FederatedGameRow
+                  game={game}
+                  highlighted={highlightIndex === currentIndex}
+                />
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
@@ -374,7 +406,13 @@ function GameRow({
 // Connected-server game: discovery row. Box art is the origin server's public
 // IGDB cover URL when the federated catalog carries one, else a placeholder —
 // covers aren't guaranteed for every connected-server game.
-function FederatedGameRow({ game }: { game: CatalogAvailability }) {
+function FederatedGameRow({
+  game,
+  highlighted,
+}: {
+  game: CatalogAvailability;
+  highlighted: boolean;
+}) {
   const servers = game.originCount;
   const icon = game.cover ? (
     <img
@@ -395,7 +433,7 @@ function FederatedGameRow({ game }: { game: CatalogAvailability }) {
           {game.console}
         </span>
       }
-      highlighted={false}
+      highlighted={highlighted}
     />
   );
 }

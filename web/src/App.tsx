@@ -20,6 +20,7 @@ const ConsoleDetailPage = lazy(() => import("@/pages/console-detail-page"));
 const ConsoleGamesPage = lazy(() => import("@/pages/console-games-page"));
 const GamesPage = lazy(() => import("@/pages/games-page"));
 const GameDetailPage = lazy(() => import("@/pages/game-detail-page"));
+const RemoteGameDetailPage = lazy(() => import("@/pages/remote-game-detail-page"));
 const GameAchievementsPage = lazy(() => import("@/pages/game-achievements-page"));
 const FavoritesPage = lazy(() => import("@/pages/favorites-page"));
 const PlayLaterPage = lazy(() => import("@/pages/play-later-page"));
@@ -176,6 +177,10 @@ export function App() {
                       element={<ConsoleGamesPage />}
                     />
                     <Route path="games/:id" element={<GameDetailPage />} />
+                    <Route
+                      path="remote-games/:key"
+                      element={<RemoteGameDetailPage />}
+                    />
                     <Route
                       path="games/:id/achievements"
                       element={<GameAchievementsPage />}

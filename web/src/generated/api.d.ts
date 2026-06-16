@@ -14242,6 +14242,7 @@ export interface operations {
                 maxHops?: number;
                 remoteOnly?: boolean;
                 q?: string;
+                key?: string;
             };
             header?: never;
             path?: never;

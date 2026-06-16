@@ -19196,6 +19196,14 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "key",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {

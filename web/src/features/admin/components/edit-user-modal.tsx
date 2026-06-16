@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, Modal, Input, Select } from "@/components/ui";
+import { Button, Modal, Input, Select, Switch } from "@/components/ui";
 import { useUpdateUser } from "@/hooks/use-admin";
 import { useToast } from "@/components/ui";
 import type { User } from "@/types/api";
@@ -45,6 +45,9 @@ function EditUserForm({
   const [editPassword, setEditPassword] = useState("");
   const [editRole, setEditRole] = useState<string>(user.role);
   const [editDisabled, setEditDisabled] = useState(user.disabled);
+  const [editCanImportGames, setEditCanImportGames] = useState(
+    user.canImportGames,
+  );
 
   function handleSaveUser() {
     const data: {
@@ -52,11 +55,14 @@ function EditUserForm({
       email?: string;
       password?: string;
       disabled?: boolean;
+      canImportGames?: boolean;
     } = {};
     if (editEmail !== user.email) data.email = editEmail;
     if (editPassword) data.password = editPassword;
     if (editRole !== user.role) data.role = editRole;
     if (editDisabled !== user.disabled) data.disabled = editDisabled;
+    if (editCanImportGames !== user.canImportGames)
+      data.canImportGames = editCanImportGames;
 
     updateUser.mutate(
       { id: user.id, data },
@@ -96,15 +102,28 @@ function EditUserForm({
         disabled={user.role === "owner" || user.id === currentUser?.id}
       />
       {user.role !== "owner" && (
-        <label className="flex items-center gap-3 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={editDisabled}
-            onChange={(e) => setEditDisabled(e.target.checked)}
-            className="h-4 w-4 rounded border-surface-600 bg-surface-800 text-brand-500 focus:ring-brand-500"
-          />
+        <div className="flex items-center justify-between gap-3">
           <span className="text-sm text-surface-300">Disable account</span>
-        </label>
+          <Switch
+            checked={editDisabled}
+            onChange={setEditDisabled}
+            data-testid="disable-account-toggle"
+          />
+        </div>
+      )}
+      {/* Admins/owners can always import; this grants the capability to a
+          plain user, so it only applies while the role is "user". */}
+      {editRole === "user" && (
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-sm text-surface-300">
+            Can import games from connected servers
+          </span>
+          <Switch
+            checked={editCanImportGames}
+            onChange={setEditCanImportGames}
+            data-testid="can-import-games-toggle"
+          />
+        </div>
       )}
       <div className="flex justify-end gap-3">
         <Button variant="secondary" onClick={onClose}>

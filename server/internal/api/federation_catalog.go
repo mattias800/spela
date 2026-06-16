@@ -190,6 +190,7 @@ type AvailableGamesInput struct {
 	MaxHops    int    `query:"maxHops"`    // viewer reach; <=0 = full reachable mesh
 	RemoteOnly bool   `query:"remoteOnly"` // only games not available locally
 	Q          string `query:"q"`          // case-insensitive title filter; empty = all
+	Key        string `query:"key"`        // exact cross-key filter; empty = all
 }
 type AvailableGamesOutput struct {
 	Body struct {
@@ -228,6 +229,18 @@ func (h *FederationHandler) HumaAvailableGames(_ context.Context, in *AvailableG
 		filtered := make([]federation.CatalogAvailability, 0, len(games))
 		for _, g := range games {
 			if strings.Contains(strings.ToLower(g.Title), q) {
+				filtered = append(filtered, g)
+			}
+		}
+		games = filtered
+	}
+	// Exact key filter: lets the remote-game page fetch one entry by its
+	// cross-key (e.g. on a deep link / refresh) without resolving covers for
+	// the whole catalog — only the single match below reaches the resolver.
+	if key := strings.TrimSpace(in.Key); key != "" {
+		filtered := make([]federation.CatalogAvailability, 0, 1)
+		for _, g := range games {
+			if g.Key == key {
 				filtered = append(filtered, g)
 			}
 		}
