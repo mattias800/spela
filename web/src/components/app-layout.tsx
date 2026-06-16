@@ -24,6 +24,7 @@ import {
   Puzzle,
   ShieldAlert,
   Network,
+  Globe,
   Binary,
 } from "lucide-react";
 import { Sidebar } from "@/components/ui";
@@ -80,6 +81,12 @@ export function AppLayout() {
             "/play-later",
             "/collections",
           ],
+        },
+        {
+          to: "/connected-servers",
+          icon: Globe,
+          label: "Connected Servers",
+          matchPaths: ["/connected-servers"],
         },
         { to: "/stats", icon: BarChart3, label: "Stats" },
         { to: "/top-lists", icon: Trophy, label: "Top Lists" },

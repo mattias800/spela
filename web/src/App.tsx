@@ -21,6 +21,10 @@ const ConsoleGamesPage = lazy(() => import("@/pages/console-games-page"));
 const GamesPage = lazy(() => import("@/pages/games-page"));
 const GameDetailPage = lazy(() => import("@/pages/game-detail-page"));
 const RemoteGameDetailPage = lazy(() => import("@/pages/remote-game-detail-page"));
+const ConnectedServersPage = lazy(() => import("@/pages/connected-servers-page"));
+const ConnectedServerConsolePage = lazy(
+  () => import("@/pages/connected-server-console-page"),
+);
 const GameAchievementsPage = lazy(() => import("@/pages/game-achievements-page"));
 const FavoritesPage = lazy(() => import("@/pages/favorites-page"));
 const PlayLaterPage = lazy(() => import("@/pages/play-later-page"));
@@ -180,6 +184,14 @@ export function App() {
                     <Route
                       path="remote-games/:key"
                       element={<RemoteGameDetailPage />}
+                    />
+                    <Route
+                      path="connected-servers"
+                      element={<ConnectedServersPage />}
+                    />
+                    <Route
+                      path="connected-servers/:console"
+                      element={<ConnectedServerConsolePage />}
                     />
                     <Route
                       path="games/:id/achievements"
