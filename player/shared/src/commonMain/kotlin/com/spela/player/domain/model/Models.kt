@@ -31,6 +31,9 @@ data class User(
     val email: String = "",
     val role: String,
     val avatarUrl: String? = null,
+    // Admins/owners can always import federation games; this flag grants the
+    // capability to a plain user (see #1391 / #1385).
+    val canImportGames: Boolean = false,
 )
 
 @Serializable

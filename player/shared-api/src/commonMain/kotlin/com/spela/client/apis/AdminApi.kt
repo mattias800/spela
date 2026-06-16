@@ -15,6 +15,7 @@
 
 package com.spela.client.apis
 
+import com.spela.client.models.AcceptInviteBody
 import com.spela.client.models.AdminCreateRomHackResponse
 import com.spela.client.models.AdminCreateUserRequest
 import com.spela.client.models.AdminRAStatusResponse
@@ -39,11 +40,19 @@ import com.spela.client.models.HumaError
 import com.spela.client.models.IGDBSearchResult
 import com.spela.client.models.IGDBStatusResponse
 import com.spela.client.models.ImportResult
+import com.spela.client.models.IssueInviteOutputBody
+import com.spela.client.models.ListExchangesOutputBody
+import com.spela.client.models.ListPeersOutputBody
 import com.spela.client.models.MessageResponse
 import com.spela.client.models.MetadataMatchesResponse
+import com.spela.client.models.PairResponseBody
+import com.spela.client.models.PingResult
 import com.spela.client.models.RateLimitResponse
 import com.spela.client.models.RefreshAchievementsResponse
+import com.spela.client.models.RefreshCatalogOutputBody
+import com.spela.client.models.RefreshStatsOutputBody
 import com.spela.client.models.ReplaceROMResponse
+import com.spela.client.models.RevokePeerOutputBody
 import com.spela.client.models.ScanStartedResponse
 import com.spela.client.models.ScanStatusResponse
 import com.spela.client.models.ScrapeGameResponse
@@ -62,6 +71,8 @@ import com.spela.client.models.SystemEventsListResponse
 import com.spela.client.models.TestIGDBRequest
 import com.spela.client.models.TestIGDBResponse
 import com.spela.client.models.UpdateGameMetadataRequest
+import com.spela.client.models.UpdatePeerPolicyBody
+import com.spela.client.models.UpdatePeerPolicyOutputBody
 import com.spela.client.models.UpdateVerificationTagRequest
 import com.spela.client.models.UpdateVerificationTagResponse
 import com.spela.client.models.UserResponse
@@ -702,6 +713,307 @@ open class AdminApi : ApiClient {
             localVariableAuthNames
         ).wrap()
     }
+
+
+    /**
+     * Accept a friend&#39;s invite and pair
+     * 
+     * @param acceptInviteBody 
+     * @return PairResponseBody
+     */
+    @Suppress("UNCHECKED_CAST")
+    open suspend fun federationAcceptInvite(acceptInviteBody: AcceptInviteBody): HttpResponse<PairResponseBody> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody = acceptInviteBody
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.POST,
+            "/api/admin/federation/peers/accept",
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return jsonRequest(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+
+
+    /**
+     * Issue a federation pairing invite
+     * 
+     * @return IssueInviteOutputBody
+     */
+    @Suppress("UNCHECKED_CAST")
+    open suspend fun federationIssueInvite(): HttpResponse<IssueInviteOutputBody> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody = 
+            io.ktor.client.utils.EmptyContent
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.POST,
+            "/api/admin/federation/invite",
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return request(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+
+    /**
+     * List the federation exchange ledger (observability)
+     * 
+     * @param peer  (optional)
+     * @param direction  (optional)
+     * @param status  (optional)
+     * @param limit  (optional)
+     * @return ListExchangesOutputBody
+     */
+    @Suppress("UNCHECKED_CAST")
+    open suspend fun federationListExchanges(peer: kotlin.String? = null, direction: kotlin.String? = null, status: kotlin.String? = null, limit: kotlin.Long? = null): HttpResponse<ListExchangesOutputBody> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody = 
+            io.ktor.client.utils.EmptyContent
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        peer?.apply { localVariableQuery["peer"] = listOf("$peer") }
+        direction?.apply { localVariableQuery["direction"] = listOf("$direction") }
+        status?.apply { localVariableQuery["status"] = listOf("$status") }
+        limit?.apply { localVariableQuery["limit"] = listOf("$limit") }
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.GET,
+            "/api/admin/federation/exchanges",
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return request(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+
+    /**
+     * List federation peers (with health)
+     * 
+     * @return ListPeersOutputBody
+     */
+    @Suppress("UNCHECKED_CAST")
+    open suspend fun federationListPeers(): HttpResponse<ListPeersOutputBody> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody = 
+            io.ktor.client.utils.EmptyContent
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.GET,
+            "/api/admin/federation/peers",
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return request(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+
+    /**
+     * Refresh cached friend game catalogs now
+     * 
+     * @return RefreshCatalogOutputBody
+     */
+    @Suppress("UNCHECKED_CAST")
+    open suspend fun federationRefreshCatalog(): HttpResponse<RefreshCatalogOutputBody> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody = 
+            io.ktor.client.utils.EmptyContent
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.POST,
+            "/api/admin/federation/catalog/refresh",
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return request(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+
+    /**
+     * Refresh cached friend stat rollups now
+     * 
+     * @return RefreshStatsOutputBody
+     */
+    @Suppress("UNCHECKED_CAST")
+    open suspend fun federationRefreshStats(): HttpResponse<RefreshStatsOutputBody> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody = 
+            io.ktor.client.utils.EmptyContent
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.POST,
+            "/api/admin/federation/stats/refresh",
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return request(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+
+    /**
+     * Revoke a federation peer
+     * 
+     * @param fingerprint Peer fingerprint (base32).
+     * @return RevokePeerOutputBody
+     */
+    @Suppress("UNCHECKED_CAST")
+    open suspend fun federationRevokePeer(fingerprint: kotlin.String): HttpResponse<RevokePeerOutputBody> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody = 
+            io.ktor.client.utils.EmptyContent
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.DELETE,
+            "/api/admin/federation/peers/{fingerprint}".replace("{" + "fingerprint" + "}", "$fingerprint"),
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return request(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+
+    /**
+     * Test connection to a peer
+     * 
+     * @param fingerprint Peer fingerprint (base32).
+     * @return PingResult
+     */
+    @Suppress("UNCHECKED_CAST")
+    open suspend fun federationTestPeer(fingerprint: kotlin.String): HttpResponse<PingResult> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody = 
+            io.ktor.client.utils.EmptyContent
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.POST,
+            "/api/admin/federation/peers/{fingerprint}/test".replace("{" + "fingerprint" + "}", "$fingerprint"),
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return request(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+
+    /**
+     * Update a peer&#39;s share/consume policy
+     * 
+     * @param fingerprint Peer fingerprint (base32).
+     * @param updatePeerPolicyBody 
+     * @return UpdatePeerPolicyOutputBody
+     */
+    @Suppress("UNCHECKED_CAST")
+    open suspend fun federationUpdatePeerPolicy(fingerprint: kotlin.String, updatePeerPolicyBody: UpdatePeerPolicyBody): HttpResponse<UpdatePeerPolicyOutputBody> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody = updatePeerPolicyBody
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.PUT,
+            "/api/admin/federation/peers/{fingerprint}/policy".replace("{" + "fingerprint" + "}", "$fingerprint"),
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return jsonRequest(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
 
 
     /**
