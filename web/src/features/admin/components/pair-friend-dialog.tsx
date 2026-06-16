@@ -21,9 +21,9 @@ interface PairFriendDialogProps {
 
 type Tab = "accept" | "invite";
 
-// Modal for forming a federation link with a friend server. Two directions:
-// accept an invite a friend gave you, or generate one to hand to them. Pairing
-// is mutual and invite-gated; either side can initiate.
+// Modal for forming a federation link with a connected server. Two directions:
+// accept an invite the other admin gave you, or generate one to hand to them.
+// Pairing is mutual and invite-gated; either side can initiate.
 export function PairFriendDialog({ open, onClose }: PairFriendDialogProps) {
   const { toast } = useToast();
   const [tab, setTab] = useState<Tab>("accept");
@@ -55,7 +55,7 @@ export function PairFriendDialog({ open, onClose }: PairFriendDialogProps) {
       { invite: invite.trim(), name: name.trim() },
       {
         onSuccess: () => {
-          toast("success", "Friend server paired");
+          toast("success", "Connected server added");
           close();
         },
         onError: (e) =>
@@ -91,34 +91,34 @@ export function PairFriendDialog({ open, onClose }: PairFriendDialogProps) {
   };
 
   return (
-    <Modal open={open} onClose={close} title="Pair a friend server" size="lg">
+    <Modal open={open} onClose={close} title="Add a connected server" size="lg">
       <div className="space-y-5">
         <StateTabNav>
           <StateTabItem active={tab === "accept"} onClick={() => setTab("accept")}>
             Accept an invite
           </StateTabItem>
           <StateTabItem active={tab === "invite"} onClick={() => setTab("invite")}>
-            Invite a friend
+            Generate an invite
           </StateTabItem>
         </StateTabNav>
 
         {tab === "accept" ? (
           <div className="space-y-4" data-testid="accept-invite-panel">
             <p className="text-sm text-surface-400">
-              Paste the invite a friend sent you. We'll verify it, connect to
-              their server, and add them as a peer.
+              Paste the invite another server's admin sent you. We'll verify it,
+              connect to their server, and add it as a connected server.
             </p>
             <Textarea
-              label="Friend's invite"
+              label="Invite"
               rows={4}
               value={invite}
               onChange={(e) => setInvite(e.target.value)}
-              placeholder="Paste the invite string your friend sent you"
+              placeholder="Paste the invite string the other admin sent you"
               className="font-mono text-xs"
               data-testid="accept-invite-input"
             />
             <Input
-              label="Name for this friend"
+              label="Name for this server"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Alice's Server"
@@ -139,7 +139,7 @@ export function PairFriendDialog({ open, onClose }: PairFriendDialogProps) {
         ) : (
           <div className="space-y-4" data-testid="invite-friend-panel">
             <p className="text-sm text-surface-400">
-              Generate a one-time invite and send it to your friend's admin
+              Generate a one-time invite and send it to the other server's admin
               out-of-band. They paste it under “Accept an invite” to connect.
             </p>
             {generated ? (

@@ -48,7 +48,7 @@ export function AdminFederationPage() {
     if (!revokeTarget) return;
     revokePeer.mutate(revokeTarget.fingerprint, {
       onSuccess: () => {
-        toast("success", "Friend server revoked");
+        toast("success", "Connected server revoked");
         setRevokeTarget(null);
       },
       onError: (e) => {
@@ -61,11 +61,11 @@ export function AdminFederationPage() {
   return (
     <PageLayout
       title="Federation"
-      subtitle="Your friend servers and the data flowing between them. Pulls, catalog refreshes, and downloads are recorded below."
+      subtitle="Your connected servers and the data flowing between them. Pulls, catalog refreshes, and downloads are recorded below."
     >
       <SectionList>
         <TitledSection
-          title="Friend servers"
+          title="Connected servers"
           renderRight={
             <Button
               variant="primary"
@@ -74,13 +74,13 @@ export function AdminFederationPage() {
               data-testid="pair-friend-button"
             >
               <Plus className="h-4 w-4" />
-              Pair friend server
+              Add connected server
             </Button>
           }
         >
           {peersError ? (
             <FederationErrorBlock
-              title="Failed to load friend servers"
+              title="Failed to load connected servers"
               error={peersErrorObj}
               onRetry={() => refetchPeers()}
             />
@@ -128,8 +128,8 @@ export function AdminFederationPage() {
       <ConfirmDeleteModal
         open={revokeTarget !== null}
         onClose={() => setRevokeTarget(null)}
-        title="Revoke friend server"
-        message={`Revoke "${revokeTarget?.name || "this friend"}"? They will be removed as a peer and their shared data will stop appearing across the mesh. You can re-pair later with a new invite.`}
+        title="Revoke connected server"
+        message={`Revoke "${revokeTarget?.name || "this server"}"? It will be removed as a peer and its shared data will stop appearing across the mesh. You can reconnect later with a new invite.`}
         onConfirm={handleRevoke}
         isPending={revokePeer.isPending}
         actionLabel="Revoke"

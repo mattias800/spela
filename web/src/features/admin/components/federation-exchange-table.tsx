@@ -8,7 +8,7 @@ interface FederationExchangeTableProps {
   isLoading: boolean;
 }
 
-const HEADERS = ["Time", "Friend", "Direction", "Operation", "Status", "Items"];
+const HEADERS = ["Time", "Server", "Direction", "Operation", "Status", "Items"];
 
 function statusVariant(status: string): "success" | "danger" | "warning" | "default" {
   switch (status) {
@@ -62,7 +62,7 @@ export function FederationExchangeTable({
                   <EmptyState
                     icon={Activity}
                     title="No federation activity yet"
-                    description="Exchanges with friend servers (stats pulls, catalog refreshes, downloads) will appear here."
+                    description="Exchanges with connected servers (stats pulls, catalog refreshes, downloads) will appear here."
                   />
                 </td>
               </tr>

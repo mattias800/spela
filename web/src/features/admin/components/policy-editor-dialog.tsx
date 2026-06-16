@@ -35,7 +35,7 @@ interface PolicyEditorDialogProps {
   onClose: () => void;
 }
 
-// Per-friend share/consume editor. Mounted only while a peer is selected, so
+// Per-server share/consume editor. Mounted only while a peer is selected, so
 // the initial toggle state reads straight from that peer's stored policy.
 export function PolicyEditorDialog({ peer, onClose }: PolicyEditorDialogProps) {
   const { toast } = useToast();
@@ -70,13 +70,13 @@ export function PolicyEditorDialog({ peer, onClose }: PolicyEditorDialogProps) {
     <Modal
       open
       onClose={onClose}
-      title={`Sharing with ${peer.name || "this friend"}`}
+      title={`Sharing with ${peer.name || "this server"}`}
       size="lg"
     >
       <div className="space-y-5">
         <p className="text-sm text-surface-400">
           Choose which data you{" "}
-          <span className="text-surface-200">share</span> with this friend and
+          <span className="text-surface-200">share</span> with this server and
           which you <span className="text-surface-200">accept</span> from them.
           Both sides must opt in for data to flow.
         </p>
