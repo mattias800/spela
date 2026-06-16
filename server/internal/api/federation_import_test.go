@@ -79,6 +79,31 @@ func TestImportService_DownloadsAndIngests(t *testing.T) {
 	assert.Equal(t, int64(1), queued)
 }
 
+func TestImportService_ClaimsJobOnce(t *testing.T) {
+	const rom = "ROM-BYTES-1234"
+	svc, database, _, _ := importTestRig(t, rom)
+
+	job, err := svc.Enqueue("igdb:42", "Chrono Trigger", "SNES", 7)
+	require.NoError(t, err)
+
+	// Simulate two callers that both SELECTed the same pending job before
+	// either claimed it (the SELECT-then-update race). The atomic claim must
+	// let exactly one run; the second bails without re-importing.
+	first := *job
+	second := *job
+	svc.run(&first)
+	svc.run(&second)
+
+	// Exactly one Game was created, and the loser didn't clobber the winner's
+	// completed status with a "file already exists" failure.
+	var games int64
+	database.Model(&db.Game{}).Count(&games)
+	assert.Equal(t, int64(1), games)
+
+	require.NoError(t, database.First(job, job.ID).Error)
+	assert.Equal(t, "completed", job.Status)
+}
+
 func TestImportService_FailsWhenNoConnectedServerOffersIt(t *testing.T) {
 	svc, database, _, _ := importTestRig(t, "x")
 	job, err := svc.Enqueue("igdb:does-not-exist", "Ghost", "SNES", 7)

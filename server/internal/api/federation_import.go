@@ -134,7 +134,17 @@ func (s *ImportService) run(job *db.ImportJob) {
 		return
 	}
 
-	s.update(job, map[string]any{"status": "downloading", "started_at": time.Now()})
+	// Atomically claim the job by flipping it off "pending", guarded on that
+	// status. If a concurrent caller already claimed it the update affects no
+	// rows and we bail, so the same job is never processed (downloaded) twice.
+	claim := s.DB.Model(&db.ImportJob{}).
+		Where("id = ? AND status = ?", job.ID, "pending").
+		Updates(map[string]any{"status": "downloading", "started_at": time.Now()})
+	if claim.Error != nil || claim.RowsAffected == 0 {
+		return
+	}
+	job.Status = "downloading"
+
 	part, size, err := s.download(job)
 	if err != nil {
 		s.fail(job, err.Error())
