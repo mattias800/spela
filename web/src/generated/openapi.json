@@ -1323,6 +1323,47 @@
         ],
         "type": "object"
       },
+      "CatalogConsoleCount": {
+        "additionalProperties": false,
+        "properties": {
+          "console": {
+            "type": "string"
+          },
+          "count": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "console",
+          "count"
+        ],
+        "type": "object"
+      },
+      "CatalogConsolesOutputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/CatalogConsolesOutputBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "consoles": {
+            "items": {
+              "$ref": "#/components/schemas/CatalogConsoleCount"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "consoles"
+        ],
+        "type": "object"
+      },
       "ChallengeAttemptResponse": {
         "additionalProperties": false,
         "properties": {
@@ -19204,6 +19245,14 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "console",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -19234,6 +19283,62 @@
           }
         ],
         "summary": "Games available across the friend mesh, hop-bounded",
+        "tags": [
+          "federation",
+          "catalog"
+        ]
+      }
+    },
+    "/api/federation/catalog/consoles": {
+      "get": {
+        "operationId": "federationCatalogConsoles",
+        "parameters": [
+          {
+            "explode": false,
+            "in": "query",
+            "name": "maxHops",
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "remoteOnly",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogConsolesOutputBody"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Per-console game counts across the connected-server mesh",
         "tags": [
           "federation",
           "catalog"

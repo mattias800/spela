@@ -7,6 +7,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -191,6 +192,7 @@ type AvailableGamesInput struct {
 	RemoteOnly bool   `query:"remoteOnly"` // only games not available locally
 	Q          string `query:"q"`          // case-insensitive title filter; empty = all
 	Key        string `query:"key"`        // exact cross-key filter; empty = all
+	Console    string `query:"console"`    // exact console-abbreviation filter; empty = all
 }
 type AvailableGamesOutput struct {
 	Body struct {
@@ -246,6 +248,18 @@ func (h *FederationHandler) HumaAvailableGames(_ context.Context, in *AvailableG
 		}
 		games = filtered
 	}
+	// Console filter: the connected-servers browse area shows one console's
+	// games at a time, so covers are only resolved for that console (bounded),
+	// not the whole catalog.
+	if console := strings.TrimSpace(in.Console); console != "" {
+		filtered := make([]federation.CatalogAvailability, 0, len(games))
+		for _, g := range games {
+			if g.Console == console {
+				filtered = append(filtered, g)
+			}
+		}
+		games = filtered
+	}
 
 	// Fill in cover art locally from each game's cross-key — no covers are
 	// carried across the mesh. The resolver caches results (so repeats are free)
@@ -260,6 +274,62 @@ func (h *FederationHandler) HumaAvailableGames(_ context.Context, in *AvailableG
 
 	out := &AvailableGamesOutput{}
 	out.Body.Games = games
+	return out, nil
+}
+
+// --- Catalog consoles (browse overview) ------------------------------------
+
+type CatalogConsolesInput struct {
+	MaxHops    int  `query:"maxHops"`    // viewer reach; <=0 = full reachable mesh
+	RemoteOnly bool `query:"remoteOnly"` // only consoles with games not available locally
+}
+type CatalogConsoleCount struct {
+	Console string `json:"console"` // console abbreviation, e.g. "SNES"
+	Count   int    `json:"count"`   // distinct games available for it across the mesh
+}
+type CatalogConsolesOutput struct {
+	Body struct {
+		Consoles []CatalogConsoleCount `json:"consoles"`
+	}
+}
+
+// HumaCatalogConsoles returns the per-console game counts for the mesh catalog,
+// powering the connected-servers browse overview. Deliberately resolves NO
+// covers (the overview only needs counts), so it stays cheap even unfiltered.
+func (h *FederationHandler) HumaCatalogConsoles(_ context.Context, in *CatalogConsolesInput) (*CatalogConsolesOutput, error) {
+	local, err := federation.BuildLocalCatalog(h.DB, h.Identity.Fingerprint())
+	if err != nil {
+		return nil, huma.Error500InternalServerError("failed to build local catalog")
+	}
+	snapHops := -1
+	if in.MaxHops >= 1 {
+		snapHops = in.MaxHops
+	}
+	cached, err := h.CatalogSnapshots.EntriesWithinHops(snapHops)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("failed to read catalog snapshots")
+	}
+	games := federation.AggregateCatalog(append(local, cached...), h.Identity.Fingerprint())
+
+	counts := map[string]int{}
+	for _, g := range games {
+		if in.RemoteOnly && g.Local {
+			continue
+		}
+		if g.Console == "" {
+			continue
+		}
+		counts[g.Console]++
+	}
+	consoles := make([]CatalogConsoleCount, 0, len(counts))
+	for c, n := range counts {
+		consoles = append(consoles, CatalogConsoleCount{Console: c, Count: n})
+	}
+	// Stable order so the UI doesn't reshuffle between polls (map iteration is random).
+	sort.Slice(consoles, func(i, j int) bool { return consoles[i].Console < consoles[j].Console })
+
+	out := &CatalogConsolesOutput{}
+	out.Body.Consoles = consoles
 	return out, nil
 }
 

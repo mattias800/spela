@@ -447,6 +447,18 @@ func RegisterFederationRoutes(api huma.API, h *FederationHandler, jwtSecret stri
 		Security:    sec,
 	}, h.HumaAvailableGames)
 
+	// User-facing: per-console game counts for the connected-servers browse
+	// overview (no covers resolved — counts only).
+	huma.Register(api, huma.Operation{
+		OperationID: "federationCatalogConsoles",
+		Method:      http.MethodGet,
+		Path:        "/api/federation/catalog/consoles",
+		Summary:     "Per-console game counts across the connected-server mesh",
+		Tags:        []string{"federation", "catalog"},
+		Middlewares: huma.Middlewares{requireAuth, rateLimit},
+		Security:    sec,
+	}, h.HumaCatalogConsoles)
+
 	// User-facing (capability-gated in the handler): import a connected-server
 	// game into the local library, and list import jobs + their progress (#1350).
 	huma.Register(api, huma.Operation{
