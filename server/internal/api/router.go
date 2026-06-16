@@ -473,6 +473,7 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 	if cfg.TestMode {
 		testHandler := &TestHandler{DB: cfg.DB}
 		RegisterTestRoute(humaAPI, testHandler)
+		RegisterTestFederationRoute(humaAPI, testHandler)
 	}
 
 	// Serve frontend static files when configured (unified single-container deployment)

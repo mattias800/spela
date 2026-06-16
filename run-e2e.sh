@@ -183,7 +183,6 @@ SPELA_CORS_ORIGINS="http://localhost:$VITE_PORT" \
 SPELA_ENCRYPTION_KEY="e2e-test-encryption-key-32bytes!" \
 SPELA_CHALLENGE_RATE_LIMIT_SEC=0 \
 SPELA_TEST_MODE=true \
-GIN_MODE=release \
 "$E2E_DIR/spela-server" &
 SERVER_PID=$!
 
