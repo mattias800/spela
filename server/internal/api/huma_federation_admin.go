@@ -447,6 +447,28 @@ func RegisterFederationRoutes(api huma.API, h *FederationHandler, jwtSecret stri
 		Security:    sec,
 	}, h.HumaAvailableGames)
 
+	// User-facing (capability-gated in the handler): import a connected-server
+	// game into the local library, and list import jobs + their progress (#1350).
+	huma.Register(api, huma.Operation{
+		OperationID: "federationStartImport",
+		Method:      http.MethodPost,
+		Path:        "/api/federation/import",
+		Summary:     "Import a connected-server game into the local library",
+		Tags:        []string{"federation", "catalog"},
+		Middlewares: huma.Middlewares{requireAuth, rateLimit},
+		Security:    sec,
+	}, h.HumaStartImport)
+
+	huma.Register(api, huma.Operation{
+		OperationID: "federationListImports",
+		Method:      http.MethodGet,
+		Path:        "/api/federation/imports",
+		Summary:     "List game imports with status and progress",
+		Tags:        []string{"federation", "catalog"},
+		Middlewares: huma.Middlewares{requireAuth, rateLimit},
+		Security:    sec,
+	}, h.HumaListImports)
+
 	// Admin: force a refresh of cached friend catalogs (also runs periodically).
 	huma.Register(api, huma.Operation{
 		OperationID: "federationRefreshCatalog",

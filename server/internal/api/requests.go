@@ -81,6 +81,7 @@ type AdminUpdateUserRequest struct {
 	Password        string      `json:"password,omitempty" maxLength:"72"`
 	Disabled        *bool       `json:"disabled,omitempty"`
 	PendingApproval *bool       `json:"pendingApproval,omitempty"`
+	CanImportGames  *bool       `json:"canImportGames,omitempty"`
 }
 
 // --- Games (admin metadata + play time) ---

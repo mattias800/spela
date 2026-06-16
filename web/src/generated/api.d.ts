@@ -2694,6 +2694,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/federation/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Import a connected-server game into the local library */
+        post: operations["federationStartImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/federation/imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List game imports with status and progress */
+        get: operations["federationListImports"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/federation/pair": {
         parameters: {
             query?: never;
@@ -5628,6 +5662,7 @@ export interface components {
              * @example https://example.com/api/schemas/AdminUpdateUserRequest.json
              */
             readonly $schema?: string;
+            canImportGames?: boolean;
             disabled?: boolean;
             /** Format: email */
             email?: string;
@@ -7184,6 +7219,31 @@ export interface components {
             source: string;
             status: string;
         };
+        ImportJob: {
+            /** Format: int64 */
+            bytesDownloaded: number;
+            /** Format: date-time */
+            completedAt: string | null;
+            console: string;
+            /** Format: date-time */
+            createdAt: string;
+            errorMessage: string;
+            /** Format: int64 */
+            gameId: number | null;
+            /** Format: int64 */
+            id: number;
+            key: string;
+            /** Format: int64 */
+            requestedByUserId: number;
+            /** Format: date-time */
+            startedAt: string | null;
+            status: string;
+            title: string;
+            /** Format: int64 */
+            totalBytes: number;
+            /** Format: date-time */
+            updatedAt: string;
+        };
         ImportResult: {
             /**
              * Format: uri
@@ -7276,6 +7336,15 @@ export interface components {
              */
             readonly $schema?: string;
             exchanges: components["schemas"]["FederationExchange"][];
+        };
+        ListImportsOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/ListImportsOutputBody.json
+             */
+            readonly $schema?: string;
+            imports: components["schemas"]["ImportJob"][];
         };
         ListMyNetplayInvitesResponse: {
             /**
@@ -8742,6 +8811,28 @@ export interface components {
             title: string;
             verificationStatus: string;
         };
+        StartImportInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/StartImportInputBody.json
+             */
+            readonly $schema?: string;
+            /** @description Console abbreviation, e.g. SNES. */
+            console: string;
+            /** @description Cross-server game key (igdb:<id> or crc:<crc32>). */
+            key: string;
+            title: string;
+        };
+        StartImportOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/StartImportOutputBody.json
+             */
+            readonly $schema?: string;
+            job: components["schemas"]["ImportJob"];
+        };
         StatEntry: {
             /** Format: int64 */
             hops: number;
@@ -9265,6 +9356,7 @@ export interface components {
              */
             readonly $schema?: string;
             avatarUrl: string;
+            canImportGames: boolean;
             /** Format: date-time */
             createdAt: string;
             disabled: boolean;
@@ -14164,6 +14256,70 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AvailableGamesOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    federationStartImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartImportInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StartImportOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    federationListImports: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListImportsOutputBody"];
                 };
             };
             /** @description Error */

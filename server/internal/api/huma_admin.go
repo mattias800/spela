@@ -383,6 +383,9 @@ func (h *AdminHandler) HumaAdminUpdateUser(ctx context.Context, in *AdminUpdateU
 	if req.PendingApproval != nil {
 		user.PendingApproval = *req.PendingApproval
 	}
+	if req.CanImportGames != nil {
+		user.CanImportGames = *req.CanImportGames
+	}
 
 	if req.Role != "" || req.Password != "" || req.Disabled != nil || req.PendingApproval != nil {
 		user.TokenVersion++
@@ -394,7 +397,8 @@ func (h *AdminHandler) HumaAdminUpdateUser(ctx context.Context, in *AdminUpdateU
 
 	slog.Info("audit: admin updated user", "admin_id", currentUserID, "target_user", user.Username,
 		"changed_role", req.Role != "", "changed_password", req.Password != "",
-		"changed_disabled", req.Disabled != nil, "changed_pending_approval", req.PendingApproval != nil)
+		"changed_disabled", req.Disabled != nil, "changed_pending_approval", req.PendingApproval != nil,
+		"changed_can_import_games", req.CanImportGames != nil)
 
 	return &AdminUpdateUserOutput{Body: ToUserResponse(user)}, nil
 }
