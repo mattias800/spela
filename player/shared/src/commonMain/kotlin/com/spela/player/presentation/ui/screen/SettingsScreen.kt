@@ -25,6 +25,8 @@ import com.spela.player.presentation.ui.components.SpScreen
 import com.spela.player.presentation.ui.components.SpTextField
 import com.spela.player.presentation.ui.components.keymapping.PresetPickerDialog
 import com.spela.player.presentation.ui.feature.library.darken
+import com.spela.player.presentation.ui.gamepad.InputMode
+import com.spela.player.presentation.ui.gamepad.LocalInputMode
 import com.spela.player.presentation.ui.theme.LocalTitleBarInset
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -81,6 +83,11 @@ fun SettingsScreen(
     )
 
     val titleBarInset = LocalTitleBarInset.current
+    // In gamepad mode the section-indicator pill overlays the top-center of the
+    // screen; reserve its clearance so subscreen content isn't hidden behind it
+    // (#1382), matching SpScreenTopSpacer used by other screens.
+    val topInset = titleBarInset +
+        if (LocalInputMode.current == InputMode.GAMEPAD) SpSpacing.SectionIndicatorClearance else 0.dp
     val gradientColors = listOf(
         SpColor.PrimaryDark.darken(0.74f),
         SpColor.SecondaryDark.darken(0.82f),
@@ -100,7 +107,7 @@ fun SettingsScreen(
                         username = state.username,
                         serverUrl = state.serverUrl,
                         modifier = Modifier.width(280.dp).fillMaxHeight(),
-                        topPadding = titleBarInset,
+                        topPadding = topInset,
                     )
                     SettingsCategoryContent(
                         category = selectedCategory,
@@ -117,7 +124,7 @@ fun SettingsScreen(
                         onNavigateToLicenses = onNavigateToLicenses,
                         onLogout = onLogout,
                         modifier = Modifier.weight(1f).fillMaxHeight(),
-                        topPadding = titleBarInset,
+                        topPadding = topInset,
                     )
                 }
             } else {
@@ -139,7 +146,7 @@ fun SettingsScreen(
                         onNavigateToLicenses = onNavigateToLicenses,
                         onLogout = onLogout,
                         modifier = Modifier.fillMaxSize(),
-                        topPadding = titleBarInset,
+                        topPadding = topInset,
                     )
                 } else {
                     PlatformBackHandler { onBack() }
@@ -152,7 +159,7 @@ fun SettingsScreen(
                         username = state.username,
                         serverUrl = state.serverUrl,
                         modifier = Modifier.fillMaxSize(),
-                        topPadding = titleBarInset,
+                        topPadding = topInset,
                     )
                 }
             }

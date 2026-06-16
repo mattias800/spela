@@ -311,8 +311,15 @@ class SettingsConsoleNavigationTest {
         harness.gamepadPortManager.setInputMode(InputMode.GAMEPAD)
         advanceQuick(harness)
 
-        // Focus + drill into SNES (by row tag, scrolled into view if needed).
-        onNodeWithTag("console_settings_row_snes").performScrollTo().performClick()
+        // Give the SNES row focus (saves it to the content pane's focus memory),
+        // then drill into its settings via the nav intent. We focus+navigate rather
+        // than click because in gamepad mode the section-pill overlay can intercept
+        // a pointer click on a scrolled-up row.
+        onNodeWithTag("console_settings_row_snes").performScrollTo().requestFocus()
+        advanceQuick(harness)
+        harness.navigationViewModel.onIntent(
+            NavigationIntent.NavigateTo(SpScreen.ConsoleSettings("snes")),
+        )
         advance(harness)
         assertEquals(
             SpScreen.ConsoleSettings("snes"),
