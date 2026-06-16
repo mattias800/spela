@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.Stop
@@ -67,6 +68,8 @@ internal fun InGameOverlayPanel(
     viewModel: EmulationViewModel,
     continueFocusRequester: FocusRequester,
     useGamepadConfig: Boolean = false,
+    showButtonRemap: Boolean = false,
+    onConfigureButtons: () -> Unit = {},
 ) {
     Box(
         modifier = Modifier
@@ -290,6 +293,8 @@ internal fun InGameOverlayPanel(
                                 if (useGamepadConfig) EmulationIntent.ShowGamepadConfig else EmulationIntent.ShowKeyMapping
                             )
                         },
+                            showButtonRemap = showButtonRemap,
+                            onConfigureButtons = onConfigureButtons,
                         )
                     }
 
@@ -418,6 +423,8 @@ fun RowScope.OverlayActionButtons(
     onChallenge: () -> Unit,
     onCheats: () -> Unit = {},
     onControls: () -> Unit,
+    showButtonRemap: Boolean = false,
+    onConfigureButtons: () -> Unit = {},
 ) {
     // Save / Load / Challenge are all gated on the user's per-console
     // opt-out. The toggle is read-only at the overlay level on purpose
@@ -486,6 +493,12 @@ fun RowScope.OverlayActionButtons(
         OverlayAction(label = "Cheats", icon = Icons.Filled.Code, onClick = onCheats)
     }
     OverlayAction(label = "Controls", icon = Icons.Filled.SportsEsports, onClick = onControls)
+    // Positional button remap for the current console — same editor as Settings
+    // (#1340). "Remap" (vs the adjacent "Controls" = controller list) to keep the
+    // two gamepad actions distinct.
+    if (showButtonRemap) {
+        OverlayAction(label = "Remap", icon = Icons.Filled.Tune, onClick = onConfigureButtons)
+    }
 }
 
 @Composable

@@ -516,6 +516,7 @@ fun SpelaApp(deps: SpelaAppDependencies) = with(deps) {
                             viewModel = emulationViewModel,
                             keyMappingViewModel = keyMappingViewModel,
                             gamepadConfigViewModel = gamepadConfigViewModel,
+                            gamepadMappingViewModel = gamepadMappingViewModel,
                             onExit = {
                                 // Mirror the requestExit-driven
                                 // LaunchedEffect's cleanup. Several
