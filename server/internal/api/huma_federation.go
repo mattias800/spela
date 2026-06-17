@@ -12,6 +12,7 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/spela/server/internal/db"
 	"github.com/spela/server/internal/federation"
+	ws "github.com/spela/server/internal/websocket"
 	"gorm.io/gorm"
 )
 
@@ -52,6 +53,12 @@ type FederationHandler struct {
 	// DownloadClient fetches a ROM from a friend. Defaults to httpDownloadClient
 	// when nil; overridden in tests.
 	DownloadClient downloadClient
+	// Hub is the websocket hub whose active sessions power cross-mesh presence
+	// (#1349). Nil = no local presence (the export/aggregate serve empty).
+	Hub *ws.Hub
+	// PresenceClient fetches a connected server's live presence. Defaults to
+	// httpPresenceClient when nil; overridden in tests.
+	PresenceClient presenceClient
 	// refreshMu / catalogRefreshMu serialize the respective refreshes so the
 	// periodic ticker and an admin trigger can't race the snapshot stores.
 	refreshMu        sync.Mutex

@@ -425,6 +425,17 @@ func RegisterFederationRoutes(api huma.API, h *FederationHandler, jwtSecret stri
 		Security:    sec,
 	}, h.HumaAggregatedStats)
 
+	// User-facing: who's playing what right now across the mesh (live, hop-bounded).
+	huma.Register(api, huma.Operation{
+		OperationID: "federationAggregatedPresence",
+		Method:      http.MethodGet,
+		Path:        "/api/federation/presence/aggregated",
+		Summary:     "Who's playing now across the connected-server mesh (live)",
+		Tags:        []string{"federation", "presence"},
+		Middlewares: huma.Middlewares{requireAuth, rateLimit},
+		Security:    sec,
+	}, h.HumaAggregatedPresence)
+
 	// Admin: force a refresh of cached friend rollups (also runs periodically).
 	huma.Register(api, huma.Operation{
 		OperationID: "federationRefreshStats",
@@ -499,6 +510,7 @@ func RegisterFederationGinRoutes(r *gin.Engine, h *FederationHandler, downloadLi
 	requireFedPeer := VerifyFederationRequest(h.DB, h.Identity.Fingerprint())
 	r.GET("/api/federation/ping", requireFedPeer, h.ginPing)
 	r.GET("/api/federation/stats", requireFedPeer, h.ginExportStats)
+	r.GET("/api/federation/presence", requireFedPeer, h.ginExportPresence)
 	r.GET("/api/federation/catalog", requireFedPeer, h.ginExportCatalog)
 	// Binary ROM transfer routes are bandwidth-sensitive — rate-limit them like
 	// the other download endpoints (#1348 Phase 3b-1).
