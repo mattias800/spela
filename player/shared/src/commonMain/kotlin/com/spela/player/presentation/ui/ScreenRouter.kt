@@ -15,6 +15,8 @@ import com.spela.player.presentation.navigation.SpScreen
 import com.spela.player.presentation.ui.components.gamepad.ControllerDetailScreen
 import com.spela.player.presentation.ui.screen.ActivityScreen
 import com.spela.player.presentation.ui.screen.AllGamesScreen
+import com.spela.player.presentation.ui.screen.ConnectedServersScreen
+import com.spela.player.presentation.ui.screen.RemoteGameDetailScreen
 import com.spela.player.presentation.ui.screen.ChallengeDetailScreen
 import com.spela.player.presentation.ui.screen.ChallengeListScreen
 import com.spela.player.presentation.ui.screen.CollectionDetailScreen
@@ -876,6 +878,32 @@ fun ScreenRouter(
                                                 netplayInputDelay = config.inputDelay,
                                                 netplayIsHost = config.isHost,
                                             )
+                                        )
+                                    },
+                                )
+                            }
+
+                            is SpScreen.ConnectedServers -> {
+                                ConnectedServersScreen(
+                                    viewModel = connectedServersViewModel,
+                                    onGameSelected = { game ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.RemoteGameDetail(game.key))
+                                        )
+                                    },
+                                )
+                            }
+
+                            is SpScreen.RemoteGameDetail -> {
+                                RemoteGameDetailScreen(
+                                    gameKey = screen.gameKey,
+                                    viewModel = remoteGameDetailViewModel,
+                                    onBack = {
+                                        navigationViewModel.onIntent(NavigationIntent.GoBack)
+                                    },
+                                    onOpenLocalGame = { gameId ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.GameDetail(gameId))
                                         )
                                     },
                                 )

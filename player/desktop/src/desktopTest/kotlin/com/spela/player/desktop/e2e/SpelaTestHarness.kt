@@ -46,6 +46,7 @@ class SpelaTestHarness(
     val serverRepo = FakeServerRepository()
     val authRepo = FakeAuthRepository()
     val gameRepo = FakeGameRepository()
+    val federationRepo = FakeFederationRepository()
     val downloadRepo = FakeDownloadRepository()
     val coreRepo = FakeCoreRepository()
     val libretroController = FakeLibretroController()
@@ -159,6 +160,18 @@ class SpelaTestHarness(
         cheatRepository = cheatRepo,
         sessionRepository = sessionRepo,
         exploreRepository = exploreRepo,
+    )
+
+    val connectedServersViewModel = ConnectedServersViewModel(
+        federationRepository = federationRepo,
+        dispatchers = dispatchers,
+        scope = scope,
+    )
+    val remoteGameDetailViewModel = RemoteGameDetailViewModel(
+        federationRepository = federationRepo,
+        authRepository = authRepo,
+        dispatchers = dispatchers,
+        scope = scope,
     )
 
     private val stubEngineFactory = object : HttpClientEngineFactory<HttpClientEngineConfig> {
@@ -410,6 +423,8 @@ class SpelaTestHarness(
                 loginViewModel = loginViewModel,
                 gameListViewModel = gameListViewModel,
                 gameDetailViewModel = gameDetailViewModel,
+                connectedServersViewModel = connectedServersViewModel,
+                remoteGameDetailViewModel = remoteGameDetailViewModel,
                 emulationViewModel = emulationViewModel,
                 libretroController = libretroController,
                 downloadsViewModel = downloadsViewModel,

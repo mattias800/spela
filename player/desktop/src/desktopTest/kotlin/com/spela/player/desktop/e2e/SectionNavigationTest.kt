@@ -87,6 +87,10 @@ class SectionNavigationTest {
         harness.navigationViewModel.onIntent(NavigationIntent.NextSection)
         assertEquals(SpScreen.Consoles, harness.navigationViewModel.state.value.currentScreen)
 
+        // NextSection → Connected servers
+        harness.navigationViewModel.onIntent(NavigationIntent.NextSection)
+        assertEquals(SpScreen.ConnectedServers, harness.navigationViewModel.state.value.currentScreen)
+
         // NextSection → Collections
         harness.navigationViewModel.onIntent(NavigationIntent.NextSection)
         assertEquals(SpScreen.Collections, harness.navigationViewModel.state.value.currentScreen)
@@ -125,6 +129,10 @@ class SectionNavigationTest {
         // PreviousSection → Collections
         harness.navigationViewModel.onIntent(NavigationIntent.PreviousSection)
         assertEquals(SpScreen.Collections, harness.navigationViewModel.state.value.currentScreen)
+
+        // PreviousSection → Connected servers
+        harness.navigationViewModel.onIntent(NavigationIntent.PreviousSection)
+        assertEquals(SpScreen.ConnectedServers, harness.navigationViewModel.state.value.currentScreen)
 
         // PreviousSection → Consoles
         harness.navigationViewModel.onIntent(NavigationIntent.PreviousSection)
@@ -185,7 +193,9 @@ class SectionNavigationTest {
         setContent { harness.App() }
         advance(harness)
 
-        // Navigate to Collections via section cycling (Home → Explore → Consoles → Collections)
+        // Navigate to Collections via section cycling
+        // (Home → Explore → Consoles → Connected servers → Collections)
+        harness.navigationViewModel.onIntent(NavigationIntent.NextSection)
         harness.navigationViewModel.onIntent(NavigationIntent.NextSection)
         harness.navigationViewModel.onIntent(NavigationIntent.NextSection)
         harness.navigationViewModel.onIntent(NavigationIntent.NextSection)

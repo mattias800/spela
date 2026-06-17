@@ -253,6 +253,7 @@ fun SpelaApp(deps: SpelaAppDependencies) = with(deps) {
                             BottomNavTab.HOME -> SpScreen.Home
                             BottomNavTab.EXPLORE -> SpScreen.Explore
                             BottomNavTab.CONSOLES -> SpScreen.Consoles
+                            BottomNavTab.CONNECTED_SERVERS -> SpScreen.ConnectedServers
                             BottomNavTab.COLLECTIONS -> SpScreen.Collections
                             BottomNavTab.ACTIVITY -> SpScreen.Activity
                             BottomNavTab.SETTINGS -> SpScreen.Settings
@@ -558,6 +559,7 @@ fun SpelaApp(deps: SpelaAppDependencies) = with(deps) {
                                 BottomNavTab.HOME -> SpScreen.Home
                                 BottomNavTab.EXPLORE -> SpScreen.Explore
                                 BottomNavTab.CONSOLES -> SpScreen.Consoles
+                                BottomNavTab.CONNECTED_SERVERS -> SpScreen.ConnectedServers
                                 BottomNavTab.COLLECTIONS -> SpScreen.Collections
                                 BottomNavTab.ACTIVITY -> SpScreen.Activity
                                 BottomNavTab.SETTINGS -> SpScreen.Settings

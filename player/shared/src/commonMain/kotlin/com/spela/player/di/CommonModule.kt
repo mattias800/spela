@@ -160,6 +160,21 @@ val commonModule = module {
         )
     }
     factory {
+        ConnectedServersViewModel(
+            federationRepository = get(),
+            dispatchers = get(),
+            scope = get(),
+        )
+    }
+    factory {
+        RemoteGameDetailViewModel(
+            federationRepository = get(),
+            authRepository = get(),
+            dispatchers = get(),
+            scope = get(),
+        )
+    }
+    factory {
         GameDetailViewModel(
             getGameDetailUseCase = get(),
             toggleFavoriteUseCase = get(),
