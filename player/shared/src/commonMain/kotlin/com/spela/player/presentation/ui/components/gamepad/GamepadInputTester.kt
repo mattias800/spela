@@ -81,6 +81,10 @@ fun GamepadInputTester(
             color = SpColor.OnBackgroundTertiary,
         )
         Spacer(Modifier.height(SpSpacing.Medium))
+        // At-a-glance positional overview (#1366): the pressed position lights up on
+        // an approximate gamepad layout. The labelled chips below stay authoritative.
+        GamepadSchematic(highlighted = pressedPositions)
+        Spacer(Modifier.height(SpSpacing.Medium))
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),

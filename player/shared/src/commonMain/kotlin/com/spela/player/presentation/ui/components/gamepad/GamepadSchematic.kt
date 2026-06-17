@@ -1,0 +1,173 @@
+package com.spela.player.presentation.ui.components.gamepad
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import com.spela.player.domain.model.GamepadPosition
+import com.spela.player.presentation.ui.theme.SpColor
+import com.spela.player.presentation.ui.theme.SpSpacing
+import com.spela.player.presentation.ui.theme.SpTypography
+
+/**
+ * Brand-neutral, approximate schematic of a generic gamepad (#1366) — drawn from
+ * primitives (circles + labels), with each canonical [GamepadPosition] placed at
+ * its rough physical location: shoulders/triggers across the top, the D-pad on the
+ * left, the face-button diamond on the right, Select/Start in the centre, and the
+ * stick clicks below. It is an at-a-glance orientation aid, NOT a per-console
+ * replica; the labelled mapping stays authoritative.
+ *
+ * Positions in [highlighted] render filled (e.g. currently pressed, or the button
+ * being bound). A single reusable layout — driven by the canonical position set,
+ * not per-console art.
+ */
+@Composable
+fun GamepadSchematic(
+    highlighted: Set<GamepadPosition>,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(SpSpacing.RadiusLarge))
+            .background(SpColor.SurfaceVariant)
+            .padding(SpSpacing.Default),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(SpSpacing.Default),
+    ) {
+        // Shoulders / triggers: L2 L1 … R1 R2
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Row(horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small)) {
+                Pip(GamepadPosition.L2, highlighted)
+                Pip(GamepadPosition.L1, highlighted)
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small)) {
+                Pip(GamepadPosition.R1, highlighted)
+                Pip(GamepadPosition.R2, highlighted)
+            }
+        }
+
+        // Main body: D-pad cross (left) · Select/Start (centre) · face diamond (right)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Cross(
+                up = GamepadPosition.DPAD_UP,
+                down = GamepadPosition.DPAD_DOWN,
+                left = GamepadPosition.DPAD_LEFT,
+                right = GamepadPosition.DPAD_RIGHT,
+                highlighted = highlighted,
+            )
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+            ) {
+                Pip(GamepadPosition.SELECT, highlighted)
+                Pip(GamepadPosition.START, highlighted)
+            }
+            Cross(
+                up = GamepadPosition.NORTH,
+                down = GamepadPosition.SOUTH,
+                left = GamepadPosition.WEST,
+                right = GamepadPosition.EAST,
+                highlighted = highlighted,
+            )
+        }
+
+        // Stick clicks
+        Row(horizontalArrangement = Arrangement.spacedBy(SpSpacing.Large)) {
+            Pip(GamepadPosition.L3, highlighted)
+            Pip(GamepadPosition.R3, highlighted)
+        }
+    }
+}
+
+/** A 3×3 cross with the four directional positions on the arms (centre empty). */
+@Composable
+private fun Cross(
+    up: GamepadPosition,
+    down: GamepadPosition,
+    left: GamepadPosition,
+    right: GamepadPosition,
+    highlighted: Set<GamepadPosition>,
+) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Pip(up, highlighted)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Pip(left, highlighted)
+            Spacer(Modifier.size(PIP_SIZE.dp))
+            Pip(right, highlighted)
+        }
+        Pip(down, highlighted)
+    }
+}
+
+/** A single labelled button. Filled when [position] is in [highlighted]. */
+@Composable
+private fun Pip(position: GamepadPosition, highlighted: Set<GamepadPosition>) {
+    val active = position in highlighted
+    Box(
+        modifier = Modifier
+            .size(PIP_SIZE.dp)
+            .clip(CircleShape)
+            .background(if (active) SpColor.Primary else SpColor.SurfaceElevated)
+            .border(1.dp, if (active) SpColor.Primary else SpColor.OnBackgroundTertiary, CircleShape)
+            .padding(SpSpacing.XXSmall)
+            .testTag("schematic_${position.name}")
+            .semantics {
+                contentDescription = position.displayName
+                stateDescription = if (active) "Active" else "Inactive"
+            },
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = schematicLabel(position),
+            style = SpTypography.LabelSmall,
+            color = if (active) SpColor.OnPrimary else SpColor.OnBackgroundTertiary,
+            textAlign = TextAlign.Center,
+        )
+    }
+}
+
+private const val PIP_SIZE = 34
+
+/** Short glyph/label for the schematic pip — positional, brand-neutral. */
+private fun schematicLabel(position: GamepadPosition): String = when (position) {
+    GamepadPosition.DPAD_UP -> "↑"
+    GamepadPosition.DPAD_DOWN -> "↓"
+    GamepadPosition.DPAD_LEFT -> "←"
+    GamepadPosition.DPAD_RIGHT -> "→"
+    GamepadPosition.NORTH -> "▲"
+    GamepadPosition.SOUTH -> "▼"
+    GamepadPosition.WEST -> "◀"
+    GamepadPosition.EAST -> "▶"
+    GamepadPosition.L1 -> "L1"
+    GamepadPosition.R1 -> "R1"
+    GamepadPosition.L2 -> "L2"
+    GamepadPosition.R2 -> "R2"
+    GamepadPosition.L3 -> "L3"
+    GamepadPosition.R3 -> "R3"
+    GamepadPosition.START -> "ST"
+    GamepadPosition.SELECT -> "SE"
+}
