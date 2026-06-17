@@ -33,7 +33,9 @@ import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.components.SpScrollableContent
 import com.spela.player.presentation.ui.components.SpSectionList
 import com.spela.player.presentation.ui.components.SpTopBar
+import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
+import com.spela.player.presentation.ui.gamepad.LocalInputMode
 import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -92,8 +94,11 @@ fun RemoteGameDetailScreen(
                         )
                     }
                 } else {
+                    val isGamepad = LocalInputMode.current == InputMode.GAMEPAD
                     SpScrollableContent {
-                        SpScreenTopSpacer()
+                        // Touch mode shows SpTopBar above; only add pill clearance
+                        // in gamepad mode (where the top bar is hidden).
+                        if (isGamepad) SpScreenTopSpacer()
                         SpMainContentPadding {
                             SpSectionList {
                                 Column(

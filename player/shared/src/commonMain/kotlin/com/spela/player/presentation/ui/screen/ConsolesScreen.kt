@@ -10,12 +10,10 @@ fun ConsolesScreen(
     viewModel: GameListViewModel,
     preferencesRepository: PreferencesRepository,
     onConsoleSelected: (String) -> Unit,
-    onBrowseConnectedServers: () -> Unit,
 ) {
     LibraryConsolesTab(
         viewModel = viewModel,
         preferencesRepository = preferencesRepository,
         onConsoleSelected = onConsoleSelected,
-        onBrowseConnectedServers = onBrowseConnectedServers,
     )
 }

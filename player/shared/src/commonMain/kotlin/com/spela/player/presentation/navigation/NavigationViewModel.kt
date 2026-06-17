@@ -30,7 +30,8 @@ class NavigationViewModel(
     val state: StateFlow<NavigationState> = _state.asStateFlow()
 
     private val sections = listOf(
-        SpScreen.Home, SpScreen.Explore, SpScreen.Consoles, SpScreen.Collections, SpScreen.Activity, SpScreen.Settings
+        SpScreen.Home, SpScreen.Explore, SpScreen.Consoles, SpScreen.ConnectedServers,
+        SpScreen.Collections, SpScreen.Activity, SpScreen.Settings
     )
 
     init {
@@ -300,6 +301,7 @@ class NavigationViewModel(
             SpScreen.Home -> BottomNavTab.HOME
             SpScreen.Explore -> BottomNavTab.EXPLORE
             SpScreen.Consoles -> BottomNavTab.CONSOLES
+            SpScreen.ConnectedServers -> BottomNavTab.CONNECTED_SERVERS
             SpScreen.Collections -> BottomNavTab.COLLECTIONS
             SpScreen.Activity -> BottomNavTab.ACTIVITY
             SpScreen.Settings -> BottomNavTab.SETTINGS

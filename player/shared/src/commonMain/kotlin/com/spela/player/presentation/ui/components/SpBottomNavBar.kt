@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.CollectionsBookmark
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Home
@@ -53,6 +54,7 @@ enum class BottomNavTab(
     HOME("Home", Icons.Filled.Home, com.spela.player.presentation.ui.TestTags.NAV_HOME),
     EXPLORE("Explore", Icons.Filled.Explore, com.spela.player.presentation.ui.TestTags.NAV_EXPLORE),
     CONSOLES("Consoles", Icons.Filled.SportsEsports, com.spela.player.presentation.ui.TestTags.NAV_CONSOLES),
+    CONNECTED_SERVERS("Servers", Icons.Filled.Cloud, com.spela.player.presentation.ui.TestTags.NAV_CONNECTED_SERVERS),
     COLLECTIONS("Collections", Icons.Filled.CollectionsBookmark, com.spela.player.presentation.ui.TestTags.NAV_COLLECTIONS),
     ACTIVITY("Activity", Icons.Filled.Notifications, com.spela.player.presentation.ui.TestTags.NAV_ACTIVITY),
     SETTINGS("Settings", Icons.Filled.Settings, com.spela.player.presentation.ui.TestTags.NAV_SETTINGS),

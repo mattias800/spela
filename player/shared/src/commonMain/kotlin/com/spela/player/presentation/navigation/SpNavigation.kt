@@ -58,6 +58,7 @@ fun defaultTabStacks(): Map<BottomNavTab, List<SpScreen>> = mapOf(
     BottomNavTab.HOME to listOf(SpScreen.Home),
     BottomNavTab.EXPLORE to listOf(SpScreen.Explore),
     BottomNavTab.CONSOLES to listOf(SpScreen.Consoles),
+    BottomNavTab.CONNECTED_SERVERS to listOf(SpScreen.ConnectedServers),
     BottomNavTab.COLLECTIONS to listOf(SpScreen.Collections),
     BottomNavTab.ACTIVITY to listOf(SpScreen.Activity),
     BottomNavTab.SETTINGS to listOf(SpScreen.Settings),

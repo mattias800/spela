@@ -300,6 +300,9 @@ class NavigationViewModelTest {
         assertEquals(BottomNavTab.CONSOLES, vm.state.value.activeTab)
 
         vm.onIntent(NavigationIntent.NextSection)
+        assertEquals(BottomNavTab.CONNECTED_SERVERS, vm.state.value.activeTab)
+
+        vm.onIntent(NavigationIntent.NextSection)
         assertEquals(BottomNavTab.COLLECTIONS, vm.state.value.activeTab)
 
         vm.onIntent(NavigationIntent.NextSection)

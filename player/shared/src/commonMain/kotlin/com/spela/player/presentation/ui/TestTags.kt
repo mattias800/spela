@@ -42,6 +42,7 @@ object TestTags {
     const val NAV_HOME = "nav_home"                     // bottom nav + rail
     const val NAV_EXPLORE = "nav_explore"
     const val NAV_CONSOLES = "nav_consoles"
+    const val NAV_CONNECTED_SERVERS = "nav_connected_servers"
     const val NAV_COLLECTIONS = "nav_collections"
     const val NAV_ACTIVITY = "nav_activity"
     const val NAV_CHALLENGES = "nav_challenges"

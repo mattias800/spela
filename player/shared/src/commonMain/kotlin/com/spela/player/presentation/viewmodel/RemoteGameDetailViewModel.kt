@@ -57,7 +57,11 @@ class RemoteGameDetailViewModel(
     }
 
     private fun load(key: String, preloaded: RemoteGame?) {
+        // Cancel any poll from a previous game and clear its job before switching
+        // keys, so a late poll can't write the old game's status onto the new one.
+        pollJob?.cancel()
         this.key = key
+        _state.update { it.copy(currentJob = null) }
         scope.launch(dispatchers.io) {
             authRepository.getCurrentUser().onSuccess { user ->
                 val canImport = user.role == "admin" || user.role == "owner" || user.canImportGames

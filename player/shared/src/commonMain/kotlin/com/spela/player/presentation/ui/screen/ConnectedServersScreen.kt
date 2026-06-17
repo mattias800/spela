@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.runtime.Composable
@@ -21,7 +21,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import com.spela.player.domain.model.RemoteGame
-import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.components.ScreenLoadingIndicator
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
@@ -46,10 +45,7 @@ import com.spela.player.presentation.viewmodel.ConnectedServersViewModel
 fun ConnectedServersScreen(
     viewModel: ConnectedServersViewModel,
     onGameSelected: (RemoteGame) -> Unit,
-    onBack: () -> Unit,
 ) {
-    PlatformBackHandler { onBack() }
-
     val state by viewModel.state.collectAsState()
 
     LaunchedEffect(Unit) {
@@ -60,7 +56,8 @@ fun ConnectedServersScreen(
     CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
         SpScreen(modifier = Modifier.testTag("connected_servers_screen")) {
             Column(modifier = Modifier.fillMaxSize()) {
-                SpTopBar(title = "Connected servers", showBack = true, onBack = onBack)
+                // Tab root — no back button (the bottom nav owns top-level switching).
+                SpTopBar(title = "Connected servers")
 
                 if (state.consoles.isNotEmpty()) {
                     LazyRow(
@@ -72,16 +69,20 @@ fun ConnectedServersScreen(
                         horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
                     ) {
                         items(state.consoles, key = { it.console }) { console ->
+                            val selected = console.console == state.selectedConsole
                             SpButton(
                                 text = "${console.console} (${console.count})",
                                 onClick = {
                                     viewModel.onIntent(ConnectedServersIntent.SelectConsole(console.console))
                                 },
-                                style = if (console.console == state.selectedConsole) {
-                                    SpButtonStyle.Primary
-                                } else {
-                                    SpButtonStyle.Secondary
-                                },
+                                style = if (selected) SpButtonStyle.Primary else SpButtonStyle.Secondary,
+                                // The selected chip is the default focus (it's also the
+                                // first focusable in composition order, so gamepad
+                                // moveFocus(Next) and the default-restore agree — no snap).
+                                modifier = Modifier.focusRestoreItem(
+                                    key = "connected_console_${console.console}",
+                                    isDefault = selected,
+                                ),
                             )
                         }
                     }
@@ -123,7 +124,7 @@ fun ConnectedServersScreen(
                                 horizontalArrangement = Arrangement.spacedBy(SpSpacing.GridSpacing),
                                 verticalArrangement = Arrangement.spacedBy(SpSpacing.GridSpacing),
                             ) {
-                                itemsIndexed(state.games, key = { _, g -> g.key }) { index, game ->
+                                items(state.games, key = { it.key }) { game ->
                                     val servers = game.originCount
                                     SpGridGameCard(
                                         title = game.title,
@@ -131,9 +132,12 @@ fun ConnectedServersScreen(
                                         coverUrl = game.coverUrl,
                                         onClick = { onGameSelected(game) },
                                         testTag = "remote_game_${game.key}",
+                                        // Default focus lives on the selected console
+                                        // chip above, so grid items never claim it
+                                        // (avoids the chip-vs-grid focus race).
                                         modifier = Modifier.focusRestoreItem(
                                             key = "connected_servers_${game.key}",
-                                            isDefault = index == 0,
+                                            isDefault = false,
                                         ),
                                     )
                                 }

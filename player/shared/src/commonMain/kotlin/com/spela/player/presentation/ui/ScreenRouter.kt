@@ -891,9 +891,6 @@ fun ScreenRouter(
                                             NavigationIntent.NavigateTo(SpScreen.RemoteGameDetail(game.key))
                                         )
                                     },
-                                    onBack = {
-                                        navigationViewModel.onIntent(NavigationIntent.GoBack)
-                                    },
                                 )
                             }
 
@@ -919,11 +916,6 @@ fun ScreenRouter(
                                     onConsoleSelected = { consoleId ->
                                         navigationViewModel.onIntent(
                                             NavigationIntent.NavigateTo(SpScreen.Console(consoleId))
-                                        )
-                                    },
-                                    onBrowseConnectedServers = {
-                                        navigationViewModel.onIntent(
-                                            NavigationIntent.NavigateTo(SpScreen.ConnectedServers)
                                         )
                                     },
                                 )
