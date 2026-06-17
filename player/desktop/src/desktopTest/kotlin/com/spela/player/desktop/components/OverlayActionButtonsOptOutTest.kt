@@ -77,4 +77,45 @@ class OverlayActionButtonsOptOutTest {
         onNodeWithText("Save").assertDoesNotExist()
         onNodeWithText("Screenshot").assertIsDisplayed()
     }
+
+    @Test
+    fun showsRemapActionWhenEnabledAndInvokesCallback() = runComposeUiTest {
+        var configured = false
+        setContent {
+            Row {
+                OverlayActionButtons(
+                    isFastForward = false,
+                    supportsSaveStates = true,
+                    saveStatesOptedOut = false,
+                    onSave = {}, onLoad = {}, onScreenshot = {},
+                    onToggleFastForward = {}, onChallenge = {}, onControls = {},
+                    showButtonRemap = true,
+                    onConfigureButtons = { configured = true },
+                )
+            }
+        }
+
+        onNodeWithText("Remap").assertIsDisplayed()
+        onNodeWithText("Remap").performClick()
+        assert(configured) { "onConfigureButtons should fire when the Buttons action is tapped" }
+    }
+
+    @Test
+    fun hidesRemapActionWhenDisabled() = runComposeUiTest {
+        setContent {
+            Row {
+                OverlayActionButtons(
+                    isFastForward = false,
+                    supportsSaveStates = true,
+                    saveStatesOptedOut = false,
+                    onSave = {}, onLoad = {}, onScreenshot = {},
+                    onToggleFastForward = {}, onChallenge = {}, onControls = {},
+                    showButtonRemap = false,
+                )
+            }
+        }
+
+        onNodeWithText("Remap").assertDoesNotExist()
+        onNodeWithText("Controls").assertIsDisplayed()
+    }
 }

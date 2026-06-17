@@ -15,7 +15,9 @@ import com.spela.player.presentation.ui.theme.SpSpacing
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import kotlinx.coroutines.delay
 import androidx.compose.ui.focus.FocusRequester
 import com.spela.player.domain.model.DefaultKeyMappings
@@ -44,6 +46,9 @@ import com.spela.player.presentation.viewmodel.EmulationViewModel
 import com.spela.player.presentation.viewmodel.GamepadConfigIntent
 import com.spela.player.util.currentPlatform
 import com.spela.player.presentation.viewmodel.GamepadConfigViewModel
+import com.spela.player.presentation.viewmodel.GamepadMappingIntent
+import com.spela.player.presentation.viewmodel.GamepadMappingViewModel
+import com.spela.player.presentation.ui.components.gamepad.GamepadMappingDialog
 import com.spela.player.presentation.viewmodel.KeyMappingViewModel
 
 @Composable
@@ -51,11 +56,16 @@ fun InGameOverlay(
     viewModel: EmulationViewModel,
     keyMappingViewModel: KeyMappingViewModel,
     gamepadConfigViewModel: GamepadConfigViewModel? = null,
+    gamepadMappingViewModel: GamepadMappingViewModel? = null,
     onExit: () -> Unit,
 ) {
     val state by viewModel.state.collectAsState()
     val continueFocusRequester = remember { FocusRequester() }
     val hasGamepadConfig = gamepadConfigViewModel != null
+    // Positional button-mapping editor (#1340): the same per-console hold-to-bind
+    // dialog used in Settings, opened from the overlay menu. Dismissing it returns
+    // to the overlay menu (it's a modal dialog rendered over the panel).
+    var showButtonMapping by remember { mutableStateOf(false) }
 
     // #1087: top-anchored achievement banner on the primary in-game
     // surface. Reads `state.achievementEvent`, which the VM pumps from
@@ -92,6 +102,8 @@ fun InGameOverlay(
             viewModel = viewModel,
             continueFocusRequester = continueFocusRequester,
             useGamepadConfig = hasGamepadConfig,
+            showButtonRemap = hasGamepadConfig && gamepadMappingViewModel != null,
+            onConfigureButtons = { showButtonMapping = true },
         )
     }
 
@@ -553,6 +565,36 @@ fun InGameOverlay(
                 },
             )
         }
+    }
+
+    // Positional controller-buttons editor (#1340): the same per-console
+    // hold-to-bind dialog as Settings, opened from the overlay menu. Rendered over
+    // the panel, so Done/back returns to the overlay menu.
+    if (showButtonMapping && gamepadMappingViewModel != null) {
+        val gamepadMappingState by gamepadMappingViewModel.state.collectAsState()
+        val consoleId = state.consoleId
+        LaunchedEffect(consoleId) {
+            gamepadMappingViewModel.onIntent(GamepadMappingIntent.Load(consoleId))
+        }
+        GamepadMappingDialog(
+            state = gamepadMappingState,
+            onStartBinding = { output ->
+                gamepadMappingViewModel.onIntent(GamepadMappingIntent.StartBinding(output))
+            },
+            onBindKey = { position, pressed ->
+                gamepadMappingViewModel.onIntent(GamepadMappingIntent.ReportBindInput(position, pressed))
+            },
+            onCancelBinding = {
+                gamepadMappingViewModel.onIntent(GamepadMappingIntent.CancelBinding)
+            },
+            onResetToDefaults = {
+                gamepadMappingViewModel.onIntent(GamepadMappingIntent.ResetAll)
+            },
+            onDismiss = {
+                gamepadMappingViewModel.onIntent(GamepadMappingIntent.CancelBinding)
+                showButtonMapping = false
+            },
+        )
     }
 }
 
