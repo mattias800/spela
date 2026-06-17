@@ -195,6 +195,7 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 		GameDirs:         cfg.GameDirs,
 		JWTSecret:        cfg.JWTSecret,
 		BaseURL:          cfg.PublicBaseURL,
+		Hub:              cfg.Hub,
 		// Covers for connected-server games are resolved locally from the
 		// cross-key via this server's IGDB client (read lazily so a runtime
 		// re-config of the scraper's client is picked up).

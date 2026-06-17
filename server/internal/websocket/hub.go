@@ -87,7 +87,7 @@ func NewHub(allowedOrigins []string) *Hub {
 	h.upgrader = websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
-		CheckOrigin: checkOrigin(allowedOrigins),
+		CheckOrigin:     checkOrigin(allowedOrigins),
 	}
 	return h
 }
@@ -276,6 +276,33 @@ func (h *Hub) GetUserGame(userID uint) uint {
 		return 0
 	}
 	return entry.GameID
+}
+
+// PlayingSession is one user's currently-active game session.
+type PlayingSession struct {
+	UserID uint
+	GameID uint
+}
+
+// PlayingNow returns a snapshot of the users currently playing a game, skipping
+// entries with no game and those whose heartbeat has gone stale (the same
+// timeout the cleanup goroutine uses, applied live so a caller never sees a
+// session the cleanup tick hasn't swept yet). Powers cross-mesh presence (#1349).
+func (h *Hub) PlayingNow() []PlayingSession {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	now := h.nowFunc()
+	out := make([]PlayingSession, 0, len(h.userGames))
+	for userID, entry := range h.userGames {
+		if entry.GameID == 0 {
+			continue
+		}
+		if now.Sub(entry.LastHeartbeat) > heartbeatTimeout {
+			continue
+		}
+		out = append(out, PlayingSession{UserID: userID, GameID: entry.GameID})
+	}
+	return out
 }
 
 // Close stops the hub event loop and cleanup goroutine.
