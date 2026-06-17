@@ -7,7 +7,9 @@ import com.spela.player.presentation.ui.SpelaApp
 import com.spela.player.presentation.ui.SpelaAppDependencies
 import com.spela.player.presentation.viewmodel.DownloadsViewModel
 import com.spela.player.presentation.viewmodel.EmulationViewModel
+import com.spela.player.presentation.viewmodel.ConnectedServersViewModel
 import com.spela.player.presentation.viewmodel.GameDetailViewModel
+import com.spela.player.presentation.viewmodel.RemoteGameDetailViewModel
 import com.spela.player.presentation.viewmodel.GameListViewModel
 import com.spela.player.presentation.viewmodel.LibretroController
 import com.spela.player.presentation.viewmodel.LoginViewModel
@@ -47,6 +49,8 @@ fun App() {
     val loginViewModel: LoginViewModel = koinInject()
     val gameListViewModel: GameListViewModel = koinInject()
     val gameDetailViewModel: GameDetailViewModel = koinInject()
+    val connectedServersViewModel: ConnectedServersViewModel = koinInject()
+    val remoteGameDetailViewModel: RemoteGameDetailViewModel = koinInject()
     val emulationViewModel: EmulationViewModel = koinInject()
     val libretroController: LibretroController = koinInject()
     val downloadsViewModel: DownloadsViewModel = koinInject()
@@ -83,6 +87,8 @@ fun App() {
             loginViewModel = loginViewModel,
             gameListViewModel = gameListViewModel,
             gameDetailViewModel = gameDetailViewModel,
+            connectedServersViewModel = connectedServersViewModel,
+            remoteGameDetailViewModel = remoteGameDetailViewModel,
             emulationViewModel = emulationViewModel,
             libretroController = libretroController,
             downloadsViewModel = downloadsViewModel,

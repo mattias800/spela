@@ -2153,3 +2153,42 @@ private object StubMockEngineFactory : HttpClientEngineFactory<HttpClientEngineC
 fun createFakeApiClient(): SpelaApiClient {
     return SpelaApiClient(StubMockEngineFactory, TokenManager())
 }
+
+class FakeFederationRepository : FederationRepository {
+    var consoles: List<ConnectedConsole> = emptyList()
+    var gamesByConsole: Map<String, List<RemoteGame>> = emptyMap()
+    val imports: MutableList<ImportJob> = mutableListOf()
+    var shouldFail = false
+    private var nextJobId = 1L
+
+    override suspend fun getConnectedConsoles(): Result<List<ConnectedConsole>> =
+        if (shouldFail) Result.failure(RuntimeException("network")) else Result.success(consoles)
+
+    override suspend fun getGamesForConsole(console: String): Result<List<RemoteGame>> =
+        if (shouldFail) {
+            Result.failure(RuntimeException("network"))
+        } else {
+            Result.success(gamesByConsole[console] ?: emptyList())
+        }
+
+    override suspend fun getRemoteGame(key: String): Result<RemoteGame?> =
+        Result.success(gamesByConsole.values.flatten().firstOrNull { it.key == key })
+
+    override suspend fun startImport(key: String, title: String, console: String): Result<ImportJob> {
+        val job = ImportJob(
+            id = nextJobId++,
+            status = ImportStatus.PENDING,
+            key = key,
+            title = title,
+            console = console,
+            bytesDownloaded = 0,
+            totalBytes = 0,
+            errorMessage = null,
+            gameId = null,
+        )
+        imports.add(0, job)
+        return Result.success(job)
+    }
+
+    override suspend fun listImports(): Result<List<ImportJob>> = Result.success(imports.toList())
+}

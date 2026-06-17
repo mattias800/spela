@@ -15,7 +15,9 @@ import com.spela.player.presentation.viewmodel.CollectionsViewModel
 import com.spela.player.presentation.viewmodel.DownloadsViewModel
 import com.spela.player.presentation.viewmodel.EmulationViewModel
 import com.spela.player.presentation.viewmodel.ExploreViewModel
+import com.spela.player.presentation.viewmodel.ConnectedServersViewModel
 import com.spela.player.presentation.viewmodel.GameDetailViewModel
+import com.spela.player.presentation.viewmodel.RemoteGameDetailViewModel
 import com.spela.player.presentation.viewmodel.GameListViewModel
 import com.spela.player.presentation.viewmodel.GamepadConfigViewModel
 import com.spela.player.presentation.viewmodel.GamepadMappingViewModel
@@ -60,6 +62,8 @@ data class SpelaAppDependencies(
     val loginViewModel: LoginViewModel,
     val gameListViewModel: GameListViewModel,
     val gameDetailViewModel: GameDetailViewModel,
+    val connectedServersViewModel: ConnectedServersViewModel,
+    val remoteGameDetailViewModel: RemoteGameDetailViewModel,
     val emulationViewModel: EmulationViewModel,
     val libretroController: LibretroController,
     val downloadsViewModel: DownloadsViewModel,

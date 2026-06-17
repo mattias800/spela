@@ -24,6 +24,8 @@ import com.spela.player.presentation.intent.GameListIntent
 import com.spela.player.presentation.ui.components.SegmentedOption
 import com.spela.player.presentation.ui.components.SpEmptyStates
 import com.spela.player.presentation.ui.components.SpMainContentPadding
+import com.spela.player.presentation.ui.components.SpButton
+import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpScreen
 import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.components.SpScrollableContent
@@ -39,6 +41,7 @@ internal fun LibraryConsolesTab(
     viewModel: GameListViewModel,
     preferencesRepository: PreferencesRepository,
     onConsoleSelected: (String) -> Unit,
+    onBrowseConnectedServers: () -> Unit,
 ) {
     val state by viewModel.state.collectAsState()
 
@@ -107,6 +110,15 @@ internal fun LibraryConsolesTab(
                     SpScrollableContent(modifier = Modifier.testTag("consoles-list")) {
                         SpScreenTopSpacer()
                         SpMainContentPadding {
+                            SpButton(
+                                text = "Browse connected servers",
+                                onClick = onBrowseConnectedServers,
+                                style = SpButtonStyle.Tinted,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .testTag("browse_connected_servers_button"),
+                            )
+                            Spacer(Modifier.height(SpSpacing.Medium))
                             ConsoleGroupingToggle(
                                 grouping = grouping,
                                 onGroupingChange = onGroupingChange,

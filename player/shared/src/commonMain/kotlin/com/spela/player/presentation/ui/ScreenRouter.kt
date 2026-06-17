@@ -15,6 +15,8 @@ import com.spela.player.presentation.navigation.SpScreen
 import com.spela.player.presentation.ui.components.gamepad.ControllerDetailScreen
 import com.spela.player.presentation.ui.screen.ActivityScreen
 import com.spela.player.presentation.ui.screen.AllGamesScreen
+import com.spela.player.presentation.ui.screen.ConnectedServersScreen
+import com.spela.player.presentation.ui.screen.RemoteGameDetailScreen
 import com.spela.player.presentation.ui.screen.ChallengeDetailScreen
 import com.spela.player.presentation.ui.screen.ChallengeListScreen
 import com.spela.player.presentation.ui.screen.CollectionDetailScreen
@@ -881,6 +883,35 @@ fun ScreenRouter(
                                 )
                             }
 
+                            is SpScreen.ConnectedServers -> {
+                                ConnectedServersScreen(
+                                    viewModel = connectedServersViewModel,
+                                    onGameSelected = { game ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.RemoteGameDetail(game.key))
+                                        )
+                                    },
+                                    onBack = {
+                                        navigationViewModel.onIntent(NavigationIntent.GoBack)
+                                    },
+                                )
+                            }
+
+                            is SpScreen.RemoteGameDetail -> {
+                                RemoteGameDetailScreen(
+                                    gameKey = screen.gameKey,
+                                    viewModel = remoteGameDetailViewModel,
+                                    onBack = {
+                                        navigationViewModel.onIntent(NavigationIntent.GoBack)
+                                    },
+                                    onOpenLocalGame = { gameId ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.GameDetail(gameId))
+                                        )
+                                    },
+                                )
+                            }
+
                             is SpScreen.Consoles -> {
                                 ConsolesScreen(
                                     viewModel = gameListViewModel,
@@ -888,6 +919,11 @@ fun ScreenRouter(
                                     onConsoleSelected = { consoleId ->
                                         navigationViewModel.onIntent(
                                             NavigationIntent.NavigateTo(SpScreen.Console(consoleId))
+                                        )
+                                    },
+                                    onBrowseConnectedServers = {
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.ConnectedServers)
                                         )
                                     },
                                 )
