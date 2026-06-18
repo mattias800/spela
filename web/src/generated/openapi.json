@@ -573,6 +573,30 @@
         ],
         "type": "object"
       },
+      "AggregatedPresenceOutputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/AggregatedPresenceOutputBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "presence": {
+            "items": {
+              "$ref": "#/components/schemas/PresenceEntry"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "presence"
+        ],
+        "type": "object"
+      },
       "AggregatedStat": {
         "additionalProperties": false,
         "properties": {
@@ -6778,6 +6802,39 @@
         "required": [
           "id",
           "name"
+        ],
+        "type": "object"
+      },
+      "PresenceEntry": {
+        "additionalProperties": false,
+        "properties": {
+          "gameKey": {
+            "type": "string"
+          },
+          "gameTitle": {
+            "type": "string"
+          },
+          "hops": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "originFingerprint": {
+            "type": "string"
+          },
+          "serverName": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "originFingerprint",
+          "hops",
+          "username",
+          "gameKey",
+          "gameTitle",
+          "serverName"
         ],
         "type": "object"
       },
@@ -19487,6 +19544,43 @@
         "summary": "Pairing callback (server-to-server bootstrap)",
         "tags": [
           "federation"
+        ]
+      }
+    },
+    "/api/federation/presence/aggregated": {
+      "get": {
+        "operationId": "federationAggregatedPresence",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AggregatedPresenceOutputBody"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Who's playing now across the connected-server mesh (live)",
+        "tags": [
+          "federation",
+          "presence"
         ]
       }
     },

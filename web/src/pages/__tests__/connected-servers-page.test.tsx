@@ -9,6 +9,11 @@ vi.mock("@/hooks/use-connected-servers", () => ({
 vi.mock("@/hooks/use-consoles", () => ({
   useConsoles: vi.fn(),
 }));
+// The page mounts the self-contained FriendsPlayingNow widget, which fetches via
+// its own hook; stub it so this test stays focused on the consoles overview.
+vi.mock("@/hooks/use-federation-presence", () => ({
+  useFederationPresence: vi.fn(() => ({ data: [], isLoading: false })),
+}));
 
 import { useConnectedServerConsoles } from "@/hooks/use-connected-servers";
 import { useConsoles } from "@/hooks/use-consoles";
