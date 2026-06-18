@@ -189,6 +189,38 @@ func TestAggregatedPresence_SkipsNonConsumablePeer(t *testing.T) {
 	assert.Equal(t, "localalice", out.Body.Presence[0].Username)
 }
 
+func TestAggregatedPresence_MergesMultiplePeersConcurrently(t *testing.T) {
+	database := openAPIFedTestDB(t)
+	selfID, _ := federation.GenerateIdentity()
+	friendB, _ := federation.GenerateIdentity()
+	friendC, _ := federation.GenerateIdentity()
+	presencePolicyPeer(t, database, friendB, "Server B", "https://b", true, true)
+	presencePolicyPeer(t, database, friendC, "Server C", "https://c", true, true)
+
+	hub := ws.NewHub(nil)
+	seedPresenceSession(t, database, hub, "localalice", "igdb:1")
+
+	fake := &fakePresenceClient{byBase: map[string][]federation.PresenceEntry{
+		"https://b": {{OriginFingerprint: friendB.Fingerprint(), Hops: 0, Username: "bob", GameKey: "igdb:2", GameTitle: "B Game"}},
+		"https://c": {{OriginFingerprint: friendC.Fingerprint(), Hops: 0, Username: "carol", GameKey: "igdb:3", GameTitle: "C Game"}},
+	}}
+	h := presenceHandler(database, selfID, hub, fake)
+
+	out, err := h.HumaAggregatedPresence(context.Background(), &AggregatedPresenceInput{})
+	require.NoError(t, err)
+
+	byUser := map[string]federation.PresenceEntry{}
+	for _, e := range out.Body.Presence {
+		byUser[e.Username] = e
+	}
+	require.Len(t, out.Body.Presence, 3, "local + both peers' presence merged")
+	assert.Equal(t, "Server B", byUser["bob"].ServerName)
+	assert.Equal(t, 1, byUser["bob"].Hops)
+	assert.Equal(t, "Server C", byUser["carol"].ServerName)
+	assert.Equal(t, 1, byUser["carol"].Hops)
+	assert.Equal(t, 0, byUser["localalice"].Hops)
+}
+
 func TestAggregatedPresence_RecordsErrorOnPullFailure(t *testing.T) {
 	database := openAPIFedTestDB(t)
 	selfID, _ := federation.GenerateIdentity()

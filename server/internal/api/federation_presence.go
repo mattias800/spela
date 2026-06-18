@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -157,35 +158,61 @@ func (h *FederationHandler) HumaAggregatedPresence(_ context.Context, _ *Aggrega
 		client = httpPresenceClient{}
 	}
 	self := h.Identity.Fingerprint()
-	// Pulls are sequential; with the small connected-server counts this targets,
-	// that's fine. Parallelizing across peers is a later optimization.
+
+	// Pull each presence-consumable connected server concurrently: the endpoint
+	// is polled live by the UI, so one slow or unreachable peer must not stall
+	// the whole view. Only the network fetches run in parallel — the ledger
+	// writes and the merge happen serially afterwards, in peer order, so the
+	// result is deterministic and DB writes don't race.
+	var consumable []db.FederationPeer
 	for _, peer := range peers {
-		if peer.Status != db.PeerStatusActive || !federation.CanConsume(peer, federation.DataClassPresence) {
-			continue
+		if peer.Status == db.PeerStatusActive && federation.CanConsume(peer, federation.DataClassPresence) {
+			consumable = append(consumable, peer)
 		}
-		reqID := federation.NewRequestID()
-		started := time.Now()
-		raw, ferr := client.FetchPresence(peer.BaseURL, reqID, h.Identity, peer.Fingerprint)
-		if ferr != nil {
+	}
+	type pullResult struct {
+		reqID   string
+		started time.Time
+		entries []federation.PresenceEntry
+		err     error
+	}
+	results := make([]pullResult, len(consumable))
+	var wg sync.WaitGroup
+	for i := range consumable {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			peer := consumable[i]
+			reqID := federation.NewRequestID()
+			started := time.Now()
+			entries, ferr := client.FetchPresence(peer.BaseURL, reqID, h.Identity, peer.Fingerprint)
+			results[i] = pullResult{reqID: reqID, started: started, entries: entries, err: ferr}
+		}(i)
+	}
+	wg.Wait()
+
+	for i, peer := range consumable {
+		r := results[i]
+		if r.err != nil {
 			federation.RecordExchange(h.DB, federation.ExchangeRecord{
-				RequestID: reqID, PeerFingerprint: peer.Fingerprint, PeerName: peer.Name,
+				RequestID: r.reqID, PeerFingerprint: peer.Fingerprint, PeerName: peer.Name,
 				Direction: db.ExchangeOutbound, Operation: "presence_pull",
 				DataClass: string(federation.DataClassPresence), Status: db.ExchangeError,
-				StartedAt: started, Error: ferr.Error(),
+				StartedAt: r.started, Error: r.err.Error(),
 			})
 			continue
 		}
-		cleaned := sanitizePresenceBatch(raw, self)
-		for i := range cleaned {
-			cleaned[i].Hops++ // distance from us = distance from the server + 1
-			cleaned[i].ServerName = peer.Name
+		cleaned := sanitizePresenceBatch(r.entries, self)
+		for j := range cleaned {
+			cleaned[j].Hops++ // distance from us = distance from the server + 1
+			cleaned[j].ServerName = peer.Name
 		}
 		all = append(all, cleaned...)
 		federation.RecordExchange(h.DB, federation.ExchangeRecord{
-			RequestID: reqID, PeerFingerprint: peer.Fingerprint, PeerName: peer.Name,
+			RequestID: r.reqID, PeerFingerprint: peer.Fingerprint, PeerName: peer.Name,
 			Direction: db.ExchangeOutbound, Operation: "presence_pull",
 			DataClass: string(federation.DataClassPresence), Status: db.ExchangeOK,
-			StartedAt: started, ItemCount: len(cleaned),
+			StartedAt: r.started, ItemCount: len(cleaned),
 		})
 	}
 
