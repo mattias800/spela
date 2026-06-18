@@ -891,6 +891,11 @@ fun ScreenRouter(
                                             NavigationIntent.NavigateTo(SpScreen.RemoteGameDetail(game.key))
                                         )
                                     },
+                                    onRemoteGameKeySelected = { key ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.RemoteGameDetail(key))
+                                        )
+                                    },
                                 )
                             }
 

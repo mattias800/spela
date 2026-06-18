@@ -1328,3 +1328,11 @@ fun com.spela.client.models.ImportJob.toDomain(): ImportJob = ImportJob(
     errorMessage = errorMessage.ifEmpty { null },
     gameId = gameId,
 )
+
+fun com.spela.client.models.PresenceEntry.toDomain(): FriendPresence = FriendPresence(
+    username = username,
+    gameKey = gameKey,
+    gameTitle = gameTitle,
+    serverName = serverName,
+    hops = hops.toInt(),
+)

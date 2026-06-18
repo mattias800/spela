@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -29,6 +30,7 @@ import com.spela.player.presentation.ui.components.SpGridGameCard
 import com.spela.player.presentation.ui.components.SpLazyVerticalGrid
 import com.spela.player.presentation.ui.components.SpScreen
 import com.spela.player.presentation.ui.components.SpTopBar
+import com.spela.player.presentation.ui.components.social.FriendsPlayingNowSection
 import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
 import com.spela.player.presentation.ui.gamepad.focusRestoreItem
 import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
@@ -45,6 +47,7 @@ import com.spela.player.presentation.viewmodel.ConnectedServersViewModel
 fun ConnectedServersScreen(
     viewModel: ConnectedServersViewModel,
     onGameSelected: (RemoteGame) -> Unit,
+    onRemoteGameKeySelected: (String) -> Unit,
 ) {
     val state by viewModel.state.collectAsState()
 
@@ -58,6 +61,19 @@ fun ConnectedServersScreen(
             Column(modifier = Modifier.fillMaxSize()) {
                 // Tab root — no back button (the bottom nav owns top-level switching).
                 SpTopBar(title = "Connected servers")
+
+                // Live "who's playing now" across connected servers. Self-contained
+                // and renders nothing when empty; it loads asynchronously so it's
+                // absent during the entry focus-settle window (no focus race with
+                // the console chip default below).
+                FriendsPlayingNowSection(
+                    presence = state.presence,
+                    onGameSelected = onRemoteGameKeySelected,
+                    modifier = Modifier.padding(
+                        horizontal = SpSpacing.ScreenHorizontal,
+                        vertical = SpSpacing.Small,
+                    ),
+                )
 
                 if (state.consoles.isNotEmpty()) {
                     LazyRow(

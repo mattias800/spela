@@ -52,6 +52,21 @@ enum class ImportStatus {
     }
 }
 
+/**
+ * A player active on a connected server right now (cross-mesh presence). Sourced
+ * live from the federation presence aggregate. [hops] is 0 for a local player and
+ * >= 1 for a player on a connected server; [serverName] is that server's label
+ * (blank for local).
+ */
+@Serializable
+data class FriendPresence(
+    val username: String,
+    val gameKey: String, // cross-server game identity, links to the remote game
+    val gameTitle: String,
+    val serverName: String,
+    val hops: Int,
+)
+
 /** An import of a connected-server game into the local library. */
 @Serializable
 data class ImportJob(

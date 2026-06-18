@@ -362,6 +362,10 @@ class SpelaApiClient(
         return federationApi.federationListImports().body()
     }
 
+    suspend fun getFederationPresence(): com.spela.client.models.AggregatedPresenceOutputBody {
+        return federationApi.federationAggregatedPresence().body()
+    }
+
     // Consoles & Games
 
     suspend fun getConsoles(): List<com.spela.client.models.ConsoleResponse> {

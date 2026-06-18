@@ -2158,6 +2158,7 @@ class FakeFederationRepository : FederationRepository {
     var consoles: List<ConnectedConsole> = emptyList()
     var gamesByConsole: Map<String, List<RemoteGame>> = emptyMap()
     val imports: MutableList<ImportJob> = mutableListOf()
+    var presence: List<FriendPresence> = emptyList()
     var shouldFail = false
     private var nextJobId = 1L
 
@@ -2191,4 +2192,7 @@ class FakeFederationRepository : FederationRepository {
     }
 
     override suspend fun listImports(): Result<List<ImportJob>> = Result.success(imports.toList())
+
+    override suspend fun getAggregatedPresence(): Result<List<FriendPresence>> =
+        if (shouldFail) Result.failure(RuntimeException("network")) else Result.success(presence)
 }

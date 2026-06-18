@@ -1,6 +1,7 @@
 package com.spela.player.domain.repository
 
 import com.spela.player.domain.model.ConnectedConsole
+import com.spela.player.domain.model.FriendPresence
 import com.spela.player.domain.model.ImportJob
 import com.spela.player.domain.model.RemoteGame
 
@@ -24,4 +25,7 @@ interface FederationRepository {
 
     /** All import jobs with their status + progress (newest first). */
     suspend fun listImports(): Result<List<ImportJob>>
+
+    /** Players active across the mesh right now (local + connected servers). */
+    suspend fun getAggregatedPresence(): Result<List<FriendPresence>>
 }
