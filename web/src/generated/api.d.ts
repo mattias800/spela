@@ -2762,6 +2762,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/federation/presence/aggregated": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Who's playing now across the connected-server mesh (live) */
+        get: operations["federationAggregatedPresence"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/federation/stats/aggregated": {
         parameters: {
             query?: never;
@@ -5691,6 +5708,15 @@ export interface components {
             category: string;
             rating: string;
         };
+        AggregatedPresenceOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/AggregatedPresenceOutputBody.json
+             */
+            readonly $schema?: string;
+            presence: components["schemas"]["PresenceEntry"][];
+        };
         AggregatedStat: {
             key: string;
             label: string;
@@ -7811,6 +7837,15 @@ export interface components {
         PossibleConsoleResponse: {
             id: string;
             name: string;
+        };
+        PresenceEntry: {
+            gameKey: string;
+            gameTitle: string;
+            /** Format: int64 */
+            hops: number;
+            originFingerprint: string;
+            serverName: string;
+            username: string;
         };
         PublicProfileGame: {
             consoleName: string;
@@ -14420,6 +14455,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PairResponseBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    federationAggregatedPresence: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AggregatedPresenceOutputBody"];
                 };
             };
             /** @description Error */

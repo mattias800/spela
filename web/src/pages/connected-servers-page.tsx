@@ -5,6 +5,7 @@ import { PageLayout, SectionList } from "@/components/layout";
 import { EmptyState, Skeleton } from "@/components/ui";
 import { Card } from "@/components/ui/card";
 import { ConsoleBadge } from "@/components/console-badge";
+import { FriendsPlayingNow } from "@/features/federation/components/friends-playing-now";
 import { useConnectedServerConsoles } from "@/hooks/use-connected-servers";
 import { useConsoles } from "@/hooks/use-consoles";
 
@@ -28,6 +29,7 @@ export function ConnectedServersPage() {
       subtitle="Browse games available on servers you're connected to. Import one to add it to your library."
     >
       <SectionList>
+        <FriendsPlayingNow />
         {isLoading ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 6 }, (_, i) => (
