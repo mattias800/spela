@@ -67,27 +67,38 @@ class PresenceService(
         if (wsJob?.isActive == true) return
 
         wsJob = scope.launch(dispatchers.io) {
-            while (isActive) {
-                val wsUrl = apiClient.getWebSocketUrl() ?: run {
-                    delay(RECONNECT_DELAY_MS)
-                    return@launch
-                }
-                try {
-                    val wsClient = HttpClient(engineFactory) {
-                        install(WebSockets)
+            // A single Ktor client is reused across every reconnect attempt.
+            // Creating a new HttpClient per attempt leaked the engine's
+            // SelectorManager (and its kqueue/wakeup-pipe/socket FDs) on each
+            // reconnect: webSocket() throws on a failed upgrade — the normal
+            // reconnect case — which skipped the per-loop close(), eventually
+            // exhausting the process file-descriptor limit (#1399). Ktor
+            // clients are built to be reused, so we create one here and close
+            // it once in finally when disconnect() cancels this coroutine.
+            val wsClient = HttpClient(engineFactory) {
+                install(WebSockets)
+            }
+            try {
+                while (isActive) {
+                    val wsUrl = apiClient.getWebSocketUrl() ?: run {
+                        delay(RECONNECT_DELAY_MS)
+                        return@launch
                     }
-                    wsClient.webSocket(wsUrl) {
-                        for (frame in incoming) {
-                            if (frame is Frame.Text) {
-                                handleFrame(frame.readText())
+                    try {
+                        wsClient.webSocket(wsUrl) {
+                            for (frame in incoming) {
+                                if (frame is Frame.Text) {
+                                    handleFrame(frame.readText())
+                                }
                             }
                         }
+                    } catch (_: Exception) {
+                        // Connection failed or closed, retry
                     }
-                    wsClient.close()
-                } catch (_: Exception) {
-                    // Connection failed or closed, retry
+                    delay(RECONNECT_DELAY_MS)
                 }
-                delay(RECONNECT_DELAY_MS)
+            } finally {
+                wsClient.close()
             }
         }
     }
