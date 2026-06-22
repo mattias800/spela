@@ -3,6 +3,8 @@ package com.spela.player.domain.repository
 import com.spela.player.domain.model.ConnectedConsole
 import com.spela.player.domain.model.FriendPresence
 import com.spela.player.domain.model.ImportJob
+import com.spela.player.domain.model.MeshStat
+import com.spela.player.domain.model.MeshStatMetric
 import com.spela.player.domain.model.RemoteGame
 
 /**
@@ -28,4 +30,7 @@ interface FederationRepository {
 
     /** Players active across the mesh right now (local + connected servers). */
     suspend fun getAggregatedPresence(): Result<List<FriendPresence>>
+
+    /** Federated (mesh) leaderboard for the given metric, summed across the mesh. */
+    suspend fun getAggregatedStats(metric: MeshStatMetric): Result<List<MeshStat>>
 }

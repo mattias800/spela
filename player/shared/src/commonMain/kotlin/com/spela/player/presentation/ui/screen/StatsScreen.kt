@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -20,11 +19,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.spela.player.presentation.intent.StatsIntent
-import com.spela.player.presentation.ui.feature.stats.ActivePlayerItem
-import com.spela.player.presentation.ui.feature.stats.MostPlayedGameItem
 import com.spela.player.presentation.ui.feature.stats.PersonalStatsSection
+import com.spela.player.presentation.ui.feature.stats.mostActivePlayersStatsSection
+import com.spela.player.presentation.ui.feature.stats.mostPlayedStatsSection
 import com.spela.player.presentation.ui.components.SpEmptyState
-import com.spela.player.presentation.ui.components.SpSectionHeader
 import com.spela.player.presentation.ui.components.ScreenLoadingIndicator
 import com.spela.player.presentation.ui.components.rememberLoadingFlashDebounce
 import com.spela.player.presentation.ui.components.SpSnackbar
@@ -37,7 +35,6 @@ import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
 import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
-import com.spela.player.presentation.ui.gamepad.focusRestoreItem
 import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
 import androidx.compose.runtime.CompositionLocalProvider
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -120,61 +117,33 @@ fun StatsScreen(
                                 }
                             }
 
-                            // Most Played Games section
+                            // Most Played Games section (This server | Across servers).
+                            // Its scope toggle is the default-focus element when the
+                            // section renders (first focusable in composition order).
                             if (state.mostPlayedGames.isNotEmpty()) {
-                                item {
-                                    SpSectionHeader(
-                                        title = "Most Played Games",
-                                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
-                                    )
-                                    Spacer(Modifier.height(SpSpacing.Small))
-                                }
-
-                                itemsIndexed(
-                                    state.mostPlayedGames,
-                                    key = { _, item -> "game-${item.game.id}" },
-                                ) { index, item ->
-                                    MostPlayedGameItem(
-                                        rank = index + 1,
-                                        item = item,
-                                        onClick = { onGameSelected(item.game.id) },
-                                        modifier = Modifier
-                                            .focusRestoreItem(
-                                                key = "game_${item.game.id}",
-                                                isDefault = index == 0,
-                                            )
-                                            .padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XSmall),
-                                    )
-                                }
-
-                                item {
-                                    Spacer(Modifier.height(SpSpacing.XXLarge))
-                                }
+                                mostPlayedStatsSection(
+                                    games = state.mostPlayedGames,
+                                    meshStats = state.meshMostPlayed,
+                                    scope = state.mostPlayedScope,
+                                    isLoadingMesh = state.isLoadingMeshMostPlayed,
+                                    isDefaultFocus = true,
+                                    onScopeChange = { viewModel.onIntent(StatsIntent.SetMostPlayedScope(it)) },
+                                    onGameSelected = onGameSelected,
+                                )
                             }
 
-                            // Most Active Players section
+                            // Most Active Players section. Its toggle is the default
+                            // only when the Most Played section above isn't rendered.
                             if (state.activePlayers.isNotEmpty()) {
-                                item {
-                                    SpSectionHeader(
-                                        title = "Most Active Players",
-                                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
-                                    )
-                                    Spacer(Modifier.height(SpSpacing.Small))
-                                }
-
-                                itemsIndexed(
-                                    state.activePlayers,
-                                    key = { _, item -> "player-${item.userId}" },
-                                ) { index, item ->
-                                    ActivePlayerItem(
-                                        rank = index + 1,
-                                        item = item,
-                                        onClick = { onUserSelected(item.userId) },
-                                        modifier = Modifier
-                                            .focusRestoreItem(key = "player_${item.userId}")
-                                            .padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XSmall),
-                                    )
-                                }
+                                mostActivePlayersStatsSection(
+                                    players = state.activePlayers,
+                                    meshStats = state.meshActivePlayers,
+                                    scope = state.activePlayersScope,
+                                    isLoadingMesh = state.isLoadingMeshActivePlayers,
+                                    isDefaultFocus = state.mostPlayedGames.isEmpty(),
+                                    onScopeChange = { viewModel.onIntent(StatsIntent.SetActivePlayersScope(it)) },
+                                    onUserSelected = onUserSelected,
+                                )
                             }
                         }
                         } // CompositionLocalProvider
