@@ -3,6 +3,7 @@ package com.spela.player.data
 import com.spela.client.models.CatalogAvailability as DtoCatalogAvailability
 import com.spela.client.models.CatalogConsoleCount as DtoCatalogConsoleCount
 import com.spela.client.models.ImportJob as DtoImportJob
+import com.spela.client.models.PresenceEntry as DtoPresenceEntry
 import com.spela.player.data.remote.dto.toDomain
 import com.spela.player.domain.model.ImportStatus
 import kotlin.test.Test
@@ -104,5 +105,22 @@ class FederationMapperTest {
         val job = importDto(status = "some-future-status").toDomain()
         assertEquals(ImportStatus.UNKNOWN, job.status)
         assertFalse(job.status.isActive)
+    }
+
+    @Test
+    fun presenceEntryMapsToDomainAndNarrowsHops() {
+        val p = DtoPresenceEntry(
+            gameKey = "igdb:1022",
+            gameTitle = "Chrono Trigger",
+            hops = 1L,
+            originFingerprint = "",
+            serverName = "Server B",
+            username = "alice",
+        ).toDomain()
+        assertEquals("alice", p.username)
+        assertEquals("igdb:1022", p.gameKey)
+        assertEquals("Chrono Trigger", p.gameTitle)
+        assertEquals("Server B", p.serverName)
+        assertEquals(1, p.hops)
     }
 }

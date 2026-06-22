@@ -16,6 +16,7 @@
 package com.spela.client.apis
 
 import com.spela.client.models.AcceptInviteBody
+import com.spela.client.models.AggregatedPresenceOutputBody
 import com.spela.client.models.AggregatedStatsOutputBody
 import com.spela.client.models.AvailableGamesOutputBody
 import com.spela.client.models.CatalogConsolesOutputBody
@@ -91,6 +92,38 @@ open class FederationApi : ApiClient {
         ).wrap()
     }
 
+
+
+    /**
+     * Who&#39;s playing now across the connected-server mesh (live)
+     * 
+     * @return AggregatedPresenceOutputBody
+     */
+    @Suppress("UNCHECKED_CAST")
+    open suspend fun federationAggregatedPresence(): HttpResponse<AggregatedPresenceOutputBody> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody = 
+            io.ktor.client.utils.EmptyContent
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.GET,
+            "/api/federation/presence/aggregated",
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return request(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
 
 
 

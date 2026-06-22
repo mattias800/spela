@@ -1,6 +1,7 @@
 package com.spela.player.presentation.viewmodel
 
 import com.spela.player.domain.model.ConnectedConsole
+import com.spela.player.domain.model.FriendPresence
 import com.spela.player.domain.model.RemoteGame
 import com.spela.player.domain.repository.FederationRepository
 import com.spela.player.util.DispatcherProvider
@@ -16,6 +17,10 @@ data class ConnectedServersState(
     val consoles: List<ConnectedConsole> = emptyList(),
     val selectedConsole: String? = null,
     val games: List<RemoteGame> = emptyList(),
+    // Players active on connected servers right now (cross-mesh presence). Only
+    // remote players (hops >= 1) are surfaced — local players appear in the
+    // home "online" UI. Empty until loaded / when nobody is playing.
+    val presence: List<FriendPresence> = emptyList(),
     val isLoadingConsoles: Boolean = false,
     val isLoadingGames: Boolean = false,
     val error: String? = null,
@@ -49,6 +54,7 @@ class ConnectedServersViewModel(
     }
 
     private fun load() {
+        loadPresence()
         scope.launch(dispatchers.io) {
             _state.update { it.copy(isLoadingConsoles = true, error = null) }
             federationRepository.getConnectedConsoles().fold(
@@ -61,6 +67,17 @@ class ConnectedServersViewModel(
                     _state.update { it.copy(isLoadingConsoles = false, error = e.message) }
                 },
             )
+        }
+    }
+
+    // Presence is a secondary, best-effort widget: load it independently of the
+    // console browse, keep only remote players (hops >= 1), and swallow errors
+    // (a presence hiccup must not surface an error over the whole browse screen).
+    private fun loadPresence() {
+        scope.launch(dispatchers.io) {
+            federationRepository.getAggregatedPresence().onSuccess { presence ->
+                _state.update { it.copy(presence = presence.filter { p -> p.hops >= 1 }) }
+            }
         }
     }
 
