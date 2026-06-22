@@ -459,6 +459,14 @@ fun SpelaApp(deps: SpelaAppDependencies) = with(deps) {
                             com.spela.player.presentation.ui.feature.coreupdate.CoreDownloadSheet(progress)
                         }
 
+                        // On-demand ROM download sheet — shown when a launch
+                        // entry point reached a game whose ROM isn't on disk
+                        // yet and PrepareGameUseCase is fetching it before
+                        // starting emulation (#1412).
+                        emulationState.gameDownload?.let { progress ->
+                            com.spela.player.presentation.ui.feature.ingame.GameDownloadSheet(progress)
+                        }
+
                         // Missing BIOS dialog (AC 4.3)
                         if (emulationState.showMissingBiosDialog) {
                             com.spela.player.presentation.ui.feature.gamedetail.MissingBiosDialog(

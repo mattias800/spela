@@ -37,7 +37,6 @@ import com.spela.player.domain.model.BiosMissingFile
 import com.spela.player.domain.model.DownloadFailureReason
 import com.spela.player.domain.model.DownloadState
 import com.spela.player.domain.model.Game
-import com.spela.player.domain.model.INSTANT_DOWNLOAD_THRESHOLD_BYTES
 import com.spela.player.domain.model.NETPLAY_SUPPORTED_CONSOLES
 import com.spela.player.presentation.state.GameDetailState
 import com.spela.player.presentation.state.GameSyncState
@@ -127,17 +126,16 @@ fun GameHeroContent(
     val isActivelyDownloading = state.downloadProgress?.state == DownloadState.DOWNLOADING
     val isBusy = state.isDownloading || isActivelyDownloading
 
-    // #932: a sub-threshold uncached game shows the cached-style
-    // Play/Resume/Continue button. Tap kicks off a silent
-    // download-then-launch via the ViewModel. Once we exit the silent
-    // window (state.isInstantDownload flips false), we fall back to
-    // the regular Download button + progress bar for the rest of the
-    // wait so the user knows something is happening.
-    val isInstantDownloadCandidate =
-        !state.isGameCached &&
-            game.fileSize in 1..<INSTANT_DOWNLOAD_THRESHOLD_BYTES
-    val showCachedStyleButton = state.isGameCached ||
-        (isInstantDownloadCandidate && (!state.isDownloading || state.isInstantDownload))
+    // #932 / #1412: a cached game — or a sub-threshold uncached one we can
+    // download silently on demand — shows the cached-style
+    // Play/Resume/Continue button; a large uncached game shows Download,
+    // regardless of play sessions. See [showHeroPlayButton] for the rule.
+    val showCachedStyleButton = showHeroPlayButton(
+        isGameCached = state.isGameCached,
+        fileSizeBytes = game.fileSize,
+        isDownloading = state.isDownloading,
+        isInstantDownload = state.isInstantDownload,
+    )
 
     Column(
         verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium),

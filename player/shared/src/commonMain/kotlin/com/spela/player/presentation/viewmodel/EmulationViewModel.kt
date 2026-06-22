@@ -1022,6 +1022,11 @@ class EmulationViewModel(
                     // CAS, so we don't need to hop to the main dispatcher.
                     _state.update { it.copy(coreDownload = progress) }
                 },
+                onGameDownload = { progress ->
+                    // On-demand ROM download progress (#1412). Same threading
+                    // note as onCoreDownload above.
+                    _state.update { it.copy(gameDownload = progress) }
+                },
             ).fold(
                 onSuccess = { prepared ->
                     val gamePath = prepared.gamePath
