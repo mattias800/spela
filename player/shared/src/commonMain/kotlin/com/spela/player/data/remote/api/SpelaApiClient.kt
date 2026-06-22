@@ -366,6 +366,12 @@ class SpelaApiClient(
         return federationApi.federationAggregatedPresence().body()
     }
 
+    suspend fun getFederationStats(
+        metric: com.spela.client.apis.FederationApi.MetricFederationAggregatedStats,
+    ): com.spela.client.models.AggregatedStatsOutputBody {
+        return federationApi.federationAggregatedStats(metric = metric).body()
+    }
+
     // Consoles & Games
 
     suspend fun getConsoles(): List<com.spela.client.models.ConsoleResponse> {

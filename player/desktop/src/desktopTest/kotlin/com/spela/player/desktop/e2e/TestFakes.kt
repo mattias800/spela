@@ -2159,6 +2159,7 @@ class FakeFederationRepository : FederationRepository {
     var gamesByConsole: Map<String, List<RemoteGame>> = emptyMap()
     val imports: MutableList<ImportJob> = mutableListOf()
     var presence: List<FriendPresence> = emptyList()
+    var meshStatsByMetric: Map<MeshStatMetric, List<MeshStat>> = emptyMap()
     var shouldFail = false
     private var nextJobId = 1L
 
@@ -2195,4 +2196,7 @@ class FakeFederationRepository : FederationRepository {
 
     override suspend fun getAggregatedPresence(): Result<List<FriendPresence>> =
         if (shouldFail) Result.failure(RuntimeException("network")) else Result.success(presence)
+
+    override suspend fun getAggregatedStats(metric: MeshStatMetric): Result<List<MeshStat>> =
+        if (shouldFail) Result.failure(RuntimeException("network")) else Result.success(meshStatsByMetric[metric] ?: emptyList())
 }

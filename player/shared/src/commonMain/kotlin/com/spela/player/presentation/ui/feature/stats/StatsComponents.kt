@@ -175,6 +175,57 @@ internal fun ActivePlayerItem(
     }
 }
 
+/**
+ * A federated (mesh) leaderboard row — leaner than the local rows since the mesh
+ * aggregate is metadata-only (label + playtime + optional player count; no cover
+ * art or avatar). [players] is null for the player metric. Focusable (so gamepad
+ * d-pad can scroll the list) but display-only for now — A-press is a no-op;
+ * linking a mesh game to its import page is a follow-up.
+ */
+@Composable
+internal fun MeshStatItem(
+    rank: Int,
+    label: String,
+    playTimeSeconds: Long,
+    players: Long?,
+    modifier: Modifier = Modifier,
+) {
+    SpCard(
+        onGradient = true,
+        modifier = modifier
+            .fillMaxWidth()
+            .semantics {
+                contentDescription = "Rank $rank: $label, ${formatPlayTime(playTimeSeconds)} play time"
+                role = Role.Button
+            },
+        onClick = {},
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(SpSpacing.Default),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            RankBadge(rank)
+            Spacer(Modifier.width(SpSpacing.Medium))
+            Text(
+                text = label,
+                style = SpTypography.TitleLarge,
+                color = SpColor.OnCard,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            Spacer(Modifier.width(SpSpacing.Medium))
+            StatLabel(label = "Play time", value = formatPlayTime(playTimeSeconds))
+            if (players != null) {
+                Spacer(Modifier.width(SpSpacing.Default))
+                StatLabel(label = "Players", value = "$players")
+            }
+        }
+    }
+}
+
 @Composable
 internal fun StatLabel(label: String, value: String) {
     Column {

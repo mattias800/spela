@@ -1336,3 +1336,10 @@ fun com.spela.client.models.PresenceEntry.toDomain(): FriendPresence = FriendPre
     serverName = serverName,
     hops = hops.toInt(),
 )
+
+fun com.spela.client.models.AggregatedStat.toDomain(): MeshStat = MeshStat(
+    key = key,
+    label = label,
+    playTimeSeconds = totalPlayTimeSeconds,
+    players = totalPlayers,
+)

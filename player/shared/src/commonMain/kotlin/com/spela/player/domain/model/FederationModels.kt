@@ -67,6 +67,25 @@ data class FriendPresence(
     val hops: Int,
 )
 
+/** Which federated (mesh) leaderboard to aggregate. */
+enum class MeshStatMetric {
+    GamePlay, // most-played games across the mesh
+    PlayerPlay, // most-active players across the mesh
+}
+
+/**
+ * One row of federated (mesh) aggregate stats — a game or player summed across
+ * this server + connected servers. The mesh aggregate is metadata-only (label +
+ * playtime + player count); it has no cover art / avatar.
+ */
+@Serializable
+data class MeshStat(
+    val key: String, // cross-server identity (game cross-key or username)
+    val label: String, // game title or username
+    val playTimeSeconds: Long,
+    val players: Long, // distinct players (game metric); 0 for the player metric
+)
+
 /** An import of a connected-server game into the local library. */
 @Serializable
 data class ImportJob(
