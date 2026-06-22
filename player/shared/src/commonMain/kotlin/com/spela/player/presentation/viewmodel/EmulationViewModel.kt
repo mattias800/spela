@@ -1015,12 +1015,18 @@ class EmulationViewModel(
                 sessionHasSaves = hasSaves,
                 skipCoreDecisionPrompt = skipCoreDecisionPrompt,
                 rehearsalCrashPending = crashPending,
+                gameTitle = _state.value.gameTitle,
                 onCoreDownload = { progress ->
                     // Progress callback fires on the dispatcher running
                     // prepareGameUseCase (typically io). State updates on
                     // _state are thread-safe via MutableStateFlow's atomic
                     // CAS, so we don't need to hop to the main dispatcher.
                     _state.update { it.copy(coreDownload = progress) }
+                },
+                onGameDownload = { progress ->
+                    // On-demand ROM download progress (#1412). Same threading
+                    // note as onCoreDownload above.
+                    _state.update { it.copy(gameDownload = progress) }
                 },
             ).fold(
                 onSuccess = { prepared ->

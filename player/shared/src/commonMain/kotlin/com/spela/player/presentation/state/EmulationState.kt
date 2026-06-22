@@ -204,6 +204,12 @@ data class EmulationState(
      * opaque loading spinner. See #1192.
      */
     val coreDownload: com.spela.player.domain.model.CoreDownloadProgress? = null,
+    /**
+     * Non-null while PrepareGameUseCase is downloading the ROM on demand
+     * because a launch entry point reached an un-downloaded game (#1412).
+     * The Emulation UI renders a foreground sheet while this is set.
+     */
+    val gameDownload: com.spela.player.domain.model.DownloadProgress? = null,
     val fps: Float = 0f,
     val frameTime: Float = 0f,
     val isFastForward: Boolean = false,

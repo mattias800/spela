@@ -2,7 +2,9 @@ package com.spela.player.domain.usecase
 
 import com.spela.player.data.repository.CoreUpdateService
 import com.spela.player.domain.model.DownloadProgress
+import com.spela.player.domain.model.DownloadState
 import com.spela.player.domain.model.DownloadedGame
+import com.spela.player.domain.model.INSTANT_DOWNLOAD_FALLBACK_DELAY_MS
 import com.spela.player.domain.model.LibretroCore
 import com.spela.player.domain.model.ShaderPreset
 import com.spela.player.domain.model.UserPreferences
@@ -13,13 +15,16 @@ import com.spela.player.domain.repository.PreferencesRepository
 import com.spela.player.util.DispatcherProvider
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 /**
  * Constructs a [PrepareGameUseCase] backed by the supplied [core] plus a
@@ -475,6 +480,118 @@ class PrepareGameUseCaseTest {
         assertEquals("bb".repeat(32), result.serverCoreSha,
             "serverCoreSha must be surfaced on the result so the VM doesn't re-fetch")
     }
+
+    // ── #1412 on-demand ROM download gate ─────────────────────────
+    // Only the game-detail Play button used to gate uncached games into
+    // the download-then-play flow; every other launch entry point reached
+    // PrepareGameUseCase directly and failed hard with "Game not downloaded".
+    // The use case now downloads the ROM on demand so any entry point can
+    // launch an un-downloaded game.
+
+    @Test
+    fun downloadsRomOnDemandWhenMissingThenLaunches() = runTest {
+        val core = FakeCoreRepository(local = "/local/core.so", isCurrent = true)
+        val downloads = ConfigurableDownloadRepository(
+            initialPath = null, // ROM not on disk at launch …
+            pathAfterDownload = "/local/games/g1/game.nes", // … present after download
+        )
+        val useCase = buildPrepareGameUseCase(core, downloads)
+
+        val result = useCase.invoke(gameId = "g1", gameTitle = "Super Mario Bros.").getOrThrow()
+
+        assertEquals("/local/games/g1/game.nes", result.gamePath)
+        assertEquals(1, downloads.downloadGameCalls, "a missing ROM must be downloaded exactly once")
+        assertEquals(
+            "Super Mario Bros.",
+            downloads.lastDownloadGameTitle,
+            "the game title must be forwarded so the download sheet isn't a generic 'game'",
+        )
+    }
+
+    @Test
+    fun doesNotDownloadWhenRomAlreadyPresent() = runTest {
+        val core = FakeCoreRepository(local = "/local/core.so", isCurrent = true)
+        val downloads = ConfigurableDownloadRepository(initialPath = "/local/games/g1/game.nes")
+        val useCase = buildPrepareGameUseCase(core, downloads)
+
+        val result = useCase.invoke(gameId = "g1").getOrThrow()
+
+        assertEquals("/local/games/g1/game.nes", result.gamePath)
+        assertEquals(0, downloads.downloadGameCalls, "an already-cached ROM must not be re-downloaded")
+    }
+
+    @Test
+    fun failsWhenRomDownloadFails() = runTest {
+        val core = FakeCoreRepository(local = "/local/core.so", isCurrent = true)
+        val downloads = ConfigurableDownloadRepository(
+            initialPath = null,
+            downloadResult = Result.failure(RuntimeException("network down")),
+        )
+        val useCase = buildPrepareGameUseCase(core, downloads)
+
+        val result = useCase.invoke(gameId = "g1")
+
+        assertTrue(result.isFailure, "a failed ROM download must fail prepare, not launch a missing ROM")
+        assertEquals(1, downloads.downloadGameCalls)
+    }
+
+    @Test
+    fun suppressesProgressSheetForFastRomDownloads() = runTest {
+        // A 32 KB ROM finishes well within the silent window, so no progress
+        // sheet should ever be surfaced — only the terminal null. (#1412 / #932)
+        val core = FakeCoreRepository(local = "/local/core.so", isCurrent = true)
+        val downloads = ConfigurableDownloadRepository(
+            initialPath = null,
+            pathAfterDownload = "/local/games/g1/game.nes",
+            downloadDelayMs = INSTANT_DOWNLOAD_FALLBACK_DELAY_MS / 2, // finishes before the window
+            progress = DownloadProgress("g1", "Game", DownloadState.DOWNLOADING, 16_000, 32_000),
+        )
+        val surfaced = mutableListOf<DownloadProgress?>()
+        val useCase = buildPrepareGameUseCase(core, downloads)
+
+        useCase.invoke(gameId = "g1", onGameDownload = { surfaced.add(it) }).getOrThrow()
+
+        assertTrue(
+            surfaced.none { it != null },
+            "a fast download must not flash the progress sheet (surfaced=$surfaced)",
+        )
+    }
+
+    @Test
+    fun surfacesProgressSheetForSlowRomDownloads() = runTest {
+        // A download still running past the silent window surfaces progress so
+        // the user isn't staring at a frozen screen. (#1412)
+        val core = FakeCoreRepository(local = "/local/core.so", isCurrent = true)
+        val downloads = ConfigurableDownloadRepository(
+            initialPath = null,
+            pathAfterDownload = "/local/games/g1/game.iso",
+            downloadDelayMs = INSTANT_DOWNLOAD_FALLBACK_DELAY_MS * 3, // outlasts the window
+            progress = DownloadProgress("g1", "Game", DownloadState.DOWNLOADING, 50_000, 9_000_000),
+        )
+        val surfaced = mutableListOf<DownloadProgress?>()
+        val useCase = buildPrepareGameUseCase(core, downloads)
+
+        useCase.invoke(gameId = "g1", onGameDownload = { surfaced.add(it) }).getOrThrow()
+
+        assertTrue(
+            surfaced.any { it != null },
+            "a slow download must surface progress after the silent window (surfaced=$surfaced)",
+        )
+    }
+
+    @Test
+    fun failsWhenRomStillMissingAfterDownload() = runTest {
+        val core = FakeCoreRepository(local = "/local/core.so", isCurrent = true)
+        val downloads = ConfigurableDownloadRepository(
+            initialPath = null,
+            pathAfterDownload = null, // download reports success but path still won't resolve
+        )
+        val useCase = buildPrepareGameUseCase(core, downloads)
+
+        val result = useCase.invoke(gameId = "g1")
+
+        assertTrue(result.isFailure, "if the ROM still isn't resolvable after download, prepare must fail")
+    }
 }
 
 private class FakeDownloadRepository : DownloadRepository {
@@ -485,6 +602,48 @@ private class FakeDownloadRepository : DownloadRepository {
     override suspend fun cancelDownload(gameId: String) {}
     override suspend fun getLocalGamePath(gameId: String): String = "/local/game.rom"
     override suspend fun isGameCached(gameId: String) = true
+    override suspend fun deleteLocalGame(gameId: String) {}
+    override suspend fun getCacheSize() = 0L
+    override suspend fun clearCache() {}
+    override suspend fun scanForOrphanedDownloads() {}
+}
+
+/**
+ * Download fake for the #1412 on-demand-ROM tests. [getLocalGamePath]
+ * starts at [initialPath]; a successful [downloadGame] flips it to
+ * [pathAfterDownload] and bumps [downloadGameCalls] so tests can assert
+ * whether (and how often) the ROM was fetched.
+ */
+private class ConfigurableDownloadRepository(
+    initialPath: String?,
+    private val pathAfterDownload: String? = null,
+    private val downloadResult: Result<String> = Result.success("/local/game.rom"),
+    /** Virtual-time duration the download "takes" — drives the #1412 silent-window tests. */
+    private val downloadDelayMs: Long = 0,
+    /** Progress value [observeDownload] emits while the download is in flight. */
+    private val progress: DownloadProgress? = null,
+) : DownloadRepository {
+    var downloadGameCalls = 0
+        private set
+    var lastDownloadGameTitle: String? = null
+        private set
+
+    private var currentPath: String? = initialPath
+
+    override fun observeDownloads(): Flow<List<DownloadProgress>> = emptyFlow()
+    override fun observeDownload(gameId: String): Flow<DownloadProgress> =
+        if (progress != null) flowOf(progress) else emptyFlow()
+    override fun observeDownloadedGames(): Flow<List<DownloadedGame>> = emptyFlow()
+    override suspend fun downloadGame(gameId: String, gameTitle: String): Result<String> {
+        downloadGameCalls++
+        lastDownloadGameTitle = gameTitle
+        if (downloadDelayMs > 0) delay(downloadDelayMs)
+        if (downloadResult.isSuccess) currentPath = pathAfterDownload
+        return downloadResult
+    }
+    override suspend fun cancelDownload(gameId: String) {}
+    override suspend fun getLocalGamePath(gameId: String): String? = currentPath
+    override suspend fun isGameCached(gameId: String) = currentPath != null
     override suspend fun deleteLocalGame(gameId: String) {}
     override suspend fun getCacheSize() = 0L
     override suspend fun clearCache() {}

@@ -2,13 +2,17 @@ package com.spela.player.domain.usecase
 
 import com.spela.player.data.repository.CoreUpdateService
 import com.spela.player.domain.model.CoreDownloadProgress
+import com.spela.player.domain.model.DownloadProgress
+import com.spela.player.domain.model.INSTANT_DOWNLOAD_FALLBACK_DELAY_MS
 import com.spela.player.domain.repository.CorePrunedException
 import com.spela.player.domain.repository.CoreRepository
 import com.spela.player.domain.repository.DownloadRepository
 import com.spela.player.util.currentPlatform
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 
 /**
  * Classifies why (if at all) the player might want to surface a
@@ -131,6 +135,44 @@ class PrepareGameUseCase(
         "Original core version no longer available. The latest core may not load this save correctly."
 
     /**
+     * Downloads the ROM on demand and returns its resolved local path, or
+     * null if the download failed or still didn't resolve. Streams live
+     * [DownloadProgress] to [onGameDownload] while in flight, clearing it to
+     * null when finished. See #1412.
+     */
+    private suspend fun downloadRomThenResolve(
+        gameId: String,
+        gameTitle: String,
+        onGameDownload: (DownloadProgress?) -> Unit,
+    ): String? {
+        println("[PrepareGame] ROM not on disk — downloading before launch (gameId=$gameId)")
+        val result = coroutineScope {
+            // Hold the download sheet for the first
+            // INSTANT_DOWNLOAD_FALLBACK_DELAY_MS so small/fast ROMs launch
+            // silently — the same suppression the game-detail instant-download
+            // path uses (#932). Only if the download is still running past the
+            // window do we start surfacing progress.
+            val progressJob = launch {
+                delay(INSTANT_DOWNLOAD_FALLBACK_DELAY_MS)
+                downloadRepository.observeDownload(gameId).collect { onGameDownload(it) }
+            }
+            try {
+                downloadRepository.downloadGame(gameId, gameTitle)
+            } finally {
+                progressJob.cancel()
+                onGameDownload(null)
+            }
+        }
+        result.exceptionOrNull()?.let {
+            println("[PrepareGame] ROM download failed: ${it.message}")
+            return null
+        }
+        return downloadRepository.getLocalGamePath(gameId).also {
+            println("[PrepareGame] ROM downloaded — gamePath=$it")
+        }
+    }
+
+    /**
      * Ensures both the game ROM and the required libretro core are available locally.
      *
      * When [pinnedCoreSha256] is non-null the use case first attempts a
@@ -163,9 +205,29 @@ class PrepareGameUseCase(
          * a known-good binary, not browsing.
          */
         onCoreDownload: (CoreDownloadProgress?) -> Unit = {},
+        /**
+         * Title used to label the on-demand ROM download (and its progress
+         * sheet). Empty falls back to a generic label. See #1412.
+         */
+        gameTitle: String = "",
+        /**
+         * Optional progress sink for the on-demand ROM download below.
+         * Receives the live [DownloadProgress] while the ROM is being
+         * fetched, then `null` once it's on disk (or the attempt ends).
+         * Caller surfaces it as a foreground sheet. See #1412.
+         */
+        onGameDownload: (DownloadProgress?) -> Unit = {},
     ): Result<PrepareGameResult> {
         println("[PrepareGame] invoke(gameId=$gameId)")
+        // Ensure the ROM is on disk before launch. Only the game-detail Play
+        // button routes uncached games through the download-then-play gate;
+        // every other launch entry point (Start fresh / Continue from title /
+        // session continue / shared-session / netplay / challenge) reaches
+        // here directly, so a game with server-side saves but no local ROM
+        // would otherwise fail hard with "Game not downloaded". Download on
+        // demand so any entry point can launch an un-downloaded game. (#1412)
         val gamePath = downloadRepository.getLocalGamePath(gameId)
+            ?: downloadRomThenResolve(gameId, gameTitle, onGameDownload)
             ?: return Result.failure(IllegalStateException("Game not downloaded"))
         println("[PrepareGame] gamePath=$gamePath; calling getRecommendedCore")
 
