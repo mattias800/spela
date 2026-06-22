@@ -1015,6 +1015,7 @@ class EmulationViewModel(
                 sessionHasSaves = hasSaves,
                 skipCoreDecisionPrompt = skipCoreDecisionPrompt,
                 rehearsalCrashPending = crashPending,
+                gameTitle = _state.value.gameTitle,
                 onCoreDownload = { progress ->
                     // Progress callback fires on the dispatcher running
                     // prepareGameUseCase (typically io). State updates on

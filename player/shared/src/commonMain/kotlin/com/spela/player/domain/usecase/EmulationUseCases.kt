@@ -142,6 +142,7 @@ class PrepareGameUseCase(
      */
     private suspend fun downloadRomThenResolve(
         gameId: String,
+        gameTitle: String,
         onGameDownload: (DownloadProgress?) -> Unit,
     ): String? {
         println("[PrepareGame] ROM not on disk — downloading before launch (gameId=$gameId)")
@@ -156,7 +157,7 @@ class PrepareGameUseCase(
                 downloadRepository.observeDownload(gameId).collect { onGameDownload(it) }
             }
             try {
-                downloadRepository.downloadGame(gameId)
+                downloadRepository.downloadGame(gameId, gameTitle)
             } finally {
                 progressJob.cancel()
                 onGameDownload(null)
@@ -205,6 +206,11 @@ class PrepareGameUseCase(
          */
         onCoreDownload: (CoreDownloadProgress?) -> Unit = {},
         /**
+         * Title used to label the on-demand ROM download (and its progress
+         * sheet). Empty falls back to a generic label. See #1412.
+         */
+        gameTitle: String = "",
+        /**
          * Optional progress sink for the on-demand ROM download below.
          * Receives the live [DownloadProgress] while the ROM is being
          * fetched, then `null` once it's on disk (or the attempt ends).
@@ -221,7 +227,7 @@ class PrepareGameUseCase(
         // would otherwise fail hard with "Game not downloaded". Download on
         // demand so any entry point can launch an un-downloaded game. (#1412)
         val gamePath = downloadRepository.getLocalGamePath(gameId)
-            ?: downloadRomThenResolve(gameId, onGameDownload)
+            ?: downloadRomThenResolve(gameId, gameTitle, onGameDownload)
             ?: return Result.failure(IllegalStateException("Game not downloaded"))
         println("[PrepareGame] gamePath=$gamePath; calling getRecommendedCore")
 

@@ -497,10 +497,15 @@ class PrepareGameUseCaseTest {
         )
         val useCase = buildPrepareGameUseCase(core, downloads)
 
-        val result = useCase.invoke(gameId = "g1").getOrThrow()
+        val result = useCase.invoke(gameId = "g1", gameTitle = "Super Mario Bros.").getOrThrow()
 
         assertEquals("/local/games/g1/game.nes", result.gamePath)
         assertEquals(1, downloads.downloadGameCalls, "a missing ROM must be downloaded exactly once")
+        assertEquals(
+            "Super Mario Bros.",
+            downloads.lastDownloadGameTitle,
+            "the game title must be forwarded so the download sheet isn't a generic 'game'",
+        )
     }
 
     @Test
@@ -620,6 +625,8 @@ private class ConfigurableDownloadRepository(
 ) : DownloadRepository {
     var downloadGameCalls = 0
         private set
+    var lastDownloadGameTitle: String? = null
+        private set
 
     private var currentPath: String? = initialPath
 
@@ -629,6 +636,7 @@ private class ConfigurableDownloadRepository(
     override fun observeDownloadedGames(): Flow<List<DownloadedGame>> = emptyFlow()
     override suspend fun downloadGame(gameId: String, gameTitle: String): Result<String> {
         downloadGameCalls++
+        lastDownloadGameTitle = gameTitle
         if (downloadDelayMs > 0) delay(downloadDelayMs)
         if (downloadResult.isSuccess) currentPath = pathAfterDownload
         return downloadResult
