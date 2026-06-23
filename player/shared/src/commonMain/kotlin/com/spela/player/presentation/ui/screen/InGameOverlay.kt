@@ -94,7 +94,13 @@ fun InGameOverlay(
         enter = fadeIn() + slideInVertically(),
         exit = fadeOut() + slideOutVertically(),
     ) {
+        // Anchor d-pad focus on the panel when it opens, so the overlay has a
+        // focus target and gamepad navigation can reach every action (#1410).
+        // A short settle lets the panel place (and finish sliding in) before we
+        // request — requestFocus from a LaunchedEffect during an
+        // AnimatedVisibility enter is otherwise unreliable.
         LaunchedEffect(Unit) {
+            delay(150)
             try { continueFocusRequester.requestFocus() } catch (_: Exception) {}
         }
         InGameOverlayPanel(
