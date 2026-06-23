@@ -16,6 +16,7 @@
 package com.spela.client.apis
 
 import com.spela.client.models.AcceptInviteBody
+import com.spela.client.models.AggregatedAchievementsOutputBody
 import com.spela.client.models.AggregatedPresenceOutputBody
 import com.spela.client.models.AggregatedStatsOutputBody
 import com.spela.client.models.AvailableGamesOutputBody
@@ -92,6 +93,40 @@ open class FederationApi : ApiClient {
         ).wrap()
     }
 
+
+
+    /**
+     * Top achievers across the connected-server mesh (live)
+     * 
+     * @param limit  (optional)
+     * @return AggregatedAchievementsOutputBody
+     */
+    @Suppress("UNCHECKED_CAST")
+    open suspend fun federationAggregatedAchievements(limit: kotlin.Long? = null): HttpResponse<AggregatedAchievementsOutputBody> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody = 
+            io.ktor.client.utils.EmptyContent
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        limit?.apply { localVariableQuery["limit"] = listOf("$limit") }
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.GET,
+            "/api/federation/achievements/aggregated",
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return request(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
 
 
     /**
