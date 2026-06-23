@@ -8,6 +8,7 @@ type Schemas = components["schemas"];
 
 export type AcceptInviteBody = Schemas["AcceptInviteBody"];
 export type Achievement = Schemas["Achievement"];
+export type AchievementEntry = Schemas["AchievementEntry"];
 export type AchievementGameResponse = Schemas["AchievementGameResponse"];
 export type AchievementLeaderboardResponse = Schemas["AchievementLeaderboardResponse"];
 export type AchievementTimelineResponse = Schemas["AchievementTimelineResponse"];
@@ -24,6 +25,7 @@ export type AdminRAStatusResponse = Schemas["AdminRAStatusResponse"];
 export type AdminStatsResponse = Schemas["AdminStatsResponse"];
 export type AdminUpdateUserRequest = Schemas["AdminUpdateUserRequest"];
 export type AgeRatingResponse = Schemas["AgeRatingResponse"];
+export type AggregatedAchievementsOutputBody = Schemas["AggregatedAchievementsOutputBody"];
 export type AggregatedPresenceOutputBody = Schemas["AggregatedPresenceOutputBody"];
 export type AggregatedStat = Schemas["AggregatedStat"];
 export type AggregatedStatsOutputBody = Schemas["AggregatedStatsOutputBody"];
