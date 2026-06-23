@@ -2677,6 +2677,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/federation/achievements/aggregated": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Top achievers across the connected-server mesh (live) */
+        get: operations["federationAggregatedAchievements"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/federation/catalog/available": {
         parameters: {
             query?: never;
@@ -5519,6 +5536,15 @@ export interface components {
             title: string;
             type: string;
         };
+        AchievementEntry: {
+            /** Format: int64 */
+            count: number;
+            /** Format: int64 */
+            hops: number;
+            originFingerprint: string;
+            serverName: string;
+            username: string;
+        };
         AchievementGameResponse: {
             /** Format: double */
             avgCompletion: number;
@@ -5707,6 +5733,15 @@ export interface components {
         AgeRatingResponse: {
             category: string;
             rating: string;
+        };
+        AggregatedAchievementsOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/AggregatedAchievementsOutputBody.json
+             */
+            readonly $schema?: string;
+            achievements: components["schemas"]["AchievementEntry"][];
         };
         AggregatedPresenceOutputBody: {
             /**
@@ -14289,6 +14324,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AnniversariesResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    federationAggregatedAchievements: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AggregatedAchievementsOutputBody"];
                 };
             };
             /** @description Error */

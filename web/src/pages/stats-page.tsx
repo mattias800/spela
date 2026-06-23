@@ -8,6 +8,7 @@ import { ExplorerBadgesSection } from "@/features/explore/components/explorer-ba
 import { CompletionistMapSection } from "@/features/explore/components/completionist-map";
 import { MostPlayedStatsSection } from "@/features/stats/components/most-played-stats-section";
 import { MostActivePlayersStatsSection } from "@/features/stats/components/most-active-players-stats-section";
+import { TopAchieversSection } from "@/features/stats/components/top-achievers-section";
 
 export function StatsPage() {
   const { data: heatmapData, isLoading: isLoadingHeatmap } = useMyPlayHeatmap();
@@ -57,6 +58,9 @@ export function StatsPage() {
 
         {/* Most-active players — local or across connected servers (self-contained). */}
         <MostActivePlayersStatsSection />
+
+        {/* Top achievers — local or across connected servers (self-contained). */}
+        <TopAchieversSection />
       </SectionList>
     </PageLayout>
   );
