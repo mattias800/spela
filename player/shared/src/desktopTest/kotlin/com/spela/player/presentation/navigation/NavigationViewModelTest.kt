@@ -43,7 +43,17 @@ class NavigationViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun createViewModel(): NavigationViewModel {
+    private fun createViewModel(): NavigationViewModel = createViewModelWithFederation()
+
+    /**
+     * Builds a NavigationViewModel wired to a fake FederationRepository that
+     * returns [connectedConsoles]. Fire NavigationIntent.ResetToHome (the
+     * post-login path) to make the VM decide whether to surface the Connected
+     * Servers tab (#1435).
+     */
+    private fun createViewModelWithFederation(
+        connectedConsoles: List<ConnectedConsole> = emptyList(),
+    ): NavigationViewModel {
         val scope = CoroutineScope(testDispatcher)
         val apiClient = SpelaApiClient(NoOpMockEngineFactory, TokenManager())
         val restoreSessionUseCase = RestoreSessionUseCase(
@@ -65,6 +75,7 @@ class NavigationViewModelTest {
             syncEngine = syncEngine,
             dispatchers = testDispatchers,
             scope = scope,
+            federationRepository = FakeFederationRepository(connectedConsoles),
         )
     }
 
@@ -287,7 +298,9 @@ class NavigationViewModelTest {
     }
 
     @Test
-    fun nextSectionCyclesThroughAllTabs() = runTest(testDispatcher) {
+    fun nextSectionCyclesThroughVisibleTabsSkippingConnectedServersByDefault() = runTest(testDispatcher) {
+        // With no connected servers, the Connected Servers tab is hidden, so
+        // the L/R cycle skips it: Consoles → Collections directly (#1435).
         val vm = createViewModel()
         advanceUntilIdle()
 
@@ -300,9 +313,6 @@ class NavigationViewModelTest {
         assertEquals(BottomNavTab.CONSOLES, vm.state.value.activeTab)
 
         vm.onIntent(NavigationIntent.NextSection)
-        assertEquals(BottomNavTab.CONNECTED_SERVERS, vm.state.value.activeTab)
-
-        vm.onIntent(NavigationIntent.NextSection)
         assertEquals(BottomNavTab.COLLECTIONS, vm.state.value.activeTab)
 
         vm.onIntent(NavigationIntent.NextSection)
@@ -313,6 +323,41 @@ class NavigationViewModelTest {
 
         vm.onIntent(NavigationIntent.NextSection)
         assertEquals(BottomNavTab.HOME, vm.state.value.activeTab)
+    }
+
+    @Test
+    fun connectedServersTabIsHiddenWhenNoConnectedServers() = runTest(testDispatcher) {
+        // Logged in, but the connected-server catalog is empty → tab stays hidden.
+        val vm = createViewModelWithFederation(connectedConsoles = emptyList())
+        advanceUntilIdle()
+        vm.onIntent(NavigationIntent.ResetToHome) // post-login refresh path
+        advanceUntilIdle()
+
+        assertFalse(vm.state.value.hasConnectedServers)
+    }
+
+    @Test
+    fun connectedServersTabAppearsInCycleWhenConnectedServersPresent() = runTest(testDispatcher) {
+        // A connected server shares games → the VM surfaces the tab after login,
+        // and the L/R cycle then includes Connected Servers after Consoles.
+        val vm = createViewModelWithFederation(
+            connectedConsoles = listOf(ConnectedConsole(console = "snes", count = 3)),
+        )
+        advanceUntilIdle()
+        vm.onIntent(NavigationIntent.ResetToHome) // post-login refresh path
+        advanceUntilIdle()
+
+        assertTrue(vm.state.value.hasConnectedServers)
+
+        vm.onIntent(NavigationIntent.NextSection) // Explore
+        vm.onIntent(NavigationIntent.NextSection) // Consoles
+        assertEquals(BottomNavTab.CONSOLES, vm.state.value.activeTab)
+
+        vm.onIntent(NavigationIntent.NextSection)
+        assertEquals(BottomNavTab.CONNECTED_SERVERS, vm.state.value.activeTab)
+
+        vm.onIntent(NavigationIntent.NextSection)
+        assertEquals(BottomNavTab.COLLECTIONS, vm.state.value.activeTab)
     }
 
     @Test
@@ -491,6 +536,22 @@ class NavigationViewModelTest {
         override suspend fun getGamesForConsolePaginated(consoleId: String, page: Int, pageSize: Int, hidePreRelease: Boolean, grouped: Boolean) = Result.success(PaginatedResult<Game>(emptyList(), 0, page, pageSize))
         override suspend fun getAllGamesPaginated(page: Int, pageSize: Int, hidePreRelease: Boolean, grouped: Boolean) = Result.success(PaginatedResult<Game>(emptyList(), 0, page, pageSize))
         override suspend fun searchGamesPaginated(query: String, consoleId: String?, sortBy: String?, sortOrder: String?, page: Int, pageSize: Int, hidePreRelease: Boolean, grouped: Boolean) = Result.success(PaginatedResult<Game>(emptyList(), 0, page, pageSize))
+    }
+
+    // Only getConnectedConsoles drives the Connected Servers tab gate (#1435);
+    // the rest are unused stubs for these tests.
+    private class FakeFederationRepository(
+        private val connectedConsoles: List<ConnectedConsole>,
+    ) : FederationRepository {
+        override suspend fun getConnectedConsoles() = Result.success(connectedConsoles)
+        override suspend fun getGamesForConsole(console: String) = Result.success(emptyList<RemoteGame>())
+        override suspend fun getRemoteGame(key: String) = Result.success<RemoteGame?>(null)
+        override suspend fun startImport(key: String, title: String, console: String) =
+            Result.failure<ImportJob>(NotImplementedError("FakeFederationRepository: not used in this test"))
+        override suspend fun listImports() = Result.success(emptyList<ImportJob>())
+        override suspend fun getAggregatedPresence() = Result.success(emptyList<FriendPresence>())
+        override suspend fun getAggregatedStats(metric: MeshStatMetric) = Result.success(emptyList<MeshStat>())
+        override suspend fun getAggregatedAchievers() = Result.success(emptyList<MeshAchiever>())
     }
 
 }

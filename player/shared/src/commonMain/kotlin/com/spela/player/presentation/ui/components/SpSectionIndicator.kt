@@ -36,6 +36,7 @@ fun SpSectionIndicator(
     visible: Boolean,
     controllerStatus: ControllerStatusState = ControllerStatusState.Empty,
     modifier: Modifier = Modifier,
+    tabs: List<BottomNavTab> = BottomNavTab.entries,
 ) {
     val animationsEnabled = LocalAnimationsEnabled.current
 
@@ -64,7 +65,7 @@ fun SpSectionIndicator(
                 horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                BottomNavTab.entries.forEach { tab ->
+                tabs.forEach { tab ->
                     val isActive = tab == activeTab
                     Icon(
                         imageVector = tab.icon,

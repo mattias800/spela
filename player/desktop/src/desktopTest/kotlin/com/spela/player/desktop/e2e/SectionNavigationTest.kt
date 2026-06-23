@@ -67,6 +67,9 @@ class SectionNavigationTest {
         onNodeWithText("Collections").assertIsDisplayed()
         onNodeWithText("Activity").assertIsDisplayed()
         onNodeWithText("Settings").assertIsDisplayed()
+
+        // No connected servers in the harness → the Servers tab is hidden (#1435).
+        onNodeWithText("Servers").assertDoesNotExist()
     }
 
     @Test
@@ -87,11 +90,8 @@ class SectionNavigationTest {
         harness.navigationViewModel.onIntent(NavigationIntent.NextSection)
         assertEquals(SpScreen.Consoles, harness.navigationViewModel.state.value.currentScreen)
 
-        // NextSection → Connected servers
-        harness.navigationViewModel.onIntent(NavigationIntent.NextSection)
-        assertEquals(SpScreen.ConnectedServers, harness.navigationViewModel.state.value.currentScreen)
-
-        // NextSection → Collections
+        // NextSection → Collections (Connected Servers is hidden — no connected
+        // servers in the harness, so the cycle skips it, #1435)
         harness.navigationViewModel.onIntent(NavigationIntent.NextSection)
         assertEquals(SpScreen.Collections, harness.navigationViewModel.state.value.currentScreen)
 
@@ -130,11 +130,7 @@ class SectionNavigationTest {
         harness.navigationViewModel.onIntent(NavigationIntent.PreviousSection)
         assertEquals(SpScreen.Collections, harness.navigationViewModel.state.value.currentScreen)
 
-        // PreviousSection → Connected servers
-        harness.navigationViewModel.onIntent(NavigationIntent.PreviousSection)
-        assertEquals(SpScreen.ConnectedServers, harness.navigationViewModel.state.value.currentScreen)
-
-        // PreviousSection → Consoles
+        // PreviousSection → Consoles (Connected Servers is hidden, #1435)
         harness.navigationViewModel.onIntent(NavigationIntent.PreviousSection)
         assertEquals(SpScreen.Consoles, harness.navigationViewModel.state.value.currentScreen)
 
@@ -193,9 +189,9 @@ class SectionNavigationTest {
         setContent { harness.App() }
         advance(harness)
 
-        // Navigate to Collections via section cycling
-        // (Home → Explore → Consoles → Connected servers → Collections)
-        harness.navigationViewModel.onIntent(NavigationIntent.NextSection)
+        // Navigate to Collections via section cycling. Connected Servers is
+        // hidden (no connected servers in the harness, #1435), so Collections
+        // is three steps in: Home → Explore → Consoles → Collections.
         harness.navigationViewModel.onIntent(NavigationIntent.NextSection)
         harness.navigationViewModel.onIntent(NavigationIntent.NextSection)
         harness.navigationViewModel.onIntent(NavigationIntent.NextSection)

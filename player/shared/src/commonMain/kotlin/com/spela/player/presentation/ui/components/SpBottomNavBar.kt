@@ -60,11 +60,22 @@ enum class BottomNavTab(
     SETTINGS("Settings", Icons.Filled.Settings, com.spela.player.presentation.ui.TestTags.NAV_SETTINGS),
 }
 
+/**
+ * The nav tabs to render. CONNECTED_SERVERS is surfaced only when a connected
+ * (federated) server actually shares games to browse — otherwise the page is
+ * just empty states and pairing is an admin action, so there's nothing for the
+ * user to do there. Single source of truth for the bottom bar, the rail, and
+ * the L1/R1 section cycle. See #1435.
+ */
+fun visibleBottomNavTabs(hasConnectedServers: Boolean): List<BottomNavTab> =
+    BottomNavTab.entries.filter { it != BottomNavTab.CONNECTED_SERVERS || hasConnectedServers }
+
 @Composable
 fun SpBottomNavBar(
     activeTab: BottomNavTab,
     onTabSelected: (BottomNavTab) -> Unit,
     modifier: Modifier = Modifier,
+    tabs: List<BottomNavTab> = BottomNavTab.entries,
 ) {
     Column(
         modifier = modifier
@@ -94,7 +105,7 @@ fun SpBottomNavBar(
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            BottomNavTab.entries.forEach { tab ->
+            tabs.forEach { tab ->
                 val isSelected = tab == activeTab
                 val interactionSource = remember { MutableInteractionSource() }
                 val isFocused by interactionSource.collectIsFocusedAsState()

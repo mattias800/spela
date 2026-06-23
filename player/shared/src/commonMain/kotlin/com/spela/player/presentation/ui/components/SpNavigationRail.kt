@@ -75,6 +75,7 @@ fun SpNavigationRail(
     controllerStatus: ControllerStatusState = ControllerStatusState.Empty,
     onControllerStatusClick: () -> Unit = {},
     modifier: Modifier = Modifier,
+    tabs: List<BottomNavTab> = BottomNavTab.entries,
 ) {
     val railWidth = if (showLabels) 200.dp else 72.dp
 
@@ -89,8 +90,8 @@ fun SpNavigationRail(
                 .padding(top = if (titleBarInset > 0.dp) titleBarInset else SpSpacing.Medium, bottom = SpSpacing.Medium),
             horizontalAlignment = if (showLabels) Alignment.Start else Alignment.CenterHorizontally,
         ) {
-            // Main tabs (everything except Settings)
-            BottomNavTab.entries.filter { it != BottomNavTab.SETTINGS }.forEach { tab ->
+            // Main tabs (everything except Settings, which is pinned to the bottom)
+            tabs.filter { it != BottomNavTab.SETTINGS }.forEach { tab ->
                 RailItem(
                     tab = tab,
                     isSelected = tab == activeTab,

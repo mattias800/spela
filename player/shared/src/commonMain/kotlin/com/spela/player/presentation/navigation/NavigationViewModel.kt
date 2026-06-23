@@ -6,9 +6,11 @@ import com.spela.player.data.remote.ConnectionState
 import com.spela.player.data.remote.ConnectivityMonitor
 import com.spela.player.data.remote.SyncEngine
 import com.spela.player.data.repository.BiosRepository
+import com.spela.player.domain.repository.FederationRepository
 import com.spela.player.domain.usecase.RestoreSessionResult
 import com.spela.player.domain.usecase.RestoreSessionUseCase
 import com.spela.player.presentation.ui.components.BottomNavTab
+import com.spela.player.presentation.ui.components.visibleBottomNavTabs
 import com.spela.player.util.DispatcherProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,18 +27,25 @@ class NavigationViewModel(
     private val scope: CoroutineScope,
     private val biosRepository: BiosRepository? = null,
     private val coreUpdateService: com.spela.player.data.repository.CoreUpdateService? = null,
+    private val federationRepository: FederationRepository? = null,
 ) {
     private val _state = MutableStateFlow(NavigationState())
     val state: StateFlow<NavigationState> = _state.asStateFlow()
 
-    private val sections = listOf(
-        SpScreen.Home, SpScreen.Explore, SpScreen.Consoles, SpScreen.ConnectedServers,
-        SpScreen.Collections, SpScreen.Activity, SpScreen.Settings
-    )
-
     init {
         restoreSession()
         observeAuthState()
+        observeReconnect()
+    }
+
+    // Re-check connected-server visibility when connectivity is regained (e.g.
+    // launched offline, then the server comes online) — #1435. onReconnect only
+    // fires on a genuine non-connected → connected transition (no initial replay),
+    // so the token is already loaded by the time this runs.
+    private fun observeReconnect() {
+        scope.launch(dispatchers.main) {
+            connectivityMonitor.onReconnect.collect { refreshConnectedServersVisibility() }
+        }
     }
 
     private fun observeAuthState() {
@@ -54,6 +63,19 @@ class NavigationViewModel(
                     }
                     else -> { /* handled by UI components */ }
                 }
+            }
+        }
+    }
+
+    // Decide whether to surface the Connected Servers tab (#1435). Called once
+    // the user is authenticated — after an online session restore and after a
+    // fresh login (ResetToHome) — so the request carries a token. Best-effort:
+    // a failure just leaves the tab hidden (the safe default).
+    private fun refreshConnectedServersVisibility() {
+        val repo = federationRepository ?: return
+        scope.launch(dispatchers.io) {
+            repo.getConnectedConsoles().onSuccess { consoles ->
+                _state.update { it.copy(hasConnectedServers = consoles.isNotEmpty()) }
             }
         }
     }
@@ -131,6 +153,9 @@ class NavigationViewModel(
                         tabStacksBehindOverlay = emptyMap(),
                     )
                 }
+                // Fresh login lands here (onLoginSuccess) — the token is now
+                // stored, so check for connected-server content (#1435).
+                refreshConnectedServersVisibility()
             }
 
             NavigationIntent.GoBack -> {
@@ -141,10 +166,10 @@ class NavigationViewModel(
 
             NavigationIntent.NextSection -> {
                 _state.update { current ->
-                    val currentIndex = BottomNavTab.entries.indexOf(current.activeTab)
-                    val nextIndex = (currentIndex + 1) % sections.size
+                    val tabs = visibleBottomNavTabs(current.hasConnectedServers)
+                    val currentIndex = tabs.indexOf(current.activeTab).coerceAtLeast(0)
                     current.copy(
-                        activeTab = BottomNavTab.entries[nextIndex],
+                        activeTab = tabs[(currentIndex + 1) % tabs.size],
                         isGoingBack = false,
                         isTabSwitch = true,
                     )
@@ -153,10 +178,10 @@ class NavigationViewModel(
 
             NavigationIntent.PreviousSection -> {
                 _state.update { current ->
-                    val currentIndex = BottomNavTab.entries.indexOf(current.activeTab)
-                    val prevIndex = (currentIndex - 1 + sections.size) % sections.size
+                    val tabs = visibleBottomNavTabs(current.hasConnectedServers)
+                    val currentIndex = tabs.indexOf(current.activeTab).coerceAtLeast(0)
                     current.copy(
-                        activeTab = BottomNavTab.entries[prevIndex],
+                        activeTab = tabs[(currentIndex - 1 + tabs.size) % tabs.size],
                         isGoingBack = true,
                         isTabSwitch = true,
                     )
@@ -272,6 +297,12 @@ class NavigationViewModel(
             if (result is RestoreSessionResult.Success || result is RestoreSessionResult.OfflineSuccess) {
                 connectivityMonitor.start()
                 syncEngine.start()
+
+                // Decide whether to surface the Connected Servers tab (#1435).
+                // Online restore only — OfflineSuccess has no server connectivity.
+                if (result is RestoreSessionResult.Success) {
+                    refreshConnectedServersVisibility()
+                }
 
                 // Sync BIOS files in background (AC 4.1)
                 biosRepository?.let { repo ->
