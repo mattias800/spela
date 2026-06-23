@@ -1,6 +1,5 @@
 package com.spela.player.presentation.navigation
 
-import com.spela.player.data.remote.ConnectionState
 import com.spela.player.data.remote.ConnectivityMonitor
 import com.spela.player.data.remote.SyncEngine
 import com.spela.player.data.remote.api.SpelaApiClient
@@ -44,17 +43,17 @@ class NavigationViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun createViewModel(): NavigationViewModel = createViewModelWithFederation().first
+    private fun createViewModel(): NavigationViewModel = createViewModelWithFederation()
 
     /**
      * Builds a NavigationViewModel wired to a fake FederationRepository that
-     * returns [connectedConsoles]. Returns the monitor too so tests can force
-     * the connection Online — the trigger that makes the VM decide whether to
-     * surface the Connected Servers tab (#1435).
+     * returns [connectedConsoles]. Fire NavigationIntent.ResetToHome (the
+     * post-login path) to make the VM decide whether to surface the Connected
+     * Servers tab (#1435).
      */
     private fun createViewModelWithFederation(
         connectedConsoles: List<ConnectedConsole> = emptyList(),
-    ): Pair<NavigationViewModel, ConnectivityMonitor> {
+    ): NavigationViewModel {
         val scope = CoroutineScope(testDispatcher)
         val apiClient = SpelaApiClient(NoOpMockEngineFactory, TokenManager())
         val restoreSessionUseCase = RestoreSessionUseCase(
@@ -70,7 +69,7 @@ class NavigationViewModelTest {
             dispatchers = testDispatchers,
             scope = scope,
         )
-        val vm = NavigationViewModel(
+        return NavigationViewModel(
             restoreSessionUseCase = restoreSessionUseCase,
             connectivityMonitor = connectivityMonitor,
             syncEngine = syncEngine,
@@ -78,7 +77,6 @@ class NavigationViewModelTest {
             scope = scope,
             federationRepository = FakeFederationRepository(connectedConsoles),
         )
-        return vm to connectivityMonitor
     }
 
     /** Helper: the active tab's stack. */
@@ -329,10 +327,10 @@ class NavigationViewModelTest {
 
     @Test
     fun connectedServersTabIsHiddenWhenNoConnectedServers() = runTest(testDispatcher) {
-        // Online, but the connected-server catalog is empty → tab stays hidden.
-        val (vm, monitor) = createViewModelWithFederation(connectedConsoles = emptyList())
+        // Logged in, but the connected-server catalog is empty → tab stays hidden.
+        val vm = createViewModelWithFederation(connectedConsoles = emptyList())
         advanceUntilIdle()
-        monitor.forceConnectionState(ConnectionState.Online)
+        vm.onIntent(NavigationIntent.ResetToHome) // post-login refresh path
         advanceUntilIdle()
 
         assertFalse(vm.state.value.hasConnectedServers)
@@ -340,13 +338,13 @@ class NavigationViewModelTest {
 
     @Test
     fun connectedServersTabAppearsInCycleWhenConnectedServersPresent() = runTest(testDispatcher) {
-        // A connected server shares games → the VM surfaces the tab once Online,
+        // A connected server shares games → the VM surfaces the tab after login,
         // and the L/R cycle then includes Connected Servers after Consoles.
-        val (vm, monitor) = createViewModelWithFederation(
+        val vm = createViewModelWithFederation(
             connectedConsoles = listOf(ConnectedConsole(console = "snes", count = 3)),
         )
         advanceUntilIdle()
-        monitor.forceConnectionState(ConnectionState.Online)
+        vm.onIntent(NavigationIntent.ResetToHome) // post-login refresh path
         advanceUntilIdle()
 
         assertTrue(vm.state.value.hasConnectedServers)

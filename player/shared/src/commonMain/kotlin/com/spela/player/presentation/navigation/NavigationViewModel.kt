@@ -35,6 +35,17 @@ class NavigationViewModel(
     init {
         restoreSession()
         observeAuthState()
+        observeReconnect()
+    }
+
+    // Re-check connected-server visibility when connectivity is regained (e.g.
+    // launched offline, then the server comes online) — #1435. onReconnect only
+    // fires on a genuine non-connected → connected transition (no initial replay),
+    // so the token is already loaded by the time this runs.
+    private fun observeReconnect() {
+        scope.launch(dispatchers.main) {
+            connectivityMonitor.onReconnect.collect { refreshConnectedServersVisibility() }
+        }
     }
 
     private fun observeAuthState() {
@@ -50,16 +61,16 @@ class NavigationViewModel(
                             )
                         }
                     }
-                    // Once connected (session restore or fresh login both land
-                    // here), decide whether to surface the Connected Servers tab.
-                    ConnectionState.Online -> refreshConnectedServersVisibility()
                     else -> { /* handled by UI components */ }
                 }
             }
         }
     }
 
-    // Best-effort: a failure just leaves the tab hidden (the safe default).
+    // Decide whether to surface the Connected Servers tab (#1435). Called once
+    // the user is authenticated — after an online session restore and after a
+    // fresh login (ResetToHome) — so the request carries a token. Best-effort:
+    // a failure just leaves the tab hidden (the safe default).
     private fun refreshConnectedServersVisibility() {
         val repo = federationRepository ?: return
         scope.launch(dispatchers.io) {
@@ -142,6 +153,9 @@ class NavigationViewModel(
                         tabStacksBehindOverlay = emptyMap(),
                     )
                 }
+                // Fresh login lands here (onLoginSuccess) — the token is now
+                // stored, so check for connected-server content (#1435).
+                refreshConnectedServersVisibility()
             }
 
             NavigationIntent.GoBack -> {
@@ -283,6 +297,12 @@ class NavigationViewModel(
             if (result is RestoreSessionResult.Success || result is RestoreSessionResult.OfflineSuccess) {
                 connectivityMonitor.start()
                 syncEngine.start()
+
+                // Decide whether to surface the Connected Servers tab (#1435).
+                // Online restore only — OfflineSuccess has no server connectivity.
+                if (result is RestoreSessionResult.Success) {
+                    refreshConnectedServersVisibility()
+                }
 
                 // Sync BIOS files in background (AC 4.1)
                 biosRepository?.let { repo ->
