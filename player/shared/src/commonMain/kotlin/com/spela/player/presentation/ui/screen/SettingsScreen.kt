@@ -17,6 +17,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.spela.player.presentation.ui.LocalAppQuit
 import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.components.ShaderPreviewDialog
 import com.spela.player.presentation.ui.components.SpConfirmDialog
@@ -73,6 +74,15 @@ fun SettingsScreen(
     // return to the detail (not the list) after navigating back.
     var showingDetail by rememberSaveable { mutableStateOf(false) }
 
+    // In-app Quit (desktop only; null on Android). When present, a "Quit Spela"
+    // action is pinned at the bottom of the category list (#1439).
+    val appQuit = LocalAppQuit.current
+    var showQuitConfirm by remember { mutableStateOf(false) }
+    // Memoize so a new lambda isn't created on every settings-state recomposition
+    // (which would needlessly recompose the category list). appQuit is from a
+    // static CompositionLocal, so this is stable for the lifetime of the screen.
+    val onQuit: (() -> Unit)? = remember(appQuit) { appQuit?.let { { showQuitConfirm = true } } }
+
     // Dialogs (shared across all categories)
     SettingsDialogs(
         state = state,
@@ -81,6 +91,22 @@ fun SettingsScreen(
         keyMappingState = keyMappingState?.value,
         onLogout = onLogout,
     )
+
+    // Quit confirmation — gamepad/keyboard-navigable (SpConfirmDialog anchors
+    // focus on Cancel). Confirm runs the desktop clean-shutdown via appQuit.
+    if (showQuitConfirm && appQuit != null) {
+        SpConfirmDialog(
+            title = "Quit Spela?",
+            message = "Any running game will be saved and closed.",
+            onDismiss = { showQuitConfirm = false },
+            onConfirm = {
+                showQuitConfirm = false
+                appQuit()
+            },
+            confirmText = "Quit",
+            isDestructive = true,
+        )
+    }
 
     val titleBarInset = LocalTitleBarInset.current
     // In gamepad mode the section-indicator pill overlays the top-center of the
@@ -108,6 +134,7 @@ fun SettingsScreen(
                         serverUrl = state.serverUrl,
                         modifier = Modifier.width(280.dp).fillMaxHeight(),
                         topPadding = topInset,
+                        onQuit = onQuit,
                     )
                     SettingsCategoryContent(
                         category = selectedCategory,
@@ -160,6 +187,7 @@ fun SettingsScreen(
                         serverUrl = state.serverUrl,
                         modifier = Modifier.fillMaxSize(),
                         topPadding = topInset,
+                        onQuit = onQuit,
                     )
                 }
             }

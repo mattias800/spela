@@ -32,6 +32,7 @@ import com.spela.player.libretro.DesktopGamepadPoller
 import com.spela.player.libretro.DesktopGamepadSynth
 import com.spela.player.presentation.ui.gamepad.InputModeClassifier
 import com.spela.player.presentation.App
+import com.spela.player.presentation.ui.LocalAppQuit
 import com.spela.player.presentation.ui.theme.LocalTitleBarInset
 import com.spela.player.presentation.intent.EmulationIntent
 import com.spela.player.presentation.navigation.NavigationIntent
@@ -87,6 +88,29 @@ fun main(args: Array<String>) {
     val appScope = rememberCoroutineScope()
     val windowState = rememberWindowState(width = 1280.dp, height = 720.dp)
 
+    // Clean shutdown, shared by the window close button and the in-app Quit
+    // (Settings → "Quit Spela", desktop only — the only gamepad-reachable exit
+    // in Steam Deck Gaming Mode, #1439). Stops a running game first so its
+    // auto-save + core teardown run; otherwise the non-daemon emulation thread
+    // lingers (audio keeps playing) and the save is lost. Bounded so a stuck
+    // save can't block shutdown forever. (#1286)
+    val requestExit: () -> Unit = {
+        gamepadPoller.stop()
+        if (emulationViewModel.state.value.isRunning) {
+            println("[Shutdown] game running — stopping (auto-save + teardown) before exit…")
+            emulationViewModel.onIntent(EmulationIntent.StopGame)
+            appScope.launch {
+                withTimeoutOrNull(12_000) {
+                    emulationViewModel.state.first { !it.isRunning }
+                }
+                println("[Shutdown] stop complete — exiting")
+                exitApplication()
+            }
+        } else {
+            exitApplication()
+        }
+    }
+
     // Linux: JBR's CustomTitleBar API is not implemented on X11 (JBR-6413),
     // so the transparent-title-bar look is achieved with an undecorated
     // window plus Compose-drawn chrome (LinuxTitleBar.kt). Only enabled when
@@ -99,28 +123,7 @@ fun main(args: Array<String>) {
     }
 
     Window(
-        onCloseRequest = {
-            gamepadPoller.stop()
-            if (emulationViewModel.state.value.isRunning) {
-                // Stop the running game cleanly before exiting: StopGame runs
-                // auto-save + core teardown, then flips isRunning=false. Closing
-                // without this skips the save AND leaves the (non-daemon)
-                // emulation thread running headless — audio keeps playing and
-                // the process lingers. Defer the exit until the stop completes
-                // (bounded, so a stuck save can't block shutdown forever). (#1286)
-                println("[Shutdown] game running — stopping (auto-save + teardown) before exit…")
-                emulationViewModel.onIntent(EmulationIntent.StopGame)
-                appScope.launch {
-                    withTimeoutOrNull(12_000) {
-                        emulationViewModel.state.first { !it.isRunning }
-                    }
-                    println("[Shutdown] stop complete — exiting")
-                    exitApplication()
-                }
-            } else {
-                exitApplication()
-            }
-        },
+        onCloseRequest = requestExit,
         title = windowTitle,
         state = windowState,
         icon = icon,
@@ -197,6 +200,7 @@ fun main(args: Array<String>) {
             CompositionLocalProvider(
                 LocalTitleBarInset provides titleBarInset,
                 LocalDensity provides density,
+                LocalAppQuit provides requestExit,
             ) {
                 App()
             }
@@ -241,10 +245,10 @@ fun main(args: Array<String>) {
                                 WindowPlacement.Maximized
                             }
                     },
-                    onClose = {
-                        gamepadPoller.stop()
-                        exitApplication()
-                    },
+                    // Route through requestExit so the Linux custom-chrome
+                    // close button also stops a running game cleanly (#1286),
+                    // matching onCloseRequest and the in-app Quit. (#1439)
+                    onClose = requestExit,
                     onDragStart = { startNativeWindowMove(window) },
                     modifier = Modifier
                         .align(Alignment.TopStart)
