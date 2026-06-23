@@ -18,11 +18,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.semantics.contentDescription
@@ -60,7 +58,6 @@ import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.components.NavigationLayoutMode
 import com.spela.player.presentation.ui.components.SpBottomNavBar
 import com.spela.player.presentation.ui.components.SpNavigationRail
-import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
@@ -422,31 +419,17 @@ fun SpelaApp(deps: SpelaAppDependencies) = with(deps) {
                             overlayVisible = emulationState.showOverlay,
                         )
 
-                        // Error overlay: shown when emulation fails to start
-                        if (emulationState.error != null) {
-                            Box(
-                                modifier = Modifier.fillMaxSize().background(Color.Black),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    modifier = Modifier.padding(SpSpacing.XLarge),
-                                ) {
-                                    Text(
-                                        text = emulationState.error ?: "",
-                                        style = SpTypography.BodyMedium,
-                                        color = SpColor.Error,
-                                    )
-                                    Spacer(Modifier.height(SpSpacing.Large))
-                                    SpButton(
-                                        text = "Exit",
-                                        onClick = {
-                                            emulationViewModel.onIntent(EmulationIntent.StopGame)
-                                            navigationViewModel.onIntent(NavigationIntent.HideOverlay)
-                                        },
-                                    )
-                                }
-                            }
+                        // Error overlay: shown when emulation fails to start.
+                        // The Exit button auto-focuses so a gamepad acts on it
+                        // rather than a still-focused control underneath (#1411).
+                        emulationState.error?.let { error ->
+                            com.spela.player.presentation.ui.feature.ingame.EmulationErrorOverlay(
+                                error = error,
+                                onExit = {
+                                    emulationViewModel.onIntent(EmulationIntent.StopGame)
+                                    navigationViewModel.onIntent(NavigationIntent.HideOverlay)
+                                },
+                            )
                         }
 
                         // Core download progress sheet — replaces the
