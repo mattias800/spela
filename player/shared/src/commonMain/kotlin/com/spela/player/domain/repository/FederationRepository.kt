@@ -3,6 +3,7 @@ package com.spela.player.domain.repository
 import com.spela.player.domain.model.ConnectedConsole
 import com.spela.player.domain.model.FriendPresence
 import com.spela.player.domain.model.ImportJob
+import com.spela.player.domain.model.MeshAchiever
 import com.spela.player.domain.model.MeshStat
 import com.spela.player.domain.model.MeshStatMetric
 import com.spela.player.domain.model.RemoteGame
@@ -33,4 +34,7 @@ interface FederationRepository {
 
     /** Federated (mesh) leaderboard for the given metric, summed across the mesh. */
     suspend fun getAggregatedStats(metric: MeshStatMetric): Result<List<MeshStat>>
+
+    /** Federated "top achievers" leaderboard — unlock counts per player across the mesh. */
+    suspend fun getAggregatedAchievers(): Result<List<MeshAchiever>>
 }

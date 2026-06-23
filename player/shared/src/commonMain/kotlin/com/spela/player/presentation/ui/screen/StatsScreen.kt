@@ -22,6 +22,7 @@ import com.spela.player.presentation.intent.StatsIntent
 import com.spela.player.presentation.ui.feature.stats.PersonalStatsSection
 import com.spela.player.presentation.ui.feature.stats.mostActivePlayersStatsSection
 import com.spela.player.presentation.ui.feature.stats.mostPlayedStatsSection
+import com.spela.player.presentation.ui.feature.stats.topAchieversStatsSection
 import com.spela.player.presentation.ui.components.SpEmptyState
 import com.spela.player.presentation.ui.components.ScreenLoadingIndicator
 import com.spela.player.presentation.ui.components.rememberLoadingFlashDebounce
@@ -81,7 +82,8 @@ fun StatsScreen(
                     ScreenLoadingIndicator(message = "Loading stats...")
                 }
             } else {
-                val isEmpty = state.mostPlayedGames.isEmpty() && state.activePlayers.isEmpty() && state.personalStats == null
+                val isEmpty = state.mostPlayedGames.isEmpty() && state.activePlayers.isEmpty() &&
+                    state.personalStats == null && state.meshAchievers.isEmpty()
 
                 PullToRefreshBox(
                     isRefreshing = rememberLoadingFlashDebounce(state.isLoading),
@@ -143,6 +145,18 @@ fun StatsScreen(
                                     isDefaultFocus = state.mostPlayedGames.isEmpty(),
                                     onScopeChange = { viewModel.onIntent(StatsIntent.SetActivePlayersScope(it)) },
                                     onUserSelected = onUserSelected,
+                                )
+                            }
+
+                            // Top Achievers (federated). Default focus only when
+                            // it's the first rendered section.
+                            if (state.meshAchievers.isNotEmpty()) {
+                                topAchieversStatsSection(
+                                    achievers = state.meshAchievers,
+                                    scope = state.achieversScope,
+                                    isLoading = state.isLoadingMeshAchievers,
+                                    isDefaultFocus = state.mostPlayedGames.isEmpty() && state.activePlayers.isEmpty(),
+                                    onScopeChange = { viewModel.onIntent(StatsIntent.SetAchieversScope(it)) },
                                 )
                             }
                         }

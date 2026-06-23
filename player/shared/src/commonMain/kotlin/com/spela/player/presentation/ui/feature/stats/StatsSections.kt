@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import com.spela.player.domain.model.ActivePlayer
+import com.spela.player.domain.model.MeshAchiever
 import com.spela.player.domain.model.MeshStat
 import com.spela.player.domain.model.MostPlayedGame
 import com.spela.player.presentation.state.StatScope
@@ -124,6 +125,61 @@ fun LazyListScope.mostActivePlayersStatsSection(
     }
 
     item(key = "active-spacer") { Spacer(Modifier.height(SpSpacing.XXLarge)) }
+}
+
+fun LazyListScope.topAchieversStatsSection(
+    achievers: List<MeshAchiever>,
+    scope: StatScope,
+    isLoading: Boolean,
+    isDefaultFocus: Boolean,
+    onScopeChange: (StatScope) -> Unit,
+) {
+    item(key = "achievers-header") {
+        StatsSectionHeaderWithScope(
+            title = "Top Achievers",
+            scope = scope,
+            isDefaultFocus = isDefaultFocus,
+            testPrefix = "top-achievers",
+            onScopeChange = onScopeChange,
+            modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+        )
+    }
+
+    // One aggregate (local + connected); "This server" filters to hop 0.
+    val rows = if (scope == StatScope.ThisServer) achievers.filter { it.hops == 0 } else achievers
+    if (rows.isEmpty()) {
+        item(key = "achievers-placeholder") {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.Large),
+            ) {
+                if (isLoading) {
+                    ScreenLoadingIndicator(message = "Loading…")
+                } else {
+                    SpEmptyState(
+                        icon = Icons.Filled.Public,
+                        title = "No top achievers yet",
+                        message = "Players' achievement counts across connected servers will appear here.",
+                    )
+                }
+            }
+        }
+    } else {
+        itemsIndexed(rows, key = { _, a -> "achiever-${a.serverName}-${a.username}" }) { index, a ->
+            MeshAchieverItem(
+                rank = index + 1,
+                username = a.username,
+                count = a.count,
+                serverName = a.serverName,
+                modifier = Modifier
+                    .focusRestoreItem(key = "achiever_${a.serverName}_${a.username}", isDefault = false)
+                    .padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XSmall),
+            )
+        }
+    }
+
+    item(key = "achievers-spacer") { Spacer(Modifier.height(SpSpacing.XXLarge)) }
 }
 
 private fun LazyListScope.meshStatRows(

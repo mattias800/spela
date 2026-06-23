@@ -226,6 +226,55 @@ internal fun MeshStatItem(
     }
 }
 
+/**
+ * A federated "top achievers" leaderboard row — a player's achievement-unlock
+ * count, with the connected-server label when remote. Focusable (so the d-pad
+ * can scroll the list) but display-only for now.
+ */
+@Composable
+internal fun MeshAchieverItem(
+    rank: Int,
+    username: String,
+    count: Long,
+    serverName: String,
+    modifier: Modifier = Modifier,
+) {
+    SpCard(
+        onGradient = true,
+        modifier = modifier
+            .fillMaxWidth()
+            .semantics {
+                contentDescription = "Rank $rank: $username, $count achievements"
+                role = Role.Button
+            },
+        onClick = {},
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(SpSpacing.Default),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            RankBadge(rank)
+            Spacer(Modifier.width(SpSpacing.Medium))
+            Text(
+                text = username,
+                style = SpTypography.TitleLarge,
+                color = SpColor.OnCard,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            Spacer(Modifier.width(SpSpacing.Medium))
+            StatLabel(label = "Achievements", value = "$count")
+            if (serverName.isNotBlank()) {
+                Spacer(Modifier.width(SpSpacing.Default))
+                StatLabel(label = "Server", value = serverName)
+            }
+        }
+    }
+}
+
 @Composable
 internal fun StatLabel(label: String, value: String) {
     Column {

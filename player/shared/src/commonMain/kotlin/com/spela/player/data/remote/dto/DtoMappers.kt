@@ -1343,3 +1343,10 @@ fun com.spela.client.models.AggregatedStat.toDomain(): MeshStat = MeshStat(
     playTimeSeconds = totalPlayTimeSeconds,
     players = totalPlayers,
 )
+
+fun com.spela.client.models.AchievementEntry.toDomain(): MeshAchiever = MeshAchiever(
+    username = username,
+    count = count,
+    serverName = serverName,
+    hops = hops.toInt(),
+)

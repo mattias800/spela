@@ -86,6 +86,20 @@ data class MeshStat(
     val players: Long, // distinct players (game metric); 0 for the player metric
 )
 
+/**
+ * One row of the federated "top achievers" leaderboard — a player's
+ * achievement-unlock count across the mesh. [hops] is 0 for a player on this
+ * server and >= 1 for a connected-server player; [serverName] is that server's
+ * label (blank for this server).
+ */
+@Serializable
+data class MeshAchiever(
+    val username: String,
+    val count: Long,
+    val serverName: String,
+    val hops: Int,
+)
+
 /** An import of a connected-server game into the local library. */
 @Serializable
 data class ImportJob(

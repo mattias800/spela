@@ -347,6 +347,7 @@ class SpelaTestHarness(
         getMostActivePlayersUseCase = GetMostActivePlayersUseCase(statsRepo),
         getUserStatsUseCase = GetUserStatsUseCase(gameStatsRepo),
         getMeshStatsUseCase = GetMeshStatsUseCase(federationRepo),
+        getMeshAchieversUseCase = GetMeshAchieversUseCase(federationRepo),
         dispatchers = dispatchers,
         scope = scope,
     )

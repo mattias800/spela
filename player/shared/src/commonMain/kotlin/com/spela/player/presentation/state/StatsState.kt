@@ -1,6 +1,7 @@
 package com.spela.player.presentation.state
 
 import com.spela.player.domain.model.ActivePlayer
+import com.spela.player.domain.model.MeshAchiever
 import com.spela.player.domain.model.MeshStat
 import com.spela.player.domain.model.MostPlayedGame
 import com.spela.player.domain.model.UserStats
@@ -22,4 +23,9 @@ data class StatsState(
     val meshActivePlayers: List<MeshStat> = emptyList(),
     val isLoadingMeshMostPlayed: Boolean = false,
     val isLoadingMeshActivePlayers: Boolean = false,
+    // Top achievers: one mesh aggregate (local + connected), scope toggle filters
+    // it client-side by hop. Loaded eagerly with the rest of the stats.
+    val achieversScope: StatScope = StatScope.AcrossServers,
+    val meshAchievers: List<MeshAchiever> = emptyList(),
+    val isLoadingMeshAchievers: Boolean = false,
 )

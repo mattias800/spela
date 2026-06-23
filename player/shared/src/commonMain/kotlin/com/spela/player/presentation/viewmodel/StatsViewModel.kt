@@ -1,6 +1,7 @@
 package com.spela.player.presentation.viewmodel
 
 import com.spela.player.domain.model.MeshStatMetric
+import com.spela.player.domain.usecase.GetMeshAchieversUseCase
 import com.spela.player.domain.usecase.GetMeshStatsUseCase
 import com.spela.player.domain.usecase.GetMostActivePlayersUseCase
 import com.spela.player.domain.usecase.GetMostPlayedGamesUseCase
@@ -21,6 +22,7 @@ class StatsViewModel(
     private val getMostActivePlayersUseCase: GetMostActivePlayersUseCase,
     private val getUserStatsUseCase: GetUserStatsUseCase,
     private val getMeshStatsUseCase: GetMeshStatsUseCase,
+    private val getMeshAchieversUseCase: GetMeshAchieversUseCase,
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
 ) {
@@ -33,10 +35,12 @@ class StatsViewModel(
             StatsIntent.DismissError -> _state.update { it.copy(error = null) }
             is StatsIntent.SetMostPlayedScope -> setMostPlayedScope(intent.scope)
             is StatsIntent.SetActivePlayersScope -> setActivePlayersScope(intent.scope)
+            is StatsIntent.SetAchieversScope -> _state.update { it.copy(achieversScope = intent.scope) }
         }
     }
 
     private fun loadStats() {
+        loadAchievers()
         _state.update { it.copy(isLoading = true, isLoadingPersonalStats = true) }
         scope.launch(dispatchers.io) {
             val games = getMostPlayedGamesUseCase().getOrDefault(emptyList())
@@ -52,6 +56,17 @@ class StatsViewModel(
                     error = if (games.isEmpty() && players.isEmpty() && personal == null) "Failed to load stats" else null,
                 )
             }
+        }
+    }
+
+    // The "top achievers" mesh aggregate (local + connected servers) is loaded
+    // eagerly with the rest of the stats; the section's scope toggle filters it
+    // client-side. Best-effort — a failure just leaves the section empty.
+    private fun loadAchievers() {
+        _state.update { it.copy(isLoadingMeshAchievers = true) }
+        scope.launch(dispatchers.io) {
+            val achievers = getMeshAchieversUseCase().getOrDefault(emptyList())
+            _state.update { it.copy(meshAchievers = achievers, isLoadingMeshAchievers = false) }
         }
     }
 

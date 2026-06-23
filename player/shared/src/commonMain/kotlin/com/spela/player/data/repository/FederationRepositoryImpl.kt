@@ -7,6 +7,7 @@ import com.spela.player.data.remote.dto.toDomain
 import com.spela.player.domain.model.ConnectedConsole
 import com.spela.player.domain.model.FriendPresence
 import com.spela.player.domain.model.ImportJob
+import com.spela.player.domain.model.MeshAchiever
 import com.spela.player.domain.model.MeshStat
 import com.spela.player.domain.model.MeshStatMetric
 import com.spela.player.domain.model.RemoteGame
@@ -48,5 +49,9 @@ class FederationRepositoryImpl(
             MeshStatMetric.PlayerPlay -> FederationApi.MetricFederationAggregatedStats.player_play
         }
         apiClient.getFederationStats(wireMetric).stats.map { it.toDomain() }
+    }
+
+    override suspend fun getAggregatedAchievers(): Result<List<MeshAchiever>> = runCatching {
+        apiClient.getFederationAchievements().achievements.map { it.toDomain() }
     }
 }
