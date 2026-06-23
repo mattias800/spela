@@ -59,6 +59,9 @@ type FederationHandler struct {
 	// PresenceClient fetches a connected server's live presence. Defaults to
 	// httpPresenceClient when nil; overridden in tests.
 	PresenceClient presenceClient
+	// AchievementsClient fetches a connected server's achievement leaderboard.
+	// Defaults to httpAchievementsClient when nil; overridden in tests.
+	AchievementsClient achievementsClient
 	// refreshMu / catalogRefreshMu serialize the respective refreshes so the
 	// periodic ticker and an admin trigger can't race the snapshot stores.
 	refreshMu        sync.Mutex

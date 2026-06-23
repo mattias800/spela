@@ -32,6 +32,8 @@ func openAPIFedTestDB(t *testing.T) *gorm.DB {
 		&db.Console{},
 		&db.Game{},
 		&db.PlayHistory{},
+		// For achievements federation (#1349).
+		&db.UserAchievementProgress{},
 		// For import tests (#1350).
 		&db.ImportJob{},
 		&db.ScrapeJob{},
