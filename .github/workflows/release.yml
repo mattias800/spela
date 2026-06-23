@@ -195,7 +195,25 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake libvulkan-dev libx11-dev \
-            libwayland-dev wayland-protocols pkg-config
+            libwayland-dev wayland-protocols libsdl2-dev pkg-config
+      # Gradle configures :android too, and AGP resolves the pinned NDK at
+      # configuration time — pre-install it so AGP never does its own flaky
+      # on-the-fly install. Linux only; macOS/Windows runners resolve it
+      # without the broken auto-install. (#1281, #1430)
+      - uses: android-actions/setup-android@v4
+        if: runner.os == 'Linux'
+        with:
+          packages: ''
+      - name: Pre-install pinned Android NDK + cmake
+        if: runner.os == 'Linux'
+        run: |
+          for i in 1 2 3; do
+            yes | sdkmanager --install "ndk;27.0.12077973" "cmake;3.22.1" && exit 0
+            echo "::warning::sdkmanager install attempt $i failed; retrying in 15s" >&2
+            sleep 15
+          done
+          echo "::error::NDK/cmake install failed after 3 attempts" >&2
+          exit 1
       - name: Install macOS dependencies
         if: runner.os == 'macOS'
         run: |
@@ -279,7 +297,20 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake libvulkan-dev libx11-dev \
-            libwayland-dev wayland-protocols pkg-config libfuse2
+            libwayland-dev wayland-protocols libsdl2-dev pkg-config libfuse2
+      # Pre-install the pinned NDK so AGP doesn't do its own flaky install. (#1281, #1430)
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: ''
+      - name: Pre-install pinned Android NDK + cmake
+        run: |
+          for i in 1 2 3; do
+            yes | sdkmanager --install "ndk;27.0.12077973" "cmake;3.22.1" && exit 0
+            echo "::warning::sdkmanager install attempt $i failed; retrying in 15s" >&2
+            sleep 15
+          done
+          echo "::error::NDK/cmake install failed after 3 attempts" >&2
+          exit 1
       - name: Cache Gradle
         uses: actions/cache@v5
         with:
@@ -320,8 +351,21 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake libvulkan-dev libx11-dev \
-            libwayland-dev wayland-protocols pkg-config \
+            libwayland-dev wayland-protocols libsdl2-dev pkg-config \
             flatpak flatpak-builder
+      # Pre-install the pinned NDK so AGP doesn't do its own flaky install. (#1281, #1430)
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: ''
+      - name: Pre-install pinned Android NDK + cmake
+        run: |
+          for i in 1 2 3; do
+            yes | sdkmanager --install "ndk;27.0.12077973" "cmake;3.22.1" && exit 0
+            echo "::warning::sdkmanager install attempt $i failed; retrying in 15s" >&2
+            sleep 15
+          done
+          echo "::error::NDK/cmake install failed after 3 attempts" >&2
+          exit 1
       - name: Set up Flatpak
         run: |
           sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
@@ -368,11 +412,21 @@ jobs:
       - uses: android-actions/setup-android@v4
         with:
           packages: ''
+      # Pre-install the pinned NDK so AGP doesn't do its own flaky install. (#1281, #1430)
+      - name: Pre-install pinned Android NDK + cmake
+        run: |
+          for i in 1 2 3; do
+            yes | sdkmanager --install "ndk;27.0.12077973" "cmake;3.22.1" && exit 0
+            echo "::warning::sdkmanager install attempt $i failed; retrying in 15s" >&2
+            sleep 15
+          done
+          echo "::error::NDK/cmake install failed after 3 attempts" >&2
+          exit 1
       - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake libvulkan-dev libx11-dev \
-            libwayland-dev wayland-protocols pkg-config libfuse2
+            libwayland-dev wayland-protocols libsdl2-dev pkg-config libfuse2
       - name: Cache Gradle
         uses: actions/cache@v5
         with:
