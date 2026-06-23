@@ -2,6 +2,7 @@ package com.spela.player.presentation.ui.feature.ingame
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -97,7 +98,11 @@ internal fun InGameOverlayPanel(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
                         onClick = {}, // Prevent click-through
-                    ),
+                    )
+                    // Group all panel controls so d-pad focus traversal stays
+                    // inside the menu and can reach every action, instead of
+                    // wandering into focusables behind the scrim (#1410).
+                    .focusGroup(),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 // Game title
