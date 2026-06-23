@@ -45,8 +45,16 @@ if(NOT ANDROID)
     list(APPEND COMMON_SOURCES src/gamepad_sdl3.c)
 
     include(FetchContent)
+    # spela-libretro is a SHARED library, so every static dependency linked
+    # into it (SDL3 here) must be position-independent. Without this the Linux
+    # link fails: "relocation R_X86_64_PC32 against symbol ... can not be used
+    # when making a shared object; recompile with -fPIC". macOS/Windows don't
+    # enforce this, so it only bit the (never-CI-built) Linux native build.
+    # Set both the global flag and SDL's own static-PIC option. (#1432)
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
     set(SDL_SHARED OFF CACHE BOOL "" FORCE)
     set(SDL_STATIC ON CACHE BOOL "" FORCE)
+    set(SDL_STATIC_PIC ON CACHE BOOL "" FORCE)
     set(SDL_TEST OFF CACHE BOOL "" FORCE)
     set(SDL_TESTS OFF CACHE BOOL "" FORCE)
     set(SDL_EXAMPLES OFF CACHE BOOL "" FORCE)
