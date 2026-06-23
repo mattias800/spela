@@ -58,6 +58,7 @@ import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.components.NavigationLayoutMode
 import com.spela.player.presentation.ui.components.SpBottomNavBar
 import com.spela.player.presentation.ui.components.SpNavigationRail
+import com.spela.player.presentation.ui.components.visibleBottomNavTabs
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
@@ -266,6 +267,7 @@ fun SpelaApp(deps: SpelaAppDependencies) = with(deps) {
                             NavigationIntent.SwitchTab(SpScreen.Settings)
                         )
                     },
+                    tabs = visibleBottomNavTabs(navState.hasConnectedServers),
                 )
             }
 
@@ -559,6 +561,7 @@ fun SpelaApp(deps: SpelaAppDependencies) = with(deps) {
                                 NavigationIntent.SwitchTab(targetScreen)
                             )
                         },
+                        tabs = visibleBottomNavTabs(navState.hasConnectedServers),
                     )
                 }
                 } // ConnectionStateOverlay content slot
@@ -576,6 +579,7 @@ fun SpelaApp(deps: SpelaAppDependencies) = with(deps) {
                         visible = sectionIndicatorVisible,
                         controllerStatus = controllerStatus,
                         modifier = Modifier.padding(top = SpSpacing.Default),
+                        tabs = visibleBottomNavTabs(navState.hasConnectedServers),
                     )
                 }
             }

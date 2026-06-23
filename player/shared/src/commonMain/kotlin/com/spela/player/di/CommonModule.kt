@@ -409,6 +409,7 @@ val commonModule = module {
             scope = get(),
             biosRepository = get(),
             coreUpdateService = get(),
+            federationRepository = get(),
         )
     }
     factory {

@@ -87,6 +87,12 @@ data class NavigationState(
     val restoredServerUrl: String? = null,
     val isOffline: Boolean = false,
     /**
+     * Whether a connected (federated) server shares games to browse. Gates the
+     * CONNECTED_SERVERS nav tab (bottom bar / rail / L1-R1 cycle) — hidden until
+     * there is content, since pairing is an admin action. See #1435.
+     */
+    val hasConnectedServers: Boolean = false,
+    /**
      * Monotonic counter incremented every time the in-game overlay
      * hides. Screens behind the overlay (e.g. ChallengeDetail) use it
      * as a re-key signal so their LaunchedEffect data-loaders refire
