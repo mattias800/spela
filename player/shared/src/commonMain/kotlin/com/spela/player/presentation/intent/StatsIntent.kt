@@ -7,4 +7,5 @@ sealed interface StatsIntent {
     data object DismissError : StatsIntent
     data class SetMostPlayedScope(val scope: StatScope) : StatsIntent
     data class SetActivePlayersScope(val scope: StatScope) : StatsIntent
+    data class SetAchieversScope(val scope: StatScope) : StatsIntent
 }

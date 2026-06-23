@@ -123,6 +123,7 @@ val commonModule = module {
     factory { GetMostPlayedGamesUseCase(get()) }
     factory { GetMostActivePlayersUseCase(get()) }
     factory { GetMeshStatsUseCase(get()) }
+    factory { GetMeshAchieversUseCase(get()) }
     factory { GetGameStatsUseCase(get()) }
     factory { GetGameAchievementsUseCase(get()) }
     factory { GetAchievementProgressUseCase(get()) }
@@ -342,6 +343,7 @@ val commonModule = module {
             getMostActivePlayersUseCase = get(),
             getUserStatsUseCase = get(),
             getMeshStatsUseCase = get(),
+            getMeshAchieversUseCase = get(),
             dispatchers = get(),
             scope = get(),
         )
