@@ -67,6 +67,15 @@ if(NOT ANDROID)
         set(SDL_VIDEO ON CACHE BOOL "" FORCE)
     else()
         set(SDL_VIDEO OFF CACHE BOOL "" FORCE)
+        # With SDL_VIDEO OFF on Linux, SDL3 still hard-errors in
+        # cmake/macros.cmake ("could not find X11 or Wayland") unless we tell
+        # it this is an intentional no-windows build. We only use SDL3 for
+        # gamepad input here, so opt into the console build to skip that check.
+        # (SDL_VIDEO OFF alone does NOT suppress it — the guard is
+        # `if(NOT (HAVE_X11 OR HAVE_WAYLAND)) AND NOT SDL_UNIX_CONSOLE_BUILD`.)
+        # This Linux native build only runs in the Release workflow, so it was
+        # never exercised by CI when SDL3 landed in #1337. See #1432.
+        set(SDL_UNIX_CONSOLE_BUILD ON CACHE BOOL "" FORCE)
         set(SDL_DBUS OFF CACHE BOOL "" FORCE)
         set(SDL_IBUS OFF CACHE BOOL "" FORCE)
         set(SDL_LIBUDEV OFF CACHE BOOL "" FORCE)
