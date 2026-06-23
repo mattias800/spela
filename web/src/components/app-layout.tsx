@@ -36,6 +36,7 @@ import { useNotifications } from "@/hooks/use-notifications";
 import { useBiosStatus } from "@/hooks/use-bios";
 import { useIgdbStatus } from "@/hooks/use-admin";
 import { useHealth } from "@/hooks/use-health";
+import { useConnectedServerConsoles } from "@/hooks/use-connected-servers";
 import { SearchPalette } from "@/features/search/components/search-palette";
 
 export function AppLayout() {
@@ -54,6 +55,11 @@ export function AppLayout() {
   const { data: igdbStatus } = useIgdbStatus();
   const igdbNotConfigured = !(igdbStatus?.configured ?? true);
   const { data: health } = useHealth();
+  // Only surface "Connected Servers" when a connected server actually shares
+  // games to browse — otherwise the page is empty states, and pairing is an
+  // admin action (Admin → Federation), so there's nothing for most users to do.
+  const { data: connectedServerConsoles } = useConnectedServerConsoles();
+  const hasConnectedServers = (connectedServerConsoles?.length ?? 0) > 0;
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -82,12 +88,16 @@ export function AppLayout() {
             "/collections",
           ],
         },
-        {
-          to: "/connected-servers",
-          icon: Globe,
-          label: "Connected Servers",
-          matchPaths: ["/connected-servers"],
-        },
+        ...(hasConnectedServers
+          ? [
+              {
+                to: "/connected-servers",
+                icon: Globe,
+                label: "Connected Servers",
+                matchPaths: ["/connected-servers"],
+              },
+            ]
+          : []),
         { to: "/stats", icon: BarChart3, label: "Stats" },
         { to: "/top-lists", icon: Trophy, label: "Top Lists" },
         { to: "/activity", icon: Activity, label: "Activity" },
