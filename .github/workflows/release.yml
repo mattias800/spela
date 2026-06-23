@@ -195,7 +195,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake libvulkan-dev libx11-dev \
-            libwayland-dev wayland-protocols pkg-config
+            libwayland-dev wayland-protocols libsdl2-dev pkg-config
       # Gradle configures :android too, and AGP resolves the pinned NDK at
       # configuration time — pre-install it so AGP never does its own flaky
       # on-the-fly install. Linux only; macOS/Windows runners resolve it
@@ -297,7 +297,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake libvulkan-dev libx11-dev \
-            libwayland-dev wayland-protocols pkg-config libfuse2
+            libwayland-dev wayland-protocols libsdl2-dev pkg-config libfuse2
       # Pre-install the pinned NDK so AGP doesn't do its own flaky install. (#1281, #1430)
       - uses: android-actions/setup-android@v4
         with:
@@ -351,7 +351,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake libvulkan-dev libx11-dev \
-            libwayland-dev wayland-protocols pkg-config \
+            libwayland-dev wayland-protocols libsdl2-dev pkg-config \
             flatpak flatpak-builder
       # Pre-install the pinned NDK so AGP doesn't do its own flaky install. (#1281, #1430)
       - uses: android-actions/setup-android@v4
@@ -426,7 +426,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake libvulkan-dev libx11-dev \
-            libwayland-dev wayland-protocols pkg-config libfuse2
+            libwayland-dev wayland-protocols libsdl2-dev pkg-config libfuse2
       - name: Cache Gradle
         uses: actions/cache@v5
         with:
