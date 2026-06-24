@@ -19,7 +19,7 @@ import kotlin.test.assertNull
  */
 class ConsoleMapperTest {
 
-    private fun response(photoUrl: String?) = ConsoleResponse(
+    private fun response(photoUrl: String?, tag: String? = null) = ConsoleResponse(
         abbreviation = "NES",
         browserPlayable = false,
         code = "nes",
@@ -44,6 +44,7 @@ class ConsoleMapperTest {
         ),
         name = "Nintendo Entertainment System",
         photoUrl = photoUrl,
+        tag = tag,
         playable = true,
         releaseYear = 1983,
         saveStatePolicy = "small",
@@ -61,6 +62,16 @@ class ConsoleMapperTest {
     @Test
     fun nullPhotoUrlMapsToNull() {
         assertNull(response(null).toDomain().photoUrl)
+    }
+
+    @Test
+    fun mapsTag() {
+        assertEquals("Demos", response(null, tag = "Demos").toDomain().tag)
+    }
+
+    @Test
+    fun nullTagMapsToNull() {
+        assertNull(response(null).toDomain().tag)
     }
 
     @Test

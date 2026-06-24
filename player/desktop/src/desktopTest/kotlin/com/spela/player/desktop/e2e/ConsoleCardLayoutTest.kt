@@ -106,4 +106,24 @@ class ConsoleCardLayoutTest {
             "photo should be above logo (${relTop(photo1, card1)} vs ${relTop(logo1, card1)})",
         )
     }
+
+    @Test
+    fun tagChipRendersUppercaseOnlyForTaggedConsole() = runComposeUiTest {
+        val harness = SpelaTestHarness(StandardTestDispatcher())
+        harness.authRepo.preSetTokens()
+        harness.gameRepo.consoles = listOf(
+            Console(id = "amiga", name = "Amiga", abbreviation = "AMI", gameCount = 10, colorTheme = "#c47d1a"),
+            Console(id = "ademo", name = "Amiga Demos", abbreviation = "ADE", gameCount = 3, colorTheme = "#c47d1a", tag = "Demos"),
+        )
+        harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.Consoles))
+        setContent {
+            Box(modifier = Modifier.width(2400.dp).height(1080.dp)) {
+                harness.App()
+            }
+        }
+        advance(harness)
+
+        // The chip uppercases the tag, and only the tagged console shows it.
+        onAllNodesWithText("DEMOS", useUnmergedTree = true).assertCountEquals(1)
+    }
 }

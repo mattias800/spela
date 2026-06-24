@@ -126,6 +126,7 @@ private fun testConsoleResponse(
         saveStateSupport = true,
         saveStatePolicy = "small",
         photoUrl = null,
+        tag = null,
         summary = null,
         unitsSold = null,
         updatedAt = now,
@@ -435,6 +436,7 @@ class GameRepositoryImplTest {
             saveStateSupport = true,
             saveStatePolicy = "small",
             photoUrl = null,
+            tag = "Demos",
             summary = "8-bit classic",
             unitsSold = 61_900_000L,
             updatedAt = now,
@@ -453,6 +455,7 @@ class GameRepositoryImplTest {
         assertEquals("NES Cartridge", domain.mediaTypeName)
         assertEquals("logo.png", domain.logoUrl) // logoPngUrl preferred when non-empty
         assertEquals(61_900_000L, domain.unitsSold)
+        assertEquals("Demos", domain.tag)
     }
 
     @Test

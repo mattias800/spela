@@ -50,6 +50,7 @@ import kotlinx.serialization.encoding.*
  * @param saveStatePolicy 
  * @param saveStateSupport 
  * @param summary 
+ * @param tag 
  * @param unitsSold 
  * @param updatedAt 
  */
@@ -106,6 +107,8 @@ data class ConsoleResponse (
     @SerialName(value = "saveStateSupport") @Required val saveStateSupport: kotlin.Boolean,
 
     @SerialName(value = "summary") @Required val summary: kotlin.String?,
+
+    @SerialName(value = "tag") @Required val tag: kotlin.String?,
 
     @SerialName(value = "unitsSold") @Required val unitsSold: kotlin.Long?,
 

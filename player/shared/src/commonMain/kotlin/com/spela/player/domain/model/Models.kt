@@ -69,6 +69,12 @@ data class Console(
     /** Hardware photo URL, or null when no photo is bundled (#1441). */
     val photoUrl: String? = null,
     /**
+     * Optional short card qualifier (e.g. "Demos" for the demoscene
+     * variants), shown as a chip on the console card. Null for most
+     * consoles (#1441).
+     */
+    val tag: String? = null,
+    /**
      * Intrinsic width/height of [logoUrl] as reported by the server
      * (computed once from the SVG's viewBox at seed time). The
      * console-detail hero uses this on first render so the area-sized

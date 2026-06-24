@@ -87,27 +87,29 @@ private val HeroBadgeBackground = Color.White.copy(alpha = 0.10f)
 
 // #1082: Per-card width cap. Cards are a fixed 4:5 portrait (#1441 —
 // photo over logo over game count, mirroring the web card), so the cap
-// also bounds the card *height* (width × 1.25). Past ~340 dp the portrait
-// cards grow oversized on wide windows; the cap keeps the same visual
-// weight at 1920 dp and at 700 dp tablets, just more cards per row.
-internal val ConsoleCardMaxWidth = 340.dp
+// also bounds the card *height* (width × 1.25). Past ~280 dp the portrait
+// cards read as oversized; the cap keeps the same compact visual weight
+// at 1920 dp and at 700 dp tablets, just more cards per row.
+internal val ConsoleCardMaxWidth = 280.dp
 
 /**
  * #1082: Column count for the consoles grid given the available container
  * width. Extracted so the breakpoint logic is unit-testable without
  * spinning up Compose UI.
  *
- * Pairs with [ConsoleCardMaxWidth] — the breakpoints aim to keep density
- * up at standard desktop widths (1100+ → 4 cols, 1500+ → 5 cols), and
- * the per-card width cap then stops cards from stretching past the
- * design's intended ~340 dp width when the row's available width
- * exceeds `cols × 340 dp`.
+ * Pairs with [ConsoleCardMaxWidth] — the breakpoints target a compact
+ * ~220 dp card across widths (matching the denser web grid), so each
+ * row's available width divides into roughly cap-sized cards. The
+ * per-card width cap then stops cards from stretching past ~280 dp on
+ * the in-between widths where `width / cols` would exceed it.
  */
 internal fun consoleColumnsForWidth(width: androidx.compose.ui.unit.Dp): Int = when {
-    width >= 1500.dp -> 5
-    width >= 1100.dp -> 4
-    width >= 700.dp  -> 3
-    width >= 400.dp  -> 2
+    width >= 1540.dp -> 7
+    width >= 1320.dp -> 6
+    width >= 1100.dp -> 5
+    width >= 880.dp  -> 4
+    width >= 620.dp  -> 3
+    width >= 320.dp  -> 2
     else             -> 1
 }
 
@@ -320,30 +322,52 @@ internal fun ConsoleCard(
                 }
             }
 
-            // Footer: fixed proportion, bottom-aligned — game count + BIOS cue.
+            // Footer: fixed proportion, bottom-aligned — optional qualifier
+            // chip (e.g. "Demos", data-driven via Console.tag) above the game
+            // count + BIOS cue.
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f),
                 contentAlignment = Alignment.BottomCenter,
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
                 ) {
-                    Text(
-                        text = "${console.gameCount} ${if (console.gameCount == 1) "game" else "games"}",
-                        style = SpTypography.LabelSmall,
-                        color = HeroTextSecondary,
-                        maxLines = 1,
-                    )
-                    if (hasMissingBios) {
-                        Icon(
-                            imageVector = Icons.Filled.Warning,
-                            contentDescription = "BIOS missing for ${console.name}",
-                            tint = SpColor.Warning,
-                            modifier = Modifier.size(14.dp),
+                    if (!console.tag.isNullOrEmpty()) {
+                        Text(
+                            text = console.tag.uppercase(),
+                            style = SpTypography.LabelSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = HeroTextPrimary,
+                            maxLines = 1,
+                            modifier = Modifier
+                                .background(
+                                    color = Color.Black.copy(alpha = 0.30f),
+                                    shape = RoundedCornerShape(percent = 50),
+                                )
+                                .padding(horizontal = 10.dp, vertical = 2.dp),
                         )
+                    }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
+                    ) {
+                        Text(
+                            text = "${console.gameCount} ${if (console.gameCount == 1) "game" else "games"}",
+                            style = SpTypography.LabelSmall,
+                            color = HeroTextSecondary,
+                            maxLines = 1,
+                        )
+                        if (hasMissingBios) {
+                            Icon(
+                                imageVector = Icons.Filled.Warning,
+                                contentDescription = "BIOS missing for ${console.name}",
+                                tint = SpColor.Warning,
+                                modifier = Modifier.size(14.dp),
+                            )
+                        }
                     }
                 }
             }

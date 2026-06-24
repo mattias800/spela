@@ -17,12 +17,11 @@ import kotlin.test.Test
 import kotlin.test.assertTrue
 
 /**
- * #1082 regression test: console cards must never stretch past 340 dp wide
+ * #1082 regression test: console cards must never stretch past 280 dp wide
  * regardless of viewport size, so the design's intended 4:5 portrait aspect
- * ratio (#1441) stays a sensible size on AYN Thor landscape and any windowed
- * desktop wider than ~1100 dp. Pre-fix the grid stayed at 3 columns past
- * 700 dp and each card grew unbounded with the viewport (≥ 600 dp at 1920 dp
- * containers).
+ * ratio (#1441) stays a compact size on AYN Thor landscape and any windowed
+ * desktop. Pre-fix the grid stayed at 3 columns past 700 dp and each card
+ * grew unbounded with the viewport (≥ 600 dp at 1920 dp containers).
  *
  * The breakpoint logic itself is unit-tested in
  * `ConsoleColumnsForWidthTest`; this test is the UI-level cap assertion.
@@ -71,7 +70,7 @@ class LibraryConsolesTabWidthCapTest {
         }
         advance(harness)
 
-        // Every console card on screen must respect the 340 dp width cap.
+        // Every console card on screen must respect the 280 dp width cap.
         // Asserting on each card individually (vs. just the first) so a
         // partial-row regression in the existing weight(1f) Spacer logic
         // is also caught.
@@ -80,14 +79,14 @@ class LibraryConsolesTabWidthCapTest {
         // ComposeUiTest converts the dp ceiling into the equivalent pixel
         // budget for comparison. Tolerance of 1 px absorbs sub-pixel
         // rounding in Compose's measurement pipeline.
-        val maxWidthPx = with(density) { 340.dp.toPx() }
+        val maxWidthPx = with(density) { 280.dp.toPx() }
         repeat(12) { i ->
             val node = onNodeWithTag(TestTags.consoleCard("console${i + 1}"))
                 .fetchSemanticsNode()
             val widthPx = node.size.width.toFloat()
             assertTrue(
                 widthPx <= maxWidthPx + 1f,
-                "console${i + 1} width was ${widthPx} px, expected ≤ ${maxWidthPx} px (340 dp)",
+                "console${i + 1} width was ${widthPx} px, expected ≤ ${maxWidthPx} px (280 dp)",
             )
         }
     }
