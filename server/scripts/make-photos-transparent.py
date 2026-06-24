@@ -1,21 +1,31 @@
 #!/usr/bin/env python3
 """Make white-background console photos transparent.
 
-Second step of the console-photo pipeline (after fetch-console-photos.py).
-Many Wikimedia source photos are studio shots on a solid white background,
-which reads as an ugly white box on the coloured console cards. This keys the
-white out to transparency.
+Second step of the console-photo pipeline (after fetch-console-photos.py), for
+sources that aren't already transparent. Evan Amos studio shots on solid white
+read as an ugly box on the coloured cards.
 
-Per-file rule (intentionally simple + safe):
-  - Read the top-left pixel.
-  - If it is already transparent  -> skip (file is fine as-is).
-  - If it is exactly white        -> replace every exactly-white pixel with
-                                     transparency and (re)write as PNG.
-  - Otherwise (a coloured/photo edge bleeds to the corner) -> skip and report.
+PREFER A TRANSPARENT SOURCE: many Evan Amos photos exist on Commons as both a
+white-bg `.jpg` and a transparent `.png` of the same shot — point
+fetch-console-photos.py at the `.png` and skip keying entirely. Real
+transparency has clean anti-aliased edges; keying a white bg never cuts as
+cleanly (it leaves a jagged/haloed boundary). Only key photos with no
+transparent twin.
 
-JPGs that get keyed become PNGs (JPEG has no alpha); the old .jpg is removed
-and CREDITS.json is updated (file + bytes). Re-running is idempotent: already
-transparent files are skipped.
+Per-file rule:
+  - Top-left already transparent -> skip (fine as-is).
+  - Top-left exactly white        -> remove the background with a flood-fill from
+                                     a white border (with a fuzz tolerance), then
+                                     (re)write as PNG. Flood-fill — unlike a
+                                     global `-transparent white` — only clears the
+                                     *connected* background, so white/light parts
+                                     INSIDE the console are protected.
+  - Otherwise                     -> skip and report.
+
+Tune PHOTO_FUZZ (default 10) for the tolerance: higher removes more near-white
+halo but risks eating very light consoles (PC-FX, cream Famicom) — drop to ~6
+for those. JPGs become PNGs; the old .jpg is removed and CREDITS.json updated.
+Re-running is idempotent: already-transparent files are skipped.
 
 Requires ImageMagick (`magick`).
 """
@@ -58,9 +68,15 @@ def main() -> int:
         out_name = abbr + ".png"
         out_path = os.path.join(OUT, out_name)
         tmp = out_path + ".tmp.png"
-        # -fuzz 0 => only the exact white colour is keyed (no near-white).
-        subprocess.check_call(["magick", path, "-alpha", "set", "-fuzz", "0",
-                               "-transparent", "white", tmp])
+        fuzz = os.environ.get("PHOTO_FUZZ", "10")
+        # Flood-fill from a 1px white border so the whole edge-connected
+        # background drains out (with a fuzz tolerance to catch near-white +
+        # the anti-aliased halo), then shave the border. Interior white/light
+        # parts of the console are untouched.
+        subprocess.check_call(["magick", path, "-alpha", "set",
+                               "-bordercolor", "white", "-border", "1",
+                               "-fuzz", f"{fuzz}%", "-fill", "none",
+                               "-draw", "alpha 0,0 floodfill", "-shave", "1x1", tmp])
         os.replace(tmp, out_path)
         if out_name != f:  # was a .jpg
             os.remove(path)

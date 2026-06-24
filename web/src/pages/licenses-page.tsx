@@ -26,6 +26,13 @@ const credits: CreditEntry[] = [
       "Console logo SVGs by Dan Patrick used in console detail pages.",
   },
   {
+    name: "IBM logo",
+    url: "https://commons.wikimedia.org/wiki/File:IBM_logo.svg",
+    license: "Public domain",
+    description:
+      "IBM 8-bar logo (designed by Paul Rand) used to denote the MS-DOS / IBM PC platform.",
+  },
+  {
     name: "Console-Iconset",
     url: "https://github.com/Tatohead/Console-Iconset",
     license: "Free to use",
