@@ -1164,7 +1164,7 @@ func SeedConsoles(db *gorm.DB) error {
 		{Name: "Philips CD-i", Abbreviation: "CDI", Extensions: ".chd,.cue,.iso", DefaultCore: "same_cdi", EmulatorJSCore: "same_cdi", FolderName: "cdi", ColorTheme: "#006633", Generation: 4, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicySmall, Playable: true},
 		// 5th Generation
 		{Name: "PlayStation", Abbreviation: "PSX", Extensions: ".bin,.cue,.iso,.pbp,.m3u", DefaultCore: "beetle_psx_hw", EmulatorJSCore: "mednafen_psx_hw", FolderName: "psx", ColorTheme: "#003087", CoverAspect: "1:1", Generation: 5, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicyMedium, Playable: true},
-		{Name: "Nintendo 64", Abbreviation: "N64", Extensions: ".n64,.z64,.v64", DefaultCore: "parallel_n64", EmulatorJSCore: "mupen64plus_next", FolderName: "n64", ColorTheme: "#009e60", CoverAspect: "10:7", Generation: 5, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicyMedium, Playable: true},
+		{Name: "Nintendo 64", Abbreviation: "N64", Extensions: ".n64,.z64,.v64", DefaultCore: "parallel_n64", EmulatorJSCore: "mupen64plus_next", FolderName: "n64", ColorTheme: "#c47d1a", CoverAspect: "10:7", Generation: 5, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicyMedium, Playable: true},
 		{Name: "Sega Saturn", Abbreviation: "SAT", Extensions: ".iso,.bin,.cue,.chd,.m3u", DefaultCore: "yabause", EmulatorJSCore: "yabause", FolderName: "saturn", ColorTheme: "#0a4da2", Generation: 5, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicyMedium, Playable: true},
 		// Berry (#d6336c) instead of the old grape purple: the "Game Boy" half
 		// of the GBC logo is dark blue, which was unreadable on a purple→black
@@ -1218,7 +1218,7 @@ func SeedConsoles(db *gorm.DB) error {
 		// CAPSImg requirement as Amiga; the Hatari core can be built
 		// with CAPSImg, but our distribution doesn't include it. See #892.
 		{Name: "Atari ST", Abbreviation: "ATARIST", Extensions: ".st,.stx,.msa,.dim,.m3u", DefaultCore: "hatari", EmulatorJSCore: "", FolderName: "atarist", ColorTheme: "#1c1c1c", Generation: 100, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicySmall, Playable: true},
-		{Name: "Commodore 64", Abbreviation: "C64", Extensions: ".d64,.t64,.prg,.crt,.tap", DefaultCore: "vice_x64sc", EmulatorJSCore: "vice_x64sc", FolderName: "c64", ColorTheme: "#6c5eb5", Generation: 100, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicySmall, Playable: true},
+		{Name: "Commodore 64", Abbreviation: "C64", Extensions: ".d64,.t64,.prg,.crt,.tap", DefaultCore: "vice_x64sc", EmulatorJSCore: "vice_x64sc", FolderName: "c64", ColorTheme: "#c2a878", Generation: 100, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicySmall, Playable: true},
 		{Name: "Commodore 128", Abbreviation: "C128", Extensions: ".d64,.d71,.d81,.t64,.prg,.crt", DefaultCore: "vice_x128", EmulatorJSCore: "vice_x128", FolderName: "c128", ColorTheme: "#6c5eb5", Generation: 100, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicySmall, Playable: true},
 		{Name: "Commodore PET", Abbreviation: "PET", Extensions: ".prg,.d64,.t64", DefaultCore: "vice_xpet", EmulatorJSCore: "vice_xpet", FolderName: "pet", ColorTheme: "#6c5eb5", Generation: 100, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicySmall, Playable: true},
 		{Name: "Commodore Plus/4", Abbreviation: "PLUS4", Extensions: ".prg,.d64,.t64", DefaultCore: "vice_xplus4", EmulatorJSCore: "vice_xplus4", FolderName: "plus4", ColorTheme: "#c47d1a", Generation: 100, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicySmall, Playable: true},
