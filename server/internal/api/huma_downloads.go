@@ -984,10 +984,12 @@ var consolePhotoFiles = func() map[string]string {
 
 // consolePhotoFallbacks maps a console abbreviation (lowercase) to the parent
 // platform whose hardware photo it inherits when it has no photo of its own —
-// e.g. Amiga Demos shows the Amiga photo. Mirrors consoleLogoFallbacks for
-// logos; only matters for consoles without their own bundled photo. See #1441.
+// Amiga Demos shows the Amiga photo, DOS Demos shows the IBM PC photo. Mirrors
+// consoleLogoFallbacks for logos; only matters for consoles without their own
+// bundled photo. See #1441.
 var consolePhotoFallbacks = map[string]string{
 	"ademo": "amiga",
+	"ddemo": "dos",
 }
 
 // consolePhotoFor resolves the lowercase abbreviation whose bundled photo

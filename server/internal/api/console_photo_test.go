@@ -101,6 +101,10 @@ func TestConsolePhotoFallbackServesParent(t *testing.T) {
 	require.True(t, ok, "ademo should resolve to a parent photo")
 	assert.Equal(t, "amiga", resolved, "ademo inherits the Amiga photo")
 
+	ddemo, ok := consolePhotoFor("ddemo")
+	require.True(t, ok, "ddemo should resolve to a parent photo")
+	assert.Equal(t, "dos", ddemo, "ddemo inherits the IBM PC (DOS) photo")
+
 	// A console with neither its own nor a parent photo resolves to nothing.
 	_, ok = consolePhotoFor("scummvm")
 	assert.False(t, ok)
