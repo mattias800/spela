@@ -528,6 +528,15 @@ func RegisterDownloadRoutes(
 	}, consoleH.HumaGetConsolePhoto)
 
 	huma.Register(api, huma.Operation{
+		OperationID: "getConsolePhotoCredits",
+		Method:      http.MethodGet,
+		Path:        "/api/console-photo-credits",
+		Summary:     "Get attribution credits for the bundled console hardware photos",
+		Description: "Returns the per-image author, license, and source for every bundled console hardware photo. Public endpoint, surfaced on the Credits & Licenses screens to satisfy CC-BY-SA attribution.",
+		Tags:        []string{"consoles"},
+	}, consoleH.HumaGetConsolePhotoCredits)
+
+	huma.Register(api, huma.Operation{
 		OperationID: "getConsoleLogo",
 		Method:      http.MethodGet,
 		Path:        "/api/consoles/{id}/logo",

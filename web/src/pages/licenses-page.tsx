@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import { PageLayout, SectionList } from "@/components/layout";
+import { useConsolePhotoCredits } from "@/hooks/use-console-photo-credits";
 
 interface CreditEntry {
   name: string;
@@ -122,8 +123,52 @@ export function LicensesPage() {
           </div>
         ))}
       </div>
+
+      <ConsolePhotoCredits />
     </SectionList>
     </PageLayout>
+  );
+}
+
+function ConsolePhotoCredits() {
+  const { data } = useConsolePhotoCredits();
+  if (!data || data.photos.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="space-y-3">
+      <h2 className="text-lg font-semibold text-surface-100">
+        Console hardware photos
+      </h2>
+      <p className="text-surface-400 text-sm">{data.note}</p>
+      <div className="rounded-xl border border-surface-800/50 bg-surface-900/50 divide-y divide-surface-800/50">
+        {data.photos.map((photo) => (
+          <div
+            key={photo.console}
+            className="flex items-start justify-between gap-4 p-3"
+          >
+            <div className="space-y-0.5">
+              <p className="text-sm text-surface-200">
+                <span className="font-semibold uppercase">{photo.console}</span>
+                <span className="text-surface-500"> — {photo.title}</span>
+              </p>
+              <p className="text-xs text-surface-500">
+                {photo.author} · {photo.license}
+              </p>
+            </div>
+            <a
+              href={photo.source}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-shrink-0 p-2 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-surface-800/50 transition-colors"
+            >
+              <ExternalLink className="h-4 w-4" />
+            </a>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 

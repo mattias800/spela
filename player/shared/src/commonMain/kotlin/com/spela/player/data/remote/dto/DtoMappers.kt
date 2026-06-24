@@ -62,6 +62,19 @@ fun com.spela.client.models.ConsoleResponse.toDomain(): Console = Console(
     summary = summary,
 )
 
+fun com.spela.client.models.ConsolePhotoCreditsResponse.toDomain(): ConsolePhotoCredits = ConsolePhotoCredits(
+    note = note,
+    photos = photos.map { it.toDomain() },
+)
+
+fun com.spela.client.models.ConsolePhotoCredit.toDomain(): ConsolePhotoCredit = ConsolePhotoCredit(
+    console = console,
+    title = title,
+    author = author,
+    license = license,
+    source = source,
+)
+
 fun GameDiscDto.toDomain(): GameDisc = GameDisc(
     discNumber = discNumber.toInt(),
     fileName = fileName,

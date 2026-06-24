@@ -6,6 +6,7 @@ import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.data.remote.dto.toDomain
 import com.spela.player.data.remote.dto.toGameDetail
 import com.spela.player.domain.model.Console
+import com.spela.player.domain.model.ConsolePhotoCredits
 import com.spela.player.domain.model.Game
 import com.spela.player.domain.model.GameDetail
 import com.spela.player.domain.model.DeveloperGame
@@ -32,6 +33,10 @@ class GameRepositoryImpl(
             val cached = getCachedConsoles()
             if (cached.isNotEmpty()) cached else throw it
         }
+    }
+
+    override suspend fun getConsolePhotoCredits(): Result<ConsolePhotoCredits> {
+        return runCatching { apiClient.getConsolePhotoCredits().toDomain() }
     }
 
     override suspend fun getGamesForConsole(consoleId: String): Result<List<Game>> {

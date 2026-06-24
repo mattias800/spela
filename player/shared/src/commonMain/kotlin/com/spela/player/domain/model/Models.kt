@@ -91,6 +91,24 @@ data class Console(
     val summary: String? = null,
 )
 
+/**
+ * Attribution manifest for the bundled console hardware photos (#1441).
+ * Surfaced on the Credits & Licenses screen to satisfy CC-BY-SA attribution —
+ * the photos vary by author and license, so each one is credited individually.
+ */
+data class ConsolePhotoCredits(
+    val note: String,
+    val photos: List<ConsolePhotoCredit>,
+)
+
+data class ConsolePhotoCredit(
+    val console: String,
+    val title: String,
+    val author: String,
+    val license: String,
+    val source: String,
+)
+
 @Serializable
 data class GameDisc(val discNumber: Int, val fileName: String, val fileSize: Long)
 

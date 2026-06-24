@@ -382,6 +382,10 @@ class SpelaApiClient(
         return consolesApi.listConsoles().body()
     }
 
+    suspend fun getConsolePhotoCredits(): com.spela.client.models.ConsolePhotoCreditsResponse {
+        return consolesApi.getConsolePhotoCredits().body()
+    }
+
     /** Returns paginated games for a console via the /api/games endpoint */
     suspend fun getGamesForConsole(
         consoleId: String,

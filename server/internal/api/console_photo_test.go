@@ -53,6 +53,28 @@ func TestBundledConsolePhotosAreReadableAndCredited(t *testing.T) {
 	}
 }
 
+// TestConsolePhotoCreditsManifestCoversEveryBundledPhoto verifies the manifest
+// served by the credits endpoint has a complete, decoded entry for every bundled
+// photo. This is what makes the attribution actually reach users (the Credits &
+// Licenses screens render it), so it must stay in sync with the bundled files.
+func TestConsolePhotoCreditsManifestCoversEveryBundledPhoto(t *testing.T) {
+	m := consolePhotoCreditsManifest
+	require.NotEmpty(t, m.Note, "credits manifest must carry the attribution note")
+	require.Len(t, m.Photos, len(consolePhotoFiles), "every bundled photo needs a credit")
+
+	for _, c := range m.Photos {
+		c := c
+		t.Run(c.Console, func(t *testing.T) {
+			_, ok := consolePhotoFiles[c.Console]
+			assert.True(t, ok, "%s credited but not bundled", c.Console)
+			assert.NotEmpty(t, c.Author, "%s credit missing author", c.Console)
+			assert.NotEmpty(t, c.License, "%s credit missing license", c.Console)
+			assert.NotEmpty(t, c.Source, "%s credit missing source", c.Console)
+			assert.NotContains(t, c.Author, "&amp;", "%s author should be HTML-unescaped", c.Console)
+		})
+	}
+}
+
 // TestConsolePhotoURLGating verifies the DTO carries the photo endpoint only
 // for consoles we actually bundle a photo for, and null otherwise (so the UI
 // has an explicit signal to fall back to the logo/watermark).

@@ -1717,6 +1717,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/console-photo-credits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get attribution credits for the bundled console hardware photos
+         * @description Returns the per-image author, license, and source for every bundled console hardware photo. Public endpoint, surfaced on the Credits & Licenses screens to satisfy CC-BY-SA attribution.
+         */
+        get: operations["getConsolePhotoCredits"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/consoles": {
         parameters: {
             query?: never;
@@ -6327,6 +6347,23 @@ export interface components {
                 [key: string]: number;
             };
             selectedMapping: string;
+        };
+        ConsolePhotoCredit: {
+            author: string;
+            console: string;
+            license: string;
+            source: string;
+            title: string;
+        };
+        ConsolePhotoCreditsResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/ConsolePhotoCreditsResponse.json
+             */
+            readonly $schema?: string;
+            note: string;
+            photos: components["schemas"]["ConsolePhotoCredit"][];
         };
         ConsoleResponse: {
             abbreviation: string;
@@ -12807,6 +12844,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    getConsolePhotoCredits: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsolePhotoCreditsResponse"];
                 };
             };
             /** @description Error */

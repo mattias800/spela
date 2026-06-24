@@ -1,5 +1,7 @@
 package com.spela.player.data
 
+import com.spela.client.models.ConsolePhotoCredit
+import com.spela.client.models.ConsolePhotoCreditsResponse
 import com.spela.client.models.ConsoleResponse
 import com.spela.client.models.HardwareMakerResponse
 import com.spela.client.models.MediaTypeCategoryResponse
@@ -59,5 +61,35 @@ class ConsoleMapperTest {
     @Test
     fun nullPhotoUrlMapsToNull() {
         assertNull(response(null).toDomain().photoUrl)
+    }
+
+    @Test
+    fun mapsPhotoCredits() {
+        val dto = ConsolePhotoCreditsResponse(
+            note = "Bundled hardware photos.",
+            photos = listOf(
+                ConsolePhotoCredit(
+                    console = "3do",
+                    title = "3DO-FZ1-Console-Set.png",
+                    author = "Evan-Amos",
+                    license = "CC BY-SA 3.0",
+                    source = "https://commons.wikimedia.org/wiki/File:3DO-FZ1-Console-Set.png",
+                ),
+            ),
+        )
+
+        val domain = dto.toDomain()
+
+        assertEquals("Bundled hardware photos.", domain.note)
+        assertEquals(1, domain.photos.size)
+        val credit = domain.photos.first()
+        assertEquals("3do", credit.console)
+        assertEquals("3DO-FZ1-Console-Set.png", credit.title)
+        assertEquals("Evan-Amos", credit.author)
+        assertEquals("CC BY-SA 3.0", credit.license)
+        assertEquals(
+            "https://commons.wikimedia.org/wiki/File:3DO-FZ1-Console-Set.png",
+            credit.source,
+        )
     }
 }
