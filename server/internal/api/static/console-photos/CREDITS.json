@@ -83,6 +83,15 @@
       "bytes": 861227
     },
     {
+      "console": "arcade",
+      "file": "arcade.png",
+      "title": "Borne arcade Pacman.png",
+      "author": "Fan de R\u00e9tro",
+      "license": "CC BY 4.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Borne_arcade_Pacman.png",
+      "bytes": 571579
+    },
+    {
       "console": "c128",
       "file": "c128.png",
       "title": "Commodore-128.png",

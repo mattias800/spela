@@ -34,6 +34,7 @@ OUT = os.path.normpath(
 
 # console abbreviation (lowercase) -> Commons File: name
 PHOTOS = {
+    "arcade": "Borne arcade Pacman.png",
     "a26": "Atari-2600-Wood-4Sw-Set.png",
     "a52": "Atari-5200-4-Port-wController-L.jpg",
     "cv": "ColecoVision-wController-L.png",
