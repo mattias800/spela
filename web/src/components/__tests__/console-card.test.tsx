@@ -25,6 +25,7 @@ function makeConsole(overrides: Partial<Console> = {}): Console {
     code: "nes",
     emulatorJsCore: "",
     logoPngUrl: "",
+    photoUrl: null,
     maker: { code: "", name: "" },
     mediaType: { code: "", name: "", category: { code: "", name: "" } },
     releaseYear: null,

@@ -1817,6 +1817,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/consoles/{id}/photo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a console hardware photo
+         * @description Serves an embedded hardware photo (PNG/JPEG) for the console. Public endpoint; cached aggressively. 404 when no photo is bundled.
+         */
+        get: operations["getConsolePhoto"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/consoles/{id}/preview-screenshot": {
         parameters: {
             query?: never;
@@ -6333,6 +6353,7 @@ export interface components {
             maker: components["schemas"]["HardwareMakerResponse"];
             mediaType: components["schemas"]["MediaTypeResponse"];
             name: string;
+            photoUrl: string | null;
             playable: boolean;
             /** Format: int64 */
             releaseYear: number | null;
@@ -12940,6 +12961,36 @@ export interface operations {
         };
     };
     getConsoleLogoPng: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Console abbreviation or code. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    getConsolePhoto: {
         parameters: {
             query?: never;
             header?: never;

@@ -35,8 +35,22 @@ export function ConsoleHeroBanner({
       }}
       data-testid="console-hero-banner"
     >
-      {/* Background watermark icon for depth */}
-      {consoleData?.iconUrl && (
+      {/* Depth element: the console hardware photo when we have one (#1441),
+          otherwise the icon watermark. photoUrl is server-gated — only set
+          when a bundled photo exists; onError hides it as a safety net. */}
+      {consoleData?.photoUrl ? (
+        <div className="absolute -right-4 -top-2 bottom-0 w-1/2 max-w-sm opacity-25 pointer-events-none">
+          <img
+            src={consoleData.photoUrl}
+            alt=""
+            aria-hidden="true"
+            className="h-full w-full object-contain object-right drop-shadow-[0_2px_16px_rgba(0,0,0,0.5)]"
+            onError={(e) => {
+              e.currentTarget.style.display = "none";
+            }}
+          />
+        </div>
+      ) : consoleData?.iconUrl ? (
         <div className="absolute -right-8 -top-8 opacity-[0.07] pointer-events-none">
           <img
             src={consoleData.iconUrl}
@@ -46,7 +60,7 @@ export function ConsoleHeroBanner({
             style={{ imageRendering: "pixelated" }}
           />
         </div>
-      )}
+      ) : null}
 
       {/* Subtle noise/texture overlay */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-white/[0.04] pointer-events-none" />

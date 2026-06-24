@@ -2309,6 +2309,12 @@
           "name": {
             "type": "string"
           },
+          "photoUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "playable": {
             "type": "boolean"
           },
@@ -2365,6 +2371,7 @@
           "iconUrl",
           "logoUrl",
           "logoPngUrl",
+          "photoUrl",
           "gameCount",
           "saveStateSupport",
           "saveStatePolicy",
@@ -17070,6 +17077,45 @@
           }
         },
         "summary": "Get a console logo (pre-rendered PNG)",
+        "tags": [
+          "consoles"
+        ]
+      }
+    },
+    "/api/consoles/{id}/photo": {
+      "get": {
+        "description": "Serves an embedded hardware photo (PNG/JPEG) for the console. Public endpoint; cached aggressively. 404 when no photo is bundled.",
+        "operationId": "getConsolePhoto",
+        "parameters": [
+          {
+            "description": "Console abbreviation or code.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Console abbreviation or code.",
+              "maxLength": 32,
+              "pattern": "^[a-zA-Z0-9_-]+$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Get a console hardware photo",
         "tags": [
           "consoles"
         ]

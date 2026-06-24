@@ -79,6 +79,7 @@ const testConsoles: Console[] = [
     code: "snes",
     emulatorJsCore: "",
     logoPngUrl: "",
+    photoUrl: null,
     maker: { code: "", name: "" },
     mediaType: { code: "", name: "", category: { code: "", name: "" } },
     releaseYear: null,
