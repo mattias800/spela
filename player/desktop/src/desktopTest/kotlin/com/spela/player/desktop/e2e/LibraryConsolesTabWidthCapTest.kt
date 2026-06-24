@@ -18,10 +18,11 @@ import kotlin.test.assertTrue
 
 /**
  * #1082 regression test: console cards must never stretch past 340 dp wide
- * regardless of viewport size, so the design's intended ~1.9:1 aspect
- * ratio holds on AYN Thor landscape and any windowed desktop wider than
- * ~1100 dp. Pre-fix the grid stayed at 3 columns past 700 dp and each
- * card grew unbounded with the viewport (≥ 600 dp at 1920 dp containers).
+ * regardless of viewport size, so the design's intended 4:5 portrait aspect
+ * ratio (#1441) stays a sensible size on AYN Thor landscape and any windowed
+ * desktop wider than ~1100 dp. Pre-fix the grid stayed at 3 columns past
+ * 700 dp and each card grew unbounded with the viewport (≥ 600 dp at 1920 dp
+ * containers).
  *
  * The breakpoint logic itself is unit-tested in
  * `ConsoleColumnsForWidthTest`; this test is the UI-level cap assertion.

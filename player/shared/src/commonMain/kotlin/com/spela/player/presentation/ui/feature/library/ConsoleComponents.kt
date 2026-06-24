@@ -9,10 +9,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -63,6 +64,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.spela.player.domain.model.Console
@@ -83,10 +85,10 @@ private val HeroTextPrimary    = Color.White.copy(alpha = 0.90f)
 private val HeroTextSecondary  = Color.White.copy(alpha = 0.70f)
 private val HeroBadgeBackground = Color.White.copy(alpha = 0.10f)
 
-// #1082: Per-card width cap. With the fixed 120 dp card height, anything
-// past ~340 dp degrades the design's intended 1.9:1 aspect ratio into a
-// thin strip. Keeps the card content (140 dp watermark icon, 0.65-width
-// logo, bottom-left metadata) coherent on all viewports — same visual
+// #1082: Per-card width cap. Cards are a fixed 4:5 portrait (#1441 —
+// photo over logo over game count, mirroring the web card), so the cap
+// also bounds the card *height* (width × 1.25). Past ~340 dp the portrait
+// cards grow oversized on wide windows; the cap keeps the same visual
 // weight at 1920 dp and at 700 dp tablets, just more cards per row.
 internal val ConsoleCardMaxWidth = 340.dp
 
@@ -202,7 +204,7 @@ internal fun ConsoleCard(
     Box(
         modifier = modifier
             .testTag(com.spela.player.presentation.ui.TestTags.consoleCard(console.id))
-            .height(120.dp)
+            .aspectRatio(4f / 5f)
             .graphicsLayer { scaleX = scale; scaleY = scale }
             .clip(shape)
             .drawBehind {
@@ -230,31 +232,6 @@ internal fun ConsoleCard(
                 role = Role.Button
             },
     ) {
-        // Watermark icon: bottom-end, clipped, 7% opacity
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .offset(x = 20.dp, y = 20.dp)
-                .size(140.dp)
-                .alpha(0.07f),
-        ) {
-            if (console.iconUrl.isNotEmpty()) {
-                SpImage(
-                    model = console.iconUrl,
-                    contentDescription = null,
-                    staggerMs = 0L, // eager: bounded console list, no request stagger
-                    modifier = Modifier.fillMaxSize(),
-                )
-            } else {
-                Icon(
-                    imageVector = Icons.Filled.SportsEsports,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.fillMaxSize(),
-                )
-            }
-        }
-
         // Vertical depth overlay: light top, dark bottom
         Box(
             modifier = Modifier
@@ -266,69 +243,110 @@ internal fun ConsoleCard(
                 ),
         )
 
-        // Centered logo with dual constraints (width + height)
-        Box(
+        // Three stacked regions with fixed proportions — photo, logo, footer
+        // (mirrors the web console card, #1441). Each region centers its own
+        // content, so a card's photo centre and logo centre land at the same
+        // height as every other card in the row regardless of the image's
+        // aspect ratio; the fixed-weight footer keeps the game count aligned
+        // across cards too.
+        Column(
             modifier = Modifier
-                .align(Alignment.Center)
-                .fillMaxWidth(0.65f)
-                .heightIn(max = 64.dp),
-            contentAlignment = Alignment.Center,
+                .fillMaxSize()
+                .padding(SpSpacing.Default),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            var logoFailed by remember { mutableStateOf(false) }
-            if (console.logoUrl.isNotEmpty() && !logoFailed) {
-                AsyncImage(
-                    model = console.logoUrl,
-                    contentDescription = console.name,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 64.dp),
-                    contentScale = ContentScale.Fit,
-                    onError = { logoFailed = true },
-                )
-            } else {
-                Text(
-                    text = console.name,
-                    style = SpTypography.HeadlineMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = HeroTextPrimary,
-                )
-            }
-        }
-
-        // BIOS warning icon at top-right corner
-        if (hasMissingBios) {
-            Icon(
-                imageVector = Icons.Filled.Warning,
-                contentDescription = "BIOS missing for ${console.name}",
-                tint = SpColor.Warning,
+            // Photo region (or pixel-icon fallback)
+            Box(
                 modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(SpSpacing.Small)
-                    .size(16.dp),
-            )
-        }
-
-        // Bottom-left: game count · manufacturer · year
-        Row(
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(SpSpacing.Small),
-        ) {
-            val info = buildString {
-                append("${console.gameCount} ${if (console.gameCount == 1) "game" else "games"}")
-                if (console.makerName != null) {
-                    append(" · ${console.makerName}")
-                }
-                if (console.releaseYear != null) {
-                    append(" · ${console.releaseYear}")
+                    .fillMaxWidth()
+                    .weight(3f)
+                    .testTag(com.spela.player.presentation.ui.TestTags.consoleCardPhoto(console.id)),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (!console.photoUrl.isNullOrEmpty()) {
+                    AsyncImage(
+                        model = console.photoUrl,
+                        contentDescription = console.name,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Fit,
+                    )
+                } else if (console.iconUrl.isNotEmpty()) {
+                    SpImage(
+                        model = console.iconUrl,
+                        contentDescription = console.name,
+                        staggerMs = 0L, // eager: bounded console list, no request stagger
+                        modifier = Modifier
+                            .fillMaxSize(0.66f)
+                            .alpha(0.8f),
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Filled.SportsEsports,
+                        contentDescription = console.name,
+                        tint = HeroTextPrimary,
+                        modifier = Modifier.fillMaxSize(0.5f),
+                    )
                 }
             }
-            Text(
-                text = info,
-                style = SpTypography.LabelSmall,
-                color = HeroTextSecondary,
-                maxLines = 1,
-            )
+
+            // Logo region (or name fallback)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(2f)
+                    .testTag(com.spela.player.presentation.ui.TestTags.consoleCardLogo(console.id)),
+                contentAlignment = Alignment.Center,
+            ) {
+                var logoFailed by remember { mutableStateOf(false) }
+                if (console.logoUrl.isNotEmpty() && !logoFailed) {
+                    AsyncImage(
+                        model = console.logoUrl,
+                        contentDescription = console.name,
+                        modifier = Modifier
+                            .fillMaxWidth(0.92f)
+                            .fillMaxHeight(),
+                        contentScale = ContentScale.Fit,
+                        onError = { logoFailed = true },
+                    )
+                } else {
+                    Text(
+                        text = console.name,
+                        style = SpTypography.TitleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = HeroTextPrimary,
+                        textAlign = TextAlign.Center,
+                        maxLines = 2,
+                    )
+                }
+            }
+
+            // Footer: fixed proportion, bottom-aligned — game count + BIOS cue.
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                contentAlignment = Alignment.BottomCenter,
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
+                ) {
+                    Text(
+                        text = "${console.gameCount} ${if (console.gameCount == 1) "game" else "games"}",
+                        style = SpTypography.LabelSmall,
+                        color = HeroTextSecondary,
+                        maxLines = 1,
+                    )
+                    if (hasMissingBios) {
+                        Icon(
+                            imageVector = Icons.Filled.Warning,
+                            contentDescription = "BIOS missing for ${console.name}",
+                            tint = SpColor.Warning,
+                            modifier = Modifier.size(14.dp),
+                        )
+                    }
+                }
+            }
         }
     }
 }
@@ -340,25 +358,36 @@ internal fun ConsoleCardSkeleton(
     val shape = RoundedCornerShape(SpSpacing.CardCornerRadius)
     Box(
         modifier = modifier
-            .height(120.dp)
+            .aspectRatio(4f / 5f)
             .clip(shape)
             .background(SpColor.SurfaceVariant),
     ) {
-        // Centered logo placeholder
-        Box(
-            modifier = Modifier.align(Alignment.Center),
-        ) {
-            SpShimmer(width = 120.dp, height = 28.dp)
-        }
-        // Bottom-left stats placeholder
+        // Matches the live card's photo / logo / footer proportions so the
+        // loading state doesn't jump when real content arrives.
         Column(
             modifier = Modifier
-                .align(Alignment.BottomStart)
+                .fillMaxSize()
                 .padding(SpSpacing.Default),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            SpShimmer(width = 64.dp, height = 12.dp)
-            Spacer(Modifier.height(SpSpacing.XSmall))
-            SpShimmer(width = 96.dp, height = 10.dp)
+            Box(
+                modifier = Modifier.fillMaxWidth().weight(3f),
+                contentAlignment = Alignment.Center,
+            ) {
+                SpShimmer(width = 88.dp, height = 88.dp)
+            }
+            Box(
+                modifier = Modifier.fillMaxWidth().weight(2f),
+                contentAlignment = Alignment.Center,
+            ) {
+                SpShimmer(width = 120.dp, height = 28.dp)
+            }
+            Box(
+                modifier = Modifier.fillMaxWidth().weight(1f),
+                contentAlignment = Alignment.BottomCenter,
+            ) {
+                SpShimmer(width = 64.dp, height = 12.dp)
+            }
         }
     }
 }
