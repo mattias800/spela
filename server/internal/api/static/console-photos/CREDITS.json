@@ -137,6 +137,15 @@
       "bytes": 220756
     },
     {
+      "console": "dos",
+      "file": "dos.png",
+      "title": "Ibm pc 5150.jpg",
+      "author": "Ruben de Rijcke",
+      "license": "CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Ibm_pc_5150.jpg",
+      "bytes": 788628
+    },
+    {
       "console": "fds",
       "file": "fds.png",
       "title": "Nintendo-Famicom-Disk-System.png",

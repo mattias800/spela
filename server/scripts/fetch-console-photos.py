@@ -91,6 +91,7 @@ PHOTOS = {
     "ps5": "PlayStation 5 and DualSense with transparent background.png",
     "pkmn": "Pokemon mini.png",
     # Home computers
+    "dos": "Ibm pc 5150.jpg",
     "a800": "Atari-800-Computer-FL.jpg",
     "c64": "Commodore-64-Computer-FL.png",
     "zxs": "ZXSpectrum48k.jpg",
