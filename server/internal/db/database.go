@@ -1166,7 +1166,11 @@ func SeedConsoles(db *gorm.DB) error {
 		{Name: "PlayStation", Abbreviation: "PSX", Extensions: ".bin,.cue,.iso,.pbp,.m3u", DefaultCore: "beetle_psx_hw", EmulatorJSCore: "mednafen_psx_hw", FolderName: "psx", ColorTheme: "#003087", CoverAspect: "1:1", Generation: 5, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicyMedium, Playable: true},
 		{Name: "Nintendo 64", Abbreviation: "N64", Extensions: ".n64,.z64,.v64", DefaultCore: "parallel_n64", EmulatorJSCore: "mupen64plus_next", FolderName: "n64", ColorTheme: "#009e60", CoverAspect: "10:7", Generation: 5, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicyMedium, Playable: true},
 		{Name: "Sega Saturn", Abbreviation: "SAT", Extensions: ".iso,.bin,.cue,.chd,.m3u", DefaultCore: "yabause", EmulatorJSCore: "yabause", FolderName: "saturn", ColorTheme: "#0a4da2", Generation: 5, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicyMedium, Playable: true},
-		{Name: "Game Boy Color", Abbreviation: "GBC", Extensions: ".gbc", DefaultCore: "gambatte", EmulatorJSCore: "gambatte", FolderName: "gbc", ColorTheme: "#6638a8", CoverAspect: "7:8", Generation: 5, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicySmall, Playable: true},
+		// Berry (#d6336c) instead of the old grape purple: the "Game Boy" half
+		// of the GBC logo is dark blue, which was unreadable on a purple→black
+		// gradient. Berry is a real GBC colourway and gives the blue wordmark
+		// strong contrast. See #1441.
+		{Name: "Game Boy Color", Abbreviation: "GBC", Extensions: ".gbc", DefaultCore: "gambatte", EmulatorJSCore: "gambatte", FolderName: "gbc", ColorTheme: "#d6336c", CoverAspect: "7:8", Generation: 5, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicySmall, Playable: true},
 		{Name: "Atari Jaguar", Abbreviation: "JAG", Extensions: ".j64,.jag", DefaultCore: "virtualjaguar", EmulatorJSCore: "virtualjaguar", FolderName: "atarijaguar", ColorTheme: "#8b4513", Generation: 5, SaveStateSupport: false, SaveStatePolicy: SaveStatePolicySmall, Playable: true},
 		{Name: "Virtual Boy", Abbreviation: "VB", Extensions: ".vb,.vboy", DefaultCore: "beetle_vb", EmulatorJSCore: "beetle_vb", FolderName: "virtualboy", ColorTheme: "#ff0000", Generation: 5, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicySmall, Playable: true},
 		{Name: "3DO", Abbreviation: "3DO", Extensions: ".iso,.bin,.cue,.chd", DefaultCore: "opera", EmulatorJSCore: "opera", FolderName: "3do", ColorTheme: "#c0c0c0", Generation: 5, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicyMedium, Playable: true},
@@ -1290,6 +1294,13 @@ func SeedConsoles(db *gorm.DB) error {
 			if c.FolderName != "" && existing.FolderName != c.FolderName {
 				db.Model(&existing).Update("folder_name", c.FolderName)
 				slog.Info("backfilled FolderName", "name", existing.Name, "folder", c.FolderName)
+			}
+			// ColorTheme drives the per-platform card gradient and is seed-owned
+			// (the single source of truth — see #1167), so keep existing rows in
+			// sync whenever the seed colour changes.
+			if c.ColorTheme != "" && existing.ColorTheme != c.ColorTheme {
+				db.Model(&existing).Update("color_theme", c.ColorTheme)
+				slog.Info("backfilled ColorTheme", "name", existing.Name, "color", c.ColorTheme)
 			}
 			if !existing.SaveStateSupport && c.SaveStateSupport {
 				db.Model(&existing).Update("save_state_support", true)
