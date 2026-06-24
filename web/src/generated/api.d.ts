@@ -6397,6 +6397,7 @@ export interface components {
             saveStatePolicy: string;
             saveStateSupport: boolean;
             summary: string | null;
+            tag: string | null;
             /** Format: int64 */
             unitsSold: number | null;
             /** Format: date-time */

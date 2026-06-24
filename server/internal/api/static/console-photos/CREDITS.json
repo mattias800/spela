@@ -3,12 +3,12 @@
   "photos": [
     {
       "console": "32x",
-      "file": "32x.jpg",
+      "file": "32x.png",
       "title": "Sega-Genesis-32X-01.jpg",
       "author": "Evan-Amos",
       "license": "Public domain",
       "source": "https://commons.wikimedia.org/wiki/File:Sega-Genesis-32X-01.jpg",
-      "bytes": 58010
+      "bytes": 281946
     },
     {
       "console": "3do",
@@ -39,12 +39,12 @@
     },
     {
       "console": "a52",
-      "file": "a52.jpg",
+      "file": "a52.png",
       "title": "Atari-5200-4-Port-wController-L.jpg",
       "author": "Evan-Amos",
       "license": "Public domain",
       "source": "https://commons.wikimedia.org/wiki/File:Atari-5200-4-Port-wController-L.jpg",
-      "bytes": 60521
+      "bytes": 291326
     },
     {
       "console": "a78",
@@ -57,12 +57,12 @@
     },
     {
       "console": "a800",
-      "file": "a800.jpg",
+      "file": "a800.png",
       "title": "Atari-800-Computer-FL.jpg",
       "author": "Evan-Amos",
       "license": "Public domain",
       "source": "https://commons.wikimedia.org/wiki/File:Atari-800-Computer-FL.jpg",
-      "bytes": 83082
+      "bytes": 493720
     },
     {
       "console": "acd32",
@@ -75,12 +75,12 @@
     },
     {
       "console": "amiga",
-      "file": "amiga.jpg",
-      "title": "Amiga 500 Plus (white background).jpg",
+      "file": "amiga.png",
+      "title": "Amiga 500 Plus (transparent background).png",
       "author": "Sernot at it.wikipedia (Non-creditable modifications as described below made by Ubcule",
       "license": "Public domain",
-      "source": "https://commons.wikimedia.org/wiki/File:Amiga_500_Plus_%28white_background%29.jpg",
-      "bytes": 118343
+      "source": "https://commons.wikimedia.org/wiki/File:Amiga_500_Plus_%28transparent_background%29.png",
+      "bytes": 861227
     },
     {
       "console": "c128",
@@ -102,12 +102,12 @@
     },
     {
       "console": "cdi",
-      "file": "cdi.jpg",
+      "file": "cdi.png",
       "title": "CD-i-910-Console-Set.jpg",
       "author": "Evan-Amos",
       "license": "Public domain",
       "source": "https://commons.wikimedia.org/wiki/File:CD-i-910-Console-Set.jpg",
-      "bytes": 60677
+      "bytes": 304117
     },
     {
       "console": "chaf",
@@ -120,12 +120,12 @@
     },
     {
       "console": "cv",
-      "file": "cv.jpg",
+      "file": "cv.png",
       "title": "ColecoVision-wController-L.jpg",
       "author": "Evan-Amos",
       "license": "Public domain",
       "source": "https://commons.wikimedia.org/wiki/File:ColecoVision-wController-L.jpg",
-      "bytes": 77673
+      "bytes": 341872
     },
     {
       "console": "dc",
@@ -138,12 +138,12 @@
     },
     {
       "console": "fds",
-      "file": "fds.jpg",
+      "file": "fds.png",
       "title": "Nintendo-Famicom-Disk-System.jpg",
       "author": "Evan-Amos",
       "license": "Public domain",
       "source": "https://commons.wikimedia.org/wiki/File:Nintendo-Famicom-Disk-System.jpg",
-      "bytes": 105853
+      "bytes": 685888
     },
     {
       "console": "gb",
@@ -183,12 +183,12 @@
     },
     {
       "console": "gen",
-      "file": "gen.jpg",
+      "file": "gen.png",
       "title": "Sega-Genesis-Mk2-6button.jpg",
       "author": "Evan-Amos",
       "license": "CC BY-SA 3.0",
       "source": "https://commons.wikimedia.org/wiki/File:Sega-Genesis-Mk2-6button.jpg",
-      "bytes": 58815
+      "bytes": 282508
     },
     {
       "console": "gg",
@@ -237,12 +237,12 @@
     },
     {
       "console": "msx1",
-      "file": "msx1.jpg",
-      "title": "Canon V-20 MSX computer (3).jpg",
-      "author": "AUIC Oficial",
+      "file": "msx1.png",
+      "title": "Sony HitBit HB-10P (Transparent Background).png",
+      "author": "Sony_hitbit_10p.jpg: Doppelgangland derivative work: User:Ubcule",
       "license": "Public domain",
-      "source": "https://commons.wikimedia.org/wiki/File:Canon_V-20_MSX_computer_%283%29.jpg",
-      "bytes": 124896
+      "source": "https://commons.wikimedia.org/wiki/File:Sony_HitBit_HB-10P_%28Transparent_Background%29.png",
+      "bytes": 675903
     },
     {
       "console": "n64",
@@ -341,7 +341,7 @@
       "author": "Evan-Amos",
       "license": "Public domain",
       "source": "https://commons.wikimedia.org/wiki/File:PC-FX-Console-Set.png",
-      "bytes": 444184
+      "bytes": 460350
     },
     {
       "console": "pet",
@@ -381,12 +381,12 @@
     },
     {
       "console": "ps3",
-      "file": "ps3.jpg",
+      "file": "ps3.png",
       "title": "Sony-PlayStation-3-CECHA01-wController-L.jpg",
       "author": "Evan-Amos",
       "license": "Public domain",
       "source": "https://commons.wikimedia.org/wiki/File:Sony-PlayStation-3-CECHA01-wController-L.jpg",
-      "bytes": 44163
+      "bytes": 203870
     },
     {
       "console": "ps4",
@@ -435,12 +435,12 @@
     },
     {
       "console": "scd",
-      "file": "scd.jpg",
+      "file": "scd.png",
       "title": "Sega-CD-Model1-Set.jpg",
       "author": "Evan-Amos",
       "license": "Public domain",
       "source": "https://commons.wikimedia.org/wiki/File:Sega-CD-Model1-Set.jpg",
-      "bytes": 91306
+      "bytes": 457908
     },
     {
       "console": "sg1k",
@@ -561,12 +561,12 @@
     },
     {
       "console": "xone",
-      "file": "xone.jpg",
+      "file": "xone.png",
       "title": "Microsoft-Xbox-One-Console-Set-wKinect.jpg",
       "author": "Evan-Amos",
       "license": "Public domain",
       "source": "https://commons.wikimedia.org/wiki/File:Microsoft-Xbox-One-Console-Set-wKinect.jpg",
-      "bytes": 67352
+      "bytes": 308283
     },
     {
       "console": "xsx",

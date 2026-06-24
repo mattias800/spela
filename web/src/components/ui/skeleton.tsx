@@ -37,12 +37,8 @@ export function GameCardSkeleton({
 
 export function ConsoleCardSkeleton() {
   return (
-    <div data-comp="ConsoleCardSkeleton" className="space-y-3">
-      <Skeleton className="aspect-[16/10] w-full rounded-2xl" />
-      <div className="space-y-2 px-1">
-        <Skeleton className="h-5 w-2/3" />
-        <Skeleton className="h-3 w-1/3" />
-      </div>
+    <div data-comp="ConsoleCardSkeleton">
+      <Skeleton className="aspect-[4/5] w-full rounded-2xl" />
     </div>
   );
 }

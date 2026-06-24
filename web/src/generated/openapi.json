@@ -2393,6 +2393,12 @@
               "null"
             ]
           },
+          "tag": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "unitsSold": {
             "format": "int64",
             "type": [
@@ -2428,6 +2434,7 @@
           "logoUrl",
           "logoPngUrl",
           "photoUrl",
+          "tag",
           "gameCount",
           "saveStateSupport",
           "saveStatePolicy",

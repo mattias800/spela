@@ -26,6 +26,7 @@ function makeConsole(overrides: Partial<Console> = {}): Console {
     emulatorJsCore: "",
     logoPngUrl: "",
     photoUrl: null,
+    tag: null,
     maker: { code: "", name: "" },
     mediaType: { code: "", name: "", category: { code: "", name: "" } },
     releaseYear: null,
@@ -46,12 +47,23 @@ function renderCard(props: Parameters<typeof ConsoleCard>[0]) {
 }
 
 describe("ConsoleCard", () => {
-  it("renders the console name and game count", () => {
+  it("renders the console name (as image alt) and game count", () => {
     renderCard({ console: makeConsole() });
+    // The name is conveyed via the logo/photo image alt rather than text.
     expect(
-      screen.getByText("Nintendo Entertainment System"),
-    ).toBeInTheDocument();
+      screen.getAllByAltText("Nintendo Entertainment System").length,
+    ).toBeGreaterThan(0);
     expect(screen.getByText("10 games")).toBeInTheDocument();
+  });
+
+  it("renders the qualifier tag chip when present (data-driven)", () => {
+    renderCard({ console: makeConsole({ tag: "Demos" }) });
+    expect(screen.getByText("Demos")).toBeInTheDocument();
+  });
+
+  it("omits the tag chip when the console has no tag", () => {
+    renderCard({ console: makeConsole() });
+    expect(screen.queryByText("Demos")).not.toBeInTheDocument();
   });
 
   // #933: amber ⚠ badge in the top-right indicator group when the
