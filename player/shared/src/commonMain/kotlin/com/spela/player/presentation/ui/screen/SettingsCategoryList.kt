@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -51,6 +52,10 @@ fun SettingsCategoryList(
     serverUrl: String,
     modifier: Modifier = Modifier,
     topPadding: androidx.compose.ui.unit.Dp = 0.dp,
+    // When non-null, a "Quit Spela" action is pinned at the bottom of the list
+    // (desktop only — there's no OS-level exit reachable by gamepad in Steam
+    // Deck Gaming Mode). Null on Android, where the OS owns app lifecycle. #1439
+    onQuit: (() -> Unit)? = null,
 ) {
     val focusMemory = rememberFocusMemoryState()
     CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
@@ -140,6 +145,50 @@ fun SettingsCategoryList(
                     tint = SpColor.OnBackgroundTertiary,
                     modifier = Modifier.size(20.dp),
                 )
+            }
+        }
+
+        // Quit Spela — pinned at the bottom, desktop only (#1439). Styled
+        // distinctly from the navigation categories (exit icon, no chevron) so
+        // it reads as an action, not another category. Gamepad-focusable like
+        // the rows above so it's reachable with the d-pad in Gaming Mode.
+        if (onQuit != null) {
+            item { Spacer(Modifier.height(SpSpacing.Medium)) }
+            item {
+                val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+                Row(
+                    modifier = Modifier
+                        .testTag("settings_quit")
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable(
+                            interactionSource = interactionSource,
+                            indication = null,
+                            onClick = onQuit,
+                        )
+                        .gamepadFocusable(
+                            shape = RoundedCornerShape(8.dp),
+                            interactionSource = interactionSource,
+                            addFocusable = false,
+                        )
+                        .padding(horizontal = SpSpacing.Medium, vertical = SpSpacing.Medium)
+                        .semantics { contentDescription = "Quit Spela" },
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ExitToApp,
+                        contentDescription = null,
+                        tint = SpColor.Error,
+                        modifier = Modifier.size(24.dp),
+                    )
+                    Spacer(Modifier.width(SpSpacing.Medium))
+                    Text(
+                        text = "Quit Spela",
+                        style = SpTypography.TitleMedium,
+                        color = SpColor.Error,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
             }
         }
     }

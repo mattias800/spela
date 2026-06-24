@@ -1,6 +1,7 @@
 package com.spela.player.presentation.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -11,8 +12,12 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -20,6 +25,7 @@ import androidx.compose.ui.window.DialogProperties
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
+import kotlinx.coroutines.delay
 
 /**
  * Upper bound on dialog width. `fillMaxWidth(0.85f)` keeps dialogs
@@ -39,12 +45,31 @@ fun SpDialog(
     onConfirm: () -> Unit = {},
     isDestructive: Boolean = false,
     isLoading: Boolean = false,
+    // When true, anchor d-pad/keyboard focus on the Cancel button when the
+    // dialog opens so it's navigable with a gamepad (no mouse) — e.g. Steam
+    // Deck Gaming Mode. Cancel is the safe default for destructive prompts.
+    // Off by default so dialogs with text-field content (which should focus
+    // the field, not a button) are unaffected. See #1439.
+    autoFocusDismiss: Boolean = false,
     content: @Composable () -> Unit,
 ) {
+    val dismissFocusRequester = remember { FocusRequester() }
     Dialog(
         onDismissRequest = { if (!isLoading) onDismiss() },
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
+        if (autoFocusDismiss) {
+            LaunchedEffect(Unit) {
+                // Brief settle so the button is placed before we request —
+                // requestFocus on a just-composed node is otherwise unreliable.
+                delay(120)
+                try {
+                    dismissFocusRequester.requestFocus()
+                } catch (_: Exception) {
+                    // Node not ready / focus owner busy — best effort.
+                }
+            }
+        }
         Column(
             modifier = modifier
                 // widthIn first so it caps the available width, then take
@@ -56,7 +81,9 @@ fun SpDialog(
                 .testTag("sp_dialog_surface")
                 .clip(RoundedCornerShape(SpSpacing.RadiusPill))
                 .background(SpColor.SurfaceElevated)
-                .padding(SpSpacing.XLarge),
+                .padding(SpSpacing.XLarge)
+                // Keep d-pad focus traversal inside the dialog's buttons.
+                .focusGroup(),
         ) {
             Text(
                 text = title,
@@ -86,7 +113,10 @@ fun SpDialog(
                     text = dismissText,
                     onClick = onDismiss,
                     style = SpButtonStyle.Ghost,
-                    modifier = Modifier.fillMaxWidth().testTag("dialog_dismiss"),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .then(if (autoFocusDismiss) Modifier.focusRequester(dismissFocusRequester) else Modifier)
+                        .testTag("dialog_dismiss"),
                     enabled = !isLoading,
                 )
             }
@@ -111,6 +141,9 @@ fun SpConfirmDialog(
         confirmText = confirmText,
         isDestructive = isDestructive,
         isLoading = isLoading,
+        // Confirm dialogs are message-only (no text input), so anchor focus on
+        // Cancel for gamepad/keyboard navigation (Steam Deck Gaming Mode). #1439
+        autoFocusDismiss = true,
     ) {
         Text(
             text = message,
