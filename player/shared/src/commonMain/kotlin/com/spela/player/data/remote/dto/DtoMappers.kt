@@ -47,6 +47,7 @@ fun com.spela.client.models.ConsoleResponse.toDomain(): Console = Console(
     defaultCore = defaultCore,
     iconUrl = iconUrl,
     logoUrl = logoPngUrl.ifEmpty { logoUrl },
+    photoUrl = photoUrl,
     logoAspectRatio = logoAspectRatio?.toFloat(),
     saveStateSupport = saveStateSupport,
     saveStatePolicy = SaveStatePolicyTier.fromApiId(saveStatePolicy),

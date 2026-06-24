@@ -403,6 +403,7 @@ class GameRepositoryImpl(
     private fun Console.resolveImageUrls(): Console = copy(
         iconUrl = apiClient.resolveUrl(iconUrl) ?: "",
         logoUrl = apiClient.resolveUrl(logoUrl) ?: "",
+        photoUrl = photoUrl?.let { apiClient.resolveUrl(it) },
     )
 
     private fun TopRatedGame.resolveImageUrls(): TopRatedGame = copy(

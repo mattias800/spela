@@ -142,6 +142,38 @@ open class ConsolesApi : ApiClient {
 
 
     /**
+     * Get a console hardware photo
+     * Serves an embedded hardware photo (PNG/JPEG) for the console. Public endpoint; cached aggressively. 404 when no photo is bundled.
+     * @param id Console abbreviation or code.
+     * @return void
+     */
+    open suspend fun getConsolePhoto(id: kotlin.String): HttpResponse<Unit> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody = 
+            io.ktor.client.utils.EmptyContent
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.GET,
+            "/api/consoles/{id}/photo".replace("{" + "id" + "}", "$id"),
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return request(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+
+    /**
      * Get a representative screenshot for a console
      * Returns a canonical screenshot from the LibRetro thumbnails CDN, cached locally after the first download. Redirects to /api/images/previews/{abbr}/preview.png when cached.
      * @param id Console abbreviation or code.

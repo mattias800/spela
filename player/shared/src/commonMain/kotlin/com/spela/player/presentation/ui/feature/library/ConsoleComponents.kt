@@ -448,27 +448,47 @@ private fun ConsoleHeroBannerContent(
                 contentDescription = "${console.name}, ${console.gameCount} games"
             },
     ) {
-        // Watermark icon: web uses -right-8 -top-8 (32px) at 224px (h-56 w-56), opacity 7%
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .offset(x = 32.dp, y = (-32).dp)
-                .alpha(0.07f),
-        ) {
-            if (console.iconUrl.isNotEmpty()) {
+        // Depth element: the console hardware photo when we have one (#1441),
+        // otherwise the icon watermark. The photo sits top-end at a higher
+        // opacity than the icon; transparent PNGs composite over the brand
+        // gradient. photoUrl is server-gated (null when no photo is bundled).
+        if (console.photoUrl != null) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = 24.dp, y = (-8).dp)
+                    .alpha(0.28f),
+            ) {
                 SpImage(
-                    model = console.iconUrl,
+                    model = console.photoUrl,
                     contentDescription = null,
                     staggerMs = 0L, // eager: bounded console list, no request stagger
-                    modifier = Modifier.size(224.dp),
+                    modifier = Modifier.size(240.dp),
                 )
-            } else {
-                Icon(
-                    imageVector = Icons.Filled.SportsEsports,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(224.dp),
-                )
+            }
+        } else {
+            // Watermark icon: web uses -right-8 -top-8 (32px) at 224px (h-56 w-56), opacity 7%
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = 32.dp, y = (-32).dp)
+                    .alpha(0.07f),
+            ) {
+                if (console.iconUrl.isNotEmpty()) {
+                    SpImage(
+                        model = console.iconUrl,
+                        contentDescription = null,
+                        staggerMs = 0L, // eager: bounded console list, no request stagger
+                        modifier = Modifier.size(224.dp),
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Filled.SportsEsports,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(224.dp),
+                    )
+                }
             }
         }
 

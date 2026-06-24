@@ -44,6 +44,7 @@ import kotlinx.serialization.encoding.*
  * @param maker 
  * @param mediaType 
  * @param name 
+ * @param photoUrl 
  * @param playable 
  * @param releaseYear 
  * @param saveStatePolicy 
@@ -93,6 +94,8 @@ data class ConsoleResponse (
     @SerialName(value = "mediaType") @Required val mediaType: MediaTypeResponse,
 
     @SerialName(value = "name") @Required val name: kotlin.String,
+
+    @SerialName(value = "photoUrl") @Required val photoUrl: kotlin.String?,
 
     @SerialName(value = "playable") @Required val playable: kotlin.Boolean,
 

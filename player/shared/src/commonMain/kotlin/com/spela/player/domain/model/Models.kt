@@ -66,6 +66,8 @@ data class Console(
     val defaultCore: String = "",
     val iconUrl: String = "",
     val logoUrl: String = "",
+    /** Hardware photo URL, or null when no photo is bundled (#1441). */
+    val photoUrl: String? = null,
     /**
      * Intrinsic width/height of [logoUrl] as reported by the server
      * (computed once from the SVG's viewBox at seed time). The
