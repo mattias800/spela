@@ -35,12 +35,13 @@ var consolePhotoCreditsManifest = func() ConsolePhotoCreditsResponse {
 		Note   string               `json:"note"`
 		Photos []ConsolePhotoCredit `json:"photos"`
 	}
+	empty := ConsolePhotoCreditsResponse{Photos: []ConsolePhotoCredit{}}
 	data, err := consolePhotos.ReadFile("static/console-photos/CREDITS.json")
 	if err != nil {
-		return ConsolePhotoCreditsResponse{}
+		return empty
 	}
 	if err := json.Unmarshal(data, &raw); err != nil {
-		return ConsolePhotoCreditsResponse{}
+		return empty
 	}
 	out := ConsolePhotoCreditsResponse{Note: raw.Note, Photos: make([]ConsolePhotoCredit, 0, len(raw.Photos))}
 	for _, p := range raw.Photos {

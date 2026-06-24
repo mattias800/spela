@@ -132,7 +132,7 @@ export function LicensesPage() {
 
 function ConsolePhotoCredits() {
   const { data } = useConsolePhotoCredits();
-  if (!data || data.photos.length === 0) {
+  if (!data || !data.photos || data.photos.length === 0) {
     return null;
   }
 

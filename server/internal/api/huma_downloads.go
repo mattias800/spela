@@ -976,7 +976,7 @@ var consolePhotoFiles = func() map[string]string {
 			continue
 		}
 		if ext := strings.ToLower(name[i+1:]); ext == "png" || ext == "jpg" {
-			m[name[:i]] = ext
+			m[strings.ToLower(name[:i])] = ext
 		}
 	}
 	return m
