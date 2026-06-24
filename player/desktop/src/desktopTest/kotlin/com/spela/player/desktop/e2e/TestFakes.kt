@@ -373,6 +373,14 @@ class FakeGameRepository : GameRepository {
         else Result.success(consoles)
     }
 
+    var photoCredits: ConsolePhotoCredits =
+        ConsolePhotoCredits(note = "", photos = emptyList())
+
+    override suspend fun getConsolePhotoCredits(): Result<ConsolePhotoCredits> {
+        return if (shouldFail) Result.failure(Exception("Network error"))
+        else Result.success(photoCredits)
+    }
+
     override suspend fun getGamesForConsole(consoleId: String): Result<List<Game>> {
         return if (shouldFail) Result.failure(Exception("Network error"))
         else Result.success(games.filter { it.consoleId == consoleId })

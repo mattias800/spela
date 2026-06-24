@@ -44,11 +44,13 @@ import kotlinx.serialization.encoding.*
  * @param maker 
  * @param mediaType 
  * @param name 
+ * @param photoUrl 
  * @param playable 
  * @param releaseYear 
  * @param saveStatePolicy 
  * @param saveStateSupport 
  * @param summary 
+ * @param tag 
  * @param unitsSold 
  * @param updatedAt 
  */
@@ -94,6 +96,8 @@ data class ConsoleResponse (
 
     @SerialName(value = "name") @Required val name: kotlin.String,
 
+    @SerialName(value = "photoUrl") @Required val photoUrl: kotlin.String?,
+
     @SerialName(value = "playable") @Required val playable: kotlin.Boolean,
 
     @SerialName(value = "releaseYear") @Required val releaseYear: kotlin.Long?,
@@ -103,6 +107,8 @@ data class ConsoleResponse (
     @SerialName(value = "saveStateSupport") @Required val saveStateSupport: kotlin.Boolean,
 
     @SerialName(value = "summary") @Required val summary: kotlin.String?,
+
+    @SerialName(value = "tag") @Required val tag: kotlin.String?,
 
     @SerialName(value = "unitsSold") @Required val unitsSold: kotlin.Long?,
 

@@ -102,6 +102,8 @@ export function makeConsole(overrides: Partial<Console> = {}): Console {
     iconUrl: "",
     logoUrl: "",
     logoPngUrl: "",
+    photoUrl: null,
+    tag: null,
     gameCount: 0,
     saveStateSupport: true,
     saveStatePolicy: "small",

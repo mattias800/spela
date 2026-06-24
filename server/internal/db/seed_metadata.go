@@ -167,6 +167,9 @@ type consoleMetadata struct {
 	ReleaseYear  *int
 	UnitsSold    *int64
 	Summary      *string
+	// Tag is an optional short card qualifier (e.g. "Demos"); nil leaves
+	// the console untagged.
+	Tag *string
 }
 
 // SeedConsoleMetadata updates existing consoles with metadata (code, maker, media type, etc.).
@@ -265,8 +268,8 @@ func SeedConsoleMetadata(db *gorm.DB) error {
 		{Abbreviation: "ARCADE", Code: "arcade", MakerCode: "various", MediaCode: "arcade-board", ReleaseYear: intPtr(1971), UnitsSold: nil, Summary: strPtr("Arcade games have been a cornerstone of the video game industry since Computer Space in 1971 and Pong in 1972. From the golden age of Space Invaders and Pac-Man to modern fighting and rhythm games, arcades pioneered nearly every major gaming genre and remain a vibrant part of gaming culture worldwide.")},
 
 		// Demo scenes (generation = 100)
-		{Abbreviation: "ADEMO", Code: "ademo", MakerCode: "commodore", MediaCode: "floppy-disk", ReleaseYear: nil, UnitsSold: nil, Summary: strPtr("The Amiga demo scene was one of the most vibrant creative computing communities, pushing the Amiga's custom hardware to produce stunning audiovisual demonstrations. Originating in the late 1980s, it became a breeding ground for future game developers, digital artists, and musicians.")},
-		{Abbreviation: "DDEMO", Code: "ddemo", MakerCode: "various", MediaCode: "digital", ReleaseYear: nil, UnitsSold: nil, Summary: strPtr("The DOS demo scene produced creative real-time audiovisual programs that showcased programming skill and artistic expression on IBM PC compatibles. Demos like Second Reality by Future Crew became legendary, and the scene continues to thrive at events like Assembly and Revision.")},
+		{Abbreviation: "ADEMO", Code: "ademo", MakerCode: "commodore", MediaCode: "floppy-disk", ReleaseYear: nil, UnitsSold: nil, Tag: strPtr("Demos"), Summary: strPtr("The Amiga demo scene was one of the most vibrant creative computing communities, pushing the Amiga's custom hardware to produce stunning audiovisual demonstrations. Originating in the late 1980s, it became a breeding ground for future game developers, digital artists, and musicians.")},
+		{Abbreviation: "DDEMO", Code: "ddemo", MakerCode: "various", MediaCode: "digital", ReleaseYear: nil, UnitsSold: nil, Tag: strPtr("Demos"), Summary: strPtr("The DOS demo scene produced creative real-time audiovisual programs that showcased programming skill and artistic expression on IBM PC compatibles. Demos like Second Reality by Future Crew became legendary, and the scene continues to thrive at events like Assembly and Revision.")},
 
 		// ScummVM (generation = 100)
 		{Abbreviation: "SCUMMVM", Code: "scummvm", MakerCode: "various", MediaCode: "digital", ReleaseYear: nil, UnitsSold: nil, Summary: strPtr("ScummVM is a collection of game engine reimplementations that allows classic point-and-click adventure games to run on modern hardware. Originally created to run LucasArts SCUMM games like Monkey Island and Day of the Tentacle, it now supports hundreds of adventure games from numerous publishers.")},
@@ -309,6 +312,10 @@ func SeedConsoleMetadata(db *gorm.DB) error {
 
 		if m.Summary != nil && (console.Summary == nil || *console.Summary != *m.Summary) {
 			updates["summary"] = *m.Summary
+		}
+
+		if m.Tag != nil && (console.Tag == nil || *console.Tag != *m.Tag) {
+			updates["tag"] = *m.Tag
 		}
 
 		if len(updates) > 0 {

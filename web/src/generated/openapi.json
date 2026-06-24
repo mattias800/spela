@@ -2238,6 +2238,62 @@
         ],
         "type": "object"
       },
+      "ConsolePhotoCredit": {
+        "additionalProperties": false,
+        "properties": {
+          "author": {
+            "type": "string"
+          },
+          "console": {
+            "type": "string"
+          },
+          "license": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "console",
+          "title",
+          "author",
+          "license",
+          "source"
+        ],
+        "type": "object"
+      },
+      "ConsolePhotoCreditsResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/ConsolePhotoCreditsResponse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "photos": {
+            "items": {
+              "$ref": "#/components/schemas/ConsolePhotoCredit"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "note",
+          "photos"
+        ],
+        "type": "object"
+      },
       "ConsoleResponse": {
         "additionalProperties": false,
         "properties": {
@@ -2309,6 +2365,12 @@
           "name": {
             "type": "string"
           },
+          "photoUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "playable": {
             "type": "boolean"
           },
@@ -2326,6 +2388,12 @@
             "type": "boolean"
           },
           "summary": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tag": {
             "type": [
               "string",
               "null"
@@ -2365,6 +2433,8 @@
           "iconUrl",
           "logoUrl",
           "logoPngUrl",
+          "photoUrl",
+          "tag",
           "gameCount",
           "saveStateSupport",
           "saveStatePolicy",
@@ -16748,6 +16818,38 @@
         ]
       }
     },
+    "/api/console-photo-credits": {
+      "get": {
+        "description": "Returns the per-image author, license, and source for every bundled console hardware photo. Public endpoint, surfaced on the Credits \u0026 Licenses screens to satisfy CC-BY-SA attribution.",
+        "operationId": "getConsolePhotoCredits",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsolePhotoCreditsResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Get attribution credits for the bundled console hardware photos",
+        "tags": [
+          "consoles"
+        ]
+      }
+    },
     "/api/consoles": {
       "get": {
         "description": "Returns all consoles that have at least one primary, non-pre-release game, sorted by generation and name.",
@@ -17070,6 +17172,45 @@
           }
         },
         "summary": "Get a console logo (pre-rendered PNG)",
+        "tags": [
+          "consoles"
+        ]
+      }
+    },
+    "/api/consoles/{id}/photo": {
+      "get": {
+        "description": "Serves an embedded hardware photo (PNG/JPEG) for the console. Public endpoint; cached aggressively. 404 when no photo is bundled.",
+        "operationId": "getConsolePhoto",
+        "parameters": [
+          {
+            "description": "Console abbreviation or code.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Console abbreviation or code.",
+              "maxLength": 32,
+              "pattern": "^[a-zA-Z0-9_-]+$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Get a console hardware photo",
         "tags": [
           "consoles"
         ]

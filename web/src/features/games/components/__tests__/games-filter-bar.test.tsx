@@ -23,6 +23,8 @@ const makeConsole = (abbr: string, name: string): Console => ({
   code: abbr,
   emulatorJsCore: "",
   logoPngUrl: "",
+  photoUrl: null,
+  tag: null,
   maker: { code: "", name: "" },
   mediaType: { code: "", name: "", category: { code: "", name: "" } },
   releaseYear: null,

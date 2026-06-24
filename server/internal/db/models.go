@@ -185,8 +185,15 @@ type Console struct {
 	ReleaseYear     *int            `json:"releaseYear"`
 	UnitsSold       *int64          `json:"unitsSold"`
 	Summary         *string         `gorm:"type:text" json:"summary"`
-	Games           []Game          `gorm:"foreignKey:ConsoleID" json:"games"`
-	GameCount       int             `gorm:"-" json:"gameCount"`
+	// Tag is an optional short qualifier shown as a chip on console cards
+	// (e.g. "Demos" for the demoscene platforms, whose inherited parent
+	// logo — the Amiga / DOS logo — would otherwise be indistinguishable
+	// from the parent console). Generic and optional: any console may set
+	// one, nil means none. Keeps the distinction data-driven instead of
+	// name-matching in the UI.
+	Tag       *string `gorm:"size:32" json:"tag"`
+	Games     []Game  `gorm:"foreignKey:ConsoleID" json:"games"`
+	GameCount int     `gorm:"-" json:"gameCount"`
 }
 
 // Game represents a detected ROM/game file.

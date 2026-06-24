@@ -61,6 +61,8 @@ object TestTags {
 
     // Console library — per-console card on the Consoles screen
     fun consoleCard(consoleId: String) = "console_card_$consoleId"
+    fun consoleCardPhoto(consoleId: String) = "console_card_photo_$consoleId"
+    fun consoleCardLogo(consoleId: String) = "console_card_logo_$consoleId"
     fun consoleBrowseGames(consoleId: String) = "console_browse_games_$consoleId"
 
     // Console detail — terminal browse section and admin overflow menu

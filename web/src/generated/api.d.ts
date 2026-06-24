@@ -1717,6 +1717,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/console-photo-credits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get attribution credits for the bundled console hardware photos
+         * @description Returns the per-image author, license, and source for every bundled console hardware photo. Public endpoint, surfaced on the Credits & Licenses screens to satisfy CC-BY-SA attribution.
+         */
+        get: operations["getConsolePhotoCredits"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/consoles": {
         parameters: {
             query?: never;
@@ -1809,6 +1829,26 @@ export interface paths {
          * @description Serves a pre-rendered PNG version of the console logo, for clients that can't or don't want to rasterize SVG at runtime.
          */
         get: operations["getConsoleLogoPng"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/consoles/{id}/photo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a console hardware photo
+         * @description Serves an embedded hardware photo (PNG/JPEG) for the console. Public endpoint; cached aggressively. 404 when no photo is bundled.
+         */
+        get: operations["getConsolePhoto"];
         put?: never;
         post?: never;
         delete?: never;
@@ -6308,6 +6348,23 @@ export interface components {
             };
             selectedMapping: string;
         };
+        ConsolePhotoCredit: {
+            author: string;
+            console: string;
+            license: string;
+            source: string;
+            title: string;
+        };
+        ConsolePhotoCreditsResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/ConsolePhotoCreditsResponse.json
+             */
+            readonly $schema?: string;
+            note: string;
+            photos: components["schemas"]["ConsolePhotoCredit"][];
+        };
         ConsoleResponse: {
             abbreviation: string;
             browserPlayable: boolean;
@@ -6333,12 +6390,14 @@ export interface components {
             maker: components["schemas"]["HardwareMakerResponse"];
             mediaType: components["schemas"]["MediaTypeResponse"];
             name: string;
+            photoUrl: string | null;
             playable: boolean;
             /** Format: int64 */
             releaseYear: number | null;
             saveStatePolicy: string;
             saveStateSupport: boolean;
             summary: string | null;
+            tag: string | null;
             /** Format: int64 */
             unitsSold: number | null;
             /** Format: date-time */
@@ -12799,6 +12858,35 @@ export interface operations {
             };
         };
     };
+    getConsolePhotoCredits: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsolePhotoCreditsResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
     listConsoles: {
         parameters: {
             query?: never;
@@ -12940,6 +13028,36 @@ export interface operations {
         };
     };
     getConsoleLogoPng: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Console abbreviation or code. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    getConsolePhoto: {
         parameters: {
             query?: never;
             header?: never;

@@ -15,6 +15,7 @@
 
 package com.spela.client.apis
 
+import com.spela.client.models.ConsolePhotoCreditsResponse
 import com.spela.client.models.ConsoleResponse
 import com.spela.client.models.HumaError
 import com.spela.client.models.PaginatedResponseGameResponse
@@ -128,6 +129,70 @@ open class ConsolesApi : ApiClient {
         val localVariableConfig = RequestConfig<kotlin.Any?>(
             RequestMethod.GET,
             "/api/consoles/{id}/logo.png".replace("{" + "id" + "}", "$id"),
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return request(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+
+    /**
+     * Get a console hardware photo
+     * Serves an embedded hardware photo (PNG/JPEG) for the console. Public endpoint; cached aggressively. 404 when no photo is bundled.
+     * @param id Console abbreviation or code.
+     * @return void
+     */
+    open suspend fun getConsolePhoto(id: kotlin.String): HttpResponse<Unit> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody = 
+            io.ktor.client.utils.EmptyContent
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.GET,
+            "/api/consoles/{id}/photo".replace("{" + "id" + "}", "$id"),
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return request(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+
+    /**
+     * Get attribution credits for the bundled console hardware photos
+     * Returns the per-image author, license, and source for every bundled console hardware photo. Public endpoint, surfaced on the Credits &amp; Licenses screens to satisfy CC-BY-SA attribution.
+     * @return ConsolePhotoCreditsResponse
+     */
+    @Suppress("UNCHECKED_CAST")
+    open suspend fun getConsolePhotoCredits(): HttpResponse<ConsolePhotoCreditsResponse> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody = 
+            io.ktor.client.utils.EmptyContent
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.GET,
+            "/api/console-photo-credits",
             query = localVariableQuery,
             headers = localVariableHeaders,
             requiresAuthentication = false,

@@ -12,7 +12,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import com.spela.player.presentation.ui.components.SpCard
@@ -26,9 +29,12 @@ import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
 import com.spela.player.presentation.ui.gamepad.focusRestoreItem
 import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
 import androidx.compose.runtime.CompositionLocalProvider
+import com.spela.player.domain.model.ConsolePhotoCredits
+import com.spela.player.domain.repository.GameRepository
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
+import org.koin.compose.koinInject
 
 private data class CreditEntry(
     val name: String,
@@ -103,10 +109,15 @@ private val credits = listOf(
 @Composable
 fun LicensesScreen(
     onBack: () -> Unit = {},
+    gameRepository: GameRepository = koinInject(),
 ) {
     PlatformBackHandler { onBack() }
 
     val isGamepad = LocalInputMode.current == InputMode.GAMEPAD
+
+    val photoCredits by produceState<ConsolePhotoCredits?>(initialValue = null, gameRepository) {
+        value = gameRepository.getConsolePhotoCredits().getOrNull()
+    }
 
     SpScreen {
         Column(
@@ -122,7 +133,7 @@ fun LicensesScreen(
             val focusMemory = rememberFocusMemoryState()
             CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
             LazyColumn(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize().testTag("licenses_list"),
             contentPadding = PaddingValues(
                 horizontal = SpSpacing.ScreenHorizontal,
                 vertical = SpSpacing.Default,
@@ -173,6 +184,60 @@ fun LicensesScreen(
                             style = SpTypography.BodySmall,
                             color = SpColor.Accent,
                         )
+                    }
+                }
+            }
+
+            photoCredits?.takeIf { it.photos.isNotEmpty() }?.let { credits ->
+                item {
+                    Spacer(Modifier.height(SpSpacing.Medium))
+                    Text(
+                        text = "Console hardware photos",
+                        style = SpTypography.TitleLarge,
+                        color = SpColor.OnBackground,
+                        modifier = Modifier.semantics { heading() },
+                    )
+                    if (credits.note.isNotEmpty()) {
+                        Spacer(Modifier.height(SpSpacing.XSmall))
+                        Text(
+                            text = credits.note,
+                            style = SpTypography.BodyMedium,
+                            color = SpColor.OnBackgroundSecondary,
+                        )
+                    }
+                }
+
+                items(credits.photos) { photo ->
+                    SpCard(
+                        modifier = Modifier.focusRestoreItem(
+                            key = "photo_credit_${photo.console}",
+                            isDefault = false,
+                        ),
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(SpSpacing.Default),
+                        ) {
+                            Text(
+                                text = "${photo.console.uppercase()} — ${photo.title}",
+                                style = SpTypography.TitleSmall,
+                                color = SpColor.OnCard,
+                                modifier = Modifier.semantics { heading() },
+                            )
+                            Spacer(Modifier.height(SpSpacing.XSmall))
+                            Text(
+                                text = "${photo.author} · ${photo.license}",
+                                style = SpTypography.BodySmall,
+                                color = SpColor.OnBackgroundSecondary,
+                            )
+                            Spacer(Modifier.height(SpSpacing.XXSmall))
+                            Text(
+                                text = photo.source,
+                                style = SpTypography.BodySmall,
+                                color = SpColor.Accent,
+                            )
+                        }
                     }
                 }
             }

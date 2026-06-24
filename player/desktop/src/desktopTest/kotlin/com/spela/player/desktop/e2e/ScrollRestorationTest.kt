@@ -1,7 +1,12 @@
 package com.spela.player.desktop.e2e
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.*
+import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.Console
 import com.spela.player.presentation.navigation.NavigationIntent
 import com.spela.player.presentation.navigation.SpScreen
@@ -93,7 +98,15 @@ class ScrollRestorationTest {
     @Test
     fun scrollPositionNotResetByDpadAfterManualScroll() = runComposeUiTest {
         val harness = createHarnessWithManyConsoles()
-        setContent { harness.App() }
+        // Fixed viewport so the scenario is deterministic: the 4:5 portrait
+        // console cards (#1441) make the list tall enough that the top
+        // (NES) and bottom (Saturn) can't both be on screen, so a manual
+        // scroll to the bottom genuinely moves NES off-screen.
+        setContent {
+            Box(modifier = Modifier.width(560.dp).height(420.dp)) {
+                harness.App()
+            }
+        }
         advance(harness)
 
         // Enter gamepad mode and navigate to console list
@@ -103,20 +116,21 @@ class ScrollRestorationTest {
         )
         advance(harness)
 
-        // Scroll to Saturn manually (simulates joystick/touch scroll)
+        // Scroll to Saturn manually (simulates joystick/touch scroll); this
+        // moves the top of the list (NES) off-screen.
         val saturnCard = onNodeWithContentDescription("Sega Saturn, 1 games")
         saturnCard.performScrollTo()
         advanceQuick(harness)
-        saturnCard.assertIsDisplayed()
+        onNodeWithContentDescription("Nintendo Entertainment System, 3 games")
+            .assertIsNotDisplayed()
 
-        // Press d-pad — should NOT jump back to top
-        // Focus should land on a visible element near Saturn
+        // Press d-pad — focus acquisition must NOT yank the scroll back to the
+        // top (the #1194 regression). If it did, NES would become visible.
         onRoot().performKeyInput { pressKey(Key.DirectionDown) }
         advanceQuick(harness)
 
-        // Saturn should still be visible (no scroll jump)
-        onNodeWithContentDescription("Sega Saturn, 1 games")
-            .assertIsDisplayed()
+        onNodeWithContentDescription("Nintendo Entertainment System, 3 games")
+            .assertIsNotDisplayed()
     }
 
     // ── Focus preservation on navigation ──────────────────────────────

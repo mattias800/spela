@@ -6,11 +6,10 @@ import type { Console } from "@/types/api";
 interface ConsoleCardProps {
   console: Console;
   /**
-   * Render an amber ⚠ in the top-right indicator group when the
-   * console has missing required BIOS files. Mirrors the player app's
-   * `ConsoleComponents.kt` behaviour so both clients show the same
-   * "this console can't play games yet" cue at-a-glance, before the
-   * detail-page banner. See #933.
+   * Render an amber ⚠ next to the game count when the console has missing
+   * required BIOS files. Mirrors the player app's `ConsoleComponents.kt`
+   * behaviour so both clients show the same "this console can't play games
+   * yet" cue at-a-glance, before the detail-page banner. See #933.
    */
   hasMissingBios?: boolean;
 }
@@ -31,76 +30,78 @@ export function ConsoleCard({ console: c, hasMissingBios = false }: ConsoleCardP
 
   return (
     <Link to={`/consoles/${c.id}`} className="group block">
+      {/* The card is split into three stacked regions with fixed proportions —
+          photo, logo, footer. Each region centers its own content, so a photo's
+          (and a logo's) vertical centre lands at the same height on every card
+          in a row regardless of the image's aspect ratio. The footer is a fixed
+          height and bottom-aligned, so the optional tag never shifts the photo /
+          logo regions and the game count lines up across cards too. The brand
+          gradient is the card's own background and the hover lift is a plain
+          transform — no absolute positioning. */}
       <div
         className={cn(
-          "relative aspect-[16/10] rounded-2xl overflow-hidden transition-all duration-300",
-          "group-hover:shadow-xl group-hover:shadow-black/30 group-hover:-translate-y-1",
-          "border border-surface-800/50 group-hover:border-surface-700/50",
+          "flex aspect-[4/5] flex-col overflow-hidden rounded-2xl p-4 text-center",
+          "border border-surface-800/50 transition-all duration-300",
+          "group-hover:-translate-y-1 group-hover:border-surface-700/50 group-hover:shadow-xl group-hover:shadow-black/30 group-hover:brightness-105",
         )}
+        style={{
+          background: `linear-gradient(135deg, ${theme}, color-mix(in srgb, ${theme}, black 60%))`,
+        }}
       >
-        <div
-          className="absolute inset-0"
-          // Two-stop brand gradient mixed in sRGB: top-left is the
-          // brand hex at full saturation; bottom-right is the same
-          // hex mixed 60% with black so light themes (NES red, Game
-          // Boy olive) get a vivid-to-shaded sweep, and dark themes
-          // (Genesis #171717, Atari #1e293b) still grade visibly into
-          // near-black rather than fading flat. Mirrors the spirit of
-          // the previous Tailwind `from-X-600 to-X-900` pairs but
-          // derives both stops from the single server-seeded
-          // colorTheme — see #1167.
-          style={{
-            background: `linear-gradient(135deg, ${theme}, color-mix(in srgb, ${theme}, black 60%))`,
-          }}
-        />
-        {/* Toward-bottom darken keeps text + indicators readable on
-            light-saturation themes (e.g. Game Boy green). */}
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/30 pointer-events-none" />
-
-
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+        {/* Photo region (or pixel-icon fallback) */}
+        <div className="flex min-h-0 flex-[3] items-center justify-center">
           <img
-            src={c.iconUrl}
-            alt={`${c.name} icon`}
-            className="h-16 w-16 object-contain opacity-80 drop-shadow-lg transition-transform duration-300 group-hover:scale-110"
-            style={{ imageRendering: "pixelated" }}
+            src={c.photoUrl ?? c.iconUrl}
+            alt={c.name}
+            className={cn(
+              "object-contain drop-shadow-xl transition-transform duration-300 group-hover:scale-105",
+              c.photoUrl ? "max-h-full max-w-full" : "max-h-[72%] max-w-[60%] opacity-80",
+            )}
+            style={c.photoUrl ? undefined : { imageRendering: "pixelated" }}
           />
-          <div className="text-center">
-            <h3 className="text-lg font-bold text-white">{c.name}</h3>
-            <p className="text-sm text-white/60 mt-0.5">
-              {c.gameCount} {c.gameCount === 1 ? "game" : "games"}
-            </p>
-          </div>
         </div>
 
-        {/* Feature indicators */}
-        {(hasMissingBios || c.saveStateSupport || c.browserPlayable) && (
-          <div className="absolute top-2 right-2 flex gap-1">
+        {/* Logo region (or name fallback) */}
+        <div className="flex min-h-0 flex-[2] items-center justify-center">
+          {c.logoUrl ? (
+            <img
+              src={c.logoUrl}
+              alt={c.name}
+              className="max-h-full max-w-[92%] object-contain drop-shadow-md"
+            />
+          ) : (
+            <h3 className="text-xl font-bold text-white">{c.name}</h3>
+          )}
+        </div>
+
+        {/* Footer: fixed height, bottom-aligned. Holds the optional qualifier
+            chip (e.g. "Demos", data-driven via Console.tag) above the game
+            count + feature indicators. */}
+        <div className="flex h-[18%] flex-none flex-col items-center justify-end gap-1">
+          {c.tag && (
+            <span className="rounded-full bg-black/30 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-white/90 backdrop-blur-sm">
+              {c.tag}
+            </span>
+          )}
+          <div className="flex items-center gap-2 text-white/70">
+            <span className="text-xs font-medium">
+              {c.gameCount} {c.gameCount === 1 ? "game" : "games"}
+            </span>
             {hasMissingBios && (
-              <div
+              <AlertTriangle
                 data-testid="console-card-bios-warning"
-                className="flex h-6 w-6 items-center justify-center rounded-full bg-black/40 backdrop-blur-sm"
-                title={`BIOS missing for ${c.name}`}
+                className="h-3.5 w-3.5 text-amber-400"
                 aria-label={`BIOS missing for ${c.name}`}
-              >
-                <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />
-              </div>
+              />
             )}
             {c.saveStateSupport && (
-              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-black/40 backdrop-blur-sm" title="Save states supported">
-                <Check className="h-3.5 w-3.5 text-emerald-400" />
-              </div>
+              <Check className="h-3.5 w-3.5 text-emerald-400" aria-label="Save states supported" />
             )}
             {c.browserPlayable && (
-              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-black/40 backdrop-blur-sm" title="Browser playable">
-                <Globe className="h-3.5 w-3.5 text-blue-400" />
-              </div>
+              <Globe className="h-3.5 w-3.5 text-blue-400" aria-label="Browser playable" />
             )}
           </div>
-        )}
-
-        {/* Hover glow */}
-        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-white/5" />
+        </div>
       </div>
     </Link>
   );

@@ -83,6 +83,12 @@ type ConsoleResponse struct {
 	IconURL          string                 `json:"iconUrl"`
 	LogoURL          string                 `json:"logoUrl"`
 	LogoPngURL       string                 `json:"logoPngUrl"`
+	// PhotoURL is the hardware photo endpoint, null for consoles we don't have
+	// a bundled photo for (the UI falls back to the logo/watermark). See #1441.
+	PhotoURL *string `json:"photoUrl"`
+	// Tag is an optional short card qualifier (e.g. "Demos" for the demoscene
+	// platforms that share a parent logo). Null for most consoles.
+	Tag              *string                `json:"tag"`
 	GameCount        int                    `json:"gameCount"`
 	SaveStateSupport bool                   `json:"saveStateSupport"`
 	// Size tier of save states for this console — drives retention,
@@ -305,6 +311,8 @@ func ToConsoleResponse(c db.Console) ConsoleResponse {
 		IconURL:          "/api/consoles/" + abbr + "/icon",
 		LogoURL:          "/api/consoles/" + abbr + "/logo",
 		LogoPngURL:       "/api/consoles/" + abbr + "/logo.png",
+		PhotoURL:         consolePhotoURL(abbr),
+		Tag:              c.Tag,
 		GameCount:        c.GameCount,
 		SaveStateSupport: c.SaveStateSupport,
 		SaveStatePolicy:  saveStatePolicyOrDefault(c.SaveStatePolicy),

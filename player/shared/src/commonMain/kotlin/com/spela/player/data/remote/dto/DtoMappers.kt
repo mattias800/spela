@@ -47,6 +47,8 @@ fun com.spela.client.models.ConsoleResponse.toDomain(): Console = Console(
     defaultCore = defaultCore,
     iconUrl = iconUrl,
     logoUrl = logoPngUrl.ifEmpty { logoUrl },
+    photoUrl = photoUrl,
+    tag = tag,
     logoAspectRatio = logoAspectRatio?.toFloat(),
     saveStateSupport = saveStateSupport,
     saveStatePolicy = SaveStatePolicyTier.fromApiId(saveStatePolicy),
@@ -59,6 +61,19 @@ fun com.spela.client.models.ConsoleResponse.toDomain(): Console = Console(
     releaseYear = releaseYear?.toInt(),
     unitsSold = unitsSold,
     summary = summary,
+)
+
+fun com.spela.client.models.ConsolePhotoCreditsResponse.toDomain(): ConsolePhotoCredits = ConsolePhotoCredits(
+    note = note,
+    photos = photos.map { it.toDomain() },
+)
+
+fun com.spela.client.models.ConsolePhotoCredit.toDomain(): ConsolePhotoCredit = ConsolePhotoCredit(
+    console = console,
+    title = title,
+    author = author,
+    license = license,
+    source = source,
 )
 
 fun GameDiscDto.toDomain(): GameDisc = GameDisc(

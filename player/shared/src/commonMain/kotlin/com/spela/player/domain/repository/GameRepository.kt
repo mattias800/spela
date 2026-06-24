@@ -1,6 +1,7 @@
 package com.spela.player.domain.repository
 
 import com.spela.player.domain.model.Console
+import com.spela.player.domain.model.ConsolePhotoCredits
 import com.spela.player.domain.model.Game
 import com.spela.player.domain.model.GameDetail
 import com.spela.player.domain.model.DeveloperGame
@@ -12,6 +13,16 @@ import com.spela.player.domain.model.TopRatedGame
 
 interface GameRepository {
     suspend fun getConsoles(): Result<List<Console>>
+
+    /**
+     * Attribution credits for the bundled console hardware photos (#1441).
+     * Default is an empty manifest for fakes that don't exercise it; the
+     * production [com.spela.player.data.repository.GameRepositoryImpl]
+     * overrides it.
+     */
+    suspend fun getConsolePhotoCredits(): Result<ConsolePhotoCredits> =
+        Result.success(ConsolePhotoCredits(note = "", photos = emptyList()))
+
     suspend fun getGamesForConsole(consoleId: String): Result<List<Game>>
     suspend fun getGamesForConsolePaginated(
         consoleId: String,

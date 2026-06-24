@@ -66,6 +66,14 @@ data class Console(
     val defaultCore: String = "",
     val iconUrl: String = "",
     val logoUrl: String = "",
+    /** Hardware photo URL, or null when no photo is bundled (#1441). */
+    val photoUrl: String? = null,
+    /**
+     * Optional short card qualifier (e.g. "Demos" for the demoscene
+     * variants), shown as a chip on the console card. Null for most
+     * consoles (#1441).
+     */
+    val tag: String? = null,
     /**
      * Intrinsic width/height of [logoUrl] as reported by the server
      * (computed once from the SVG's viewBox at seed time). The
@@ -87,6 +95,24 @@ data class Console(
     val releaseYear: Int? = null,
     val unitsSold: Long? = null,
     val summary: String? = null,
+)
+
+/**
+ * Attribution manifest for the bundled console hardware photos (#1441).
+ * Surfaced on the Credits & Licenses screen to satisfy CC-BY-SA attribution —
+ * the photos vary by author and license, so each one is credited individually.
+ */
+data class ConsolePhotoCredits(
+    val note: String,
+    val photos: List<ConsolePhotoCredit>,
+)
+
+data class ConsolePhotoCredit(
+    val console: String,
+    val title: String,
+    val author: String,
+    val license: String,
+    val source: String,
 )
 
 @Serializable
