@@ -1164,7 +1164,7 @@ func SeedConsoles(db *gorm.DB) error {
 		{Name: "Philips CD-i", Abbreviation: "CDI", Extensions: ".chd,.cue,.iso", DefaultCore: "same_cdi", EmulatorJSCore: "same_cdi", FolderName: "cdi", ColorTheme: "#006633", Generation: 4, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicySmall, Playable: true},
 		// 5th Generation
 		{Name: "PlayStation", Abbreviation: "PSX", Extensions: ".bin,.cue,.iso,.pbp,.m3u", DefaultCore: "beetle_psx_hw", EmulatorJSCore: "mednafen_psx_hw", FolderName: "psx", ColorTheme: "#003087", CoverAspect: "1:1", Generation: 5, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicyMedium, Playable: true},
-		{Name: "Nintendo 64", Abbreviation: "N64", Extensions: ".n64,.z64,.v64", DefaultCore: "parallel_n64", EmulatorJSCore: "mupen64plus_next", FolderName: "n64", ColorTheme: "#c47d1a", CoverAspect: "10:7", Generation: 5, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicyMedium, Playable: true},
+		{Name: "Nintendo 64", Abbreviation: "N64", Extensions: ".n64,.z64,.v64", DefaultCore: "parallel_n64", EmulatorJSCore: "mupen64plus_next", FolderName: "n64", ColorTheme: "#06492e", CoverAspect: "10:7", Generation: 5, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicyMedium, Playable: true},
 		{Name: "Sega Saturn", Abbreviation: "SAT", Extensions: ".iso,.bin,.cue,.chd,.m3u", DefaultCore: "yabause", EmulatorJSCore: "yabause", FolderName: "saturn", ColorTheme: "#0a4da2", Generation: 5, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicyMedium, Playable: true},
 		// Berry (#d6336c) instead of the old grape purple: the "Game Boy" half
 		// of the GBC logo is dark blue, which was unreadable on a purple→black
