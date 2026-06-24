@@ -519,6 +519,15 @@ func RegisterDownloadRoutes(
 	}, consoleH.HumaGetConsoleIcon)
 
 	huma.Register(api, huma.Operation{
+		OperationID: "getConsolePhoto",
+		Method:      http.MethodGet,
+		Path:        "/api/consoles/{id}/photo",
+		Summary:     "Get a console hardware photo",
+		Description: "Serves an embedded hardware photo (PNG/JPEG) for the console. Public endpoint; cached aggressively. 404 when no photo is bundled.",
+		Tags:        []string{"consoles"},
+	}, consoleH.HumaGetConsolePhoto)
+
+	huma.Register(api, huma.Operation{
 		OperationID: "getConsoleLogo",
 		Method:      http.MethodGet,
 		Path:        "/api/consoles/{id}/logo",
@@ -940,6 +949,61 @@ func (h *ConsoleHandler) HumaGetConsoleIcon(_ context.Context, in *ConsoleAssetI
 		return nil, huma.Error404NotFound("icon not available for this console")
 	}
 	return streamBytesInline(data, "image/png"), nil
+}
+
+// consolePhotoFiles maps a console's lowercase abbreviation to the extension
+// of its bundled hardware photo ("png"/"jpg"), built once from the embedded
+// dir. Absent for consoles we have no photo for. See #1441.
+var consolePhotoFiles = func() map[string]string {
+	m := map[string]string{}
+	entries, err := consolePhotos.ReadDir("static/console-photos")
+	if err != nil {
+		return m
+	}
+	for _, e := range entries {
+		name := e.Name()
+		i := strings.LastIndex(name, ".")
+		if i < 0 {
+			continue
+		}
+		if ext := strings.ToLower(name[i+1:]); ext == "png" || ext == "jpg" {
+			m[name[:i]] = ext
+		}
+	}
+	return m
+}()
+
+// consolePhotoURL returns the photo endpoint for a console, or nil when no
+// photo is bundled (so the DTO carries an explicit null and the UI falls back
+// to the logo/watermark). [abbr] is the lowercase console abbreviation.
+func consolePhotoURL(abbr string) *string {
+	if _, ok := consolePhotoFiles[abbr]; !ok {
+		return nil
+	}
+	u := "/api/consoles/" + abbr + "/photo"
+	return &u
+}
+
+// HumaGetConsolePhoto serves the bundled hardware photo for a console (#1441).
+func (h *ConsoleHandler) HumaGetConsolePhoto(_ context.Context, in *ConsoleAssetInput) (*huma.StreamResponse, error) {
+	var console db.Console
+	if err := h.DB.Where("LOWER(abbreviation) = LOWER(?) OR code = ?", in.ID, in.ID).First(&console).Error; err != nil {
+		return nil, huma.Error404NotFound("console not found")
+	}
+	abbr := strings.ToLower(console.Abbreviation)
+	ext, ok := consolePhotoFiles[abbr]
+	if !ok {
+		return nil, huma.Error404NotFound("photo not available for this console")
+	}
+	data, err := consolePhotos.ReadFile("static/console-photos/" + abbr + "." + ext)
+	if err != nil {
+		return nil, huma.Error404NotFound("photo not available for this console")
+	}
+	contentType := "image/png"
+	if ext == "jpg" {
+		contentType = "image/jpeg"
+	}
+	return streamBytesInline(data, contentType), nil
 }
 
 // consoleLogoFallbacks maps a console abbreviation (lowercase) to the

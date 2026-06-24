@@ -1,0 +1,581 @@
+{
+  "note": "Console hardware photos from Wikimedia Commons, bundled and served by Spela. Most are public-domain (Evan Amos); CC-BY-SA files are reproduced unmodified (resized only) with attribution.",
+  "photos": [
+    {
+      "console": "32x",
+      "file": "32x.jpg",
+      "title": "Sega-Genesis-32X-01.jpg",
+      "author": "Evan-Amos",
+      "license": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:Sega-Genesis-32X-01.jpg",
+      "bytes": 58010
+    },
+    {
+      "console": "3do",
+      "file": "3do.png",
+      "title": "3DO-FZ1-Console-Set.png",
+      "author": "Evan-Amos",
+      "license": "CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:3DO-FZ1-Console-Set.png",
+      "bytes": 295494
+    },
+    {
+      "console": "3ds",
+      "file": "3ds.png",
+      "title": "Nintendo-3DS-AquaOpen.png",
+      "author": "Evan-Amos",
+      "license": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:Nintendo-3DS-AquaOpen.png",
+      "bytes": 737480
+    },
+    {
+      "console": "a26",
+      "file": "a26.png",
+      "title": "Atari-2600-Wood-4Sw-Set.png",
+      "author": "Evan-Amos",
+      "license": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:Atari-2600-Wood-4Sw-Set.png",
+      "bytes": 369688
+    },
+    {
+      "console": "a52",
+      "file": "a52.jpg",
+      "title": "Atari-5200-4-Port-wController-L.jpg",
+      "author": "Evan-Amos",
+      "license": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:Atari-5200-4-Port-wController-L.jpg",
+      "bytes": 60521
+    },
+    {
+      "console": "a78",
+      "file": "a78.png",
+      "title": "Atari-7800-Console-Set.png",
+      "author": "Evan-Amos",
+      "license": "CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Atari-7800-Console-Set.png",
+      "bytes": 273584
+    },
+    {
+      "console": "a800",
+      "file": "a800.jpg",
+      "title": "Atari-800-Computer-FL.jpg",
+      "author": "Evan-Amos",
+      "license": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:Atari-800-Computer-FL.jpg",
+      "bytes": 83082
+    },
+    {
+      "console": "acd32",
+      "file": "acd32.png",
+      "title": "Amiga-CD32-wController-L-TRSP.png",
+      "author": "Evan-Amos",
+      "license": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:Amiga-CD32-wController-L-TRSP.png",
+      "bytes": 319059
+    },
+    {
+      "console": "amiga",
+      "file": "amiga.jpg",
+      "title": "Amiga 500 Plus (white background).jpg",
+      "author": "Sernot at it.wikipedia (Non-creditable modifications as described below made by Ubcule",
+      "license": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:Amiga_500_Plus_%28white_background%29.jpg",
+      "bytes": 118343
+    },
+    {
+      "console": "c128",
+      "file": "c128.png",
+      "title": "Commodore-128.png",
+      "author": "Evan-Amos",
+      "license": "CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Commodore-128.png",
+      "bytes": 267717
+    },
+    {
+      "console": "c64",
+      "file": "c64.png",
+      "title": "Commodore-64-Computer-FL.png",
+      "author": "Evan-Amos",
+      "license": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:Commodore-64-Computer-FL.png",
+      "bytes": 348131
+    },
+    {
+      "console": "cdi",
+      "file": "cdi.jpg",
+      "title": "CD-i-910-Console-Set.jpg",
+      "author": "Evan-Amos",
+      "license": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:CD-i-910-Console-Set.jpg",
+      "bytes": 60677
+    },
+    {
+      "console": "chaf",
+      "file": "chaf.png",
+      "title": "Fairchild-Channel-F.png",
+      "author": "Evan-Amos",
+      "license": "CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Fairchild-Channel-F.png",
+      "bytes": 467026
+    },
+    {
+      "console": "cv",
+      "file": "cv.jpg",
+      "title": "ColecoVision-wController-L.jpg",
+      "author": "Evan-Amos",
+      "license": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:ColecoVision-wController-L.jpg",
+      "bytes": 77673
+    },
+    {
+      "console": "dc",
+      "file": "dc.png",
+      "title": "Dreamcast-Console-Set.png",
+      "author": "Evan-Amos",
+      "license": "CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Dreamcast-Console-Set.png",
+      "bytes": 220756
+    },
+    {
+      "console": "fds",
+      "file": "fds.jpg",
+      "title": "Nintendo-Famicom-Disk-System.jpg",
+      "author": "Evan-Amos",
+      "license": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:Nintendo-Famicom-Disk-System.jpg",
+      "bytes": 105853
+    },
+    {
+      "console": "gb",
+      "file": "gb.png",
+      "title": "Game-Boy-FL.png",
+      "author": "Transfrom JPEG version and remove white background. Original by Evan-Amos.",
+      "license": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:Game-Boy-FL.png",
+      "bytes": 649426
+    },
+    {
+      "console": "gba",
+      "file": "gba.png",
+      "title": "Nintendo-Game-Boy-Advance-Purple-FL.png",
+      "author": "Evan-Amos",
+      "license": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:Nintendo-Game-Boy-Advance-Purple-FL.png",
+      "bytes": 501223
+    },
+    {
+      "console": "gbc",
+      "file": "gbc.png",
+      "title": "Nintendo-Game-Boy-Color-FL.png",
+      "author": "Evan-Amos, modified by Gunnar.offel",
+      "license": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:Nintendo-Game-Boy-Color-FL.png",
+      "bytes": 1190669
+    },
+    {
+      "console": "gc",
+      "file": "gc.png",
+      "title": "GameCube-Console-Set.png",
+      "author": "Evan-Amos",
+      "license": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:GameCube-Console-Set.png",
+      "bytes": 360283
+    },
+    {
+      "console": "gen",
+      "file": "gen.jpg",
+      "title": "Sega-Genesis-Mk2-6button.jpg",
+      "author": "Evan-Amos",
+      "license": "CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Sega-Genesis-Mk2-6button.jpg",
+      "bytes": 58815
+    },
+    {
+      "console": "gg",
+      "file": "gg.png",
+      "title": "Sega-Game-Gear-WB.png",
+      "author": "Evan-Amos",
+      "license": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:Sega-Game-Gear-WB.png",
+      "bytes": 422320
+    },
+    {
+      "console": "gw",
+      "file": "gw.png",
+      "title": "Game&watch-donkey-kong-2.png",
+      "author": "Evan-Amos",
+      "license": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:Game%26watch-donkey-kong-2.png",
+      "bytes": 690171
+    },
+    {
+      "console": "intv",
+      "file": "intv.png",
+      "title": "Intellivision-Console-Set.png",
+      "author": "Evan-Amos",
+      "license": "CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Intellivision-Console-Set.png",
+      "bytes": 420169
+    },
+    {
+      "console": "jag",
+      "file": "jag.png",
+      "title": "Atari-Jaguar-Console-Set.png",
+      "author": "Evan-Amos",
+      "license": "CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Atari-Jaguar-Console-Set.png",
+      "bytes": 273137
+    },
+    {
+      "console": "lynx",
+      "file": "lynx.png",
+      "title": "Atari-Lynx-I-Handheld.png",
+      "author": "Evan-Amos",
+      "license": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:Atari-Lynx-I-Handheld.png",
+      "bytes": 349171
+    },
+    {
+      "console": "msx1",
+      "file": "msx1.jpg",
+      "title": "Canon V-20 MSX computer (3).jpg",
+      "author": "AUIC Oficial",
+      "license": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:Canon_V-20_MSX_computer_%283%29.jpg",
+      "bytes": 124896
+    },
+    {
+      "console": "n64",
+      "file": "n64.png",
+      "title": "N64-Console-Set.png",
+      "author": "Evan-Amos",
+      "license": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:N64-Console-Set.png",
+      "bytes": 344867
+    },
+    {
+      "console": "nds",
+      "file": "nds.png",
+      "title": "Nintendo-DS-Lite-Black-Open.png",
+      "author": "Evan-Amos",
+      "license": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:Nintendo-DS-Lite-Black-Open.png",
+      "bytes": 319525
+    },
+    {
+      "console": "neocd",
+      "file": "neocd.png",
+      "title": "Neo-Geo-CD-TopLoader-wController-FL.png",
+      "author": "Evan-Amos",
+      "license": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:Neo-Geo-CD-TopLoader-wController-FL.png",
+      "bytes": 244373
+    },
+    {
+      "console": "neogeo",
+      "file": "neogeo.png",
+      "title": "Neo-Geo-AES-Console-Set.png",
+      "author": "Evan-Amos",
+      "license": "CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Neo-Geo-AES-Console-Set.png",
+      "bytes": 188422
+    },
+    {
+      "console": "nes",
+      "file": "nes.png",
+      "title": "NES-Console-Set.png",
+      "author": "Evan-Amos",
+      "license": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:NES-Console-Set.png",
+      "bytes": 259488
+    },
+    {
+      "console": "ngp",
+      "file": "ngp.png",
+      "title": "Neo-Geo-Pocket-Color-Anthra-Left.png",
+      "author": "OliverGalvin",
+      "license": "CC0",
+      "source": "https://commons.wikimedia.org/wiki/File:Neo-Geo-Pocket-Color-Anthra-Left.png",
+      "bytes": 700293
+    },
+    {
+      "console": "nsw",
+      "file": "nsw.png",
+      "title": "Nintendo_Switch_Console.png",
+      "author": "Owen1962",
+      "license": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:Nintendo_Switch_Console.png",
+      "bytes": 368606
+    },
+    {
+      "console": "o2",
+      "file": "o2.png",
+      "title": "Magnavox-Odyssey-2-Console-Set.png",
+      "author": "Evan-Amos",
+      "license": "CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Magnavox-Odyssey-2-Console-Set.png",
+      "bytes": 380092
+    },
+    {
+      "console": "pce",
+      "file": "pce.png",
+      "title": "TurboGrafx16-Console-Set.png",
+      "author": "Evan-Amos",
+      "license": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:TurboGrafx16-Console-Set.png",
+      "bytes": 407642
+    },
+    {
+      "console": "pcecd",
+      "file": "pcecd.png",
+      "title": "NEC-TurboGrafx-16-CD-FL.png",
+      "author": "Evan-Amos",
+      "license": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:NEC-TurboGrafx-16-CD-FL.png",
+      "bytes": 338721
+    },
+    {
+      "console": "pcfx",
+      "file": "pcfx.png",
+      "title": "PC-FX-Console-Set.png",
+      "author": "Evan-Amos",
+      "license": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:PC-FX-Console-Set.png",
+      "bytes": 444184
+    },
+    {
+      "console": "pet",
+      "file": "pet.jpg",
+      "title": "Commodore 2001 Series-IMG 0448b.jpg",
+      "author": "Rama &amp; Mus\u00e9e Bolo",
+      "license": "CC BY-SA 2.0 fr",
+      "source": "https://commons.wikimedia.org/wiki/File:Commodore_2001_Series-IMG_0448b.jpg",
+      "bytes": 74032
+    },
+    {
+      "console": "pkmn",
+      "file": "pkmn.png",
+      "title": "Pokemon mini.png",
+      "author": "Sesu Prime",
+      "license": "CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Pokemon_mini.png",
+      "bytes": 731374
+    },
+    {
+      "console": "plus4",
+      "file": "plus4.jpg",
+      "title": "Commodore Plus-4.jpg",
+      "author": "Jumbo1435",
+      "license": "CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Commodore_Plus-4.jpg",
+      "bytes": 207503
+    },
+    {
+      "console": "ps2",
+      "file": "ps2.png",
+      "title": "PS2-Fat-Console-Set.png",
+      "author": "Evan-Amos",
+      "license": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:PS2-Fat-Console-Set.png",
+      "bytes": 530481
+    },
+    {
+      "console": "ps3",
+      "file": "ps3.jpg",
+      "title": "Sony-PlayStation-3-CECHA01-wController-L.jpg",
+      "author": "Evan-Amos",
+      "license": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:Sony-PlayStation-3-CECHA01-wController-L.jpg",
+      "bytes": 44163
+    },
+    {
+      "console": "ps4",
+      "file": "ps4.png",
+      "title": "PS4-Console-wDS4.png",
+      "author": "Evan-Amos",
+      "license": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:PS4-Console-wDS4.png",
+      "bytes": 243937
+    },
+    {
+      "console": "ps5",
+      "file": "ps5.png",
+      "title": "PlayStation 5 and DualSense with transparent background.png",
+      "author": "Soberian (this retouched file)Osh33m (original photograph)",
+      "license": "CC BY-SA 4.0",
+      "source": "https://commons.wikimedia.org/wiki/File:PlayStation_5_and_DualSense_with_transparent_background.png",
+      "bytes": 409653
+    },
+    {
+      "console": "psp",
+      "file": "psp.png",
+      "title": "PSP-1000.png",
+      "author": "Psp-1000.jpg: Evan-Amos derivative work: Alphathon\u2122 (talk)",
+      "license": "CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:PSP-1000.png",
+      "bytes": 320568
+    },
+    {
+      "console": "psx",
+      "file": "psx.png",
+      "title": "PSX-Console-wController.png",
+      "author": "Evan-Amos",
+      "license": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:PSX-Console-wController.png",
+      "bytes": 236429
+    },
+    {
+      "console": "sat",
+      "file": "sat.png",
+      "title": "Sega-Saturn-Console-Set-Mk1.png",
+      "author": "Evan-Amos",
+      "license": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:Sega-Saturn-Console-Set-Mk1.png",
+      "bytes": 310101
+    },
+    {
+      "console": "scd",
+      "file": "scd.jpg",
+      "title": "Sega-CD-Model1-Set.jpg",
+      "author": "Evan-Amos",
+      "license": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:Sega-CD-Model1-Set.jpg",
+      "bytes": 91306
+    },
+    {
+      "console": "sg1k",
+      "file": "sg1k.png",
+      "title": "Sega-SG-1000-Console-Set.png",
+      "author": "Evan-Amos",
+      "license": "CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Sega-SG-1000-Console-Set.png",
+      "bytes": 274631
+    },
+    {
+      "console": "sgx",
+      "file": "sgx.png",
+      "title": "SuperGrafx-Console-Set.png",
+      "author": "Evan-Amos",
+      "license": "CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:SuperGrafx-Console-Set.png",
+      "bytes": 372313
+    },
+    {
+      "console": "sms",
+      "file": "sms.png",
+      "title": "Sega-Master-System-Set.png",
+      "author": "Evan-Amos",
+      "license": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:Sega-Master-System-Set.png",
+      "bytes": 387679
+    },
+    {
+      "console": "snes",
+      "file": "snes.png",
+      "title": "SNES-Mod1-Console-Set.png",
+      "author": "Evan-Amos",
+      "license": "CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:SNES-Mod1-Console-Set.png",
+      "bytes": 253311
+    },
+    {
+      "console": "vb",
+      "file": "vb.png",
+      "title": "Virtual-Boy-Set.png",
+      "author": "Evan-Amos",
+      "license": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:Virtual-Boy-Set.png",
+      "bytes": 691407
+    },
+    {
+      "console": "vec",
+      "file": "vec.png",
+      "title": "Vectrex-Console-Set.png",
+      "author": "Evan-Amos",
+      "license": "CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Vectrex-Console-Set.png",
+      "bytes": 727131
+    },
+    {
+      "console": "vic20",
+      "file": "vic20.png",
+      "title": "Commodore-VIC-20-FL.png",
+      "author": "OliverGalvin",
+      "license": "CC0",
+      "source": "https://commons.wikimedia.org/wiki/File:Commodore-VIC-20-FL.png",
+      "bytes": 326292
+    },
+    {
+      "console": "vita",
+      "file": "vita.png",
+      "title": "PlayStation-Vita-1101-FL.png",
+      "author": "Evan-Amos",
+      "license": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:PlayStation-Vita-1101-FL.png",
+      "bytes": 360551
+    },
+    {
+      "console": "wii",
+      "file": "wii.png",
+      "title": "Wii-Console.png",
+      "author": "Evan-Amos",
+      "license": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:Wii-Console.png",
+      "bytes": 363264
+    },
+    {
+      "console": "wiiu",
+      "file": "wiiu.png",
+      "title": "Wii_U_Console_and_Gamepad.png",
+      "author": "Takimata (edited by:Tokyoship)",
+      "license": "CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Wii_U_Console_and_Gamepad.png",
+      "bytes": 200430
+    },
+    {
+      "console": "ws",
+      "file": "ws.png",
+      "title": "WonderSwan-Color-Blue-Left.png",
+      "author": "Evan-Amos",
+      "license": "CC0",
+      "source": "https://commons.wikimedia.org/wiki/File:WonderSwan-Color-Blue-Left.png",
+      "bytes": 721680
+    },
+    {
+      "console": "x360",
+      "file": "x360.png",
+      "title": "Xbox-360S-Console-Set.png",
+      "author": "Evan-Amos",
+      "license": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:Xbox-360S-Console-Set.png",
+      "bytes": 888906
+    },
+    {
+      "console": "xbox",
+      "file": "xbox.png",
+      "title": "Xbox-Console-Set.png",
+      "author": "Evan-Amos",
+      "license": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:Xbox-Console-Set.png",
+      "bytes": 337488
+    },
+    {
+      "console": "xone",
+      "file": "xone.jpg",
+      "title": "Microsoft-Xbox-One-Console-Set-wKinect.jpg",
+      "author": "Evan-Amos",
+      "license": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:Microsoft-Xbox-One-Console-Set-wKinect.jpg",
+      "bytes": 67352
+    },
+    {
+      "console": "xsx",
+      "file": "xsx.png",
+      "title": "Xbox_Series_X_and_S_with_controllers_(transparent_background).png",
+      "author": "Newfiebluejay",
+      "license": "CC BY 4.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Xbox_Series_X_and_S_with_controllers_%28transparent_background%29.png",
+      "bytes": 304896
+    }
+  ]
+}
