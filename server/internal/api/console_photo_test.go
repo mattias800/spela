@@ -86,4 +86,22 @@ func TestConsolePhotoURLGating(t *testing.T) {
 	// scummvm is intentionally not bundled (it's an engine, not hardware).
 	none := ToConsoleResponse(db.Console{Abbreviation: "SCUMMVM"})
 	assert.Nil(t, none.PhotoURL, "SCUMMVM has no bundled photo, expected null")
+
+	// Amiga Demos has no photo of its own but inherits the Amiga photo via the
+	// parent-platform fallback (#1441).
+	demos := ToConsoleResponse(db.Console{Abbreviation: "ADEMO"})
+	require.NotNil(t, demos.PhotoURL, "ADEMO should inherit the Amiga photo")
+	assert.Equal(t, "/api/consoles/ademo/photo", *demos.PhotoURL)
+}
+
+// TestConsolePhotoFallbackServesParent verifies the photo handler resolves a
+// child console (Amiga Demos) to its parent platform's bundled photo file.
+func TestConsolePhotoFallbackServesParent(t *testing.T) {
+	resolved, ok := consolePhotoFor("ademo")
+	require.True(t, ok, "ademo should resolve to a parent photo")
+	assert.Equal(t, "amiga", resolved, "ademo inherits the Amiga photo")
+
+	// A console with neither its own nor a parent photo resolves to nothing.
+	_, ok = consolePhotoFor("scummvm")
+	assert.False(t, ok)
 }

@@ -982,11 +982,34 @@ var consolePhotoFiles = func() map[string]string {
 	return m
 }()
 
+// consolePhotoFallbacks maps a console abbreviation (lowercase) to the parent
+// platform whose hardware photo it inherits when it has no photo of its own —
+// e.g. Amiga Demos shows the Amiga photo. Mirrors consoleLogoFallbacks for
+// logos; only matters for consoles without their own bundled photo. See #1441.
+var consolePhotoFallbacks = map[string]string{
+	"ademo": "amiga",
+}
+
+// consolePhotoFor resolves the lowercase abbreviation whose bundled photo
+// should be served for [abbr] — itself when it has one, otherwise its
+// parent-platform fallback. Returns ("", false) when neither has a photo.
+func consolePhotoFor(abbr string) (string, bool) {
+	if _, ok := consolePhotoFiles[abbr]; ok {
+		return abbr, true
+	}
+	if parent, ok := consolePhotoFallbacks[abbr]; ok {
+		if _, ok := consolePhotoFiles[parent]; ok {
+			return parent, true
+		}
+	}
+	return "", false
+}
+
 // consolePhotoURL returns the photo endpoint for a console, or nil when no
 // photo is bundled (so the DTO carries an explicit null and the UI falls back
 // to the logo/watermark). [abbr] is the lowercase console abbreviation.
 func consolePhotoURL(abbr string) *string {
-	if _, ok := consolePhotoFiles[abbr]; !ok {
+	if _, ok := consolePhotoFor(abbr); !ok {
 		return nil
 	}
 	u := "/api/consoles/" + abbr + "/photo"
@@ -1000,10 +1023,13 @@ func (h *ConsoleHandler) HumaGetConsolePhoto(_ context.Context, in *ConsoleAsset
 		return nil, huma.Error404NotFound("console not found")
 	}
 	abbr := strings.ToLower(console.Abbreviation)
-	ext, ok := consolePhotoFiles[abbr]
+	// Resolve to a parent platform's photo when this console has none of its
+	// own (e.g. Amiga Demos → Amiga). See consolePhotoFallbacks.
+	abbr, ok := consolePhotoFor(abbr)
 	if !ok {
 		return nil, huma.Error404NotFound("photo not available for this console")
 	}
+	ext := consolePhotoFiles[abbr]
 	data, err := consolePhotos.ReadFile("static/console-photos/" + abbr + "." + ext)
 	if err != nil {
 		return nil, huma.Error404NotFound("photo not available for this console")
