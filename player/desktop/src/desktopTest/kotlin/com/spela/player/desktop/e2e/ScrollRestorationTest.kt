@@ -98,12 +98,16 @@ class ScrollRestorationTest {
     @Test
     fun scrollPositionNotResetByDpadAfterManualScroll() = runComposeUiTest {
         val harness = createHarnessWithManyConsoles()
-        // Fixed viewport so the scenario is deterministic: the 4:5 portrait
-        // console cards (#1441) make the list tall enough that the top
-        // (NES) and bottom (Saturn) can't both be on screen, so a manual
-        // scroll to the bottom genuinely moves NES off-screen.
+        // Fixed viewport so the scenario is deterministic: short enough that the
+        // top (NES) and bottom (Saturn) of the console list can't both be on
+        // screen, so a manual scroll to the bottom genuinely moves NES
+        // off-screen. The height is deliberately well below one screenful of
+        // rows — #1446 made the grid denser (more columns → fewer, shorter
+        // rows), so the previous 420 dp viewport fit the whole list and the
+        // scroll became a no-op. 260 dp keeps NES and Saturn from coexisting at
+        // any reasonable column count.
         setContent {
-            Box(modifier = Modifier.width(560.dp).height(420.dp)) {
+            Box(modifier = Modifier.width(560.dp).height(260.dp)) {
                 harness.App()
             }
         }
