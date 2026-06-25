@@ -88,6 +88,10 @@ bool gpu_renderer_is_hw_render_active(gpu_renderer_t *r);
 void gpu_renderer_mark_hw_context_reset_done(gpu_renderer_t *r);
 bool gpu_renderer_is_hw_context_reset_done(gpu_renderer_t *r);
 void gpu_renderer_set_hw_bottom_left_origin(gpu_renderer_t *r, bool bottom_left);
+/* Dual-screen split: read the onscreen HW frame back to CPU (via the offscreen
+ * readback path) instead of presenting to the swapchain, so the top/bottom
+ * screens can be drawn from the CPU bitmap. See gpu_renderer_render_to_bgra. */
+void gpu_renderer_set_split_readback(gpu_renderer_t *r, bool enabled);
 /* Wait for GPU to finish all pending work (call before context_destroy) */
 void gpu_renderer_wait_idle(gpu_renderer_t *r);
 /* [HwIfaceCanary] TEMPORARY diagnostic for the Azahar resume crash: verify the

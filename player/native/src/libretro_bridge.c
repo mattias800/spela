@@ -2168,6 +2168,17 @@ JNI_FUNC(jboolean, nativeGpuIsActive)(JNIEnv *env, jobject thiz) {
     return (g_gpu_renderer && gpu_renderer_is_active(g_gpu_renderer)) ? JNI_TRUE : JNI_FALSE;
 }
 
+/* Dual-screen split (3DS on a secondary-display device): when enabled, the
+ * onscreen Vulkan HW renderer reads each frame back to CPU instead of
+ * presenting, so the top/bottom screens can be drawn from the bitmap via
+ * nativeGpuRenderToBgra. No-op until the GPU renderer exists; re-applied by
+ * the controller after gpuInit/gpuResume. */
+JNI_FUNC(void, nativeGpuSetSplitReadback)(JNIEnv *env, jobject thiz, jboolean enabled) {
+    if (g_gpu_renderer) {
+        gpu_renderer_set_split_readback(g_gpu_renderer, enabled == JNI_TRUE);
+    }
+}
+
 JNI_FUNC(jboolean, nativeIsHwRenderEnabled)(JNIEnv *env, jobject thiz) {
     return g_core.hw_render_enabled ? JNI_TRUE : JNI_FALSE;
 }

@@ -228,6 +228,12 @@ struct gpu_renderer {
      * window crashed PSP/PPSSPP on its first GE list. See #925/#1270. */
     bool hw_context_reset_done;
     bool hw_offscreen_frame_ready; /* offscreen HW frame readback is valid */
+    bool hw_split_readback; /* onscreen renderer: read HW frame back to CPU
+                             * (dual-screen split) instead of presenting to the
+                             * swapchain. The top/bottom screens are drawn from
+                             * the CPU bitmap, so a Vulkan HW core (e.g. Azahar
+                             * 3DS) on a secondary-display device needs this or
+                             * the SW video buffer stays empty → black. */
     bool hw_bottom_left_origin; /* core renders with OpenGL-style Y-up */
     struct retro_hw_render_interface_vulkan hw_vk_interface;
     struct retro_vulkan_image hw_current_image;
@@ -507,9 +513,10 @@ void gpu_renderer_deinit_surface(gpu_renderer_t *r) {
         r->surface_mutex_initialized = false;
     }
 
-    if (r->offscreen_mode) {
-        cleanup_offscreen(r);
-    }
+    /* cleanup_offscreen null-checks every resource, so it is safe to call in
+     * onscreen mode too — it frees the offscreen render pass / fence / cmd /
+     * image / readback buffer lazily created for the dual-screen split. */
+    cleanup_offscreen(r);
     cleanup_swapchain(r);
 
     /* Destroy game texture */
@@ -1122,16 +1129,22 @@ void *gpu_renderer_hw_vulkan_get_interface(gpu_renderer_t *r) {
 
 /* Offscreen HW render: composite core's VkImage to offscreen framebuffer,
  * copy to readback buffer for CPU access via gpu_renderer_render_to_bgra. */
-static void gpu_renderer_hw_render_frame_offscreen(gpu_renderer_t *r, unsigned width, unsigned height) {
+static void gpu_renderer_hw_render_frame_offscreen(gpu_renderer_t *r, unsigned width,
+                                                   unsigned height, bool force_native_res) {
     if (!r->hw_current_image.image_view) {
         return;
     }
+
+    /* force_native_res (dual-screen split readback): render at the core's
+     * native frame size with passthrough — the CPU bitmap is cropped by
+     * pixel-exact splitY, so any shader upscale would break the crop. */
+    int eff_shader = force_native_res ? GPU_SHADER_NONE : r->current_shader;
 
     /* Compute desired offscreen target size for HW render.
      * Same logic as software path: use desired output size when shader active. */
     int target_w = (int)width;
     int target_h = (int)height;
-    if (r->current_shader != GPU_SHADER_NONE && width > 0 && height > 0) {
+    if (eff_shader != GPU_SHADER_NONE && width > 0 && height > 0) {
         if (r->desired_output_width > 0 && r->desired_output_height > 0) {
             float game_ar = (float)width / (float)height;
             float out_ar = (float)r->desired_output_width / (float)r->desired_output_height;
@@ -1206,8 +1219,8 @@ static void gpu_renderer_hw_render_frame_offscreen(gpu_renderer_t *r, unsigned w
 
     /* Update descriptor set to sample from core's VkImageView */
     VkSampler sampler = r->sampler_nearest;
-    if (r->current_shader == GPU_SHADER_BILINEAR ||
-        r->current_shader == GPU_SHADER_SHARP_BILINEAR) {
+    if (eff_shader == GPU_SHADER_BILINEAR ||
+        eff_shader == GPU_SHADER_SHARP_BILINEAR) {
         sampler = r->sampler_linear;
     }
     VkDescriptorImageInfo desc_image_info = {
@@ -1247,7 +1260,7 @@ static void gpu_renderer_hw_render_frame_offscreen(gpu_renderer_t *r, unsigned w
     };
     vkCmdBeginRenderPass(cmd, &rp_info, VK_SUBPASS_CONTENTS_INLINE);
 
-    int shader_idx = r->current_shader;
+    int shader_idx = eff_shader;
     if (shader_idx < 0 || shader_idx >= NUM_SHADERS || !r->pipelines[shader_idx]) {
         shader_idx = GPU_SHADER_NONE;
     }
@@ -1381,12 +1394,60 @@ static void gpu_renderer_hw_render_frame_offscreen(gpu_renderer_t *r, unsigned w
     r->hw_offscreen_frame_ready = true;
 }
 
+/* Lazily create the offscreen render pass + fence + command buffer needed for
+ * the dual-screen split readback in an otherwise-onscreen renderer. The
+ * offscreen image + readback buffer are created on demand by the readback
+ * itself. Returns true once the resources exist. */
+static bool ensure_offscreen_readback_resources(gpu_renderer_t *r) {
+    if (r->offscreen_render_pass && r->offscreen_fence && r->offscreen_cmd) return true;
+
+    if (!r->offscreen_render_pass && !create_offscreen_render_pass(r)) {
+        VK_LOGE("ensure_offscreen_readback: render pass creation failed");
+        return false;
+    }
+    if (!r->offscreen_fence) {
+        VkFenceCreateInfo fence_info = {
+            .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+            .flags = VK_FENCE_CREATE_SIGNALED_BIT,
+        };
+        if (vkCreateFence(r->device, &fence_info, NULL, &r->offscreen_fence) != VK_SUCCESS) {
+            VK_LOGE("ensure_offscreen_readback: fence creation failed");
+            return false;
+        }
+    }
+    if (!r->offscreen_cmd) {
+        VkCommandBufferAllocateInfo alloc_info = {
+            .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+            .commandPool = r->command_pool,
+            .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+            .commandBufferCount = 1,
+        };
+        if (vkAllocateCommandBuffers(r->device, &alloc_info, &r->offscreen_cmd) != VK_SUCCESS) {
+            VK_LOGE("ensure_offscreen_readback: command buffer alloc failed");
+            return false;
+        }
+    }
+    VK_LOGI("ensure_offscreen_readback: onscreen split-readback resources ready");
+    return true;
+}
+
 void gpu_renderer_hw_render_frame(gpu_renderer_t *r, unsigned width, unsigned height) {
     if (!r || !r->active || !r->hw_render_active) return;
 
     /* Offscreen mode: render to offscreen framebuffer + readback */
     if (r->offscreen_mode) {
-        gpu_renderer_hw_render_frame_offscreen(r, width, height);
+        gpu_renderer_hw_render_frame_offscreen(r, width, height, false);
+        return;
+    }
+
+    /* Dual-screen split (e.g. 3DS on a device with a secondary display): the
+     * top + bottom screens are shown from CPU readback bitmaps, not the
+     * swapchain. A Vulkan HW core never fills the SW video buffer, so render
+     * the HW frame offscreen at native res + read it back instead of
+     * presenting. (Without this the CPU bitmap is empty and both screens go
+     * black — the GLES HW path fills it via glReadPixels, Vulkan did not.) */
+    if (r->hw_split_readback && ensure_offscreen_readback_resources(r)) {
+        gpu_renderer_hw_render_frame_offscreen(r, width, height, true);
         return;
     }
 
@@ -1667,6 +1728,10 @@ bool gpu_renderer_is_hw_render_active(gpu_renderer_t *r) {
     return r && r->hw_render_active;
 }
 
+void gpu_renderer_set_split_readback(gpu_renderer_t *r, bool enabled) {
+    if (r) r->hw_split_readback = enabled;
+}
+
 void gpu_renderer_mark_hw_context_reset_done(gpu_renderer_t *r) {
     if (r) r->hw_context_reset_done = true;
 }
@@ -1812,9 +1877,11 @@ bool gpu_renderer_reinit_vulkan(gpu_renderer_t *r) {
  */
 size_t gpu_renderer_render_to_bgra(gpu_renderer_t *r, void *out_data, size_t out_capacity,
     unsigned *out_width, unsigned *out_height) {
-    if (!r || !r->active || !r->offscreen_mode) return 0;
+    if (!r || !r->active) return 0;
 
-    /* HW render path: frame was already composited + readback'd in hw_render_frame_offscreen */
+    /* HW render path: frame was already composited + readback'd in
+     * hw_render_frame_offscreen. This runs in offscreen mode (desktop) and in
+     * onscreen dual-screen split-readback mode (Android 3DS). */
     if (r->hw_render_active && r->hw_offscreen_frame_ready) {
         unsigned w = (unsigned)r->offscreen_width;
         unsigned h = (unsigned)r->offscreen_height;
@@ -1827,8 +1894,8 @@ size_t gpu_renderer_render_to_bgra(gpu_renderer_t *r, void *out_data, size_t out
         return needed;
     }
 
-    /* Software render path */
-    if (!r->frame_uploaded) return 0;
+    /* Software render path (offscreen mode only) */
+    if (!r->offscreen_mode || !r->frame_uploaded) return 0;
 
     /* Compute desired offscreen dimensions.
      * - No shader (passthrough): match frame for clean 1:1 pixels
