@@ -173,7 +173,10 @@ private fun ControllerListRow(
         modifier = Modifier
             .fillMaxWidth()
             .clip(shape)
-            .background(SpColor.SurfaceElevated)
+            // Transparent-white overlay (derives color from the parent's
+            // background) instead of an opaque grey, so the row blends with
+            // gradient/colored backgrounds — same token SpInnerCard uses (#1449).
+            .background(SpColor.OnGradientFill)
             .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
             .gamepadFocusable(shape = shape, interactionSource = interactionSource, addFocusable = false)
             .padding(horizontal = SpSpacing.Default, vertical = SpSpacing.Medium)
