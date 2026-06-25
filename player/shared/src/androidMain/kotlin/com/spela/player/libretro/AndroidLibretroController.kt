@@ -59,6 +59,14 @@ class AndroidLibretroController(
     /** When true, skip GPU present and populate frameBitmap from CPU buffer instead. */
     @Volatile
     var dualScreenSplitActive = false
+        set(value) {
+            if (field == value) return
+            field = value
+            // A Vulkan HW core (e.g. Azahar 3DS) never fills the SW video
+            // buffer, so dual-screen split needs the composited frame read
+            // back to CPU. Toggle the native onscreen readback mode to match.
+            jni.nativeGpuSetSplitReadback(value)
+        }
 
     /** Callback invoked on the emulation thread when the remote peer times out. */
     var onNetplayPeerTimeout: (() -> Unit)? = null
@@ -405,13 +413,18 @@ class AndroidLibretroController(
 
     /* GPU Renderer methods */
 
-    fun gpuInit(surface: Any): Boolean = jni.nativeGpuInit(surface)
+    // Re-apply the split-readback mode after (re)creating the renderer: the
+    // native flag lives on the renderer struct, so a fresh renderer must be
+    // told again whether dual-screen split is active.
+    fun gpuInit(surface: Any): Boolean =
+        jni.nativeGpuInit(surface).also { if (it) jni.nativeGpuSetSplitReadback(dualScreenSplitActive) }
     fun gpuRender() = jni.nativeGpuRender()
     fun gpuSetShader(shaderId: Int) = jni.nativeGpuSetShader(shaderId)
     fun gpuResize(width: Int, height: Int) = jni.nativeGpuResize(width, height)
     fun gpuDeinit() = jni.nativeGpuDeinit()
     fun gpuSuspend() = jni.nativeGpuSuspend()
-    fun gpuResume(surface: Any): Boolean = jni.nativeGpuResume(surface)
+    fun gpuResume(surface: Any): Boolean =
+        jni.nativeGpuResume(surface).also { if (it) jni.nativeGpuSetSplitReadback(dualScreenSplitActive) }
     fun gpuIsActive(): Boolean = jni.nativeGpuIsActive()
     fun gpuSetSourceRect(x: Int, y: Int, w: Int, h: Int) = jni.nativeGpuSetSourceRect(x, y, w, h)
     override fun isHwRenderEnabled(): Boolean = jni.nativeIsHwRenderEnabled()
@@ -700,6 +713,15 @@ class AndroidLibretroController(
         val height = jni.nativeGetVideoHeight()
         if (width <= 0 || height <= 0) return
 
+        // Dual-screen split with a Vulkan HW core (e.g. Azahar 3DS): the core
+        // renders to a VkImage and never fills the SW video buffer, so
+        // nativeFillVideoFrame returns nothing and both screens go black. Read
+        // the composited frame back from the GPU as BGRA instead.
+        if (dualScreenSplitActive && jni.nativeIsVulkanHwRender()) {
+            updateVideoFrameFromGpuReadback()
+            return
+        }
+
         val format = jni.nativeGetPixelFormat()
         val pixelCount = width * height
         val bytesPerPixel = if (format == RETRO_PIXEL_FORMAT_XRGB8888) 4 else 2
@@ -746,6 +768,50 @@ class AndroidLibretroController(
         frontBitmap = back
         // Post the bitmap reference to main thread so Compose's SnapshotStateObserver
         // sees the update on the correct thread
+        mainHandler.post { _frameBitmap.value = back }
+    }
+
+    /**
+     * Dual-screen split + Vulkan HW render: read the composited frame back from
+     * the GPU as BGRA and publish it as the front bitmap. The native renderer
+     * is in split-readback mode (see [dualScreenSplitActive]) so the frame was
+     * rendered offscreen at native resolution. No vertical flip — the Vulkan
+     * readback is already top-down.
+     */
+    private fun updateVideoFrameFromGpuReadback() {
+        val width = jni.nativeGetVideoWidth()
+        val height = jni.nativeGetVideoHeight()
+        if (width <= 0 || height <= 0) return
+
+        val requiredBytes = width * height * 4
+        if (videoFrameBuffer.size < requiredBytes) {
+            videoFrameBuffer = ByteArray(requiredBytes)
+        }
+
+        val packed = jni.nativeGpuRenderToBgra(videoFrameBuffer)
+        if (packed == 0L) return
+        val w = (packed shr 32).toInt()
+        val h = (packed and 0xFFFFFFFFL).toInt()
+        if (w <= 0 || h <= 0) return
+
+        val pixelCount = w * h
+        if (pixelBuffer.size < pixelCount) {
+            pixelBuffer = IntArray(pixelCount)
+        }
+        // BGRA bytes → packed ARGB: the XRGB8888 branch reads B,G,R in this exact
+        // byte order and forces alpha opaque, which matches the BGRA readback.
+        convertToPackedArgb(videoFrameBuffer, pixelCount, RETRO_PIXEL_FORMAT_XRGB8888, pixelBuffer)
+
+        if (w != lastFrameWidth || h != lastFrameHeight) {
+            frontBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+            backBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+            lastFrameWidth = w
+            lastFrameHeight = h
+        }
+        val back = backBitmap ?: return
+        back.setPixels(pixelBuffer, 0, w, 0, 0, w, h)
+        backBitmap = frontBitmap
+        frontBitmap = back
         mainHandler.post { _frameBitmap.value = back }
     }
 

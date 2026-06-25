@@ -85,6 +85,10 @@ class LibretroJni {
     external fun nativeGpuSuspend()
     external fun nativeGpuResume(surface: Any): Boolean
     external fun nativeGpuIsActive(): Boolean
+    /** Read the composited GPU frame back as BGRA. Returns (width shl 32) or height, 0 on failure. */
+    external fun nativeGpuRenderToBgra(outData: ByteArray): Long
+    /** Dual-screen split: read the HW frame back to CPU instead of presenting (see native bridge). */
+    external fun nativeGpuSetSplitReadback(enabled: Boolean)
     external fun nativeGpuSetSourceRect(x: Int, y: Int, w: Int, h: Int)
     external fun nativeIsHwRenderEnabled(): Boolean
     external fun nativeIsVulkanHwRender(): Boolean
