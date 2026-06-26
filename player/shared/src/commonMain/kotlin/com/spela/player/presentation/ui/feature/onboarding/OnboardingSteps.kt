@@ -1,6 +1,8 @@
 package com.spela.player.presentation.ui.feature.onboarding
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
@@ -159,7 +161,14 @@ fun SignInStepContent(
         modifier = Modifier.testTag(OnboardingTestTags.SIGNIN_USERNAME),
     )
     // Registration requires an email; only shown (and required) in register mode.
-    AnimatedVisibility(visible = state.isRegisterMode, enter = fadeIn(), exit = fadeOut()) {
+    // No transition in test mode (LocalAnimationsEnabled=false) so an in-flight fade
+    // doesn't leave a coroutine active at runComposeUiTest teardown (#1448).
+    val emailAnims = com.spela.player.presentation.ui.components.LocalAnimationsEnabled.current
+    AnimatedVisibility(
+        visible = state.isRegisterMode,
+        enter = if (emailAnims) fadeIn() else EnterTransition.None,
+        exit = if (emailAnims) fadeOut() else ExitTransition.None,
+    ) {
         Column {
             Spacer(Modifier.height(SpSpacing.Default))
             SpTextField(
@@ -481,7 +490,12 @@ fun AllSetStepContent(onFinish: () -> Unit) {
 
 @Composable
 private fun WizardError(error: String?) {
-    AnimatedVisibility(visible = error != null, enter = fadeIn(), exit = fadeOut()) {
+    val animationsEnabled = com.spela.player.presentation.ui.components.LocalAnimationsEnabled.current
+    AnimatedVisibility(
+        visible = error != null,
+        enter = if (animationsEnabled) fadeIn() else EnterTransition.None,
+        exit = if (animationsEnabled) fadeOut() else ExitTransition.None,
+    ) {
         error?.let {
             Text(
                 text = it,

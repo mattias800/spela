@@ -23,7 +23,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -180,7 +179,15 @@ private fun WizardProgress(stepIndex: Int, stepCount: Int) {
     Row(horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small)) {
         repeat(stepCount) { i ->
             val active = i == stepIndex
-            val width by animateDpAsState(if (active) 24.dp else SpSpacing.Small, label = "wizardDotWidth")
+            val target = if (active) 24.dp else SpSpacing.Small
+            // Bypass the width animation in test mode (LocalAnimationsEnabled=false):
+            // an in-flight transition leaves a coroutine active when runComposeUiTest
+            // tears down → UncompletedCoroutinesError. Matches the SpelaApp pattern.
+            val width = if (com.spela.player.presentation.ui.components.LocalAnimationsEnabled.current) {
+                animateDpAsState(target, label = "wizardDotWidth").value
+            } else {
+                target
+            }
             Box(
                 modifier = Modifier
                     .size(width = width, height = SpSpacing.Small)
