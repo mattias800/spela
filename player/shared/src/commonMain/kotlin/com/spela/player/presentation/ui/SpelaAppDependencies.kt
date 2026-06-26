@@ -27,6 +27,7 @@ import com.spela.player.presentation.viewmodel.LibretroController
 import com.spela.player.presentation.viewmodel.LoginViewModel
 import com.spela.player.presentation.viewmodel.NetplayLobbyViewModel
 import com.spela.player.presentation.viewmodel.NetplayViewModel
+import com.spela.player.presentation.viewmodel.OnboardingWizardViewModel
 import com.spela.player.presentation.viewmodel.ServerConnectionViewModel
 import com.spela.player.presentation.viewmodel.SessionDetailViewModel
 import com.spela.player.presentation.viewmodel.SettingsViewModel
@@ -99,4 +100,5 @@ data class SpelaAppDependencies(
     val gamepadPortManager: GamepadPortManager? = null,
     val globalSearchViewModel: GlobalSearchViewModel? = null,
     val scrapeService: ScrapeService? = null,
+    val onboardingWizardViewModel: OnboardingWizardViewModel? = null,
 )

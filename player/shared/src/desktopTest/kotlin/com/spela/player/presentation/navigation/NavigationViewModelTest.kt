@@ -79,6 +79,59 @@ class NavigationViewModelTest {
         )
     }
 
+    /** Builds a NavigationViewModel with a NoSession restore + the given
+     *  onboarding repo, to exercise the first-run wizard gating (#1448). */
+    private fun createViewModelWithOnboarding(
+        onboardingRepository: OnboardingRepository,
+    ): NavigationViewModel {
+        val scope = CoroutineScope(testDispatcher)
+        val apiClient = SpelaApiClient(NoOpMockEngineFactory, TokenManager())
+        val restoreSessionUseCase = RestoreSessionUseCase(
+            authRepository = NoSessionAuthRepository(),
+            serverRepository = NoSessionServerRepository(),
+            apiClient = apiClient,
+        )
+        val connectivityMonitor = ConnectivityMonitor(apiClient, testDispatchers, scope)
+        val syncEngine = SyncEngine(
+            connectivityMonitor = connectivityMonitor,
+            preferencesRepository = NoOpPreferencesRepository(),
+            gameRepository = NoOpGameRepository(),
+            dispatchers = testDispatchers,
+            scope = scope,
+        )
+        return NavigationViewModel(
+            restoreSessionUseCase = restoreSessionUseCase,
+            connectivityMonitor = connectivityMonitor,
+            syncEngine = syncEngine,
+            dispatchers = testDispatchers,
+            scope = scope,
+            onboardingRepository = onboardingRepository,
+        )
+    }
+
+    private class FakeOnboarding(dismissed: Boolean) : OnboardingRepository {
+        private val keys = mutableSetOf<String>().apply {
+            if (dismissed) add(OnboardingHintKeys.FIRST_RUN_WIZARD_COMPLETED)
+        }
+        override suspend fun isDismissed(key: String): Boolean = key in keys
+        override suspend fun markDismissed(key: String) { keys.add(key) }
+        override suspend fun clearDismissed(key: String) { keys.remove(key) }
+    }
+
+    @Test
+    fun firstRunRoutesToOnboardingWizard() = runTest(testDispatcher) {
+        val vm = createViewModelWithOnboarding(FakeOnboarding(dismissed = false))
+        advanceUntilIdle()
+        assertEquals(SpScreen.OnboardingWizard, vm.state.value.currentScreen)
+    }
+
+    @Test
+    fun completedWizardRoutesToBareAuthScreen() = runTest(testDispatcher) {
+        val vm = createViewModelWithOnboarding(FakeOnboarding(dismissed = true))
+        advanceUntilIdle()
+        assertEquals(SpScreen.ServerConnection, vm.state.value.currentScreen)
+    }
+
     /** Helper: the active tab's stack. */
     private fun NavigationState.activeStack(): List<SpScreen> =
         tabStacks[activeTab] ?: emptyList()

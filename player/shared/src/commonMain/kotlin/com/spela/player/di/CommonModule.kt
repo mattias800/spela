@@ -12,6 +12,7 @@ import com.spela.player.domain.usecase.*
 import com.spela.player.libretro.GamepadPortManager
 import com.spela.player.presentation.navigation.NavigationEventBus
 import com.spela.player.presentation.navigation.NavigationViewModel
+import com.spela.player.presentation.viewmodel.OnboardingWizardViewModel
 import com.spela.player.presentation.state.EmulationState
 import com.spela.player.presentation.viewmodel.*
 import org.koin.core.qualifier.named
@@ -410,6 +411,15 @@ val commonModule = module {
             biosRepository = get(),
             coreUpdateService = get(),
             federationRepository = get(),
+            onboardingRepository = get(),
+        )
+    }
+    single {
+        OnboardingWizardViewModel(
+            onboardingRepository = get(),
+            deviceManager = get(),
+            dispatchers = get(),
+            scope = get(),
         )
     }
     factory {

@@ -48,6 +48,7 @@ import com.spela.player.presentation.ui.screen.LicensesScreen
 import com.spela.player.presentation.ui.screen.LoginScreen
 import com.spela.player.presentation.ui.screen.NetplayListScreen
 import com.spela.player.presentation.ui.screen.NetplayLobbyScreen
+import com.spela.player.presentation.ui.screen.OnboardingWizardScreen
 import com.spela.player.presentation.ui.screen.PlayLaterScreen
 import com.spela.player.presentation.ui.screen.ServerConnectionScreen
 import com.spela.player.presentation.ui.screen.SessionDetailScreen
@@ -120,6 +121,20 @@ fun ScreenRouter(
                                         )
                                     },
                                 )
+                            }
+
+                            is SpScreen.OnboardingWizard -> {
+                                onboardingWizardViewModel?.let { wizardVm ->
+                                    OnboardingWizardScreen(
+                                        wizardViewModel = wizardVm,
+                                        serverConnectionViewModel = serverConnectionViewModel,
+                                        loginViewModel = loginViewModel,
+                                        restoredServerUrl = navState.restoredServerUrl,
+                                        onComplete = {
+                                            navigationViewModel.onIntent(NavigationIntent.ResetToHome)
+                                        },
+                                    )
+                                }
                             }
 
                             is SpScreen.Home -> {

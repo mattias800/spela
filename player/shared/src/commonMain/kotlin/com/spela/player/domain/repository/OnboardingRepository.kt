@@ -38,4 +38,13 @@ object OnboardingHintKeys {
      * preference is honored. See #861.
      */
     const val SCUMMVM_TRACKPAD_DRAGGED = "scummvm.trackpad.dragged"
+
+    /**
+     * Set once the user finishes (or is past) the first-run setup wizard
+     * (#1448). While unset, the bootstrap routes a not-yet-onboarded device
+     * into [com.spela.player.presentation.navigation.SpScreen.OnboardingWizard]
+     * instead of the bare server-connection / login screens. Device-local: a
+     * fresh install on another device onboards again.
+     */
+    const val FIRST_RUN_WIZARD_COMPLETED = "firstrun.wizard.completed"
 }

@@ -13,6 +13,7 @@ import com.spela.player.presentation.viewmodel.RemoteGameDetailViewModel
 import com.spela.player.presentation.viewmodel.GameListViewModel
 import com.spela.player.presentation.viewmodel.LibretroController
 import com.spela.player.presentation.viewmodel.LoginViewModel
+import com.spela.player.presentation.viewmodel.OnboardingWizardViewModel
 import com.spela.player.presentation.viewmodel.ServerConnectionViewModel
 import com.spela.player.presentation.viewmodel.KeyMappingViewModel
 import com.spela.player.presentation.viewmodel.SharedSessionDetailViewModel
@@ -79,6 +80,7 @@ fun App() {
     val scrapeService: ScrapeService = koinInject()
     val downloadRepository: com.spela.player.domain.repository.DownloadRepository = koinInject()
     val preferencesRepository: com.spela.player.domain.repository.PreferencesRepository = koinInject()
+    val onboardingWizardViewModel: OnboardingWizardViewModel = koinInject()
 
     SpelaApp(
         SpelaAppDependencies(
@@ -117,6 +119,7 @@ fun App() {
             scrapeService = scrapeService,
             downloadRepository = downloadRepository,
             preferencesRepository = preferencesRepository,
+            onboardingWizardViewModel = onboardingWizardViewModel,
         ),
     )
 }

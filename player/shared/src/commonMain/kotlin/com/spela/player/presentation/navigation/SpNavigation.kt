@@ -5,6 +5,10 @@ import com.spela.player.presentation.ui.components.BottomNavTab
 sealed class SpScreen(val route: String) {
     data object ServerConnection : SpScreen("server_connection")
     data object Login : SpScreen("login")
+    /** First-run setup wizard (#1448): a guided Welcome → Connect → Sign in →
+     *  Name device → All set journey that wraps the connect + login flows.
+     *  Like ServerConnection/Login it bypasses the tab system. */
+    data object OnboardingWizard : SpScreen("onboarding_wizard")
     data object Home : SpScreen("home")
     data object Explore : SpScreen("explore")
     data object Consoles : SpScreen("consoles")
