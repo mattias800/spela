@@ -298,6 +298,7 @@ class NavigationViewModel(
                         },
                         isRestoringSession = false,
                         restoredServerUrl = serverUrl,
+                        restoredAuthenticated = authed,
                         isOffline = result is RestoreSessionResult.OfflineSuccess,
                     )
                     else -> it.copy(
@@ -305,6 +306,7 @@ class NavigationViewModel(
                         tabStacks = defaultTabStacks(),
                         isRestoringSession = false,
                         restoredServerUrl = serverUrl,
+                        restoredAuthenticated = authed,
                         isOffline = result is RestoreSessionResult.OfflineSuccess,
                     )
                 }

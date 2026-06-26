@@ -216,6 +216,28 @@ class OnboardingWizardTest {
     }
 
     @Test
+    fun wizardBackReturnsToThePreviousPage() = runComposeUiTest {
+        val harness = SpelaTestHarness(StandardTestDispatcher())
+        harness.serverRepo.preAddServer("Local", "http://localhost:8080", active = true)
+
+        setContent { harness.App() }
+        advance(harness)
+        harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.OnboardingWizard))
+        advance(harness)
+
+        // Welcome has no Back; Get started → Sign in (Connect skipped).
+        onNodeWithText("Back").assertDoesNotExist()
+        onNodeWithTag(OnboardingTestTags.WELCOME_START).performClick()
+        advanceQuick(harness)
+        onNodeWithText("Username").assertIsDisplayed()
+
+        // Back returns to Welcome.
+        onNodeWithText("Back").performClick()
+        advanceQuick(harness)
+        onNodeWithText("Welcome to Spela").assertIsDisplayed()
+    }
+
+    @Test
     fun wizardButtonConventionSelectionPersists() = runComposeUiTest {
         val harness = SpelaTestHarness(StandardTestDispatcher())
         harness.serverRepo.preAddServer("Local", "http://localhost:8080", active = true)

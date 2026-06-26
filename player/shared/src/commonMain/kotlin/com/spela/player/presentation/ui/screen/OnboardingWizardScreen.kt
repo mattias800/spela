@@ -11,8 +11,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import com.spela.player.presentation.intent.LoginIntent
 import com.spela.player.domain.repository.PreferencesRepository
+import com.spela.player.presentation.intent.LoginIntent
 import com.spela.player.presentation.ui.feature.onboarding.AllSetStepContent
 import com.spela.player.presentation.ui.feature.onboarding.ConnectStepContent
 import com.spela.player.presentation.ui.feature.onboarding.ControlsStepContent
@@ -32,25 +32,35 @@ import com.spela.player.presentation.viewmodel.OnboardingWizardViewModel
 import com.spela.player.presentation.viewmodel.ServerConnectionIntent
 import com.spela.player.presentation.viewmodel.ServerConnectionViewModel
 
-/** Sub-pages of the wizard's Controls step (#1448): verify the detected
- *  controller, optionally fix its setup, then choose the button convention. */
-private enum class ControlsPhase { Verify, Fix, Convention }
+/** Progress-dot milestones. The three controls pages (Verify / FixControls /
+ *  Convention) collapse to one dot so the indicator stays stable. */
+private const val MILESTONE_COUNT = 6
+
+private fun milestoneIndex(step: OnboardingStep): Int = when (step) {
+    OnboardingStep.Welcome -> 0
+    OnboardingStep.Connect -> 1
+    OnboardingStep.SignIn -> 2
+    OnboardingStep.NameDevice -> 3
+    OnboardingStep.Verify, OnboardingStep.FixControls, OnboardingStep.Convention -> 4
+    OnboardingStep.AllSet -> 5
+}
 
 /**
  * First-run setup wizard (#1448) — the "unified first-run journey". It composes
  * the existing [ServerConnectionViewModel] and [LoginViewModel] (both unchanged)
- * with a small [OnboardingWizardViewModel] for the wizard's own step + device
- * name state, framing each step in [OnboardingWizardChrome].
+ * with a small [OnboardingWizardViewModel] for the wizard's own page back-stack
+ * and device-name state, framing each page in [OnboardingWizardChrome].
  *
- * This screen IS the glue: it owns the step graph (including skipping Connect
- * when a server is already known) and wires each auth flow's success signal to
- * the next step. The feature composables under `feature/onboarding/` know
- * nothing about navigation or ViewModels.
+ * This screen IS the glue: it owns the page graph (skipping Connect when a
+ * server is known, the auth pages when already signed in, and FixControls unless
+ * the user reports a bad mapping) and wires each flow's success signal to the
+ * next page. Every page after the first offers Back (via the VM's back-stack).
  *
- * @param restoredServerUrl set when bootstrap routed here from a NeedsLogin
- *   state (server known, token expired) — drives skipping the Connect step.
- * @param onComplete fired after the final step; the caller resets to Home,
- *   mirroring the normal post-login transition.
+ * @param restoredServerUrl set when bootstrap came from NeedsLogin (server
+ *   known, token expired) — drives skipping the Connect page.
+ * @param alreadyAuthenticated true if the device is already signed in (the
+ *   wizard then skips Connect + Sign in). False on a normal fresh-install run.
+ * @param onComplete fired after the final page; the caller resets to Home.
  */
 @Composable
 fun OnboardingWizardScreen(
@@ -60,6 +70,7 @@ fun OnboardingWizardScreen(
     gamepadConfigViewModel: GamepadConfigViewModel?,
     preferencesRepository: PreferencesRepository,
     restoredServerUrl: String?,
+    alreadyAuthenticated: Boolean,
     onComplete: () -> Unit,
 ) {
     val wizardState by wizardViewModel.state.collectAsState()
@@ -67,38 +78,43 @@ fun OnboardingWizardScreen(
     val loginState by loginViewModel.state.collectAsState()
 
     val goTo: (OnboardingStep) -> Unit = { wizardViewModel.onIntent(OnboardingWizardIntent.GoTo(it)) }
+    val backOrNull: (() -> Unit)? =
+        if (wizardState.canGoBack) ({ wizardViewModel.onIntent(OnboardingWizardIntent.Back) }) else null
 
-    // A server is already known when bootstrap came from NeedsLogin, or once the
-    // user adds one in the Connect step.
     val cameWithServer = !restoredServerUrl.isNullOrBlank()
     val hasServer = serverState.servers.isNotEmpty() || cameWithServer
-
     val serverUrl = serverState.servers.firstOrNull { it.id == serverState.selectedServerId }?.url
         ?: serverState.servers.lastOrNull()?.url
         ?: restoredServerUrl
         ?: ""
 
-    val stepCount = OnboardingStep.entries.size
-    val stepIndex = wizardState.step.ordinal
+    val stepIndex = milestoneIndex(wizardState.step)
+    // Where the controller phase begins (or is skipped) after naming.
+    val afterNaming = if (gamepadConfigViewModel != null) OnboardingStep.Verify else OnboardingStep.AllSet
 
     Box(modifier = Modifier.fillMaxSize().testTag(OnboardingTestTags.SCREEN)) {
         when (wizardState.step) {
             OnboardingStep.Welcome -> OnboardingWizardChrome(
                 stepIndex = stepIndex,
-                stepCount = stepCount,
+                stepCount = MILESTONE_COUNT,
                 title = "Welcome to Spela",
                 subtitle = "Let's get this device set up — it only takes a moment.",
+                onBack = backOrNull,
             ) {
                 WelcomeStepContent(
-                    onGetStarted = { goTo(if (hasServer) OnboardingStep.SignIn else OnboardingStep.Connect) },
+                    onGetStarted = {
+                        goTo(
+                            when {
+                                alreadyAuthenticated -> OnboardingStep.NameDevice
+                                hasServer -> OnboardingStep.SignIn
+                                else -> OnboardingStep.Connect
+                            },
+                        )
+                    },
                 )
             }
 
             OnboardingStep.Connect -> {
-                // addServer() has no explicit success event; on a fresh device the
-                // server list is empty, so a non-empty list after a submit (and no
-                // error / not validating) means the add succeeded. Select it active,
-                // then advance.
                 var connectAttempted by remember { mutableStateOf(false) }
                 LaunchedEffect(serverState.servers.size, serverState.isValidating, serverState.error) {
                     if (connectAttempted && !serverState.isValidating &&
@@ -112,10 +128,10 @@ fun OnboardingWizardScreen(
                 }
                 OnboardingWizardChrome(
                     stepIndex = stepIndex,
-                    stepCount = stepCount,
+                    stepCount = MILESTONE_COUNT,
                     title = "Connect your server",
                     subtitle = "Point Spela at your self-hosted server to access your library.",
-                    onBack = { goTo(OnboardingStep.Welcome) },
+                    onBack = backOrNull,
                 ) {
                     ConnectStepContent(
                         name = serverState.newServerName,
@@ -143,10 +159,10 @@ fun OnboardingWizardScreen(
                 }
                 OnboardingWizardChrome(
                     stepIndex = stepIndex,
-                    stepCount = stepCount,
+                    stepCount = MILESTONE_COUNT,
                     title = "Sign in",
                     subtitle = "Use your Spela account on this server.",
-                    onBack = { goTo(if (cameWithServer) OnboardingStep.Welcome else OnboardingStep.Connect) },
+                    onBack = backOrNull,
                 ) {
                     SignInStepContent(
                         state = loginState,
@@ -163,12 +179,11 @@ fun OnboardingWizardScreen(
 
             OnboardingStep.NameDevice -> OnboardingWizardChrome(
                 stepIndex = stepIndex,
-                stepCount = stepCount,
+                stepCount = MILESTONE_COUNT,
                 title = "Name this device",
                 subtitle = "So you can tell it apart from your other devices.",
+                onBack = backOrNull,
             ) {
-                val afterNaming =
-                    if (gamepadConfigViewModel != null) OnboardingStep.Controls else OnboardingStep.AllSet
                 NameDeviceStepContent(
                     deviceName = wizardState.deviceName,
                     onNameChange = { wizardViewModel.onIntent(OnboardingWizardIntent.SetDeviceName(it)) },
@@ -177,78 +192,90 @@ fun OnboardingWizardScreen(
                 )
             }
 
-            OnboardingStep.Controls -> {
+            OnboardingStep.Verify -> {
                 val configVm = gamepadConfigViewModel
                 if (configVm == null) {
                     LaunchedEffect(Unit) { goTo(OnboardingStep.AllSet) }
                 } else {
                     val configState by configVm.state.collectAsState()
-                    var phase by remember { mutableStateOf(ControlsPhase.Verify) }
-                    var selectedControllerId by remember { mutableStateOf<Int?>(null) }
-                    var convention by remember { mutableStateOf(preferencesRepository.getConfirmButtonConvention()) }
                     val detected = configState.controllers.firstOrNull()
-
-                    when (phase) {
-                        ControlsPhase.Verify -> OnboardingWizardChrome(
-                            stepIndex = stepIndex,
-                            stepCount = stepCount,
-                            title = "Verify your controller",
-                            subtitle = "Press each button — the matching position should light up.",
-                        ) {
-                            VerifyStepContent(
-                                detectedName = detected?.deviceName?.ifBlank { "your controller" },
-                                pressedPositions = configState.pressedPositions,
-                                onTestActiveChange = { active ->
-                                    detected?.deviceId?.let {
-                                        configVm.onIntent(GamepadConfigIntent.SetInputTestActive(it, active))
-                                    }
-                                },
-                                onGood = { phase = ControlsPhase.Convention },
-                                onWrong = { phase = ControlsPhase.Fix },
-                                onContinueNoController = { phase = ControlsPhase.Convention },
-                            )
-                        }
-
-                        ControlsPhase.Fix -> OnboardingWizardChrome(
-                            stepIndex = stepIndex,
-                            stepCount = stepCount,
-                            title = "Set up your controller",
-                            subtitle = "Assign players, pick the controller type, then re-test.",
-                        ) {
-                            ControlsStepContent(
-                                state = configState,
-                                selectedDeviceId = selectedControllerId,
-                                onSelectController = { selectedControllerId = it },
-                                onBackToList = { selectedControllerId = null },
-                                onIntent = { configVm.onIntent(it) },
-                                onContinue = { phase = ControlsPhase.Convention },
-                            )
-                        }
-
-                        ControlsPhase.Convention -> OnboardingWizardChrome(
-                            stepIndex = stepIndex,
-                            stepCount = stepCount,
-                            title = "Confirm & Back buttons",
-                            subtitle = "Pick which button confirms and which goes back.",
-                        ) {
-                            ConventionStepContent(
-                                current = convention,
-                                onSelect = {
-                                    convention = it
-                                    preferencesRepository.setConfirmButtonConvention(it)
-                                },
-                                onContinue = { goTo(OnboardingStep.AllSet) },
-                            )
-                        }
+                    OnboardingWizardChrome(
+                        stepIndex = stepIndex,
+                        stepCount = MILESTONE_COUNT,
+                        title = "Verify your controller",
+                        subtitle = "Press each button — the matching position should light up.",
+                        onBack = backOrNull,
+                    ) {
+                        VerifyStepContent(
+                            detectedName = detected?.deviceName?.ifBlank { "your controller" },
+                            pressedPositions = configState.pressedPositions,
+                            onTestActiveChange = { active ->
+                                detected?.deviceId?.let {
+                                    configVm.onIntent(GamepadConfigIntent.SetInputTestActive(it, active))
+                                }
+                            },
+                            onGood = { goTo(OnboardingStep.Convention) },
+                            onWrong = { goTo(OnboardingStep.FixControls) },
+                            onContinueNoController = { goTo(OnboardingStep.Convention) },
+                        )
                     }
+                }
+            }
+
+            OnboardingStep.FixControls -> {
+                val configVm = gamepadConfigViewModel
+                if (configVm == null) {
+                    LaunchedEffect(Unit) { goTo(OnboardingStep.Convention) }
+                } else {
+                    val configState by configVm.state.collectAsState()
+                    var selectedControllerId by remember { mutableStateOf<Int?>(null) }
+                    OnboardingWizardChrome(
+                        stepIndex = stepIndex,
+                        stepCount = MILESTONE_COUNT,
+                        title = "Set up your controller",
+                        subtitle = "Assign players, pick the controller type, then re-test.",
+                        // In the detail view the inner Back returns to the list;
+                        // in the list view the wizard Back returns to Verify.
+                        onBack = if (selectedControllerId != null) null else backOrNull,
+                    ) {
+                        ControlsStepContent(
+                            state = configState,
+                            selectedDeviceId = selectedControllerId,
+                            onSelectController = { selectedControllerId = it },
+                            onBackToList = { selectedControllerId = null },
+                            onIntent = { configVm.onIntent(it) },
+                            onContinue = { goTo(OnboardingStep.Convention) },
+                        )
+                    }
+                }
+            }
+
+            OnboardingStep.Convention -> {
+                var convention by remember { mutableStateOf(preferencesRepository.getConfirmButtonConvention()) }
+                OnboardingWizardChrome(
+                    stepIndex = stepIndex,
+                    stepCount = MILESTONE_COUNT,
+                    title = "Confirm & Back buttons",
+                    subtitle = "Pick which button confirms and which goes back.",
+                    onBack = backOrNull,
+                ) {
+                    ConventionStepContent(
+                        current = convention,
+                        onSelect = {
+                            convention = it
+                            preferencesRepository.setConfirmButtonConvention(it)
+                        },
+                        onContinue = { goTo(OnboardingStep.AllSet) },
+                    )
                 }
             }
 
             OnboardingStep.AllSet -> OnboardingWizardChrome(
                 stepIndex = stepIndex,
-                stepCount = stepCount,
+                stepCount = MILESTONE_COUNT,
                 title = "You're all set!",
                 subtitle = "Your library is ready.",
+                onBack = backOrNull,
             ) {
                 AllSetStepContent(
                     onFinish = {

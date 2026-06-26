@@ -12,29 +12,35 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
- * The ordered steps of the first-run setup wizard (#1448). The screen owns the
- * step *graph* (it skips [Connect] when a server is already active), so this
- * enum is just the vocabulary — navigation is driven via
- * [OnboardingWizardIntent.GoTo].
+ * The pages of the first-run setup wizard (#1448). The screen owns the step
+ * *graph* (which pages it skips — Connect when a server is known, the auth pages
+ * when already signed in, FixControls unless the user reports a bad mapping), so
+ * this enum is just the vocabulary — navigation is driven via
+ * [OnboardingWizardIntent.GoTo] / [OnboardingWizardIntent.Back].
  */
-enum class OnboardingStep { Welcome, Connect, SignIn, NameDevice, Controls, AllSet }
+enum class OnboardingStep { Welcome, Connect, SignIn, NameDevice, Verify, FixControls, Convention, AllSet }
 
 data class OnboardingWizardState(
-    val step: OnboardingStep = OnboardingStep.Welcome,
+    /** Pages visited this run; the last is the current page. A real stack so
+     *  Back returns to the actual previous page, honouring skipped pages. */
+    val backStack: List<OnboardingStep> = listOf(OnboardingStep.Welcome),
     val deviceName: String = "",
-)
+) {
+    val step: OnboardingStep get() = backStack.last()
+    val canGoBack: Boolean get() = backStack.size > 1
+}
 
 sealed interface OnboardingWizardIntent {
     data class GoTo(val step: OnboardingStep) : OnboardingWizardIntent
+    data object Back : OnboardingWizardIntent
     data class SetDeviceName(val name: String) : OnboardingWizardIntent
 }
 
 /**
- * Owns the wizard's own state — the current [OnboardingStep] and the
- * device-name the user is typing. It deliberately does NOT own the connect or
- * login flows: those stay in [ServerConnectionViewModel] / [LoginViewModel] and
- * are composed by `OnboardingWizardScreen` (the glue). This keeps the wizard a
- * thin coordinator over existing, unchanged auth ViewModels.
+ * Owns the wizard's own state — the page back-stack and the device name the user
+ * is typing. It deliberately does NOT own the connect or login flows: those stay
+ * in [ServerConnectionViewModel] / [LoginViewModel] and are composed by
+ * `OnboardingWizardScreen` (the glue).
  *
  * [complete] is the single side-effecting exit: it persists the device name
  * (locally + best-effort to the server) and records the first-run flag so the
@@ -54,7 +60,10 @@ class OnboardingWizardViewModel(
 
     fun onIntent(intent: OnboardingWizardIntent) {
         when (intent) {
-            is OnboardingWizardIntent.GoTo -> _state.update { it.copy(step = intent.step) }
+            is OnboardingWizardIntent.GoTo -> _state.update { it.copy(backStack = it.backStack + intent.step) }
+            OnboardingWizardIntent.Back -> _state.update {
+                if (it.canGoBack) it.copy(backStack = it.backStack.dropLast(1)) else it
+            }
             is OnboardingWizardIntent.SetDeviceName -> _state.update { it.copy(deviceName = intent.name) }
         }
     }

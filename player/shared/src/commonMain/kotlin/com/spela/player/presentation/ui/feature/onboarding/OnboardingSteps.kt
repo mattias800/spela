@@ -345,13 +345,13 @@ fun VerifyStepContent(
 
     Spacer(Modifier.height(SpSpacing.XLarge))
     SpButton(
-        text = "Mapping is good!",
+        text = "Looks good!",
         onClick = onGood,
         modifier = Modifier.fillMaxWidth().testTag(OnboardingTestTags.VERIFY_GOOD),
     )
     Spacer(Modifier.height(SpSpacing.Medium))
     SpButton(
-        text = "Mapping is wrong",
+        text = "Something's wrong",
         onClick = onWrong,
         style = SpButtonStyle.Secondary,
         modifier = Modifier.fillMaxWidth().testTag(OnboardingTestTags.VERIFY_WRONG),

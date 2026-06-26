@@ -89,6 +89,10 @@ data class NavigationState(
     val tabStacksBehindOverlay: Map<BottomNavTab, List<SpScreen>> = emptyMap(),
     val isRestoringSession: Boolean = true,
     val restoredServerUrl: String? = null,
+    /** True when session restore found the device already authenticated. Lets the
+     *  first-run wizard skip the connect + sign-in pages if it's ever shown to an
+     *  authenticated device (#1448). */
+    val restoredAuthenticated: Boolean = false,
     val isOffline: Boolean = false,
     /**
      * Whether a connected (federated) server shares games to browse. Gates the

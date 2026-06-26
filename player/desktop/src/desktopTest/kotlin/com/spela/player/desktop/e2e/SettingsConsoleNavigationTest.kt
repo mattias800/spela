@@ -203,11 +203,13 @@ class SettingsConsoleNavigationTest {
         harness.gamepadPortManager.reportPositionInput(500, GamepadPosition.SOUTH, pressed = true)
         advanceQuick(harness)
 
-        onNodeWithTag("tester_pos_SOUTH")
+        // The position-label chips were removed (#1448); the schematic now shows
+        // the pressed position. SOUTH lights up, EAST stays inactive.
+        onNodeWithTag("schematic_SOUTH")
             .performScrollTo()
-            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Pressed"))
-        onNodeWithTag("tester_pos_EAST")
-            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Not pressed"))
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Active"))
+        onNodeWithTag("schematic_EAST")
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Inactive"))
     }
 
     /**
