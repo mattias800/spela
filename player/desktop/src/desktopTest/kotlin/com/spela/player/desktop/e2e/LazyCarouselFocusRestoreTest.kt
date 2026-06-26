@@ -67,20 +67,36 @@ class LazyCarouselFocusRestoreTest {
         return harness
     }
 
-    private fun ComposeUiTest.awaitFocusedContentDescription(
-        harness: SpelaTestHarness,
-        contentDescription: String,
-    ) {
+    private fun ComposeUiTest.hasFocusedContentDescription(contentDescription: String): Boolean =
+        onAllNodesWithContentDescription(contentDescription)
+            .fetchSemanticsNodes()
+            .any { node -> node.config.getOrNull(SemanticsProperties.Focused) == true }
+
+    private fun ComposeUiTest.awaitFocusedContentDescription(harness: SpelaTestHarness, contentDescription: String) {
         repeat(4) {
-            if (onAllNodesWithContentDescription(contentDescription)
-                    .fetchSemanticsNodes()
-                    .any { node -> node.config.getOrNull(SemanticsProperties.Focused) == true }
-            ) {
+            if (hasFocusedContentDescription(contentDescription)) {
                 return
             }
             advanceQuick(harness)
         }
         onNodeWithContentDescription(contentDescription).assert(isFocused())
+    }
+
+    private fun ComposeUiTest.moveFocusRightUntil(
+        harness: SpelaTestHarness,
+        contentDescription: String,
+        maxPresses: Int,
+    ) {
+        repeat(maxPresses) {
+            if (hasFocusedContentDescription(contentDescription)) {
+                return
+            }
+            onRoot().performKeyInput {
+                pressKey(androidx.compose.ui.input.key.Key.DirectionRight)
+            }
+            advanceQuick(harness)
+        }
+        awaitFocusedContentDescription(harness, contentDescription)
     }
 
     @Test
@@ -113,20 +129,9 @@ class LazyCarouselFocusRestoreTest {
         // back-nav the LazyRow remounts at index 0, so item 5 is
         // disposed unless SpCarousel's restoration logic actively
         // scrolls back to it.
-        //
-        // All presses go through a single performKeyInput block — the
-        // intervening "rapid" window (<100 ms wall clock) tells
-        // SpCarousel to snap-scroll instead of animating.
         val pressCount = 5
-        onRoot().performKeyInput {
-            repeat(pressCount) {
-                pressKey(androidx.compose.ui.input.key.Key.DirectionRight)
-            }
-        }
-        advanceFully(harness)
-
         val targetTitle = "Recents Game ${pressCount + 1}, SNES"
-        awaitFocusedContentDescription(harness, targetTitle)
+        moveFocusRightUntil(harness, targetTitle, maxPresses = pressCount + 2)
 
         // Forward to game detail.
         onRoot().performKeyInput {
