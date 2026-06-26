@@ -145,18 +145,16 @@ class DesktopGamepadPoller(
 
             // Live input tester (#1355/#1359/#1448): only for the controller
             // currently under test, report every pressed position — INCLUDING the
-            // D-pad — plus analog stick deflection, so the whole controller is
-            // testable. The confirm button is reported separately as a held signal
-            // (it drives the hold-to-stop timer, and is masked from navigation
-            // below) so it never lights up and a single press no longer exits. Done
+            // D-pad and the confirm button — plus analog stick deflection, so the
+            // whole controller lights up and is testable. The confirm button is ALSO
+            // reported as a held signal that drives the hold-to-stop timer (and it's
+            // masked from navigation below so a single press no longer exits). Done
             // before the port check so an *unassigned* (cleared) controller is still
             // fully testable.
             if (gamepadPortManager.testCaptureDeviceId.value == state.controllerId) {
                 gamepadPortManager.reportPressedPositions(
                     state.controllerId,
-                    GamepadPosition.entries.filterTo(mutableSetOf()) {
-                        positionPressed[it.ordinal] && it != confirmPos
-                    },
+                    GamepadPosition.entries.filterTo(mutableSetOf()) { positionPressed[it.ordinal] },
                 )
                 gamepadPortManager.reportTestConfirmHeld(state.controllerId, positionPressed[confirmPos.ordinal])
                 if (state.axes.size >= NUM_AXES) {

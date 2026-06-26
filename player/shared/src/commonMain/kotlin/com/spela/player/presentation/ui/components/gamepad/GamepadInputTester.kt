@@ -7,6 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -26,6 +27,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -46,22 +54,22 @@ private const val HOLD_TO_STOP_MS = 2000
 private const val ACTIVATION_GRACE_MS = 150L
 
 /**
- * Live input-layer tester (#1355/#1448). The user navigates onto it and presses
- * the confirm button to **activate** it; once active, every button — including
- * the **D-pad** — and the analog sticks are captured and shown on the schematic,
- * and nothing navigates away, so the whole controller is testable.
+ * Live input-layer tester (#1355/#1448). The element behaves like any other
+ * focusable item in the screen: navigating onto it (D-pad) or tapping it (touch)
+ * only **focuses** it — it does not start capturing — so the user can pass over it
+ * freely. Pressing the **confirm** button while it's focused **activates** it.
  *
- * To **stop**, the user holds the confirm button for [HOLD_TO_STOP_MS] (a single
- * press no longer exits, so the confirm button is testable too); a progress bar
- * and countdown track the hold. Releasing early cancels. Deactivation happens on
- * *release after a full hold* — the stopping press is consumed while the tester is
- * still active, so it can't bounce back and re-activate. Touch users can also tap
- * to toggle. The confirm button is captured (never lights up) — its hold drives
- * the timer instead.
+ * Once active, every button — including the **D-pad** and confirm itself — and the
+ * analog sticks are captured and shown on the schematic, and nothing navigates
+ * away. To **stop**, the user holds the confirm button for [HOLD_TO_STOP_MS] (a
+ * single press no longer exits, so the confirm button is testable too); a progress
+ * bar and countdown below the schematic track the hold, and stopping happens on
+ * *release after a full hold* so the stopping press can't bounce back to
+ * re-activate.
  *
  * Capture is scoped to the active state via [onActiveChange]; the platform input
  * layer keys off it (Android `captureTestInput`, desktop poller), reporting the
- * confirm button as [confirmHeld] rather than a lit position.
+ * confirm button via [confirmHeld] (for the timer) in addition to lighting it up.
  */
 @Composable
 fun GamepadInputTester(
@@ -72,6 +80,8 @@ fun GamepadInputTester(
     sticks: GamepadTestSticks = GamepadTestSticks(),
 ) {
     val interactionSource = remember { MutableInteractionSource() }
+    val focusRequester = remember { FocusRequester() }
+    val focused by interactionSource.collectIsFocusedAsState()
     val currentConfirmHeld by rememberUpdatedState(confirmHeld)
     var active by remember { mutableStateOf(false) }
     var holdComplete by remember { mutableStateOf(false) }
@@ -79,7 +89,7 @@ fun GamepadInputTester(
     // is released (#1448). On desktop the opening confirm press (a click on the
     // button's press edge) is still held when capture starts, so without this the
     // timer would begin the instant the tester opens. We disarm until that press
-    // releases; touch opens with no confirm held, so the grace window below arms it.
+    // releases; touch/D-pad focus then a fresh confirm press arms via the grace.
     var armed by remember { mutableStateOf(false) }
     var sawHeldSinceActive by remember { mutableStateOf(false) }
     val holdProgress = remember { Animatable(0f) }
@@ -89,9 +99,6 @@ fun GamepadInputTester(
         armed = false
         sawHeldSinceActive = false
         if (active) {
-            // Give the platform a moment to report a carried-over opening press; if
-            // confirm isn't held once it passes, there was none (touch / already
-            // released) so arm immediately.
             delay(ACTIVATION_GRACE_MS)
             if (!currentConfirmHeld) armed = true
         }
@@ -123,46 +130,66 @@ fun GamepadInputTester(
     }
 
     val holding = active && confirmHeld && armed
+    val secondsLeft = ceil((1f - holdProgress.value) * (HOLD_TO_STOP_MS / 1000f)).toInt().coerceAtLeast(0)
+    val statusText = when {
+        holding && holdComplete -> "Release to stop testing."
+        holding -> "Keep holding to stop… ${secondsLeft}s"
+        active -> "Hold the confirm button to stop testing."
+        focused -> "Press the confirm button to test your controller."
+        else -> "Select the input tester to test your controller."
+    }
+
     val shape = RoundedCornerShape(SpSpacing.RadiusMedium)
     Column(
         modifier = modifier
             .fillMaxWidth()
+            .focusRequester(focusRequester)
+            // While focused-but-inactive, the confirm button activates the tester.
+            // It reaches Compose as DPAD center (Android) or Enter (desktop) once
+            // resolved by the convention layer; consume both edges so the clickable
+            // doesn't also fire. While active the platform captures confirm (for the
+            // hold-to-stop timer) so it never reaches here (#1448).
+            .onPreviewKeyEvent { event ->
+                val isConfirm = event.key == Key.DirectionCenter ||
+                    event.key == Key.Enter || event.key == Key.NumPadEnter
+                when {
+                    active || !isConfirm -> false
+                    event.type == KeyEventType.KeyUp -> { active = true; true }
+                    else -> true
+                }
+            }
             .clip(shape)
             .background(if (active) SpColor.SurfaceBright else SpColor.SurfaceVariant)
             .border(2.dp, if (active) SpColor.Primary else SpColor.Divider, shape)
-            .clickable(interactionSource = interactionSource, indication = null) { active = !active }
+            // A tap (touch/mouse) only focuses — it doesn't capture — so the tester
+            // behaves like a normal navigable item; activation is the confirm press
+            // above (#1448).
+            .clickable(interactionSource = interactionSource, indication = null) {
+                runCatching { focusRequester.requestFocus() }
+            }
             .gamepadFocusable(shape = shape, interactionSource = interactionSource, addFocusable = false)
             .padding(SpSpacing.Default)
             .testTag("input_tester"),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        if (holding) {
-            val secondsLeft = ceil((1f - holdProgress.value) * (HOLD_TO_STOP_MS / 1000f))
-                .toInt().coerceAtLeast(0)
-            Text(
-                text = if (holdComplete) "Release to stop testing." else "Keep holding to stop… ${secondsLeft}s",
-                style = SpTypography.BodyMedium,
-                color = SpColor.OnBackground,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.testTag("tester_hold_label"),
-            )
-            Spacer(Modifier.height(SpSpacing.Small))
-            HoldToStopBar(progress = holdProgress.value)
-        } else {
-            Text(
-                text = if (active) {
-                    "Testing — buttons, D-pad and sticks light up. " +
-                        "Hold the confirm button (or tap) for 2s to stop."
-                } else {
-                    "Press the confirm button or tap to test your controller."
-                },
-                style = SpTypography.BodyMedium,
-                color = if (active) SpColor.OnBackground else SpColor.OnBackgroundSecondary,
-                textAlign = TextAlign.Center,
-            )
-        }
-        Spacer(Modifier.height(SpSpacing.Medium))
         GamepadSchematic(highlighted = pressedPositions, sticks = sticks)
+        Spacer(Modifier.height(SpSpacing.Medium))
+        // Status + hold bar below the schematic, at a static height so the layout
+        // never jumps when the bar appears: two reserved text lines + a reserved
+        // bar slot (#1448).
+        Text(
+            text = statusText,
+            style = SpTypography.BodyMedium,
+            color = if (active || focused) SpColor.OnBackground else SpColor.OnBackgroundSecondary,
+            textAlign = TextAlign.Center,
+            minLines = 2,
+            maxLines = 2,
+            modifier = Modifier.fillMaxWidth().testTag("tester_status"),
+        )
+        Spacer(Modifier.height(SpSpacing.Small))
+        Box(Modifier.fillMaxWidth().height(SpSpacing.Small)) {
+            if (holding) HoldToStopBar(progress = holdProgress.value)
+        }
     }
 }
 
