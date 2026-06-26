@@ -1,6 +1,6 @@
 name: Desktop E2E
 
-# The :desktop:desktopTest suite (Compose UI tests via SpelaTestHarness, ~117
+# The :desktop:desktopTest suite (Compose UI tests via SpelaTestHarness, ~125
 # classes) is too slow for the 15-minute "Player unit tests" gate, so it ran in
 # no workflow at all — desktop-specific E2E was unguarded on CI (#1279). This
 # dedicated job gives it a home with a longer timeout, and is path-filtered to
@@ -19,6 +19,13 @@ on:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+# Cancel superseded runs for the same PR or branch. Desktop E2E is the longest
+# PR gate, so stale runs should not keep consuming runners after a newer commit
+# or master push has replaced them.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   desktop-e2e-shard:
