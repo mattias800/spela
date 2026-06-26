@@ -143,14 +143,9 @@ class SettingsConsoleNavigationTest {
         advanceQuick(harness)
     }
 
-    /**
-     * Activates the input tester the way a controller does (#1448): focus it, then
-     * press confirm. A touch tap only focuses now, so tests must use the key path.
-     */
+    /** Activates the input tester (#1448): a tap (or confirm) toggles capture on. */
     private fun ComposeUiTest.activateInputTester(harness: SpelaTestHarness) {
-        onNodeWithTag("input_tester").performScrollTo().requestFocus()
-        advanceQuick(harness)
-        onNodeWithTag("input_tester").performKeyInput { pressKey(Key.Enter) }
+        onNodeWithTag("input_tester").performScrollTo().performClick()
         advanceQuick(harness)
     }
 
@@ -209,8 +204,8 @@ class SettingsConsoleNavigationTest {
         )
         onNodeWithTag("controller_detail_title").assertExists()
 
-        // The tester activates on a confirm press (#1448): focus + confirm to start
-        // capturing for the device under test, then feed a press.
+        // The tester activates on a tap/confirm (#1448): start capturing for the
+        // device under test, then feed a press.
         activateInputTester(harness)
         harness.gamepadPortManager.reportPositionInput(500, GamepadPosition.SOUTH, pressed = true)
         advanceQuick(harness)
@@ -296,11 +291,13 @@ class SettingsConsoleNavigationTest {
     }
 
     /**
-     * Tapping the tester only focuses it (so it behaves like a normal navigable
-     * item); activation requires a confirm press (#1448).
+     * Gamepad-only activation (#1448): with the tester focused, a confirm-button
+     * press (resolved to Enter / DPAD center by the convention layer) activates it —
+     * handled by the tester's key handler, since the clickable's keyboard activation
+     * is suppressed in touch input mode.
      */
     @Test
-    fun controllerDetailTesterTapFocusesButConfirmActivates() = runComposeUiTest {
+    fun controllerDetailTesterActivatesOnConfirmKey() = runComposeUiTest {
         val harness = createLoggedInHarness()
         harness.gamepadPortManager.connectDevice(500, "Test Pad", ControllerStyle.Xbox)
 
@@ -310,24 +307,14 @@ class SettingsConsoleNavigationTest {
         onNodeWithTag("controller_row_500").performClick()
         advanceQuick(harness)
 
-        // A touch tap must NOT start capturing.
-        onNodeWithTag("input_tester").performScrollTo().performClick()
-        advanceQuick(harness)
-        assertEquals(
-            null,
-            harness.gamepadPortManager.testCaptureDeviceId.value,
-            "Tapping the tester must only focus it, not activate it",
-        )
-
-        // A confirm press on the focused tester activates it.
-        onNodeWithTag("input_tester").requestFocus()
+        onNodeWithTag("input_tester").performScrollTo().requestFocus()
         advanceQuick(harness)
         onNodeWithTag("input_tester").performKeyInput { pressKey(Key.Enter) }
         advanceQuick(harness)
         assertEquals(
             500,
             harness.gamepadPortManager.testCaptureDeviceId.value,
-            "Pressing confirm activates the tester",
+            "Confirm press on the focused tester activates it",
         )
     }
 

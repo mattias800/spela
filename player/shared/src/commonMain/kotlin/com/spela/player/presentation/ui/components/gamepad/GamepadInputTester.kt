@@ -7,7 +7,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -27,8 +26,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
@@ -54,18 +52,21 @@ private const val HOLD_TO_STOP_MS = 2000
 private const val ACTIVATION_GRACE_MS = 150L
 
 /**
- * Live input-layer tester (#1355/#1448). The element behaves like any other
- * focusable item in the screen: navigating onto it (D-pad) or tapping it (touch)
- * only **focuses** it — it does not start capturing — so the user can pass over it
- * freely. Pressing the **confirm** button while it's focused **activates** it.
+ * Live input-layer tester (#1355/#1448). It's a focusable item: navigate onto it
+ * with the gamepad and it shows a focus ring (driven by real focus state via
+ * [onFocusChanged], so it's visible even in touch input mode — which the Thor's
+ * wizard runs in). Pressing **confirm** while focused **activates** it; a touch tap
+ * also activates (touch users have no confirm button).
  *
  * Once active, every button — including the **D-pad** and confirm itself — and the
- * analog sticks are captured and shown on the schematic, and nothing navigates
- * away. To **stop**, the user holds the confirm button for [HOLD_TO_STOP_MS] (a
- * single press no longer exits, so the confirm button is testable too); a progress
- * bar and countdown below the schematic track the hold, and stopping happens on
- * *release after a full hold* so the stopping press can't bounce back to
- * re-activate.
+ * analog sticks are captured and shown on the schematic. The platform captures all
+ * its input while active, so the D-pad can't navigate away — focus is effectively
+ * locked on the tester. To **stop**, the user holds the confirm button for
+ * [HOLD_TO_STOP_MS] (a single press no longer exits, so the confirm button is
+ * testable too); a progress bar and countdown below the schematic track the hold,
+ * and stopping happens on *release after a full hold* so the stopping press can't
+ * bounce back to re-activate. Stopping releases the input capture, unlocking
+ * navigation again.
  *
  * Capture is scoped to the active state via [onActiveChange]; the platform input
  * layer keys off it (Android `captureTestInput`, desktop poller), reporting the
@@ -80,9 +81,11 @@ fun GamepadInputTester(
     sticks: GamepadTestSticks = GamepadTestSticks(),
 ) {
     val interactionSource = remember { MutableInteractionSource() }
-    val focusRequester = remember { FocusRequester() }
-    val focused by interactionSource.collectIsFocusedAsState()
     val currentConfirmHeld by rememberUpdatedState(confirmHeld)
+    // Real focus state (from onFocusChanged) — unlike interaction-based focus, this
+    // fires regardless of input mode, so the focus ring is visible on the Thor
+    // (which runs the wizard in touch input mode) (#1448).
+    var isFocused by remember { mutableStateOf(false) }
     var active by remember { mutableStateOf(false) }
     var holdComplete by remember { mutableStateOf(false) }
     // The hold-to-stop timer is "armed" only after the press that opened the tester
@@ -134,21 +137,23 @@ fun GamepadInputTester(
     val statusText = when {
         holding && holdComplete -> "Release to stop testing."
         holding -> "Keep holding to stop… ${secondsLeft}s"
-        active -> "Hold the confirm button to stop testing."
-        focused -> "Press the confirm button to test your controller."
-        else -> "Select the input tester to test your controller."
+        active -> "Hold the confirm button (or tap) to stop testing."
+        isFocused -> "Press the confirm button to test your controller."
+        else -> "Tap, or navigate here and press confirm, to test your controller."
     }
 
     val shape = RoundedCornerShape(SpSpacing.RadiusMedium)
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .focusRequester(focusRequester)
+            .onFocusChanged { isFocused = it.isFocused }
             // While focused-but-inactive, the confirm button activates the tester.
             // It reaches Compose as DPAD center (Android) or Enter (desktop) once
-            // resolved by the convention layer; consume both edges so the clickable
-            // doesn't also fire. While active the platform captures confirm (for the
-            // hold-to-stop timer) so it never reaches here (#1448).
+            // resolved by the convention layer; handle it here rather than via the
+            // clickable, whose keyboard activation is suppressed in touch input mode
+            // (which the Thor's wizard runs in). Consume both edges so the click
+            // doesn't also fire. While active the platform captures confirm for the
+            // hold-to-stop timer, so it never reaches here (#1448).
             .onPreviewKeyEvent { event ->
                 val isConfirm = event.key == Key.DirectionCenter ||
                     event.key == Key.Enter || event.key == Key.NumPadEnter
@@ -160,13 +165,21 @@ fun GamepadInputTester(
             }
             .clip(shape)
             .background(if (active) SpColor.SurfaceBright else SpColor.SurfaceVariant)
-            .border(2.dp, if (active) SpColor.Primary else SpColor.Divider, shape)
-            // A tap (touch/mouse) only focuses — it doesn't capture — so the tester
-            // behaves like a normal navigable item; activation is the confirm press
-            // above (#1448).
-            .clickable(interactionSource = interactionSource, indication = null) {
-                runCatching { focusRequester.requestFocus() }
-            }
+            // Border doubles as the focus ring: Primary while active, PrimaryLight
+            // while focused (driven by real focus state so it shows in touch mode),
+            // else a subtle divider.
+            .border(
+                width = if (active || isFocused) 2.dp else 1.dp,
+                color = when {
+                    active -> SpColor.Primary
+                    isFocused -> SpColor.PrimaryLight
+                    else -> SpColor.Divider
+                },
+                shape = shape,
+            )
+            // A touch tap also toggles capture (touch users have no confirm button);
+            // while active the platform captures confirm for the hold-to-stop timer.
+            .clickable(interactionSource = interactionSource, indication = null) { active = !active }
             .gamepadFocusable(shape = shape, interactionSource = interactionSource, addFocusable = false)
             .padding(SpSpacing.Default)
             .testTag("input_tester"),
@@ -180,7 +193,7 @@ fun GamepadInputTester(
         Text(
             text = statusText,
             style = SpTypography.BodyMedium,
-            color = if (active || focused) SpColor.OnBackground else SpColor.OnBackgroundSecondary,
+            color = if (active) SpColor.OnBackground else SpColor.OnBackgroundSecondary,
             textAlign = TextAlign.Center,
             minLines = 2,
             maxLines = 2,
