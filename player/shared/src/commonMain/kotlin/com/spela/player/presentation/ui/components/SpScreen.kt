@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
@@ -20,10 +21,19 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import com.spela.player.presentation.ui.gamepad.LocalScrollFocusRegistry
 import com.spela.player.presentation.ui.gamepad.RightStickScroll
+import com.spela.player.presentation.ui.gamepad.ScrollFocusRegistry
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.spScreenBackground
 
@@ -109,13 +119,33 @@ fun SpScrollableContent(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val scrollState = rememberScrollState()
-    CompositionLocalProvider(LocalScrollState provides scrollState) {
+    // #1452: lets a d-pad press re-acquire focus to a visible element when the
+    // focused one has been scrolled off this verticalScroll viewport, instead
+    // of spatially-moving from the off-screen element and snap-scrolling back.
+    val focusRegistry = remember { ScrollFocusRegistry() }
+    CompositionLocalProvider(
+        LocalScrollState provides scrollState,
+        LocalScrollFocusRegistry provides focusRegistry,
+    ) {
         // Right analog stick scrolls this viewport in gamepad mode (#1362).
         RightStickScroll(scrollState)
         Column(
             modifier = modifier
                 .fillMaxSize()
                 .focusGroup()
+                .onGloballyPositioned {
+                    focusRegistry.viewportTopInRoot = it.positionInRoot().y
+                    focusRegistry.viewportHeight = it.size.height.toFloat()
+                }
+                .onPreviewKeyEvent { event ->
+                    if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                    when (event.key) {
+                        Key.DirectionUp, Key.DirectionDown,
+                        Key.DirectionLeft, Key.DirectionRight ->
+                            focusRegistry.redirectIfFocusedOffscreen()
+                        else -> false
+                    }
+                }
                 .verticalScroll(scrollState),
             content = content,
         )

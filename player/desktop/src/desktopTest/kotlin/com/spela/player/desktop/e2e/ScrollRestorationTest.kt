@@ -98,14 +98,20 @@ class ScrollRestorationTest {
     @Test
     fun scrollPositionNotResetByDpadAfterManualScroll() = runComposeUiTest {
         val harness = createHarnessWithManyConsoles()
-        // Fixed viewport so the scenario is deterministic: short enough that the
-        // top (NES) and bottom (Saturn) of the console list can't both be on
-        // screen, so a manual scroll to the bottom genuinely moves NES
+        // Guards the #1452 off-screen-focus redirect: once a manual scroll
+        // pushes the focused element out of view, a d-pad press must move
+        // focus to a *visible* card instead of spatially-moving from the
+        // off-screen one (which centre-on-focuses a near-top card and snaps
+        // the list back up).
+        //
+        // Fixed viewport so the scenario is deterministic: short enough that
+        // the top (NES) and bottom (Saturn) of the console list can't both be
+        // on screen, so a manual scroll to the bottom genuinely moves NES
         // off-screen. The height is deliberately well below one screenful of
         // rows — #1446 made the grid denser (more columns → fewer, shorter
         // rows), so the previous 420 dp viewport fit the whole list and the
-        // scroll became a no-op. 260 dp keeps NES and Saturn from coexisting at
-        // any reasonable column count.
+        // scroll became a no-op. 560 dp → 4 columns; 260 dp keeps NES and
+        // Saturn from coexisting.
         setContent {
             Box(modifier = Modifier.width(560.dp).height(260.dp)) {
                 harness.App()
@@ -128,8 +134,9 @@ class ScrollRestorationTest {
         onNodeWithContentDescription("Nintendo Entertainment System, 3 games")
             .assertIsNotDisplayed()
 
-        // Press d-pad — focus acquisition must NOT yank the scroll back to the
-        // top (the #1194 regression). If it did, NES would become visible.
+        // Press d-pad — the off-screen-focus redirect must re-acquire focus to
+        // a visible card without yanking the scroll back to the top (#1194 /
+        // #1452). If it didn't, NES would become visible again.
         onRoot().performKeyInput { pressKey(Key.DirectionDown) }
         advanceQuick(harness)
 
