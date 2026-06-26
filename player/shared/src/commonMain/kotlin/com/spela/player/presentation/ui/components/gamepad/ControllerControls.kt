@@ -208,9 +208,16 @@ private fun ControllerListRow(
     }
 }
 
+/**
+ * The per-controller detail body — type/profile, player assignment, and the live
+ * input tester. `internal` (not private) so the first-run wizard's Controls step
+ * (#1448) can embed the same UI inside its own chrome without the
+ * [ControllerDetailScreen]'s `SpScreen` wrapper. The caller owns the slot-conflict
+ * dialog (see [ControllerDetailScreen] and the wizard for the two call sites).
+ */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun ControllerDetail(
+internal fun ControllerDetail(
     controller: ControllerUi,
     pressedPositions: Set<com.spela.player.domain.model.GamepadPosition>,
     onBack: () -> Unit,

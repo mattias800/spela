@@ -27,11 +27,16 @@ import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.state.LoginState
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
+import com.spela.player.presentation.ui.components.SpConfirmDialog
 import com.spela.player.presentation.ui.components.SpServerPill
 import com.spela.player.presentation.ui.components.SpTextField
+import com.spela.player.presentation.ui.components.gamepad.ControllerControls
+import com.spela.player.presentation.ui.components.gamepad.ControllerDetail
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
+import com.spela.player.presentation.viewmodel.GamepadConfigIntent
+import com.spela.player.presentation.viewmodel.GamepadConfigState
 
 /** Test tags for the first-run wizard, shared between the UI and the desktop
  *  E2E suite so assertions track renames. */
@@ -47,6 +52,7 @@ object OnboardingTestTags {
     const val SIGNIN_SUBMIT = "onboarding_signin_submit"
     const val NAME_DEVICE_INPUT = "onboarding_name_device_input"
     const val NAME_DEVICE_CONTINUE = "onboarding_name_device_continue"
+    const val CONTROLS_CONTINUE = "onboarding_controls_continue"
     const val ALL_SET_FINISH = "onboarding_all_set_finish"
 }
 
@@ -205,7 +211,57 @@ fun NameDeviceStepContent(
     )
 }
 
-// ── Step 5: All set ───────────────────────────────────────────────────────
+// ── Step 5: Controls ──────────────────────────────────────────────────────
+
+/**
+ * Reuses the exact Settings → Controls UI: the connected-controllers list, and
+ * (drilled in) the per-controller detail with player assignment, type picker, and
+ * the live input tester. The screen owns [selectedDeviceId] (list ↔ detail) and
+ * maps the detail's callbacks to [GamepadConfigIntent]s.
+ */
+@Composable
+fun ControlsStepContent(
+    state: GamepadConfigState,
+    selectedDeviceId: Int?,
+    onSelectController: (Int) -> Unit,
+    onBackToList: () -> Unit,
+    onIntent: (GamepadConfigIntent) -> Unit,
+    onContinue: () -> Unit,
+) {
+    val selected = selectedDeviceId?.let { id -> state.controllers.firstOrNull { it.deviceId == id } }
+    if (selected != null) {
+        ControllerDetail(
+            controller = selected,
+            pressedPositions = state.pressedPositions,
+            onBack = onBackToList,
+            onSelectStyle = { onIntent(GamepadConfigIntent.SetStyleOverrideForController(selected.deviceId, it)) },
+            onAssignSlot = { onIntent(GamepadConfigIntent.AssignPlayer(selected.deviceId, it)) },
+            onClear = { onIntent(GamepadConfigIntent.ClearPlayer(selected.deviceId)) },
+            onTestActiveChange = { onIntent(GamepadConfigIntent.SetInputTestActive(selected.deviceId, it)) },
+        )
+        val conflict = state.conflict
+        if (conflict != null) {
+            SpConfirmDialog(
+                title = "Switch player?",
+                message = "Player ${conflict.slot + 1} is currently ${conflict.currentDeviceName}. " +
+                    "Switch it to this controller? ${conflict.currentDeviceName} will become unassigned.",
+                confirmText = "Switch",
+                onConfirm = { onIntent(GamepadConfigIntent.ConfirmConflict) },
+                onDismiss = { onIntent(GamepadConfigIntent.DismissConflict) },
+            )
+        }
+    } else {
+        ControllerControls(state = state, onSelectController = onSelectController)
+        Spacer(Modifier.height(SpSpacing.Large))
+        SpButton(
+            text = "Continue",
+            onClick = onContinue,
+            modifier = Modifier.fillMaxWidth().testTag(OnboardingTestTags.CONTROLS_CONTINUE),
+        )
+    }
+}
+
+// ── Step 6: All set ───────────────────────────────────────────────────────
 
 @Composable
 fun AllSetStepContent(onFinish: () -> Unit) {

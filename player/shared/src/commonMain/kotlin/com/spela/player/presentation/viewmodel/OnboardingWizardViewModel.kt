@@ -17,7 +17,7 @@ import kotlinx.coroutines.launch
  * enum is just the vocabulary — navigation is driven via
  * [OnboardingWizardIntent.GoTo].
  */
-enum class OnboardingStep { Welcome, Connect, SignIn, NameDevice, AllSet }
+enum class OnboardingStep { Welcome, Connect, SignIn, NameDevice, Controls, AllSet }
 
 data class OnboardingWizardState(
     val step: OnboardingStep = OnboardingStep.Welcome,

@@ -14,11 +14,13 @@ import androidx.compose.ui.platform.testTag
 import com.spela.player.presentation.intent.LoginIntent
 import com.spela.player.presentation.ui.feature.onboarding.AllSetStepContent
 import com.spela.player.presentation.ui.feature.onboarding.ConnectStepContent
+import com.spela.player.presentation.ui.feature.onboarding.ControlsStepContent
 import com.spela.player.presentation.ui.feature.onboarding.NameDeviceStepContent
 import com.spela.player.presentation.ui.feature.onboarding.OnboardingTestTags
 import com.spela.player.presentation.ui.feature.onboarding.OnboardingWizardChrome
 import com.spela.player.presentation.ui.feature.onboarding.SignInStepContent
 import com.spela.player.presentation.ui.feature.onboarding.WelcomeStepContent
+import com.spela.player.presentation.viewmodel.GamepadConfigViewModel
 import com.spela.player.presentation.viewmodel.LoginViewModel
 import com.spela.player.presentation.viewmodel.OnboardingStep
 import com.spela.player.presentation.viewmodel.OnboardingWizardIntent
@@ -47,6 +49,7 @@ fun OnboardingWizardScreen(
     wizardViewModel: OnboardingWizardViewModel,
     serverConnectionViewModel: ServerConnectionViewModel,
     loginViewModel: LoginViewModel,
+    gamepadConfigViewModel: GamepadConfigViewModel?,
     restoredServerUrl: String?,
     onComplete: () -> Unit,
 ) {
@@ -155,12 +158,39 @@ fun OnboardingWizardScreen(
                 title = "Name this device",
                 subtitle = "So you can tell it apart from your other devices.",
             ) {
+                val afterNaming =
+                    if (gamepadConfigViewModel != null) OnboardingStep.Controls else OnboardingStep.AllSet
                 NameDeviceStepContent(
                     deviceName = wizardState.deviceName,
                     onNameChange = { wizardViewModel.onIntent(OnboardingWizardIntent.SetDeviceName(it)) },
-                    onContinue = { goTo(OnboardingStep.AllSet) },
-                    onSkip = { goTo(OnboardingStep.AllSet) },
+                    onContinue = { goTo(afterNaming) },
+                    onSkip = { goTo(afterNaming) },
                 )
+            }
+
+            OnboardingStep.Controls -> {
+                if (gamepadConfigViewModel == null) {
+                    LaunchedEffect(Unit) { goTo(OnboardingStep.AllSet) }
+                } else {
+                    val configState by gamepadConfigViewModel.state.collectAsState()
+                    var selectedControllerId by remember { mutableStateOf<Int?>(null) }
+                    OnboardingWizardChrome(
+                        stepIndex = stepIndex,
+                        stepCount = stepCount,
+                        title = "Set up your controller",
+                        subtitle = "Assign players, pick the controller type, and test the buttons — " +
+                            "you can change this anytime in Settings.",
+                    ) {
+                        ControlsStepContent(
+                            state = configState,
+                            selectedDeviceId = selectedControllerId,
+                            onSelectController = { selectedControllerId = it },
+                            onBackToList = { selectedControllerId = null },
+                            onIntent = { gamepadConfigViewModel.onIntent(it) },
+                            onContinue = { goTo(OnboardingStep.AllSet) },
+                        )
+                    }
+                }
             }
 
             OnboardingStep.AllSet -> OnboardingWizardChrome(

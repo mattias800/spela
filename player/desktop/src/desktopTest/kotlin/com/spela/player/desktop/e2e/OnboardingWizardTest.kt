@@ -63,7 +63,12 @@ class OnboardingWizardTest {
         onNodeWithTag(OnboardingTestTags.NAME_DEVICE_CONTINUE).performClick()
         advanceQuick(harness)
 
-        // Step 5: All set
+        // Step 5: Controls (no controller connected → empty list, just continue)
+        onNodeWithText("Set up your controller").assertIsDisplayed()
+        onNodeWithTag(OnboardingTestTags.CONTROLS_CONTINUE).performClick()
+        advanceQuick(harness)
+
+        // Step 6: All set
         onNodeWithText("You're all set!").assertIsDisplayed()
         onNodeWithTag(OnboardingTestTags.ALL_SET_FINISH).performClick()
         advance(harness)
@@ -146,8 +151,52 @@ class OnboardingWizardTest {
         onNodeWithTag(OnboardingTestTags.SIGNIN_SUBMIT).performClick()
         advance(harness)
 
-        // Skip device naming → straight to All set
+        // Skip device naming → Controls → All set
         onNodeWithText("Skip for now").performClick()
+        advanceQuick(harness)
+        onNodeWithText("Set up your controller").assertIsDisplayed()
+        onNodeWithTag(OnboardingTestTags.CONTROLS_CONTINUE).performClick()
+        advanceQuick(harness)
+        onNodeWithText("You're all set!").assertIsDisplayed()
+    }
+
+    @Test
+    fun wizardControllerStepListsConnectedControllerAndOpensDetail() = runComposeUiTest {
+        val harness = SpelaTestHarness(StandardTestDispatcher())
+        harness.serverRepo.preAddServer("Local", "http://localhost:8080", active = true)
+        harness.gamepadPortManager.connectDevice(1, "Xbox Controller")
+
+        setContent { harness.App() }
+        advance(harness)
+
+        harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.OnboardingWizard))
+        advance(harness)
+        onNodeWithTag(OnboardingTestTags.WELCOME_START).performClick()
+        advanceQuick(harness)
+
+        // Sign in (Connect skipped — server already active)
+        onNodeWithText("Username").performClick()
+        onNodeWithText("Username").performTextInput("player")
+        onNodeWithText("Password").performClick()
+        onNodeWithText("Password").performTextInput("player123")
+        onNodeWithTag(OnboardingTestTags.SIGNIN_SUBMIT).performClick()
+        advance(harness)
+
+        // Name device → Controls
+        onNodeWithTag(OnboardingTestTags.NAME_DEVICE_CONTINUE).performClick()
+        advanceQuick(harness)
+
+        // The connected controller is listed; drilling in shows its detail.
+        onNodeWithText("Set up your controller").assertIsDisplayed()
+        onNodeWithTag("controller_row_1").assertIsDisplayed()
+        onNodeWithTag("controller_row_1").performClick()
+        advanceQuick(harness)
+        onNodeWithTag("controller_detail_title").assertIsDisplayed()
+
+        // Back to the list, then continue to the finish.
+        onNodeWithTag("controller_detail_back").performClick()
+        advanceQuick(harness)
+        onNodeWithTag(OnboardingTestTags.CONTROLS_CONTINUE).performClick()
         advanceQuick(harness)
         onNodeWithText("You're all set!").assertIsDisplayed()
     }
