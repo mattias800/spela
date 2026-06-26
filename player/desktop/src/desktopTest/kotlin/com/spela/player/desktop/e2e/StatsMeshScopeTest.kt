@@ -26,6 +26,23 @@ class StatsMeshScopeTest {
         return harness
     }
 
+    private fun ComposeUiTest.awaitText(
+        harness: SpelaTestHarness,
+        text: String,
+        useUnmergedTree: Boolean = false,
+    ) {
+        repeat(3) {
+            advanceQuick(harness)
+            if (onAllNodesWithText(text, useUnmergedTree = useUnmergedTree)
+                    .fetchSemanticsNodes()
+                    .isNotEmpty()
+            ) {
+                return
+            }
+        }
+        onNodeWithText(text, useUnmergedTree = useUnmergedTree).assertExists()
+    }
+
     @Test
     fun mostPlayedTogglesBetweenThisServerAndMesh() = runComposeUiTest {
         val harness = createLoggedInHarness()
@@ -51,9 +68,8 @@ class StatsMeshScopeTest {
 
         // Switch to "Across servers".
         onNodeWithTag("most-played-across").performClick()
-        advance(harness)
 
-        onNodeWithText("Mesh Favorite", useUnmergedTree = true).assertExists()
+        awaitText(harness, "Mesh Favorite", useUnmergedTree = true)
     }
 
     @Test
@@ -70,8 +86,7 @@ class StatsMeshScopeTest {
         advance(harness)
 
         onNodeWithTag("most-played-across").performClick()
-        advance(harness)
 
-        onNodeWithText("Nothing across connected servers yet").assertExists()
+        awaitText(harness, "Nothing across connected servers yet")
     }
 }
