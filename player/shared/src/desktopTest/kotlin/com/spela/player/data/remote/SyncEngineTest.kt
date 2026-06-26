@@ -186,6 +186,8 @@ class SyncEngineTest {
         override fun setControlTab(consoleId: String, tab: String) {}
         override fun getConsoleListGrouping(): String = "generation"
         override fun setConsoleListGrouping(grouping: String) {}
+        override fun getConfirmButtonConvention(): String = "xbox"
+        override fun setConfirmButtonConvention(convention: String) {}
     }
 
     private class NoOpGameRepository : GameRepository {
@@ -234,6 +236,8 @@ class SyncEngineTest {
         override fun setControlTab(consoleId: String, tab: String) {}
         override fun getConsoleListGrouping(): String = "generation"
         override fun setConsoleListGrouping(grouping: String) {}
+        override fun getConfirmButtonConvention(): String = "xbox"
+        override fun setConfirmButtonConvention(convention: String) {}
     }
 
     private class FailingGameRepository : GameRepository {
@@ -286,6 +290,8 @@ class SyncEngineTest {
         override fun setControlTab(consoleId: String, tab: String) {}
         override fun getConsoleListGrouping(): String = "generation"
         override fun setConsoleListGrouping(grouping: String) {}
+        override fun getConfirmButtonConvention(): String = "xbox"
+        override fun setConfirmButtonConvention(convention: String) {}
     }
 
     private class TrackingGameRepository : GameRepository {

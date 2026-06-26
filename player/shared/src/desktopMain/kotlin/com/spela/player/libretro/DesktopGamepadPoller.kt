@@ -29,6 +29,8 @@ class DesktopGamepadPoller(
     private val navigationEventBus: NavigationEventBus? = null,
     /** True while a game is open; suppresses UI-navigation synth (see [GamepadUiNavigator]). */
     private val isInGame: () -> Boolean = { false },
+    /** Confirm/back convention (#1448): true = Nintendo (EAST confirms). */
+    private val confirmIsEast: () -> Boolean = { false },
 ) {
     companion object {
         private const val POLL_INTERVAL_MS = 8L // ~120 Hz
@@ -67,6 +69,7 @@ class DesktopGamepadPoller(
         navigationEventBus = navigationEventBus,
         isInGame = isInGame,
         onGamepadInput = { gamepadPortManager.setInputMode(InputMode.GAMEPAD) },
+        confirmIsEast = confirmIsEast,
     )
 
     fun start(scope: CoroutineScope) {

@@ -563,6 +563,8 @@ class NavigationViewModelTest {
             if (consoleId.lowercase() == "scummvm") "trackpad" else "gamepad"
         override fun setControlTab(consoleId: String, tab: String) {}
         override fun getConsoleListGrouping(): String = "generation"
+        override fun getConfirmButtonConvention(): String = "xbox"
+        override fun setConfirmButtonConvention(convention: String) {}
         override fun setConsoleListGrouping(grouping: String) {}
     }
 

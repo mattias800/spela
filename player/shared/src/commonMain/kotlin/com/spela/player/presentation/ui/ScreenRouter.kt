@@ -130,6 +130,7 @@ fun ScreenRouter(
                                         serverConnectionViewModel = serverConnectionViewModel,
                                         loginViewModel = loginViewModel,
                                         gamepadConfigViewModel = gamepadConfigViewModel,
+                                        preferencesRepository = preferencesRepository,
                                         restoredServerUrl = navState.restoredServerUrl,
                                         onComplete = {
                                             navigationViewModel.onIntent(NavigationIntent.ResetToHome)

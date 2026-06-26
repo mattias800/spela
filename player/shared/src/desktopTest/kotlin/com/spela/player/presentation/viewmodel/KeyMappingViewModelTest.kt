@@ -474,6 +474,8 @@ class KeyMappingViewModelTest {
         override fun setControlTab(consoleId: String, tab: String) {}
         override fun getConsoleListGrouping(): String = "generation"
         override fun setConsoleListGrouping(grouping: String) {}
+        override fun getConfirmButtonConvention(): String = "xbox"
+        override fun setConfirmButtonConvention(convention: String) {}
     }
 
     private class FakeKeyMappingRepository : KeyMappingRepository {

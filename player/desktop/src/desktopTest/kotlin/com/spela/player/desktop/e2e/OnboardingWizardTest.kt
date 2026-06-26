@@ -8,6 +8,7 @@ import com.spela.player.presentation.ui.feature.onboarding.OnboardingTestTags
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
@@ -63,9 +64,12 @@ class OnboardingWizardTest {
         onNodeWithTag(OnboardingTestTags.NAME_DEVICE_CONTINUE).performClick()
         advanceQuick(harness)
 
-        // Step 5: Controls (no controller connected → empty list, just continue)
-        onNodeWithText("Set up your controller").assertIsDisplayed()
-        onNodeWithTag(OnboardingTestTags.CONTROLS_CONTINUE).performClick()
+        // Step 5: Controls — Verify (no controller) → button convention → finish
+        onNodeWithText("Verify your controller").assertIsDisplayed()
+        onNodeWithTag(OnboardingTestTags.VERIFY_CONTINUE).performClick()
+        advanceQuick(harness)
+        onNodeWithText("Confirm & Back buttons").assertIsDisplayed()
+        onNodeWithTag(OnboardingTestTags.CONVENTION_CONTINUE).performClick()
         advanceQuick(harness)
 
         // Step 6: All set
@@ -151,11 +155,13 @@ class OnboardingWizardTest {
         onNodeWithTag(OnboardingTestTags.SIGNIN_SUBMIT).performClick()
         advance(harness)
 
-        // Skip device naming → Controls → All set
+        // Skip device naming → Controls (Verify, no controller) → convention → All set
         onNodeWithText("Skip for now").performClick()
         advanceQuick(harness)
-        onNodeWithText("Set up your controller").assertIsDisplayed()
-        onNodeWithTag(OnboardingTestTags.CONTROLS_CONTINUE).performClick()
+        onNodeWithText("Verify your controller").assertIsDisplayed()
+        onNodeWithTag(OnboardingTestTags.VERIFY_CONTINUE).performClick()
+        advanceQuick(harness)
+        onNodeWithTag(OnboardingTestTags.CONVENTION_CONTINUE).performClick()
         advanceQuick(harness)
         onNodeWithText("You're all set!").assertIsDisplayed()
     }
@@ -186,6 +192,11 @@ class OnboardingWizardTest {
         onNodeWithTag(OnboardingTestTags.NAME_DEVICE_CONTINUE).performClick()
         advanceQuick(harness)
 
+        // Verify shows the detected controller; "Mapping is wrong" opens setup.
+        onNodeWithText("Verify your controller").assertIsDisplayed()
+        onNodeWithTag(OnboardingTestTags.VERIFY_WRONG).performClick()
+        advanceQuick(harness)
+
         // The connected controller is listed; drilling in shows its detail.
         onNodeWithText("Set up your controller").assertIsDisplayed()
         onNodeWithTag("controller_row_1").assertIsDisplayed()
@@ -193,11 +204,48 @@ class OnboardingWizardTest {
         advanceQuick(harness)
         onNodeWithTag("controller_detail_title").assertIsDisplayed()
 
-        // Back to the list, then continue to the finish.
+        // Back to the list, continue to convention, then finish.
         onNodeWithTag("controller_detail_back").performClick()
         advanceQuick(harness)
         onNodeWithTag(OnboardingTestTags.CONTROLS_CONTINUE).performClick()
         advanceQuick(harness)
+        onNodeWithText("Confirm & Back buttons").assertIsDisplayed()
+        onNodeWithTag(OnboardingTestTags.CONVENTION_CONTINUE).performClick()
+        advanceQuick(harness)
         onNodeWithText("You're all set!").assertIsDisplayed()
+    }
+
+    @Test
+    fun wizardButtonConventionSelectionPersists() = runComposeUiTest {
+        val harness = SpelaTestHarness(StandardTestDispatcher())
+        harness.serverRepo.preAddServer("Local", "http://localhost:8080", active = true)
+
+        setContent { harness.App() }
+        advance(harness)
+        harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.OnboardingWizard))
+        advance(harness)
+        onNodeWithTag(OnboardingTestTags.WELCOME_START).performClick()
+        advanceQuick(harness)
+
+        onNodeWithText("Username").performClick()
+        onNodeWithText("Username").performTextInput("player")
+        onNodeWithText("Password").performClick()
+        onNodeWithText("Password").performTextInput("player123")
+        onNodeWithTag(OnboardingTestTags.SIGNIN_SUBMIT).performClick()
+        advance(harness)
+
+        onNodeWithTag(OnboardingTestTags.NAME_DEVICE_CONTINUE).performClick()
+        advanceQuick(harness)
+        // Verify (no controller) → convention
+        onNodeWithTag(OnboardingTestTags.VERIFY_CONTINUE).performClick()
+        advanceQuick(harness)
+
+        // Choose Nintendo convention and finish; it must persist.
+        onNodeWithTag(OnboardingTestTags.CONVENTION_NINTENDO).performClick()
+        advanceQuick(harness)
+        onNodeWithTag(OnboardingTestTags.CONVENTION_CONTINUE).performClick()
+        advance(harness)
+        onNodeWithText("You're all set!").assertIsDisplayed()
+        assertEquals("nintendo", harness.preferencesRepo.getConfirmButtonConvention())
     }
 }

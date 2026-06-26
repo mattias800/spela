@@ -12,14 +12,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import com.spela.player.presentation.intent.LoginIntent
+import com.spela.player.domain.repository.PreferencesRepository
 import com.spela.player.presentation.ui.feature.onboarding.AllSetStepContent
 import com.spela.player.presentation.ui.feature.onboarding.ConnectStepContent
 import com.spela.player.presentation.ui.feature.onboarding.ControlsStepContent
+import com.spela.player.presentation.ui.feature.onboarding.ConventionStepContent
 import com.spela.player.presentation.ui.feature.onboarding.NameDeviceStepContent
 import com.spela.player.presentation.ui.feature.onboarding.OnboardingTestTags
 import com.spela.player.presentation.ui.feature.onboarding.OnboardingWizardChrome
 import com.spela.player.presentation.ui.feature.onboarding.SignInStepContent
+import com.spela.player.presentation.ui.feature.onboarding.VerifyStepContent
 import com.spela.player.presentation.ui.feature.onboarding.WelcomeStepContent
+import com.spela.player.presentation.viewmodel.GamepadConfigIntent
 import com.spela.player.presentation.viewmodel.GamepadConfigViewModel
 import com.spela.player.presentation.viewmodel.LoginViewModel
 import com.spela.player.presentation.viewmodel.OnboardingStep
@@ -27,6 +31,10 @@ import com.spela.player.presentation.viewmodel.OnboardingWizardIntent
 import com.spela.player.presentation.viewmodel.OnboardingWizardViewModel
 import com.spela.player.presentation.viewmodel.ServerConnectionIntent
 import com.spela.player.presentation.viewmodel.ServerConnectionViewModel
+
+/** Sub-pages of the wizard's Controls step (#1448): verify the detected
+ *  controller, optionally fix its setup, then choose the button convention. */
+private enum class ControlsPhase { Verify, Fix, Convention }
 
 /**
  * First-run setup wizard (#1448) — the "unified first-run journey". It composes
@@ -50,6 +58,7 @@ fun OnboardingWizardScreen(
     serverConnectionViewModel: ServerConnectionViewModel,
     loginViewModel: LoginViewModel,
     gamepadConfigViewModel: GamepadConfigViewModel?,
+    preferencesRepository: PreferencesRepository,
     restoredServerUrl: String?,
     onComplete: () -> Unit,
 ) {
@@ -169,26 +178,68 @@ fun OnboardingWizardScreen(
             }
 
             OnboardingStep.Controls -> {
-                if (gamepadConfigViewModel == null) {
+                val configVm = gamepadConfigViewModel
+                if (configVm == null) {
                     LaunchedEffect(Unit) { goTo(OnboardingStep.AllSet) }
                 } else {
-                    val configState by gamepadConfigViewModel.state.collectAsState()
+                    val configState by configVm.state.collectAsState()
+                    var phase by remember { mutableStateOf(ControlsPhase.Verify) }
                     var selectedControllerId by remember { mutableStateOf<Int?>(null) }
-                    OnboardingWizardChrome(
-                        stepIndex = stepIndex,
-                        stepCount = stepCount,
-                        title = "Set up your controller",
-                        subtitle = "Assign players, pick the controller type, and test the buttons — " +
-                            "you can change this anytime in Settings.",
-                    ) {
-                        ControlsStepContent(
-                            state = configState,
-                            selectedDeviceId = selectedControllerId,
-                            onSelectController = { selectedControllerId = it },
-                            onBackToList = { selectedControllerId = null },
-                            onIntent = { gamepadConfigViewModel.onIntent(it) },
-                            onContinue = { goTo(OnboardingStep.AllSet) },
-                        )
+                    var convention by remember { mutableStateOf(preferencesRepository.getConfirmButtonConvention()) }
+                    val detected = configState.controllers.firstOrNull()
+
+                    when (phase) {
+                        ControlsPhase.Verify -> OnboardingWizardChrome(
+                            stepIndex = stepIndex,
+                            stepCount = stepCount,
+                            title = "Verify your controller",
+                            subtitle = "Press each button — the matching position should light up.",
+                        ) {
+                            VerifyStepContent(
+                                detectedName = detected?.deviceName?.ifBlank { "your controller" },
+                                pressedPositions = configState.pressedPositions,
+                                onTestActiveChange = { active ->
+                                    detected?.deviceId?.let {
+                                        configVm.onIntent(GamepadConfigIntent.SetInputTestActive(it, active))
+                                    }
+                                },
+                                onGood = { phase = ControlsPhase.Convention },
+                                onWrong = { phase = ControlsPhase.Fix },
+                                onContinueNoController = { phase = ControlsPhase.Convention },
+                            )
+                        }
+
+                        ControlsPhase.Fix -> OnboardingWizardChrome(
+                            stepIndex = stepIndex,
+                            stepCount = stepCount,
+                            title = "Set up your controller",
+                            subtitle = "Assign players, pick the controller type, then re-test.",
+                        ) {
+                            ControlsStepContent(
+                                state = configState,
+                                selectedDeviceId = selectedControllerId,
+                                onSelectController = { selectedControllerId = it },
+                                onBackToList = { selectedControllerId = null },
+                                onIntent = { configVm.onIntent(it) },
+                                onContinue = { phase = ControlsPhase.Convention },
+                            )
+                        }
+
+                        ControlsPhase.Convention -> OnboardingWizardChrome(
+                            stepIndex = stepIndex,
+                            stepCount = stepCount,
+                            title = "Confirm & Back buttons",
+                            subtitle = "Pick which button confirms and which goes back.",
+                        ) {
+                            ConventionStepContent(
+                                current = convention,
+                                onSelect = {
+                                    convention = it
+                                    preferencesRepository.setConfirmButtonConvention(it)
+                                },
+                                onContinue = { goTo(OnboardingStep.AllSet) },
+                            )
+                        }
                     }
                 }
             }

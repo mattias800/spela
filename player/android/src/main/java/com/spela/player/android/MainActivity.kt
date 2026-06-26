@@ -14,6 +14,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.lifecycle.lifecycleScope
 import com.spela.player.domain.model.ControllerClassifier
+import com.spela.player.domain.repository.ConfirmButtonConvention
 import com.spela.player.domain.repository.PreferencesRepository
 import com.spela.player.libretro.AndroidGamepadNormalizer
 import com.spela.player.libretro.AndroidLibretroController
@@ -348,12 +349,15 @@ class MainActivity : ComponentActivity() {
 
         // State 2: Game running, overlay shown — navigate the overlay
         if (isGameRunning) {
+            val ovNintendo = preferencesRepository.getConfirmButtonConvention() == ConfirmButtonConvention.NINTENDO
+            val ovConfirmKey = if (ovNintendo) KeyEvent.KEYCODE_BUTTON_B else KeyEvent.KEYCODE_BUTTON_A
+            val ovBackKey = if (ovNintendo) KeyEvent.KEYCODE_BUTTON_A else KeyEvent.KEYCODE_BUTTON_B
             when (keyCode) {
-                KeyEvent.KEYCODE_BUTTON_B -> {
+                ovBackKey -> {
                     emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
                     return true
                 }
-                KeyEvent.KEYCODE_BUTTON_A -> {
+                ovConfirmKey -> {
                     val now = SystemClock.uptimeMillis()
                     val remapped = KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_CENTER, 0)
                     return super.dispatchKeyEvent(remapped)
@@ -366,13 +370,16 @@ class MainActivity : ComponentActivity() {
 
         // State 3: Not in game — UI mode: remap gamepad buttons for Compose navigation
         gamepadPortManager.setInputMode(InputMode.GAMEPAD)
+        val uiNintendo = preferencesRepository.getConfirmButtonConvention() == ConfirmButtonConvention.NINTENDO
+        val uiConfirmKey = if (uiNintendo) KeyEvent.KEYCODE_BUTTON_B else KeyEvent.KEYCODE_BUTTON_A
+        val uiBackKey = if (uiNintendo) KeyEvent.KEYCODE_BUTTON_A else KeyEvent.KEYCODE_BUTTON_B
         when (keyCode) {
-            KeyEvent.KEYCODE_BUTTON_A -> {
+            uiConfirmKey -> {
                 val now = SystemClock.uptimeMillis()
                 val remapped = KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_CENTER, 0)
                 return super.dispatchKeyEvent(remapped)
             }
-            KeyEvent.KEYCODE_BUTTON_B -> {
+            uiBackKey -> {
                 navigationViewModel.onIntent(NavigationIntent.GoBack)
                 return true
             }

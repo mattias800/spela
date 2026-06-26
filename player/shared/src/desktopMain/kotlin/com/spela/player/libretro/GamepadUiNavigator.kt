@@ -34,6 +34,12 @@ class GamepadUiNavigator(
      */
     private val onGamepadInput: () -> Unit = {},
     /**
+     * Confirm/back convention (#1448): when true (Nintendo), the EAST face button
+     * confirms and SOUTH backs; when false (default, Xbox), SOUTH confirms and
+     * EAST backs. Read per poll — backed by an in-memory-cached preference.
+     */
+    private val confirmIsEast: () -> Boolean = { false },
+    /**
      * Key-event sink. Defaults to an AWT [Robot] that synthesizes real key
      * presses; tests inject a fake to assert the button -> key-code mapping and
      * auto-repeat timing without a real Robot.
@@ -120,8 +126,11 @@ class GamepadUiNavigator(
         repeatOnHold(first, GamepadPosition.DPAD_DOWN.ordinal, KeyEvent.VK_DOWN)
         repeatOnHold(first, GamepadPosition.DPAD_LEFT.ordinal, KeyEvent.VK_LEFT)
         repeatOnHold(first, GamepadPosition.DPAD_RIGHT.ordinal, KeyEvent.VK_RIGHT)
-        prevConfirm = synthOnEdge(first, GamepadPosition.SOUTH.ordinal, prevConfirm, KeyEvent.VK_ENTER)
-        prevBack = synthOnEdge(first, GamepadPosition.EAST.ordinal, prevBack, KeyEvent.VK_ESCAPE)
+        val nintendo = confirmIsEast()
+        val confirmPos = if (nintendo) GamepadPosition.EAST.ordinal else GamepadPosition.SOUTH.ordinal
+        val backPos = if (nintendo) GamepadPosition.SOUTH.ordinal else GamepadPosition.EAST.ordinal
+        prevConfirm = synthOnEdge(first, confirmPos, prevConfirm, KeyEvent.VK_ENTER)
+        prevBack = synthOnEdge(first, backPos, prevBack, KeyEvent.VK_ESCAPE)
     }
 
     /**

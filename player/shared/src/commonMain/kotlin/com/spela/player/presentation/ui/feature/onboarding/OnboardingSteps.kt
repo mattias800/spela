@@ -3,6 +3,10 @@ package com.spela.player.presentation.ui.feature.onboarding
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,19 +15,31 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.spela.player.domain.model.GamepadPosition
+import com.spela.player.domain.repository.ConfirmButtonConvention
 import com.spela.player.presentation.state.LoginState
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
@@ -32,6 +48,8 @@ import com.spela.player.presentation.ui.components.SpServerPill
 import com.spela.player.presentation.ui.components.SpTextField
 import com.spela.player.presentation.ui.components.gamepad.ControllerControls
 import com.spela.player.presentation.ui.components.gamepad.ControllerDetail
+import com.spela.player.presentation.ui.components.gamepad.GamepadInputTester
+import com.spela.player.presentation.ui.gamepad.gamepadFocusable
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -53,6 +71,12 @@ object OnboardingTestTags {
     const val NAME_DEVICE_INPUT = "onboarding_name_device_input"
     const val NAME_DEVICE_CONTINUE = "onboarding_name_device_continue"
     const val CONTROLS_CONTINUE = "onboarding_controls_continue"
+    const val VERIFY_GOOD = "onboarding_verify_good"
+    const val VERIFY_WRONG = "onboarding_verify_wrong"
+    const val VERIFY_CONTINUE = "onboarding_verify_continue"
+    const val CONVENTION_XBOX = "onboarding_convention_xbox"
+    const val CONVENTION_NINTENDO = "onboarding_convention_nintendo"
+    const val CONVENTION_CONTINUE = "onboarding_convention_continue"
     const val ALL_SET_FINISH = "onboarding_all_set_finish"
 }
 
@@ -258,6 +282,155 @@ fun ControlsStepContent(
             onClick = onContinue,
             modifier = Modifier.fillMaxWidth().testTag(OnboardingTestTags.CONTROLS_CONTINUE),
         )
+    }
+}
+
+// ── Controls phase A: Verify ──────────────────────────────────────────────
+
+/**
+ * First controls page: show the detected controller and auto-focus the live
+ * input tester so the user can press every button and confirm the mapping. Then
+ * they pick "good" (→ button convention) or "wrong" (→ controller setup).
+ */
+@Composable
+fun VerifyStepContent(
+    detectedName: String?,
+    pressedPositions: Set<GamepadPosition>,
+    onTestActiveChange: (Boolean) -> Unit,
+    onGood: () -> Unit,
+    onWrong: () -> Unit,
+    onContinueNoController: () -> Unit,
+) {
+    if (detectedName == null) {
+        Text(
+            text = "No controller detected. Connect one to verify it, or continue to set your " +
+                "button preferences for when you do.",
+            style = SpTypography.BodyMedium,
+            color = SpColor.OnBackgroundSecondary,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Spacer(Modifier.height(SpSpacing.XLarge))
+        SpButton(
+            text = "Continue",
+            onClick = onContinueNoController,
+            modifier = Modifier.fillMaxWidth().testTag(OnboardingTestTags.VERIFY_CONTINUE),
+        )
+        return
+    }
+
+    Text(
+        text = "Detected: $detectedName",
+        style = SpTypography.BodyMedium,
+        fontWeight = FontWeight.SemiBold,
+        color = SpColor.OnBackground,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.fillMaxWidth(),
+    )
+    Spacer(Modifier.height(SpSpacing.Large))
+
+    // Auto-focus the tester so face-button presses light up positions immediately
+    // (the D-pad still navigates away to the buttons below). Delay lets the
+    // GamepadHandler's on-mount self-focus settle first, mirroring focusRestoreItem.
+    val testerFocus = remember { FocusRequester() }
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(200)
+        runCatching { testerFocus.requestFocus() }
+    }
+    GamepadInputTester(
+        pressedPositions = pressedPositions,
+        onActiveChange = onTestActiveChange,
+        modifier = Modifier.focusRequester(testerFocus),
+    )
+
+    Spacer(Modifier.height(SpSpacing.XLarge))
+    SpButton(
+        text = "Mapping is good!",
+        onClick = onGood,
+        modifier = Modifier.fillMaxWidth().testTag(OnboardingTestTags.VERIFY_GOOD),
+    )
+    Spacer(Modifier.height(SpSpacing.Medium))
+    SpButton(
+        text = "Mapping is wrong",
+        onClick = onWrong,
+        style = SpButtonStyle.Secondary,
+        modifier = Modifier.fillMaxWidth().testTag(OnboardingTestTags.VERIFY_WRONG),
+    )
+}
+
+// ── Controls phase C: Button convention ───────────────────────────────────
+
+/**
+ * Lets the user choose the confirm/back button convention (#1448): bottom-button
+ * confirms (Xbox/PlayStation/Steam Deck) vs right-button confirms (Nintendo).
+ */
+@Composable
+fun ConventionStepContent(
+    current: String,
+    onSelect: (String) -> Unit,
+    onContinue: () -> Unit,
+) {
+    ConventionOption(
+        selected = current == ConfirmButtonConvention.XBOX,
+        title = "Bottom button confirms",
+        description = "Press the bottom button to select, the right button to go back. " +
+            "(Xbox, PlayStation, Steam Deck)",
+        onClick = { onSelect(ConfirmButtonConvention.XBOX) },
+        testTag = OnboardingTestTags.CONVENTION_XBOX,
+    )
+    Spacer(Modifier.height(SpSpacing.Medium))
+    ConventionOption(
+        selected = current == ConfirmButtonConvention.NINTENDO,
+        title = "Right button confirms",
+        description = "Press the right button to select, the bottom button to go back. " +
+            "(Nintendo)",
+        onClick = { onSelect(ConfirmButtonConvention.NINTENDO) },
+        testTag = OnboardingTestTags.CONVENTION_NINTENDO,
+    )
+    Spacer(Modifier.height(SpSpacing.XLarge))
+    SpButton(
+        text = "Continue",
+        onClick = onContinue,
+        modifier = Modifier.fillMaxWidth().testTag(OnboardingTestTags.CONVENTION_CONTINUE),
+    )
+}
+
+@Composable
+private fun ConventionOption(
+    selected: Boolean,
+    title: String,
+    description: String,
+    onClick: () -> Unit,
+    testTag: String,
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val shape = RoundedCornerShape(SpSpacing.RadiusMedium)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(SpColor.OnGradientFill)
+            .border(2.dp, if (selected) SpColor.PrimaryLight else Color.Transparent, shape)
+            .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
+            .gamepadFocusable(shape = shape, interactionSource = interactionSource, addFocusable = false)
+            .padding(SpSpacing.Default)
+            .testTag(testTag),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(text = title, style = SpTypography.BodyMedium, fontWeight = FontWeight.SemiBold, color = SpColor.OnBackground)
+            Spacer(Modifier.height(SpSpacing.XSmall))
+            Text(text = description, style = SpTypography.BodySmall, color = SpColor.OnBackgroundSecondary)
+        }
+        if (selected) {
+            Spacer(Modifier.width(SpSpacing.Small))
+            Icon(
+                imageVector = Icons.Filled.Check,
+                contentDescription = "Selected",
+                tint = SpColor.PrimaryLight,
+                modifier = Modifier.size(20.dp),
+            )
+        }
     }
 }
 

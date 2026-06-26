@@ -345,6 +345,8 @@ class StubPreferencesRepository : PreferencesRepository {
     override fun setControlTab(consoleId: String, tab: String) {}
     override fun getConsoleListGrouping(): String = "generation"
     override fun setConsoleListGrouping(grouping: String) {}
+    override fun getConfirmButtonConvention(): String = "xbox"
+    override fun setConfirmButtonConvention(convention: String) {}
 }
 
 class StubAchievementsRepository : AchievementsRepository {
