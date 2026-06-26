@@ -23,9 +23,9 @@ RUN go mod download
 
 COPY server/ .
 
-# Download No-Intro and MAME DAT files for CRC verification and name resolution
-RUN apk add --no-cache curl python3 && \
-    sh download-dats.sh dats || true
+# No-Intro / MAME DAT files (CRC verification + name resolution) are bundled in
+# server/dats/ and copied in with the source above — no build-time download.
+# (download-dats.sh is a bash helper for refreshing that bundle locally.)
 
 ARG SPELA_VERSION=dev
 RUN CGO_ENABLED=1 go build -ldflags "-X main.version=${SPELA_VERSION}" -o spela-server ./cmd/server
