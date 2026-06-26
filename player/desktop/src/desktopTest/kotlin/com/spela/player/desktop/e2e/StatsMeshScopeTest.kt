@@ -6,9 +6,11 @@ import com.spela.player.domain.model.MeshStatMetric
 import com.spela.player.domain.model.MostPlayedGame
 import com.spela.player.presentation.navigation.NavigationIntent
 import com.spela.player.presentation.navigation.SpScreen
+import com.spela.player.presentation.state.StatScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlin.test.Test
+import kotlin.test.assertTrue
 
 /**
  * Desktop UI tests for the "This server | Across connected servers" scope toggle
@@ -43,6 +45,20 @@ class StatsMeshScopeTest {
         onNodeWithText(text, useUnmergedTree = useUnmergedTree).assertExists()
     }
 
+    private fun ComposeUiTest.awaitMostPlayedMeshState(
+        harness: SpelaTestHarness,
+        description: String,
+        isReady: () -> Boolean,
+    ) {
+        repeat(6) {
+            advanceQuick(harness)
+            if (isReady()) {
+                return
+            }
+        }
+        assertTrue(isReady(), description)
+    }
+
     @Test
     fun mostPlayedTogglesBetweenThisServerAndMesh() = runComposeUiTest {
         val harness = createLoggedInHarness()
@@ -68,6 +84,15 @@ class StatsMeshScopeTest {
 
         // Switch to "Across servers".
         onNodeWithTag("most-played-across").performClick()
+        awaitMostPlayedMeshState(
+            harness = harness,
+            description = "Expected most-played mesh stats to load after switching scope",
+        ) {
+            val state = harness.statsViewModel.state.value
+            state.mostPlayedScope == StatScope.AcrossServers &&
+                !state.isLoadingMeshMostPlayed &&
+                state.meshMostPlayed.any { it.label == "Mesh Favorite" }
+        }
 
         awaitText(harness, "Mesh Favorite", useUnmergedTree = true)
     }
@@ -86,6 +111,15 @@ class StatsMeshScopeTest {
         advance(harness)
 
         onNodeWithTag("most-played-across").performClick()
+        awaitMostPlayedMeshState(
+            harness = harness,
+            description = "Expected most-played mesh empty state to finish loading after switching scope",
+        ) {
+            val state = harness.statsViewModel.state.value
+            state.mostPlayedScope == StatScope.AcrossServers &&
+                !state.isLoadingMeshMostPlayed &&
+                state.meshMostPlayed.isEmpty()
+        }
 
         awaitText(harness, "Nothing across connected servers yet")
     }
