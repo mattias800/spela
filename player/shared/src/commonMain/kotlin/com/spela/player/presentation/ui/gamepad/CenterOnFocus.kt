@@ -10,6 +10,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -84,8 +85,14 @@ fun Modifier.centerOnFocus(
     val lazyGridInfo = LocalLazyGridCenterInfo.current
     val lazyListInfo = LocalLazyListCenterInfo.current
     val isFocused by interactionSource.collectIsFocusedAsState()
-    var positionInRoot = 0f
-    var elementHeight = 0f
+    // Remembered (not plain locals): a focus change recomposes this modifier
+    // and would reset plain locals to 0, so the LaunchedEffect below could read
+    // a stale 0 before onGloballyPositioned re-runs — centring on a bogus
+    // position and snap-scrolling the viewport toward the top (#1452). Backing
+    // them with remembered state keeps the last measured bounds across the
+    // focus-change recomposition.
+    var positionInRoot by remember { mutableStateOf(0f) }
+    var elementHeight by remember { mutableStateOf(0f) }
     var lastFocusTime by remember { mutableLongStateOf(0L) }
 
     if (scrollState == null && lazyGridInfo == null && lazyListInfo == null) return@composed this

@@ -18,7 +18,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import com.spela.player.domain.repository.PreferencesRepository
 import com.spela.player.presentation.intent.GameListIntent
 import com.spela.player.presentation.ui.components.SegmentedOption
@@ -82,10 +81,12 @@ internal fun LibraryConsolesTab(
                 SpScreenTopSpacer()
                 SpMainContentPadding {
                     BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-                        val columnsPerRow = if (maxWidth >= 600.dp) 2 else 1
+                        // Match the real grid's density (#1446) so the skeleton
+                        // doesn't jump column count when consoles finish loading.
+                        val columnsPerRow = consoleColumnsForWidth(maxWidth)
                         ConsolesSkeletonGrid(
                             columnsPerRow = columnsPerRow,
-                            count = if (columnsPerRow == 2) 4 else 3,
+                            count = columnsPerRow * 2,
                         )
                     }
                 }

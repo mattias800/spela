@@ -55,12 +55,56 @@ Once a child element has focus, normal directional navigation takes over.
 
 ### Right Stick Scroll
 
-When the right analog stick is used for scrolling (`MainActivity.kt`),
-the activity calls `currentFocus?.clearFocus()` to break the link
-between the focused element and the d-pad. Without this, the next d-pad
-press would jump the scroll position back to the (now offscreen) focused
-element. After clearing, the next d-pad press triggers the recovery path
-and focuses the first visible element.
+The right analog stick scrolls the active viewport continuously while in
+gamepad mode (`RightStickScroll`, #1362) — like a scroll wheel,
+independent of d-pad focus traversal. It does **not** clear focus, so
+after a stick (or touch, or `performScrollTo`) scroll the focused element
+can end up far outside the viewport. The next d-pad press is then handled
+by the off-screen-focus redirect below — not by clearing focus.
+
+> Historical note: an earlier #1194 design cleared focus on right-stick
+> scroll so `moveFocus(Next)` would land on the first *visible* element.
+> That relied on `LazyColumn` disposing off-screen items. `SpScrollableContent`
+> is a `verticalScroll` `Column` (everything stays composed), so clearing
+> focus there just makes `moveFocus(Next)` land on the absolute-first
+> (top, off-screen) element and snap-scroll the list back up. The redirect
+> below replaces that approach for `verticalScroll` viewports.
+
+### Off-screen-focus redirect (`ScrollFocusRegistry`, #1452)
+
+`SpScrollableContent` keeps every focusable child composed regardless of
+scroll position. So after a manual scroll that pushes the focused element
+off-screen, a plain `focusManager.moveFocus(direction)` finds the
+off-screen element's (also off-screen) neighbour, and `centerOnFocus` /
+`focusable()`'s `bringIntoView` yank the list back toward the top — the
+exact "scroll jumps back to the offscreen focused element" symptom. A
+`LazyColumn` sidesteps this by disposing off-screen items; a
+`verticalScroll` `Column` has no such notion, so we reconstruct it:
+
+- Each `focusRestoreItem` (the outer card node) registers its live root-Y
+  bounds, focus state, and `FocusRequester` with a `ScrollFocusRegistry`
+  provided by the enclosing `SpScrollableContent`. **Registration is on
+  `focusRestoreItem`, not on the inner `gamepadFocusable`/`centerOnFocus`,**
+  because default/restore focus lands on the *outer* node while
+  `moveFocus` lands on the *inner* `focusable()` — the outer
+  `onFocusChanged { hasFocus }` is the only vantage point that sees both.
+- `SpScrollableContent` installs an `onPreviewKeyEvent` on its scroll
+  `Column` that, on a directional key, calls
+  `redirectIfFocusedOffscreen()` **before** normal navigation. If the
+  focused element does not intersect the viewport, focus is moved to the
+  topmost focusable whose *top edge* is within the viewport (a card that
+  genuinely starts on screen — not one bleeding in from above, which would
+  re-trigger the centre-on-focus snap) and the key is consumed.
+- When the focused element *is* visible, the redirect returns `false` and
+  normal directional navigation is completely unaffected. Outside a
+  `verticalScroll` viewport the registry is null and the whole thing
+  no-ops (`LazyColumn` already disposes off-screen items).
+
+Companion fix: `centerOnFocus` backs `positionInRoot`/`elementHeight` with
+remembered state, not plain locals. A focus change recomposes the modifier
+and would reset plain locals to 0; the centring `LaunchedEffect` could then
+read a stale 0 before `onGloballyPositioned` re-ran, centre on a bogus
+position, and snap-scroll toward the top.
 
 ## Focus Ring: `spFocusRing` Modifier
 

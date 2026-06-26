@@ -93,24 +93,24 @@ private val HeroBadgeBackground = Color.White.copy(alpha = 0.10f)
 internal val ConsoleCardMaxWidth = 280.dp
 
 /**
- * #1082: Column count for the consoles grid given the available container
- * width. Extracted so the breakpoint logic is unit-testable without
- * spinning up Compose UI.
+ * #1082 / #1446: Column count for the consoles grid given the available
+ * container width. Extracted so the breakpoint logic is unit-testable
+ * without spinning up Compose UI.
  *
- * Pairs with [ConsoleCardMaxWidth] — the breakpoints target a compact
- * ~220 dp card across widths (matching the denser web grid), so each
- * row's available width divides into roughly cap-sized cards. The
- * per-card width cap then stops cards from stretching past ~280 dp on
- * the in-between widths where `width / cols` would exceed it.
+ * #1446 bumped every breakpoint by +2 columns so the cards render smaller
+ * and denser. The AYN Thor in landscape is ~830 dp wide (1920 px at ~2.3×
+ * density, ≈760 dp after content padding), which lands in the `>= 620`
+ * arm — so it now shows 5 cards per row (was 3). Each card is still capped
+ * at [ConsoleCardMaxWidth] so it never stretches oversized on wide windows.
  */
 internal fun consoleColumnsForWidth(width: androidx.compose.ui.unit.Dp): Int = when {
-    width >= 1540.dp -> 7
-    width >= 1320.dp -> 6
-    width >= 1100.dp -> 5
-    width >= 880.dp  -> 4
-    width >= 620.dp  -> 3
-    width >= 320.dp  -> 2
-    else             -> 1
+    width >= 1540.dp -> 9
+    width >= 1320.dp -> 8
+    width >= 1100.dp -> 7
+    width >= 880.dp  -> 6
+    width >= 620.dp  -> 5
+    width >= 320.dp  -> 4
+    else             -> 3
 }
 
 @Composable

@@ -1,6 +1,7 @@
 package com.spela.player.presentation.ui.gamepad
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.compositionLocalOf
@@ -102,6 +103,32 @@ fun Modifier.focusRestoreItem(
     var elementY by remember { mutableStateOf(Float.NaN) }
     var elementHeight by remember { mutableStateOf(0) }
 
+    // #1452: register with the enclosing verticalScroll viewport so a d-pad
+    // press can re-acquire focus to a *visible* element when this one has been
+    // scrolled off-screen, instead of spatially-moving from the off-screen
+    // element and snap-scrolling the list back. Registration is on this
+    // primitive (not on the inner focusable) because default/restore focus
+    // lands on *this* node while moveFocus lands on the inner focusable — the
+    // outer `onFocusChanged { hasFocus }` is the only place that sees both.
+    // No-op outside SpScrollableContent (registry is null inside a LazyColumn,
+    // which already disposes off-screen items). See [ScrollFocusRegistry].
+    val registry = LocalScrollFocusRegistry.current
+    var isFocused by remember { mutableStateOf(false) }
+    if (registry != null) {
+        val entry = remember(registry, fr) {
+            ScrollFocusRegistry.Entry(
+                requester = fr,
+                topInRoot = { elementY },
+                height = { elementHeight.toFloat() },
+                isFocused = { isFocused },
+            )
+        }
+        DisposableEffect(entry) {
+            registry.register(entry)
+            onDispose { registry.unregister(entry) }
+        }
+    }
+
     // Hybrid input mode focus restoration. On Android the framework
     // tracks a global "touch mode" — any screen touch (tap, swipe,
     // scroll) flips Compose's input mode to `InputMode.Touch` and its
@@ -195,6 +222,7 @@ fun Modifier.focusRestoreItem(
             elementHeight = coords.size.height
         }
         .onFocusChanged { state ->
+            isFocused = state.hasFocus
             if (state.hasFocus) {
                 scope.value = key
             }
