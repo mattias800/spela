@@ -12,6 +12,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import com.spela.player.domain.repository.PreferencesRepository
+import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.intent.LoginIntent
 import com.spela.player.presentation.ui.feature.onboarding.AllSetStepContent
 import com.spela.player.presentation.ui.feature.onboarding.ConnectStepContent
@@ -91,6 +92,13 @@ fun OnboardingWizardScreen(
     val stepIndex = milestoneIndex(wizardState.step)
     // Where the controller phase begins (or is skipped) after naming.
     val afterNaming = if (gamepadConfigViewModel != null) OnboardingStep.Verify else OnboardingStep.AllSet
+
+    // System / hardware back navigates the wizard's own page stack rather than
+    // falling through to the OS (which would exit the app). On the first page
+    // (Welcome) it's disabled, so back exits as usual (#1448).
+    PlatformBackHandler(enabled = wizardState.canGoBack) {
+        wizardViewModel.onIntent(OnboardingWizardIntent.Back)
+    }
 
     Box(modifier = Modifier.fillMaxSize().testTag(OnboardingTestTags.SCREEN)) {
         when (wizardState.step) {

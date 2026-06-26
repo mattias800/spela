@@ -182,6 +182,11 @@ fun SpelaApp(deps: SpelaAppDependencies) = with(deps) {
             onBack = if (inGameOverlayOpen) {
                 // A / Escape resumes (closes the overlay) rather than navigating.
                 { emulationViewModel.onIntent(EmulationIntent.ToggleOverlay) }
+            } else if (navState.currentScreen is SpScreen.OnboardingWizard) {
+                // The wizard walks its own page stack (no-op on its first page).
+                onboardingWizardViewModel?.let { vm ->
+                    { vm.onIntent(com.spela.player.presentation.viewmodel.OnboardingWizardIntent.Back) }
+                }
             } else if (isGamepadScreen) {
                 { navigationViewModel.onIntent(NavigationIntent.GoBack) }
             } else null,

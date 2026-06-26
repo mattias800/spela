@@ -380,7 +380,14 @@ class MainActivity : ComponentActivity() {
                 return super.dispatchKeyEvent(remapped)
             }
             uiBackKey -> {
-                navigationViewModel.onIntent(NavigationIntent.GoBack)
+                // On the first-run wizard, route back through the back dispatcher
+                // (its PlatformBackHandler walks the wizard's own page stack)
+                // rather than popping the tab stack. Elsewhere, normal GoBack (#1448).
+                if (navigationViewModel.state.value.currentScreen is SpScreen.OnboardingWizard) {
+                    onBackPressedDispatcher.onBackPressed()
+                } else {
+                    navigationViewModel.onIntent(NavigationIntent.GoBack)
+                }
                 return true
             }
             KeyEvent.KEYCODE_BUTTON_L1 -> {

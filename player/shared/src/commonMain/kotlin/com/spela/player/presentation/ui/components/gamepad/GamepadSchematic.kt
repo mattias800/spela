@@ -54,11 +54,16 @@ fun GamepadSchematic(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(SpSpacing.Default),
     ) {
-        // Shoulders / triggers: L2 L1 … R1 R2
+        // Top row: shoulders/triggers with Select/Start centred between them —
+        // L2 L1 · SE ST · R1 R2.
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Row(horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small)) {
                 Pip(GamepadPosition.L2, highlighted)
                 Pip(GamepadPosition.L1, highlighted)
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small)) {
+                Pip(GamepadPosition.SELECT, highlighted)
+                Pip(GamepadPosition.START, highlighted)
             }
             Row(horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small)) {
                 Pip(GamepadPosition.R1, highlighted)
@@ -66,7 +71,9 @@ fun GamepadSchematic(
             }
         }
 
-        // Main body: D-pad cross (left) · Select/Start (centre) · face diamond (right)
+        // Main body: D-pad cross (left) · stick clicks L3 R3 (centre, aligned
+        // with the crosses' inner arms) · face diamond (right). Dropping the
+        // separate stick-click row keeps this compact.
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -79,12 +86,9 @@ fun GamepadSchematic(
                 right = GamepadPosition.DPAD_RIGHT,
                 highlighted = highlighted,
             )
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-            ) {
-                Pip(GamepadPosition.SELECT, highlighted)
-                Pip(GamepadPosition.START, highlighted)
+            Row(horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small)) {
+                Pip(GamepadPosition.L3, highlighted)
+                Pip(GamepadPosition.R3, highlighted)
             }
             Cross(
                 up = GamepadPosition.NORTH,
@@ -93,12 +97,6 @@ fun GamepadSchematic(
                 right = GamepadPosition.EAST,
                 highlighted = highlighted,
             )
-        }
-
-        // Stick clicks
-        Row(horizontalArrangement = Arrangement.spacedBy(SpSpacing.Large)) {
-            Pip(GamepadPosition.L3, highlighted)
-            Pip(GamepadPosition.R3, highlighted)
         }
     }
 }
