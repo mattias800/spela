@@ -211,6 +211,22 @@ class SettingsConsoleNavigationTest {
             .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Active"))
         onNodeWithTag("schematic_EAST", useUnmergedTree = true)
             .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Inactive"))
+
+        // Once active, the D-pad is captured (not used to navigate away) so it can
+        // be tested too (#1448): a press lights its chip.
+        harness.gamepadPortManager.reportPositionInput(500, GamepadPosition.DPAD_UP, pressed = true)
+        advanceQuick(harness)
+        onNodeWithTag("schematic_DPAD_UP", useUnmergedTree = true)
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Active"))
+
+        // Analog stick deflection lights the matching stick well (#1448): pushing
+        // the left stick activates L3's indicator while R3 stays at rest.
+        harness.gamepadPortManager.reportTestSticks(500, leftX = 1f, leftY = 0f, rightX = 0f, rightY = 0f)
+        advanceQuick(harness)
+        onNodeWithTag("schematic_L3", useUnmergedTree = true)
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Active"))
+        onNodeWithTag("schematic_R3", useUnmergedTree = true)
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Inactive"))
     }
 
     /**

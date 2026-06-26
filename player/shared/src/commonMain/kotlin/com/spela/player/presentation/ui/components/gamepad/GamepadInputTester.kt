@@ -26,6 +26,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.GamepadPosition
+import com.spela.player.libretro.GamepadTestSticks
 import com.spela.player.presentation.ui.gamepad.gamepadFocusable
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -49,6 +50,7 @@ fun GamepadInputTester(
     pressedPositions: Set<GamepadPosition>,
     onActiveChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
+    sticks: GamepadTestSticks = GamepadTestSticks(),
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     var active by remember { mutableStateOf(false) }
@@ -73,15 +75,16 @@ fun GamepadInputTester(
     ) {
         Text(
             text = if (active) {
-                "Testing — press your buttons to see them light up. Press again to stop."
+                "Testing — buttons, D-pad and sticks all light up. " +
+                    "Press the confirm button or tap again to stop."
             } else {
-                "Press to test your controller."
+                "Press the confirm button or tap to test your controller."
             },
             style = SpTypography.BodySmall,
             color = if (active) SpColor.PrimaryLight else SpColor.OnBackgroundTertiary,
             textAlign = TextAlign.Center,
         )
         Spacer(Modifier.height(SpSpacing.Medium))
-        GamepadSchematic(highlighted = pressedPositions)
+        GamepadSchematic(highlighted = pressedPositions, sticks = sticks)
     }
 }

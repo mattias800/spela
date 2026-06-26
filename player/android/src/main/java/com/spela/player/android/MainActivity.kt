@@ -14,6 +14,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.lifecycle.lifecycleScope
 import com.spela.player.domain.model.ControllerClassifier
+import com.spela.player.domain.model.GamepadPosition
 import com.spela.player.domain.repository.ConfirmButtonConvention
 import com.spela.player.domain.repository.PreferencesRepository
 import com.spela.player.libretro.AndroidGamepadNormalizer
@@ -524,6 +525,32 @@ class MainActivity : ComponentActivity() {
         // populates the on-screen indicator (#1165). No-op for non-
         // gamepad sources thanks to ensureDeviceConnected's filter.
         ensureDeviceConnected(event.deviceId)
+
+        // Live input tester active for this controller (#1448): capture the D-pad
+        // (HAT) and both analog sticks so they light up on the schematic, and
+        // suppress UI navigation + right-stick scroll. Exit is the confirm button,
+        // which is a key event handled in captureTestInput.
+        val testTarget = gamepadPortManager.testCaptureDeviceId.value
+        if (!isEmulationConsuming && testTarget != null && event.deviceId == testTarget) {
+            val hatX = event.getAxisValue(MotionEvent.AXIS_HAT_X)
+            val hatY = event.getAxisValue(MotionEvent.AXIS_HAT_Y)
+            gamepadPortManager.reportPositionInput(testTarget, GamepadPosition.DPAD_LEFT, hatX < -0.5f)
+            gamepadPortManager.reportPositionInput(testTarget, GamepadPosition.DPAD_RIGHT, hatX > 0.5f)
+            gamepadPortManager.reportPositionInput(testTarget, GamepadPosition.DPAD_UP, hatY < -0.5f)
+            gamepadPortManager.reportPositionInput(testTarget, GamepadPosition.DPAD_DOWN, hatY > 0.5f)
+            // normalizeAxis applies the deadzone and returns a RetroPad-range Short;
+            // divide back to the -1..1 the tester's stick indicator expects.
+            val axisRange = Short.MAX_VALUE.toFloat()
+            gamepadPortManager.reportTestSticks(
+                testTarget,
+                GamepadMapping.normalizeAxis(event.getAxisValue(MotionEvent.AXIS_X)) / axisRange,
+                GamepadMapping.normalizeAxis(event.getAxisValue(MotionEvent.AXIS_Y)) / axisRange,
+                GamepadMapping.normalizeAxis(event.getAxisValue(MotionEvent.AXIS_Z)) / axisRange,
+                GamepadMapping.normalizeAxis(event.getAxisValue(MotionEvent.AXIS_RZ)) / axisRange,
+            )
+            gamepadPortManager.setRightStickScroll(0f)
+            return true
+        }
 
         if (isEmulationConsuming) {
             val controller = androidController ?: return super.onGenericMotionEvent(event)

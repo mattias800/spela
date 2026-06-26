@@ -4,6 +4,7 @@ import com.spela.player.domain.model.ControllerStyle
 import com.spela.player.domain.model.GamepadPosition
 import com.spela.player.domain.repository.ControllerStyleOverrideRepository
 import com.spela.player.libretro.GamepadPortManager
+import com.spela.player.libretro.GamepadTestSticks
 import com.spela.player.util.DispatcherProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -21,6 +22,9 @@ data class GamepadConfigState(
     /** Canonical input positions currently held down on the controller under
      *  test — drives the live input tester (#1355/#1359). */
     val pressedPositions: Set<GamepadPosition> = emptySet(),
+    /** Analog stick deflection of the controller under test — drives the live
+     *  tester's stick indicators (#1448). */
+    val testSticks: GamepadTestSticks = GamepadTestSticks(),
     /** All connected controllers and their player-slot assignment (#1359) — the
      *  source for the per-controller list/detail UI in Settings → Controls. */
     val controllers: List<ControllerUi> = emptyList(),
@@ -147,6 +151,11 @@ class GamepadConfigViewModel(
         scope.launch(dispatchers.default) {
             gamepadPortManager.pressedPositions.collect { positions ->
                 _state.update { it.copy(pressedPositions = positions) }
+            }
+        }
+        scope.launch(dispatchers.default) {
+            gamepadPortManager.testSticks.collect { sticks ->
+                _state.update { it.copy(testSticks = sticks) }
             }
         }
     }

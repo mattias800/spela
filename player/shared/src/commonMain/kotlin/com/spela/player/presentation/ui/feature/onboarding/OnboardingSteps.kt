@@ -40,6 +40,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.GamepadPosition
 import com.spela.player.domain.repository.ConfirmButtonConvention
+import com.spela.player.libretro.GamepadTestSticks
 import com.spela.player.presentation.state.LoginState
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
@@ -257,6 +258,7 @@ fun ControlsStepContent(
         ControllerDetail(
             controller = selected,
             pressedPositions = state.pressedPositions,
+            sticks = state.testSticks,
             onBack = onBackToList,
             onSelectStyle = { onIntent(GamepadConfigIntent.SetStyleOverrideForController(selected.deviceId, it)) },
             onAssignSlot = { onIntent(GamepadConfigIntent.AssignPlayer(selected.deviceId, it)) },
@@ -296,6 +298,7 @@ fun ControlsStepContent(
 fun VerifyStepContent(
     detectedName: String?,
     pressedPositions: Set<GamepadPosition>,
+    sticks: GamepadTestSticks,
     onTestActiveChange: (Boolean) -> Unit,
     onGood: () -> Unit,
     onWrong: () -> Unit,
@@ -341,6 +344,7 @@ fun VerifyStepContent(
         pressedPositions = pressedPositions,
         onActiveChange = onTestActiveChange,
         modifier = Modifier.focusRequester(testerFocus),
+        sticks = sticks,
     )
 
     Spacer(Modifier.height(SpSpacing.XLarge))

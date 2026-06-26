@@ -26,6 +26,16 @@ import kotlin.time.Clock
  *
  * Thread-safe: all mutation goes through synchronized blocks.
  */
+
+/** Analog stick deflection for the live input tester (#1448). Axes normalized
+ *  to -1..1; (0,0) at rest. */
+data class GamepadTestSticks(
+    val leftX: Float = 0f,
+    val leftY: Float = 0f,
+    val rightX: Float = 0f,
+    val rightY: Float = 0f,
+)
+
 class GamepadPortManager(
     private val keyMappingRepository: KeyMappingRepository,
     private val scope: CoroutineScope? = null,
@@ -139,6 +149,11 @@ class GamepadPortManager(
      *  or empty when no tester is focused. */
     val pressedPositions: StateFlow<Set<GamepadPosition>> = _pressedPositions.asStateFlow()
 
+    /** Analog stick deflection of the controller under test, for the live tester's
+     *  stick indicators (#1448). Each axis is normalized to -1..1; (0,0) at rest. */
+    private val _testSticks = MutableStateFlow(GamepadTestSticks())
+    val testSticks: StateFlow<GamepadTestSticks> = _testSticks.asStateFlow()
+
     /** The controller whose buttons the input tester is currently capturing, or
      *  null when no tester element is focused. Non-null = capture active for
      *  exactly that device: the input pipelines (Android key dispatch, desktop
@@ -155,6 +170,15 @@ class GamepadPortManager(
         _testCaptureDeviceId.value = deviceId
         pressedByDevice.clear()
         _pressedPositions.value = emptySet()
+        _testSticks.value = GamepadTestSticks()
+    }
+
+    /** Reports the controller-under-test's analog stick deflection for the live
+     *  tester (#1448). Ignored unless [deviceId] is the device under test. */
+    @Synchronized
+    fun reportTestSticks(deviceId: Int, leftX: Float, leftY: Float, rightX: Float, rightY: Float) {
+        if (_testCaptureDeviceId.value != deviceId) return
+        _testSticks.value = GamepadTestSticks(leftX, leftY, rightX, rightY)
     }
 
     /** Positions held during a hold-to-bind session, merged across ALL devices

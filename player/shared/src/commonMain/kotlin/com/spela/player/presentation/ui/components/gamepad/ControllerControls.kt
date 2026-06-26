@@ -104,6 +104,7 @@ fun ControllerDetailScreen(
                 ControllerDetail(
                     controller = controller,
                     pressedPositions = state.pressedPositions,
+                    sticks = state.testSticks,
                     onBack = onBack,
                     onSelectStyle = { style ->
                         onIntent(GamepadConfigIntent.SetStyleOverrideForController(deviceId, style))
@@ -220,6 +221,7 @@ private fun ControllerListRow(
 internal fun ControllerDetail(
     controller: ControllerUi,
     pressedPositions: Set<com.spela.player.domain.model.GamepadPosition>,
+    sticks: com.spela.player.libretro.GamepadTestSticks,
     onBack: () -> Unit,
     onSelectStyle: (ControllerStyle?) -> Unit,
     onAssignSlot: (Int) -> Unit,
@@ -304,6 +306,7 @@ internal fun ControllerDetail(
         GamepadInputTester(
             pressedPositions = pressedPositions,
             onActiveChange = onTestActiveChange,
+            sticks = sticks,
         )
     }
 
