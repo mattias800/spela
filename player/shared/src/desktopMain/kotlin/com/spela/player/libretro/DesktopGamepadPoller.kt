@@ -146,10 +146,11 @@ class DesktopGamepadPoller(
             // Live input tester (#1355/#1359/#1448): only for the controller
             // currently under test, report every pressed position — INCLUDING the
             // D-pad — plus analog stick deflection, so the whole controller is
-            // testable. The confirm button is excluded: it's the toggle that turns
-            // the tester off (kept reaching navigation below), so it never lights
-            // up. Done before the port check so an *unassigned* (cleared) controller
-            // is still fully testable.
+            // testable. The confirm button is reported separately as a held signal
+            // (it drives the hold-to-stop timer, and is masked from navigation
+            // below) so it never lights up and a single press no longer exits. Done
+            // before the port check so an *unassigned* (cleared) controller is still
+            // fully testable.
             if (gamepadPortManager.testCaptureDeviceId.value == state.controllerId) {
                 gamepadPortManager.reportPressedPositions(
                     state.controllerId,
@@ -157,6 +158,7 @@ class DesktopGamepadPoller(
                         positionPressed[it.ordinal] && it != confirmPos
                     },
                 )
+                gamepadPortManager.reportTestConfirmHeld(state.controllerId, positionPressed[confirmPos.ordinal])
                 if (state.axes.size >= NUM_AXES) {
                     gamepadPortManager.reportTestSticks(
                         state.controllerId,
@@ -235,11 +237,14 @@ class DesktopGamepadPoller(
         gamepadPortManager.setRightStickScroll(uiScrollY)
 
         // While a controller is under test, mask ALL of its buttons from UI
-        // navigation EXCEPT the confirm button (#1355/#1359/#1448): the tester
-        // captures everything — including the D-pad — so nothing should navigate or
-        // trigger "back", but the confirm button must still reach navigation so its
-        // press toggles the tester off. Only the controller under test is masked;
-        // any other pad still navigates normally.
+        // navigation (#1355/#1359/#1448): the tester captures everything — including
+        // the D-pad and the confirm button — so nothing navigates or triggers
+        // "back". The confirm button drives the hold-to-stop timer instead of
+        // navigating; deactivation happens in the tester on release after a full
+        // hold, so the confirm press never reaches navigation. Activation is
+        // unaffected: the mask only applies once the tester is already active (a
+        // confirm press to activate happens while testTarget is still null). Only
+        // the controller under test is masked; any other pad still navigates.
         val testTarget = gamepadPortManager.testCaptureDeviceId.value
         val navStates = when {
             // During a hold-to-bind session every press (incl. D-pad) feeds the
@@ -251,14 +256,7 @@ class DesktopGamepadPoller(
             }
             testTarget != null -> Array(states.size) { idx ->
                 val st = states[idx]
-                if (st.controllerId != testTarget) {
-                    st
-                } else {
-                    val masked = BooleanArray(st.buttons.size) { i ->
-                        st.buttons[i] && i == confirmPos.ordinal
-                    }
-                    st.copy(buttons = masked)
-                }
+                if (st.controllerId != testTarget) st else st.copy(buttons = BooleanArray(st.buttons.size))
             }
             else -> states
         }

@@ -105,6 +105,7 @@ fun ControllerDetailScreen(
                     controller = controller,
                     pressedPositions = state.pressedPositions,
                     sticks = state.testSticks,
+                    confirmHeld = state.confirmHeld,
                     onBack = onBack,
                     onSelectStyle = { style ->
                         onIntent(GamepadConfigIntent.SetStyleOverrideForController(deviceId, style))
@@ -222,6 +223,7 @@ internal fun ControllerDetail(
     controller: ControllerUi,
     pressedPositions: Set<com.spela.player.domain.model.GamepadPosition>,
     sticks: com.spela.player.libretro.GamepadTestSticks,
+    confirmHeld: Boolean,
     onBack: () -> Unit,
     onSelectStyle: (ControllerStyle?) -> Unit,
     onAssignSlot: (Int) -> Unit,
@@ -300,11 +302,12 @@ internal fun ControllerDetail(
         Text(
             text = "If a button lights up the wrong position, change the Type above.",
             style = SpTypography.BodySmall,
-            color = SpColor.OnBackgroundTertiary,
+            color = SpColor.OnBackgroundSecondary,
             modifier = Modifier.padding(bottom = SpSpacing.Small),
         )
         GamepadInputTester(
             pressedPositions = pressedPositions,
+            confirmHeld = confirmHeld,
             onActiveChange = onTestActiveChange,
             sticks = sticks,
         )

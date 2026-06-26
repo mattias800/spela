@@ -230,6 +230,62 @@ class SettingsConsoleNavigationTest {
     }
 
     /**
+     * The tester stops only after the confirm button is *held* for the full
+     * duration and then released (#1448): a brief press keeps it running (so the
+     * confirm button is testable and an accidental press doesn't exit), while a
+     * full hold followed by release ends capture.
+     */
+    @Test
+    fun controllerDetailTesterStopsOnlyAfterHoldingConfirm() = runComposeUiTest {
+        val harness = createLoggedInHarness()
+        harness.gamepadPortManager.connectDevice(500, "Test Pad", ControllerStyle.Xbox)
+
+        setContent { harness.App() }
+        navigateToSettings(harness)
+        openControlsCategory(harness)
+        onNodeWithTag("controller_row_500").performClick()
+        advanceQuick(harness)
+
+        // Activate the tester (tap), so the confirm button is captured.
+        onNodeWithTag("input_tester").performScrollTo().performClick()
+        advanceQuick(harness)
+        assertEquals(500, harness.gamepadPortManager.testCaptureDeviceId.value)
+
+        // Fine-grained clock control so the 2s hold doesn't auto-complete.
+        fun settle(ms: Long) {
+            mainClock.autoAdvance = false
+            harness.testDispatcher.scheduler.runCurrent()
+            mainClock.advanceTimeBy(ms)
+            harness.testDispatcher.scheduler.runCurrent()
+            waitForIdle()
+        }
+
+        // A brief hold then release (well under 2s) must NOT stop the tester.
+        harness.gamepadPortManager.reportTestConfirmHeld(500, held = true)
+        settle(300)
+        harness.gamepadPortManager.reportTestConfirmHeld(500, held = false)
+        settle(100)
+        assertEquals(
+            500,
+            harness.gamepadPortManager.testCaptureDeviceId.value,
+            "A brief confirm press must not stop the tester",
+        )
+
+        // Holding past the full duration then releasing stops it.
+        harness.gamepadPortManager.reportTestConfirmHeld(500, held = true)
+        settle(2_400)
+        // Still active before release — stopping happens on release after a full hold.
+        assertEquals(500, harness.gamepadPortManager.testCaptureDeviceId.value)
+        harness.gamepadPortManager.reportTestConfirmHeld(500, held = false)
+        advanceQuick(harness)
+        assertEquals(
+            null,
+            harness.gamepadPortManager.testCaptureDeviceId.value,
+            "Releasing after a full hold stops the tester",
+        )
+    }
+
+    /**
      * Assigning a player number already held by another controller raises a
      * conflict prompt; confirming moves the slot and clears the old controller (#1359).
      */

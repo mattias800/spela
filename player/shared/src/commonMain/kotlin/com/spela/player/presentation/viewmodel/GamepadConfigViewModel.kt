@@ -25,6 +25,9 @@ data class GamepadConfigState(
     /** Analog stick deflection of the controller under test — drives the live
      *  tester's stick indicators (#1448). */
     val testSticks: GamepadTestSticks = GamepadTestSticks(),
+    /** Whether the confirm button is held on the controller under test — drives the
+     *  tester's hold-to-stop timer (#1448). */
+    val confirmHeld: Boolean = false,
     /** All connected controllers and their player-slot assignment (#1359) — the
      *  source for the per-controller list/detail UI in Settings → Controls. */
     val controllers: List<ControllerUi> = emptyList(),
@@ -156,6 +159,11 @@ class GamepadConfigViewModel(
         scope.launch(dispatchers.default) {
             gamepadPortManager.testSticks.collect { sticks ->
                 _state.update { it.copy(testSticks = sticks) }
+            }
+        }
+        scope.launch(dispatchers.default) {
+            gamepadPortManager.testConfirmHeld.collect { held ->
+                _state.update { it.copy(confirmHeld = held) }
             }
         }
     }

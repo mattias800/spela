@@ -218,6 +218,7 @@ fun OnboardingWizardScreen(
                             detectedName = detected?.deviceName?.ifBlank { "your controller" },
                             pressedPositions = configState.pressedPositions,
                             sticks = configState.testSticks,
+                            confirmHeld = configState.confirmHeld,
                             onTestActiveChange = { active ->
                                 detected?.deviceId?.let {
                                     configVm.onIntent(GamepadConfigIntent.SetInputTestActive(it, active))

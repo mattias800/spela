@@ -259,6 +259,7 @@ fun ControlsStepContent(
             controller = selected,
             pressedPositions = state.pressedPositions,
             sticks = state.testSticks,
+            confirmHeld = state.confirmHeld,
             onBack = onBackToList,
             onSelectStyle = { onIntent(GamepadConfigIntent.SetStyleOverrideForController(selected.deviceId, it)) },
             onAssignSlot = { onIntent(GamepadConfigIntent.AssignPlayer(selected.deviceId, it)) },
@@ -299,6 +300,7 @@ fun VerifyStepContent(
     detectedName: String?,
     pressedPositions: Set<GamepadPosition>,
     sticks: GamepadTestSticks,
+    confirmHeld: Boolean,
     onTestActiveChange: (Boolean) -> Unit,
     onGood: () -> Unit,
     onWrong: () -> Unit,
@@ -342,6 +344,7 @@ fun VerifyStepContent(
     }
     GamepadInputTester(
         pressedPositions = pressedPositions,
+        confirmHeld = confirmHeld,
         onActiveChange = onTestActiveChange,
         modifier = Modifier.focusRequester(testerFocus),
         sticks = sticks,

@@ -154,6 +154,13 @@ class GamepadPortManager(
     private val _testSticks = MutableStateFlow(GamepadTestSticks())
     val testSticks: StateFlow<GamepadTestSticks> = _testSticks.asStateFlow()
 
+    /** Whether the confirm button is currently held on the controller under test
+     *  (#1448). The tester uses it to drive a hold-to-stop timer instead of exiting
+     *  on a single press; the confirm button is captured (not lit, not navigating)
+     *  while the tester is active, so the input layer reports it here separately. */
+    private val _testConfirmHeld = MutableStateFlow(false)
+    val testConfirmHeld: StateFlow<Boolean> = _testConfirmHeld.asStateFlow()
+
     /** The controller whose buttons the input tester is currently capturing, or
      *  null when no tester element is focused. Non-null = capture active for
      *  exactly that device: the input pipelines (Android key dispatch, desktop
@@ -171,6 +178,16 @@ class GamepadPortManager(
         pressedByDevice.clear()
         _pressedPositions.value = emptySet()
         _testSticks.value = GamepadTestSticks()
+        _testConfirmHeld.value = false
+    }
+
+    /** Reports whether the confirm button is held on the controller under test, for
+     *  the tester's hold-to-stop timer (#1448). Ignored unless [deviceId] is the
+     *  device under test. */
+    @Synchronized
+    fun reportTestConfirmHeld(deviceId: Int, held: Boolean) {
+        if (_testCaptureDeviceId.value != deviceId) return
+        _testConfirmHeld.value = held
     }
 
     /** Reports the controller-under-test's analog stick deflection for the live
@@ -400,6 +417,10 @@ class GamepadPortManager(
         freeAssignedPort(deviceId)
         if (pressedByDevice.remove(deviceId) != null && _testCaptureDeviceId.value == deviceId) {
             recomputePressedPositions()
+        }
+        if (_testCaptureDeviceId.value == deviceId) {
+            _testConfirmHeld.value = false
+            _testSticks.value = GamepadTestSticks()
         }
         if (bindPressedByDevice.remove(deviceId) != null && _bindCaptureActive.value) {
             recomputeBindPressed()
@@ -717,6 +738,8 @@ class GamepadPortManager(
         pressedByDevice.clear()
         _pressedPositions.value = emptySet()
         _testCaptureDeviceId.value = null
+        _testSticks.value = GamepadTestSticks()
+        _testConfirmHeld.value = false
         bindPressedByDevice.clear()
         _bindPressedPositions.value = emptySet()
         _bindCaptureActive.value = false
