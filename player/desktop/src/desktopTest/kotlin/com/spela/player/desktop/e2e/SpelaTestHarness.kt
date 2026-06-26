@@ -58,6 +58,13 @@ class SpelaTestHarness(
     }
     private val testDatabase = SpelaDatabase(testDriver)
     val deviceManager = DeviceManager(testDatabase, fakeApiClient)
+    val onboardingRepo = FakeOnboardingRepository()
+    val onboardingWizardViewModel = OnboardingWizardViewModel(
+        onboardingRepository = onboardingRepo,
+        deviceManager = deviceManager,
+        dispatchers = dispatchers,
+        scope = scope,
+    )
     val saveDataRepo = FakeSaveDataRepository()
     val connectivityMonitor = ConnectivityMonitor(fakeApiClient, dispatchers, scope)
     val syncEngine = SyncEngine(
@@ -453,10 +460,21 @@ class SpelaTestHarness(
                 exploreViewModel = exploreViewModel,
                 gamepadPortManager = gamepadPortManager,
                 globalSearchViewModel = globalSearchViewModel,
+                onboardingWizardViewModel = onboardingWizardViewModel,
             ),
         )
         }
     }
+}
+
+/** In-memory [OnboardingRepository] for tests — tracks dismissed hint keys in a set. */
+class FakeOnboardingRepository : com.spela.player.domain.repository.OnboardingRepository {
+    private val dismissed = mutableSetOf<String>()
+    override suspend fun isDismissed(key: String): Boolean = key in dismissed
+    override suspend fun markDismissed(key: String) { dismissed.add(key) }
+    override suspend fun clearDismissed(key: String) { dismissed.remove(key) }
+    /** Synchronous accessor for test assertions (no coroutine needed). */
+    fun isDismissedNow(key: String): Boolean = key in dismissed
 }
 
 /** Real-FS FileStorage backed by a per-harness temp directory. Used so

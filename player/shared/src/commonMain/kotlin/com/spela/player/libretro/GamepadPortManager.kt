@@ -26,6 +26,16 @@ import kotlin.time.Clock
  *
  * Thread-safe: all mutation goes through synchronized blocks.
  */
+
+/** Analog stick deflection for the live input tester (#1448). Axes normalized
+ *  to -1..1; (0,0) at rest. */
+data class GamepadTestSticks(
+    val leftX: Float = 0f,
+    val leftY: Float = 0f,
+    val rightX: Float = 0f,
+    val rightY: Float = 0f,
+)
+
 class GamepadPortManager(
     private val keyMappingRepository: KeyMappingRepository,
     private val scope: CoroutineScope? = null,
@@ -139,6 +149,18 @@ class GamepadPortManager(
      *  or empty when no tester is focused. */
     val pressedPositions: StateFlow<Set<GamepadPosition>> = _pressedPositions.asStateFlow()
 
+    /** Analog stick deflection of the controller under test, for the live tester's
+     *  stick indicators (#1448). Each axis is normalized to -1..1; (0,0) at rest. */
+    private val _testSticks = MutableStateFlow(GamepadTestSticks())
+    val testSticks: StateFlow<GamepadTestSticks> = _testSticks.asStateFlow()
+
+    /** Whether the confirm button is currently held on the controller under test
+     *  (#1448). The tester uses it to drive a hold-to-stop timer instead of exiting
+     *  on a single press; the confirm button is captured (not lit, not navigating)
+     *  while the tester is active, so the input layer reports it here separately. */
+    private val _testConfirmHeld = MutableStateFlow(false)
+    val testConfirmHeld: StateFlow<Boolean> = _testConfirmHeld.asStateFlow()
+
     /** The controller whose buttons the input tester is currently capturing, or
      *  null when no tester element is focused. Non-null = capture active for
      *  exactly that device: the input pipelines (Android key dispatch, desktop
@@ -155,6 +177,25 @@ class GamepadPortManager(
         _testCaptureDeviceId.value = deviceId
         pressedByDevice.clear()
         _pressedPositions.value = emptySet()
+        _testSticks.value = GamepadTestSticks()
+        _testConfirmHeld.value = false
+    }
+
+    /** Reports whether the confirm button is held on the controller under test, for
+     *  the tester's hold-to-stop timer (#1448). Ignored unless [deviceId] is the
+     *  device under test. */
+    @Synchronized
+    fun reportTestConfirmHeld(deviceId: Int, held: Boolean) {
+        if (_testCaptureDeviceId.value != deviceId) return
+        _testConfirmHeld.value = held
+    }
+
+    /** Reports the controller-under-test's analog stick deflection for the live
+     *  tester (#1448). Ignored unless [deviceId] is the device under test. */
+    @Synchronized
+    fun reportTestSticks(deviceId: Int, leftX: Float, leftY: Float, rightX: Float, rightY: Float) {
+        if (_testCaptureDeviceId.value != deviceId) return
+        _testSticks.value = GamepadTestSticks(leftX, leftY, rightX, rightY)
     }
 
     /** Positions held during a hold-to-bind session, merged across ALL devices
@@ -376,6 +417,10 @@ class GamepadPortManager(
         freeAssignedPort(deviceId)
         if (pressedByDevice.remove(deviceId) != null && _testCaptureDeviceId.value == deviceId) {
             recomputePressedPositions()
+        }
+        if (_testCaptureDeviceId.value == deviceId) {
+            _testConfirmHeld.value = false
+            _testSticks.value = GamepadTestSticks()
         }
         if (bindPressedByDevice.remove(deviceId) != null && _bindCaptureActive.value) {
             recomputeBindPressed()
@@ -693,6 +738,8 @@ class GamepadPortManager(
         pressedByDevice.clear()
         _pressedPositions.value = emptySet()
         _testCaptureDeviceId.value = null
+        _testSticks.value = GamepadTestSticks()
+        _testConfirmHeld.value = false
         bindPressedByDevice.clear()
         _bindPressedPositions.value = emptySet()
         _bindCaptureActive.value = false

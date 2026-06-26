@@ -124,6 +124,7 @@ actual fun platformModule(): Module = module {
     single {
         val navViewModel = get<NavigationViewModel>()
         val emuViewModel = get<EmulationViewModel>()
+        val prefsRepo = get<com.spela.player.domain.repository.PreferencesRepository>()
         DesktopGamepadPoller(
             jni = get(),
             gamepadPortManager = get(),
@@ -141,6 +142,10 @@ actual fun platformModule(): Module = module {
             isInGame = {
                 navViewModel.state.value.showInGameOverlay &&
                     !emuViewModel.state.value.showOverlay
+            },
+            confirmIsEast = {
+                prefsRepo.getConfirmButtonConvention() ==
+                    com.spela.player.domain.repository.ConfirmButtonConvention.NINTENDO
             },
         )
     }

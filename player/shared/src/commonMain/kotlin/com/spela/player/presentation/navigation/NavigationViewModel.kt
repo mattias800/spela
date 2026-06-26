@@ -7,6 +7,8 @@ import com.spela.player.data.remote.ConnectivityMonitor
 import com.spela.player.data.remote.SyncEngine
 import com.spela.player.data.repository.BiosRepository
 import com.spela.player.domain.repository.FederationRepository
+import com.spela.player.domain.repository.OnboardingHintKeys
+import com.spela.player.domain.repository.OnboardingRepository
 import com.spela.player.domain.usecase.RestoreSessionResult
 import com.spela.player.domain.usecase.RestoreSessionUseCase
 import com.spela.player.presentation.ui.components.BottomNavTab
@@ -28,6 +30,7 @@ class NavigationViewModel(
     private val biosRepository: BiosRepository? = null,
     private val coreUpdateService: com.spela.player.data.repository.CoreUpdateService? = null,
     private val federationRepository: FederationRepository? = null,
+    private val onboardingRepository: OnboardingRepository? = null,
 ) {
     private val _state = MutableStateFlow(NavigationState())
     val state: StateFlow<NavigationState> = _state.asStateFlow()
@@ -260,11 +263,25 @@ class NavigationViewModel(
             }
 
             val result = restoreSessionUseCase()
-            val screen = when (result) {
-                RestoreSessionResult.Success -> SpScreen.Home
-                RestoreSessionResult.OfflineSuccess -> SpScreen.Home
-                is RestoreSessionResult.NeedsLogin -> SpScreen.Login
-                RestoreSessionResult.NoSession -> SpScreen.ServerConnection
+            val authed = result is RestoreSessionResult.Success ||
+                result is RestoreSessionResult.OfflineSuccess
+            // First-run setup wizard (#1448): a not-yet-onboarded device starts in
+            // the guided wizard (which wraps connect + login) instead of the bare
+            // auth screens. An already-authenticated device that predates the
+            // wizard (app upgrade) has effectively onboarded — record completion
+            // silently so we never interrupt a returning user.
+            val wizardCompleted =
+                onboardingRepository?.isDismissed(OnboardingHintKeys.FIRST_RUN_WIZARD_COMPLETED) ?: true
+            if (authed && onboardingRepository != null && !wizardCompleted) {
+                onboardingRepository.markDismissed(OnboardingHintKeys.FIRST_RUN_WIZARD_COMPLETED)
+            }
+            val showWizard = !wizardCompleted && !authed
+            val screen = when {
+                showWizard -> SpScreen.OnboardingWizard
+                result is RestoreSessionResult.Success -> SpScreen.Home
+                result is RestoreSessionResult.OfflineSuccess -> SpScreen.Home
+                result is RestoreSessionResult.NeedsLogin -> SpScreen.Login
+                else -> SpScreen.ServerConnection
             }
             val serverUrl = when (result) {
                 is RestoreSessionResult.NeedsLogin -> result.serverUrl
@@ -273,14 +290,15 @@ class NavigationViewModel(
 
             _state.update {
                 when (screen) {
-                    // Auth screens bypass the tab system
-                    SpScreen.Login, SpScreen.ServerConnection -> it.copy(
+                    // Auth + onboarding screens bypass the tab system
+                    SpScreen.Login, SpScreen.ServerConnection, SpScreen.OnboardingWizard -> it.copy(
                         activeTab = BottomNavTab.HOME,
                         tabStacks = defaultTabStacks().toMutableMap().apply {
                             put(BottomNavTab.HOME, listOf(screen))
                         },
                         isRestoringSession = false,
                         restoredServerUrl = serverUrl,
+                        restoredAuthenticated = authed,
                         isOffline = result is RestoreSessionResult.OfflineSuccess,
                     )
                     else -> it.copy(
@@ -288,6 +306,7 @@ class NavigationViewModel(
                         tabStacks = defaultTabStacks(),
                         isRestoringSession = false,
                         restoredServerUrl = serverUrl,
+                        restoredAuthenticated = authed,
                         isOffline = result is RestoreSessionResult.OfflineSuccess,
                     )
                 }

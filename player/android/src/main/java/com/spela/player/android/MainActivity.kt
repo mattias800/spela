@@ -14,6 +14,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.lifecycle.lifecycleScope
 import com.spela.player.domain.model.ControllerClassifier
+import com.spela.player.domain.model.GamepadPosition
+import com.spela.player.domain.repository.ConfirmButtonConvention
 import com.spela.player.domain.repository.PreferencesRepository
 import com.spela.player.libretro.AndroidGamepadNormalizer
 import com.spela.player.libretro.AndroidLibretroController
@@ -260,8 +262,17 @@ class MainActivity : ComponentActivity() {
         val target = gamepadPortManager.testCaptureDeviceId.value ?: return false
         val deviceId = event?.deviceId ?: return false
         if (deviceId != target) return false
+        // The confirm button is the tester's hold-to-stop control (#1448): capture it
+        // as a held/released signal (not a click) so a single press no longer exits —
+        // the user must hold it, with a timer in the tester. It still lights up like
+        // any other button while held. Everything else — INCLUDING the D-pad — lights
+        // up and is consumed so it can't navigate away while the tester is active.
+        val nintendo = preferencesRepository.getConfirmButtonConvention() == ConfirmButtonConvention.NINTENDO
+        val confirmKey = if (nintendo) KeyEvent.KEYCODE_BUTTON_B else KeyEvent.KEYCODE_BUTTON_A
         val position = AndroidGamepadNormalizer.normalize(keyCode) ?: return false
-        if (position.isDpad) return false
+        if (keyCode == confirmKey) {
+            gamepadPortManager.reportTestConfirmHeld(deviceId, pressed)
+        }
         gamepadPortManager.reportPositionInput(deviceId, position, pressed)
         return true
     }
@@ -348,12 +359,15 @@ class MainActivity : ComponentActivity() {
 
         // State 2: Game running, overlay shown — navigate the overlay
         if (isGameRunning) {
+            val ovNintendo = preferencesRepository.getConfirmButtonConvention() == ConfirmButtonConvention.NINTENDO
+            val ovConfirmKey = if (ovNintendo) KeyEvent.KEYCODE_BUTTON_B else KeyEvent.KEYCODE_BUTTON_A
+            val ovBackKey = if (ovNintendo) KeyEvent.KEYCODE_BUTTON_A else KeyEvent.KEYCODE_BUTTON_B
             when (keyCode) {
-                KeyEvent.KEYCODE_BUTTON_B -> {
+                ovBackKey -> {
                     emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
                     return true
                 }
-                KeyEvent.KEYCODE_BUTTON_A -> {
+                ovConfirmKey -> {
                     val now = SystemClock.uptimeMillis()
                     val remapped = KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_CENTER, 0)
                     return super.dispatchKeyEvent(remapped)
@@ -366,14 +380,24 @@ class MainActivity : ComponentActivity() {
 
         // State 3: Not in game — UI mode: remap gamepad buttons for Compose navigation
         gamepadPortManager.setInputMode(InputMode.GAMEPAD)
+        val uiNintendo = preferencesRepository.getConfirmButtonConvention() == ConfirmButtonConvention.NINTENDO
+        val uiConfirmKey = if (uiNintendo) KeyEvent.KEYCODE_BUTTON_B else KeyEvent.KEYCODE_BUTTON_A
+        val uiBackKey = if (uiNintendo) KeyEvent.KEYCODE_BUTTON_A else KeyEvent.KEYCODE_BUTTON_B
         when (keyCode) {
-            KeyEvent.KEYCODE_BUTTON_A -> {
+            uiConfirmKey -> {
                 val now = SystemClock.uptimeMillis()
                 val remapped = KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_CENTER, 0)
                 return super.dispatchKeyEvent(remapped)
             }
-            KeyEvent.KEYCODE_BUTTON_B -> {
-                navigationViewModel.onIntent(NavigationIntent.GoBack)
+            uiBackKey -> {
+                // On the first-run wizard, route back through the back dispatcher
+                // (its PlatformBackHandler walks the wizard's own page stack)
+                // rather than popping the tab stack. Elsewhere, normal GoBack (#1448).
+                if (navigationViewModel.state.value.currentScreen is SpScreen.OnboardingWizard) {
+                    onBackPressedDispatcher.onBackPressed()
+                } else {
+                    navigationViewModel.onIntent(NavigationIntent.GoBack)
+                }
                 return true
             }
             KeyEvent.KEYCODE_BUTTON_L1 -> {
@@ -504,6 +528,32 @@ class MainActivity : ComponentActivity() {
         // populates the on-screen indicator (#1165). No-op for non-
         // gamepad sources thanks to ensureDeviceConnected's filter.
         ensureDeviceConnected(event.deviceId)
+
+        // Live input tester active for this controller (#1448): capture the D-pad
+        // (HAT) and both analog sticks so they light up on the schematic, and
+        // suppress UI navigation + right-stick scroll. Exit is the confirm button,
+        // which is a key event handled in captureTestInput.
+        val testTarget = gamepadPortManager.testCaptureDeviceId.value
+        if (!isEmulationConsuming && testTarget != null && event.deviceId == testTarget) {
+            val hatX = event.getAxisValue(MotionEvent.AXIS_HAT_X)
+            val hatY = event.getAxisValue(MotionEvent.AXIS_HAT_Y)
+            gamepadPortManager.reportPositionInput(testTarget, GamepadPosition.DPAD_LEFT, hatX < -0.5f)
+            gamepadPortManager.reportPositionInput(testTarget, GamepadPosition.DPAD_RIGHT, hatX > 0.5f)
+            gamepadPortManager.reportPositionInput(testTarget, GamepadPosition.DPAD_UP, hatY < -0.5f)
+            gamepadPortManager.reportPositionInput(testTarget, GamepadPosition.DPAD_DOWN, hatY > 0.5f)
+            // normalizeAxis applies the deadzone and returns a RetroPad-range Short;
+            // divide back to the -1..1 the tester's stick indicator expects.
+            val axisRange = Short.MAX_VALUE.toFloat()
+            gamepadPortManager.reportTestSticks(
+                testTarget,
+                GamepadMapping.normalizeAxis(event.getAxisValue(MotionEvent.AXIS_X)) / axisRange,
+                GamepadMapping.normalizeAxis(event.getAxisValue(MotionEvent.AXIS_Y)) / axisRange,
+                GamepadMapping.normalizeAxis(event.getAxisValue(MotionEvent.AXIS_Z)) / axisRange,
+                GamepadMapping.normalizeAxis(event.getAxisValue(MotionEvent.AXIS_RZ)) / axisRange,
+            )
+            gamepadPortManager.setRightStickScroll(0f)
+            return true
+        }
 
         if (isEmulationConsuming) {
             val controller = androidController ?: return super.onGenericMotionEvent(event)

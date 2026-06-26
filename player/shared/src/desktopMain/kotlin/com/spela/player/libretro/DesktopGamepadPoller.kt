@@ -29,6 +29,8 @@ class DesktopGamepadPoller(
     private val navigationEventBus: NavigationEventBus? = null,
     /** True while a game is open; suppresses UI-navigation synth (see [GamepadUiNavigator]). */
     private val isInGame: () -> Boolean = { false },
+    /** Confirm/back convention (#1448): true = Nintendo (EAST confirms). */
+    private val confirmIsEast: () -> Boolean = { false },
 ) {
     companion object {
         private const val POLL_INTERVAL_MS = 8L // ~120 Hz
@@ -67,6 +69,7 @@ class DesktopGamepadPoller(
         navigationEventBus = navigationEventBus,
         isInGame = isInGame,
         onGamepadInput = { gamepadPortManager.setInputMode(InputMode.GAMEPAD) },
+        confirmIsEast = confirmIsEast,
     )
 
     fun start(scope: CoroutineScope) {
@@ -108,6 +111,10 @@ class DesktopGamepadPoller(
         // scrolling (#1362) — works for assigned and unassigned controllers alike.
         var uiScrollY = 0f
 
+        // The confirm button under the current convention (#1448) — the tester's
+        // toggle, exempt from capture/masking so the user can turn it off.
+        val confirmPos = if (confirmIsEast()) GamepadPosition.EAST else GamepadPosition.SOUTH
+
         for (state in states) {
             currentIds.add(state.controllerId)
 
@@ -136,17 +143,29 @@ class DesktopGamepadPoller(
                 positionPressed[GamepadPosition.R2.ordinal] = state.axes[5] > TRIGGER_THRESHOLD
             }
 
-            // Live input tester (#1355/#1359): only for the controller currently
-            // under test, report pressed test positions (D-pad excluded — it always
-            // navigates). Done before the port check so an *unassigned* (cleared)
-            // controller is still fully testable.
+            // Live input tester (#1355/#1359/#1448): only for the controller
+            // currently under test, report every pressed position — INCLUDING the
+            // D-pad and the confirm button — plus analog stick deflection, so the
+            // whole controller lights up and is testable. The confirm button is ALSO
+            // reported as a held signal that drives the hold-to-stop timer (and it's
+            // masked from navigation below so a single press no longer exits). Done
+            // before the port check so an *unassigned* (cleared) controller is still
+            // fully testable.
             if (gamepadPortManager.testCaptureDeviceId.value == state.controllerId) {
                 gamepadPortManager.reportPressedPositions(
                     state.controllerId,
-                    GamepadPosition.entries.filterTo(mutableSetOf()) {
-                        positionPressed[it.ordinal] && !it.isDpad
-                    },
+                    GamepadPosition.entries.filterTo(mutableSetOf()) { positionPressed[it.ordinal] },
                 )
+                gamepadPortManager.reportTestConfirmHeld(state.controllerId, positionPressed[confirmPos.ordinal])
+                if (state.axes.size >= NUM_AXES) {
+                    gamepadPortManager.reportTestSticks(
+                        state.controllerId,
+                        applyDeadzone(state.axes[0]) / AXIS_RANGE,
+                        applyDeadzone(state.axes[1]) / AXIS_RANGE,
+                        applyDeadzone(state.axes[2]) / AXIS_RANGE,
+                        applyDeadzone(state.axes[3]) / AXIS_RANGE,
+                    )
+                }
             }
 
             // Hold-to-bind capture (#1377): any controller, INCLUDING the D-pad, so
@@ -164,7 +183,11 @@ class DesktopGamepadPoller(
             // Right-stick viewport scroll (#1362): track the largest right-stick Y
             // deflection across pads (before the port check, so an unassigned pad
             // still scrolls the UI). The UI's RightStickScroll effect consumes it.
-            if (state.axes.size >= NUM_AXES) {
+            // The controller under test is skipped (#1448): its right stick feeds the
+            // tester's stick indicator, not the scroller.
+            if (state.axes.size >= NUM_AXES &&
+                gamepadPortManager.testCaptureDeviceId.value != state.controllerId
+            ) {
                 val ry = applyDeadzone(state.axes[3]) / AXIS_RANGE
                 if (abs(ry) > abs(uiScrollY)) uiScrollY = ry
             }
@@ -211,12 +234,15 @@ class DesktopGamepadPoller(
         // Publish the frame's right-stick deflection for UI viewport scroll (#1362).
         gamepadPortManager.setRightStickScroll(uiScrollY)
 
-        // While a controller is under test, mask its test buttons (everything
-        // except the D-pad) from UI navigation so e.g. the right face button
-        // doesn't trigger "back" while the user is testing it (#1355/#1359). Only
-        // the controller under test is masked — any other pad still navigates
-        // normally — and the D-pad always navigates, so the user can move off the
-        // tester.
+        // While a controller is under test, mask ALL of its buttons from UI
+        // navigation (#1355/#1359/#1448): the tester captures everything — including
+        // the D-pad and the confirm button — so nothing navigates or triggers
+        // "back". The confirm button drives the hold-to-stop timer instead of
+        // navigating; deactivation happens in the tester on release after a full
+        // hold, so the confirm press never reaches navigation. Activation is
+        // unaffected: the mask only applies once the tester is already active (a
+        // confirm press to activate happens while testTarget is still null). Only
+        // the controller under test is masked; any other pad still navigates.
         val testTarget = gamepadPortManager.testCaptureDeviceId.value
         val navStates = when {
             // During a hold-to-bind session every press (incl. D-pad) feeds the
@@ -228,14 +254,7 @@ class DesktopGamepadPoller(
             }
             testTarget != null -> Array(states.size) { idx ->
                 val st = states[idx]
-                if (st.controllerId != testTarget) {
-                    st
-                } else {
-                    val masked = BooleanArray(st.buttons.size) { i ->
-                        st.buttons[i] && i in GamepadPosition.DPAD_UP.ordinal..GamepadPosition.DPAD_RIGHT.ordinal
-                    }
-                    st.copy(buttons = masked)
-                }
+                if (st.controllerId != testTarget) st else st.copy(buttons = BooleanArray(st.buttons.size))
             }
             else -> states
         }

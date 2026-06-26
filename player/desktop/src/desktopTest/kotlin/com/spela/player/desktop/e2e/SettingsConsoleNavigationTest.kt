@@ -1,5 +1,6 @@
 package com.spela.player.desktop.e2e
 
+import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.*
 import com.spela.player.domain.model.ControllerStyle
@@ -142,6 +143,12 @@ class SettingsConsoleNavigationTest {
         advanceQuick(harness)
     }
 
+    /** Activates the input tester (#1448): a tap (or confirm) toggles capture on. */
+    private fun ComposeUiTest.activateInputTester(harness: SpelaTestHarness) {
+        onNodeWithTag("input_tester").performScrollTo().performClick()
+        advanceQuick(harness)
+    }
+
     /**
      * The Controls category lists connected controllers (#1359). With none
      * connected, the heading shows plus an empty-state hint.
@@ -197,17 +204,118 @@ class SettingsConsoleNavigationTest {
         )
         onNodeWithTag("controller_detail_title").assertExists()
 
-        // On-device the tester captures when its element is focused; here we
-        // activate it directly for the selected controller.
-        harness.gamepadConfigViewModel.onIntent(GamepadConfigIntent.SetInputTestActive(500, true))
+        // The tester activates on a tap/confirm (#1448): start capturing for the
+        // device under test, then feed a press.
+        activateInputTester(harness)
         harness.gamepadPortManager.reportPositionInput(500, GamepadPosition.SOUTH, pressed = true)
         advanceQuick(harness)
 
-        onNodeWithTag("tester_pos_SOUTH")
-            .performScrollTo()
-            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Pressed"))
-        onNodeWithTag("tester_pos_EAST")
-            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Not pressed"))
+        // The schematic shows the pressed position. SOUTH lights up, EAST stays
+        // inactive. The tester is one clickable node now (#1448), so the per-pip
+        // semantics live in the unmerged tree.
+        onNodeWithTag("schematic_SOUTH", useUnmergedTree = true)
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Active"))
+        onNodeWithTag("schematic_EAST", useUnmergedTree = true)
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Inactive"))
+
+        // Once active, the D-pad is captured (not used to navigate away) so it can
+        // be tested too (#1448): a press lights its chip.
+        harness.gamepadPortManager.reportPositionInput(500, GamepadPosition.DPAD_UP, pressed = true)
+        advanceQuick(harness)
+        onNodeWithTag("schematic_DPAD_UP", useUnmergedTree = true)
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Active"))
+
+        // Analog stick deflection lights the matching stick well (#1448): pushing
+        // the left stick activates L3's indicator while R3 stays at rest.
+        harness.gamepadPortManager.reportTestSticks(500, leftX = 1f, leftY = 0f, rightX = 0f, rightY = 0f)
+        advanceQuick(harness)
+        onNodeWithTag("schematic_L3", useUnmergedTree = true)
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Active"))
+        onNodeWithTag("schematic_R3", useUnmergedTree = true)
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Inactive"))
+    }
+
+    /**
+     * The tester stops only after the confirm button is *held* for the full
+     * duration and then released (#1448): a brief press keeps it running (so the
+     * confirm button is testable and an accidental press doesn't exit), while a
+     * full hold followed by release ends capture.
+     */
+    @Test
+    fun controllerDetailTesterStopsOnlyAfterHoldingConfirm() = runComposeUiTest {
+        val harness = createLoggedInHarness()
+        harness.gamepadPortManager.connectDevice(500, "Test Pad", ControllerStyle.Xbox)
+
+        setContent { harness.App() }
+        navigateToSettings(harness)
+        openControlsCategory(harness)
+        onNodeWithTag("controller_row_500").performClick()
+        advanceQuick(harness)
+
+        // Activate the tester (focus + confirm), so the confirm button is captured.
+        activateInputTester(harness)
+        assertEquals(500, harness.gamepadPortManager.testCaptureDeviceId.value)
+
+        // Fine-grained clock control so the 2s hold doesn't auto-complete.
+        fun settle(ms: Long) {
+            mainClock.autoAdvance = false
+            harness.testDispatcher.scheduler.runCurrent()
+            mainClock.advanceTimeBy(ms)
+            harness.testDispatcher.scheduler.runCurrent()
+            waitForIdle()
+        }
+
+        // A brief hold then release (well under 2s) must NOT stop the tester.
+        harness.gamepadPortManager.reportTestConfirmHeld(500, held = true)
+        settle(300)
+        harness.gamepadPortManager.reportTestConfirmHeld(500, held = false)
+        settle(100)
+        assertEquals(
+            500,
+            harness.gamepadPortManager.testCaptureDeviceId.value,
+            "A brief confirm press must not stop the tester",
+        )
+
+        // Holding past the full duration then releasing stops it.
+        harness.gamepadPortManager.reportTestConfirmHeld(500, held = true)
+        settle(2_400)
+        // Still active before release — stopping happens on release after a full hold.
+        assertEquals(500, harness.gamepadPortManager.testCaptureDeviceId.value)
+        harness.gamepadPortManager.reportTestConfirmHeld(500, held = false)
+        advanceQuick(harness)
+        assertEquals(
+            null,
+            harness.gamepadPortManager.testCaptureDeviceId.value,
+            "Releasing after a full hold stops the tester",
+        )
+    }
+
+    /**
+     * Gamepad-only activation (#1448): with the tester focused, a confirm-button
+     * press (resolved to Enter / DPAD center by the convention layer) activates it —
+     * handled by the tester's key handler, since the clickable's keyboard activation
+     * is suppressed in touch input mode.
+     */
+    @Test
+    fun controllerDetailTesterActivatesOnConfirmKey() = runComposeUiTest {
+        val harness = createLoggedInHarness()
+        harness.gamepadPortManager.connectDevice(500, "Test Pad", ControllerStyle.Xbox)
+
+        setContent { harness.App() }
+        navigateToSettings(harness)
+        openControlsCategory(harness)
+        onNodeWithTag("controller_row_500").performClick()
+        advanceQuick(harness)
+
+        onNodeWithTag("input_tester").performScrollTo().requestFocus()
+        advanceQuick(harness)
+        onNodeWithTag("input_tester").performKeyInput { pressKey(Key.Enter) }
+        advanceQuick(harness)
+        assertEquals(
+            500,
+            harness.gamepadPortManager.testCaptureDeviceId.value,
+            "Confirm press on the focused tester activates it",
+        )
     }
 
     /**

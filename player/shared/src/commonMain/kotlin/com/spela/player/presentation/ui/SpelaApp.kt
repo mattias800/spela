@@ -146,7 +146,8 @@ fun SpelaApp(deps: SpelaAppDependencies) = with(deps) {
         }
 
         val isAuthenticated = navState.currentScreen !is SpScreen.ServerConnection &&
-                navState.currentScreen !is SpScreen.Login
+                navState.currentScreen !is SpScreen.Login &&
+                navState.currentScreen !is SpScreen.OnboardingWizard
 
         SpelaAppEffects(
             scrapeService = scrapeService,
@@ -158,12 +159,14 @@ fun SpelaApp(deps: SpelaAppDependencies) = with(deps) {
         )
 
         val isGamepadScreen = navState.currentScreen !is SpScreen.ServerConnection &&
-                navState.currentScreen !is SpScreen.Login
+                navState.currentScreen !is SpScreen.Login &&
+                navState.currentScreen !is SpScreen.OnboardingWizard
 
         // Handle system back button for non-emulation screens (Android)
         val hasBackStack = navState.currentScreen !is SpScreen.Home &&
                 navState.currentScreen !is SpScreen.ServerConnection &&
-                navState.currentScreen !is SpScreen.Login
+                navState.currentScreen !is SpScreen.Login &&
+                navState.currentScreen !is SpScreen.OnboardingWizard
         PlatformBackHandler(enabled = hasBackStack && !navState.showInGameOverlay) {
             navigationViewModel.onIntent(NavigationIntent.GoBack)
         }
@@ -179,6 +182,11 @@ fun SpelaApp(deps: SpelaAppDependencies) = with(deps) {
             onBack = if (inGameOverlayOpen) {
                 // A / Escape resumes (closes the overlay) rather than navigating.
                 { emulationViewModel.onIntent(EmulationIntent.ToggleOverlay) }
+            } else if (navState.currentScreen is SpScreen.OnboardingWizard) {
+                // The wizard walks its own page stack (no-op on its first page).
+                onboardingWizardViewModel?.let { vm ->
+                    { vm.onIntent(com.spela.player.presentation.viewmodel.OnboardingWizardIntent.Back) }
+                }
             } else if (isGamepadScreen) {
                 { navigationViewModel.onIntent(NavigationIntent.GoBack) }
             } else null,
@@ -631,7 +639,7 @@ fun SpelaApp(deps: SpelaAppDependencies) = with(deps) {
 } // SpelaApp
 
 private fun shouldShowBottomNav(screen: SpScreen): Boolean = when (screen) {
-    is SpScreen.ServerConnection, is SpScreen.Login -> false
+    is SpScreen.ServerConnection, is SpScreen.Login, is SpScreen.OnboardingWizard -> false
     else -> true
 }
 

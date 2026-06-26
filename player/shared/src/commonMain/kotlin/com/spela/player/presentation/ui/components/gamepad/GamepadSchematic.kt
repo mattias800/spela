@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -24,9 +25,11 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.GamepadPosition
+import com.spela.player.libretro.GamepadTestSticks
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
+import kotlin.math.abs
 
 /**
  * Brand-neutral, approximate schematic of a generic gamepad (#1366) — drawn from
@@ -37,13 +40,16 @@ import com.spela.player.presentation.ui.theme.SpTypography
  * replica; the labelled mapping stays authoritative.
  *
  * Positions in [highlighted] render filled (e.g. currently pressed, or the button
- * being bound). A single reusable layout — driven by the canonical position set,
- * not per-console art.
+ * being bound). The L3/R3 wells additionally show live analog deflection from
+ * [sticks] (#1448): the dot slides toward the stick's direction, so the user can
+ * test stick travel, not just the click. A single reusable layout — driven by the
+ * canonical position set, not per-console art.
  */
 @Composable
 fun GamepadSchematic(
     highlighted: Set<GamepadPosition>,
     modifier: Modifier = Modifier,
+    sticks: GamepadTestSticks = GamepadTestSticks(),
 ) {
     Column(
         modifier = modifier
@@ -54,11 +60,16 @@ fun GamepadSchematic(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(SpSpacing.Default),
     ) {
-        // Shoulders / triggers: L2 L1 … R1 R2
+        // Top row: shoulders/triggers with Select/Start centred between them —
+        // L2 L1 · SE ST · R1 R2.
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Row(horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small)) {
                 Pip(GamepadPosition.L2, highlighted)
                 Pip(GamepadPosition.L1, highlighted)
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small)) {
+                Pip(GamepadPosition.SELECT, highlighted)
+                Pip(GamepadPosition.START, highlighted)
             }
             Row(horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small)) {
                 Pip(GamepadPosition.R1, highlighted)
@@ -66,7 +77,9 @@ fun GamepadSchematic(
             }
         }
 
-        // Main body: D-pad cross (left) · Select/Start (centre) · face diamond (right)
+        // Main body: D-pad cross (left) · stick clicks L3 R3 (centre, aligned
+        // with the crosses' inner arms) · face diamond (right). Dropping the
+        // separate stick-click row keeps this compact.
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -79,12 +92,9 @@ fun GamepadSchematic(
                 right = GamepadPosition.DPAD_RIGHT,
                 highlighted = highlighted,
             )
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-            ) {
-                Pip(GamepadPosition.SELECT, highlighted)
-                Pip(GamepadPosition.START, highlighted)
+            Row(horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small)) {
+                StickPip(GamepadPosition.L3, sticks.leftX, sticks.leftY, highlighted)
+                StickPip(GamepadPosition.R3, sticks.rightX, sticks.rightY, highlighted)
             }
             Cross(
                 up = GamepadPosition.NORTH,
@@ -93,12 +103,6 @@ fun GamepadSchematic(
                 right = GamepadPosition.EAST,
                 highlighted = highlighted,
             )
-        }
-
-        // Stick clicks
-        Row(horizontalArrangement = Arrangement.spacedBy(SpSpacing.Large)) {
-            Pip(GamepadPosition.L3, highlighted)
-            Pip(GamepadPosition.R3, highlighted)
         }
     }
 }
@@ -150,7 +154,48 @@ private fun Pip(position: GamepadPosition, highlighted: Set<GamepadPosition>) {
     }
 }
 
+/**
+ * A stick well (L3/R3): a ring whose inner dot slides toward the live analog
+ * deflection ([dx], [dy] in -1..1), and that fills when the stick is clicked
+ * (position in [highlighted]). Shares the [Pip] testTag/semantics so existing
+ * tests and accessibility keep working.
+ */
+@Composable
+private fun StickPip(
+    position: GamepadPosition,
+    dx: Float,
+    dy: Float,
+    highlighted: Set<GamepadPosition>,
+) {
+    val clicked = position in highlighted
+    val deflected = abs(dx) > 0.15f || abs(dy) > 0.15f
+    val active = clicked || deflected
+    val travel = ((PIP_SIZE - DOT_SIZE) / 2 - 1).dp
+    Box(
+        modifier = Modifier
+            .size(PIP_SIZE.dp)
+            .clip(CircleShape)
+            .background(if (clicked) SpColor.Primary else SpColor.SurfaceElevated)
+            .border(1.dp, if (active) SpColor.Primary else SpColor.OnBackgroundTertiary, CircleShape)
+            .testTag("schematic_${position.name}")
+            .semantics {
+                contentDescription = position.displayName
+                stateDescription = if (active) "Active" else "Inactive"
+            },
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            modifier = Modifier
+                .offset(x = travel * dx.coerceIn(-1f, 1f), y = travel * dy.coerceIn(-1f, 1f))
+                .size(DOT_SIZE.dp)
+                .clip(CircleShape)
+                .background(if (clicked) SpColor.OnPrimary else SpColor.OnBackgroundTertiary),
+        )
+    }
+}
+
 private const val PIP_SIZE = 34
+private const val DOT_SIZE = 12
 
 /** Short glyph/label for the schematic pip — positional, brand-neutral. */
 private fun schematicLabel(position: GamepadPosition): String = when (position) {

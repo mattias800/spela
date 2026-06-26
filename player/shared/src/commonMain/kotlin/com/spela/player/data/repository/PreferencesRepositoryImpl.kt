@@ -14,8 +14,10 @@ import com.spela.player.domain.model.ShaderPreset
 import com.spela.player.libretro.GamepadMappingMigration
 import com.spela.player.util.currentPlatform
 import com.spela.player.domain.model.UserPreferences
+import com.spela.player.domain.repository.ConfirmButtonConvention
 import com.spela.player.domain.repository.KeyMappingRepository
 import com.spela.player.domain.repository.PreferencesRepository
+import kotlin.concurrent.Volatile
 import kotlin.time.Clock
 import kotlinx.serialization.json.Json
 import kotlin.uuid.ExperimentalUuidApi
@@ -279,6 +281,25 @@ class PreferencesRepositoryImpl(
 
     override fun setControlTab(consoleId: String, tab: String) {
         database.spelaDatabaseQueries.insertDeviceSetting("control_tab:$consoleId", tab)
+    }
+
+    // In-memory cache: the input layer reads this per button press (Android) and
+    // per poll frame (desktop, ~120 Hz), so we avoid a SQL query each time and
+    // get an immediate live update when the wizard/Settings changes it (#1448).
+    @Volatile
+    private var confirmConventionCache: String? = null
+
+    override fun getConfirmButtonConvention(): String {
+        confirmConventionCache?.let { return it }
+        val value = database.spelaDatabaseQueries.getDeviceSetting("confirm_button_convention")
+            .executeAsOneOrNull() ?: ConfirmButtonConvention.XBOX
+        confirmConventionCache = value
+        return value
+    }
+
+    override fun setConfirmButtonConvention(convention: String) {
+        confirmConventionCache = convention
+        database.spelaDatabaseQueries.insertDeviceSetting("confirm_button_convention", convention)
     }
 
     override fun getConsoleListGrouping(): String {

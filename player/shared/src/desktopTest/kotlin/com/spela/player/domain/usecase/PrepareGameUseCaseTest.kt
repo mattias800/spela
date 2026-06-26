@@ -740,4 +740,6 @@ private class StubPreferencesRepository : PreferencesRepository {
     override fun setControlTab(consoleId: String, tab: String) = Unit
     override fun getConsoleListGrouping(): String = "generation"
     override fun setConsoleListGrouping(grouping: String) = Unit
+    override fun getConfirmButtonConvention(): String = "xbox"
+    override fun setConfirmButtonConvention(convention: String) = Unit
 }

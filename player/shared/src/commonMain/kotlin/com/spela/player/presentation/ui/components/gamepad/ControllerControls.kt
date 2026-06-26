@@ -104,6 +104,8 @@ fun ControllerDetailScreen(
                 ControllerDetail(
                     controller = controller,
                     pressedPositions = state.pressedPositions,
+                    sticks = state.testSticks,
+                    confirmHeld = state.confirmHeld,
                     onBack = onBack,
                     onSelectStyle = { style ->
                         onIntent(GamepadConfigIntent.SetStyleOverrideForController(deviceId, style))
@@ -211,11 +213,20 @@ private fun ControllerListRow(
     }
 }
 
+/**
+ * The per-controller detail body — type/profile, player assignment, and the live
+ * input tester. `internal` (not private) so the first-run wizard's Controls step
+ * (#1448) can embed the same UI inside its own chrome without the
+ * [ControllerDetailScreen]'s `SpScreen` wrapper. The caller owns the slot-conflict
+ * dialog (see [ControllerDetailScreen] and the wizard for the two call sites).
+ */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun ControllerDetail(
+internal fun ControllerDetail(
     controller: ControllerUi,
     pressedPositions: Set<com.spela.player.domain.model.GamepadPosition>,
+    sticks: com.spela.player.libretro.GamepadTestSticks,
+    confirmHeld: Boolean,
     onBack: () -> Unit,
     onSelectStyle: (ControllerStyle?) -> Unit,
     onAssignSlot: (Int) -> Unit,
@@ -291,9 +302,17 @@ private fun ControllerDetail(
 
         // --- Live input tester (per-device) ---
         DetailSectionLabel("Test input")
+        Text(
+            text = "If a button lights up the wrong position, change the Type above.",
+            style = SpTypography.BodySmall,
+            color = SpColor.OnBackgroundSecondary,
+            modifier = Modifier.padding(bottom = SpSpacing.Small),
+        )
         GamepadInputTester(
             pressedPositions = pressedPositions,
+            confirmHeld = confirmHeld,
             onActiveChange = onTestActiveChange,
+            sticks = sticks,
         )
     }
 

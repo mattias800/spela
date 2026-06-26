@@ -55,6 +55,17 @@ interface PreferencesRepository {
     fun setControlTab(consoleId: String, tab: String)
 
     /**
+     * Device-local confirm/back button convention (#1448): which positional face
+     * button confirms in menus. [ConfirmButtonConvention.XBOX] = bottom (south)
+     * confirms / right (east) backs (Xbox, PlayStation, Steam Deck);
+     * [ConfirmButtonConvention.NINTENDO] = right (east) confirms / bottom backs.
+     * Defaults to XBOX. Read synchronously by the input layer per button press
+     * (Android) and per poll (desktop), so it's backed by an in-memory cache.
+     */
+    fun getConfirmButtonConvention(): String
+    fun setConfirmButtonConvention(convention: String)
+
+    /**
      * Device-local console list grouping preference ("generation" |
      * "manufacturer"). Defaults to "generation" when unset — matches
      * the web behaviour in `consoles-page.tsx` and so a user landing
@@ -63,4 +74,13 @@ interface PreferencesRepository {
      */
     fun getConsoleListGrouping(): String
     fun setConsoleListGrouping(grouping: String)
+}
+
+/** Values for [PreferencesRepository.getConfirmButtonConvention] (#1448). */
+object ConfirmButtonConvention {
+    /** Bottom (south) confirms, right (east) backs. Xbox/PlayStation/Steam Deck. The default. */
+    const val XBOX = "xbox"
+
+    /** Right (east) confirms, bottom (south) backs. Nintendo. */
+    const val NINTENDO = "nintendo"
 }

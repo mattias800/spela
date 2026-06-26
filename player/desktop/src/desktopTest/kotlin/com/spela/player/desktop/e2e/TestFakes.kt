@@ -815,6 +815,9 @@ class FakePreferencesRepository : PreferencesRepository {
     private var consoleListGrouping: String = "generation"
     override fun getConsoleListGrouping(): String = consoleListGrouping
     override fun setConsoleListGrouping(grouping: String) { consoleListGrouping = grouping }
+    private var confirmButtonConvention: String = "xbox"
+    override fun getConfirmButtonConvention(): String = confirmButtonConvention
+    override fun setConfirmButtonConvention(convention: String) { confirmButtonConvention = convention }
 }
 
 class FakeAchievementsRepository : AchievementsRepository {
