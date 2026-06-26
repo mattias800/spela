@@ -21,10 +21,14 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  desktop-e2e:
-    name: Desktop E2E (Compose UI)
+  desktop-e2e-shard:
+    name: Desktop E2E shard ${{ matrix.shard }}/4
     runs-on: ubuntu-latest
-    timeout-minutes: 65
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     defaults:
       run:
         working-directory: player
@@ -74,13 +78,29 @@ jobs:
           restore-keys: |
             desktop-e2e-gradle-
 
-      - name: Run desktop E2E suite
+      - name: Run desktop E2E shard
         # xvfb-run provides the virtual display Compose/Skia + the emulation
-        # tests need on a headless runner. Via -P overrides (#1279): raise the
-        # Gradle test-task timeout (default 15m, tuned for a 12-core dev box),
-        # match the fork count to the 4-core runner, and retry transient flakes
-        # twice (timing-sensitive Compose UI tests flake under software-render
-        # contention) so a flake doesn't redden the gate.
+        # tests need on a headless runner. The suite is class-sharded across
+        # four runners to preserve coverage while avoiding a single 40-50m PR
+        # gate. Via -P overrides (#1279): match the fork count to the 4-core
+        # runner, keep a per-shard Gradle backstop, and retry transient flakes
+        # twice so timing-sensitive Compose UI tests do not redden the gate.
         run: >-
           xvfb-run -a ./gradlew :desktop:desktopTest
-          -PdesktopTestForks=4 -PdesktopTestTimeoutMin=55 -PdesktopTestRetries=2
+          -PdesktopTestShardIndex=${{ matrix.shard }}
+          -PdesktopTestShardCount=4
+          -PdesktopTestForks=4
+          -PdesktopTestTimeoutMin=25
+          -PdesktopTestRetries=2
+          -PdesktopTestRetryMaxFailures=3
+
+  desktop-e2e:
+    name: Desktop E2E (Compose UI)
+    runs-on: ubuntu-latest
+    needs: desktop-e2e-shard
+    if: ${{ always() }}
+    steps:
+      - name: Require all Desktop E2E shards
+        run: |
+          echo "Desktop E2E shards: ${{ needs.desktop-e2e-shard.result }}"
+          test "${{ needs.desktop-e2e-shard.result }}" = "success"

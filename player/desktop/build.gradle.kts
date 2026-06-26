@@ -94,6 +94,76 @@ fun findExecutable(name: String): String? {
     return null
 }
 
+data class DesktopTestClass(
+    val fqcn: String,
+    val staticTestCount: Int,
+    val relativePath: String,
+)
+
+fun discoverDesktopTestClasses(): List<DesktopTestClass> {
+    val sourceRoot = project.layout.projectDirectory.dir("src/desktopTest/kotlin").asFile.toPath()
+    if (!Files.exists(sourceRoot)) return emptyList()
+
+    val packageRegex = Regex("""(?m)^\s*package\s+([A-Za-z_][A-Za-z0-9_.]*)\s*$""")
+    val testClassRegex = Regex("""(?m)^\s*(?:\w+\s+)*(?:class|object)\s+([A-Za-z_][A-Za-z0-9_]*Test)\b""")
+    val testAnnotationRegex = Regex("""(?m)^\s*@(?:org\.junit\.jupiter\.api\.)?Test\b""")
+
+    return Files.walk(sourceRoot).use { paths ->
+        paths
+            .filter { Files.isRegularFile(it) && it.fileName.toString().endsWith("Test.kt") }
+            .sorted()
+            .flatMap { path ->
+                val text = path.toFile().readText()
+                val relativePath = sourceRoot.relativize(path).toString()
+                val staticTestCount = testAnnotationRegex.findAll(text).count()
+                val classNames = testClassRegex.findAll(text).map { it.groupValues[1] }.toList()
+
+                if (staticTestCount > 0 && classNames.isEmpty()) {
+                    error("Found @Test annotations in $relativePath but no *Test class declaration")
+                }
+                if (classNames.isEmpty()) {
+                    return@flatMap emptyList<DesktopTestClass>().stream()
+                }
+
+                val packageName = packageRegex.find(text)?.groupValues?.get(1)
+                    ?: error("Missing package declaration in $relativePath")
+
+                classNames.map { className ->
+                    DesktopTestClass(
+                        fqcn = "$packageName.$className",
+                        staticTestCount = staticTestCount.coerceAtLeast(1),
+                        relativePath = relativePath,
+                    )
+                }.stream()
+            }
+            .toList()
+    }
+}
+
+fun selectDesktopTestShard(
+    classes: List<DesktopTestClass>,
+    shardIndex: Int,
+    shardCount: Int,
+): List<DesktopTestClass> {
+    require(shardCount > 0) { "desktopTestShardCount must be positive" }
+    require(shardIndex in 1..shardCount) {
+        "desktopTestShardIndex must be between 1 and $shardCount, got $shardIndex"
+    }
+
+    val shards = List(shardCount) { mutableListOf<DesktopTestClass>() }
+    val weights = IntArray(shardCount)
+
+    classes
+        .sortedWith(compareByDescending<DesktopTestClass> { it.staticTestCount }.thenBy { it.fqcn })
+        .forEach { testClass ->
+            val target = weights.indices.minWith(compareBy<Int> { weights[it] }.thenBy { it })
+            shards[target].add(testClass)
+            weights[target] += testClass.staticTestCount
+        }
+
+    return shards[shardIndex - 1].sortedBy { it.fqcn }
+}
+
 kotlin {
     jvm("desktop")
 
@@ -215,8 +285,39 @@ tasks.withType<Test> {
     // flake that passes on retry doesn't fail the build. (#1279)
     retry {
         maxRetries.set((project.findProperty("desktopTestRetries") as String?)?.toIntOrNull() ?: 0)
-        maxFailures.set(12)
+        maxFailures.set((project.findProperty("desktopTestRetryMaxFailures") as String?)?.toIntOrNull() ?: 12)
         failOnPassedAfterRetry.set(false)
+    }
+}
+
+tasks.named<Test>("desktopTest") {
+    val shardIndexProperty = project.findProperty("desktopTestShardIndex") as String?
+    val shardCountProperty = project.findProperty("desktopTestShardCount") as String?
+
+    if (shardIndexProperty != null || shardCountProperty != null) {
+        val shardIndex = shardIndexProperty?.toIntOrNull()
+            ?: error("desktopTestShardIndex must be an integer when desktop test sharding is enabled")
+        val shardCount = shardCountProperty?.toIntOrNull()
+            ?: error("desktopTestShardCount must be an integer when desktop test sharding is enabled")
+        val allClasses = discoverDesktopTestClasses()
+        val selectedClasses = selectDesktopTestShard(allClasses, shardIndex, shardCount)
+
+        if (allClasses.isEmpty()) {
+            error("No desktop test classes discovered for sharding")
+        }
+        if (selectedClasses.isEmpty()) {
+            error("Desktop test shard $shardIndex/$shardCount selected no classes")
+        }
+
+        logger.lifecycle(
+            "Desktop test shard $shardIndex/$shardCount selected " +
+                "${selectedClasses.size}/${allClasses.size} classes and " +
+                "${selectedClasses.sumOf { it.staticTestCount }}/${allClasses.sumOf { it.staticTestCount }} static @Test annotations",
+        )
+
+        filter {
+            selectedClasses.forEach { includeTestsMatching(it.fqcn) }
+        }
     }
 }
 
