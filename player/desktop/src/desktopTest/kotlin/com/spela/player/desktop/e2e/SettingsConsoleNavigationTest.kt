@@ -197,18 +197,19 @@ class SettingsConsoleNavigationTest {
         )
         onNodeWithTag("controller_detail_title").assertExists()
 
-        // On-device the tester captures when its element is focused; here we
-        // activate it directly for the selected controller.
-        harness.gamepadConfigViewModel.onIntent(GamepadConfigIntent.SetInputTestActive(500, true))
+        // The tester now activates on press/tap (#1448): tap it to start capturing
+        // for the device under test, then feed a press.
+        onNodeWithTag("input_tester").performScrollTo().performClick()
+        advanceQuick(harness)
         harness.gamepadPortManager.reportPositionInput(500, GamepadPosition.SOUTH, pressed = true)
         advanceQuick(harness)
 
-        // The position-label chips were removed (#1448); the schematic now shows
-        // the pressed position. SOUTH lights up, EAST stays inactive.
-        onNodeWithTag("schematic_SOUTH")
-            .performScrollTo()
+        // The schematic shows the pressed position. SOUTH lights up, EAST stays
+        // inactive. The tester is one clickable node now (#1448), so the per-pip
+        // semantics live in the unmerged tree.
+        onNodeWithTag("schematic_SOUTH", useUnmergedTree = true)
             .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Active"))
-        onNodeWithTag("schematic_EAST")
+        onNodeWithTag("schematic_EAST", useUnmergedTree = true)
             .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Inactive"))
     }
 

@@ -296,8 +296,7 @@ internal fun ControllerDetail(
         // --- Live input tester (per-device) ---
         DetailSectionLabel("Test input")
         Text(
-            text = "Navigate here and press your controller's buttons — the matching position " +
-                "lights up. If the wrong one lights up, change the Type above.",
+            text = "If a button lights up the wrong position, change the Type above.",
             style = SpTypography.BodySmall,
             color = SpColor.OnBackgroundTertiary,
             modifier = Modifier.padding(bottom = SpSpacing.Small),

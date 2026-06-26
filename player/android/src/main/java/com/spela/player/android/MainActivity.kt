@@ -261,8 +261,14 @@ class MainActivity : ComponentActivity() {
         val target = gamepadPortManager.testCaptureDeviceId.value ?: return false
         val deviceId = event?.deviceId ?: return false
         if (deviceId != target) return false
+        // The confirm button toggles the tester off (it reaches Compose as a click
+        // on the focused tester), so let it through. Capture everything else —
+        // INCLUDING the D-pad — so all buttons light up and none navigate away
+        // while the tester is active (#1448).
+        val nintendo = preferencesRepository.getConfirmButtonConvention() == ConfirmButtonConvention.NINTENDO
+        val confirmKey = if (nintendo) KeyEvent.KEYCODE_BUTTON_B else KeyEvent.KEYCODE_BUTTON_A
+        if (keyCode == confirmKey) return false
         val position = AndroidGamepadNormalizer.normalize(keyCode) ?: return false
-        if (position.isDpad) return false
         gamepadPortManager.reportPositionInput(deviceId, position, pressed)
         return true
     }
