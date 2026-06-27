@@ -90,7 +90,7 @@ class FranchiseDetailTest {
     // --- Franchise detail screen rendering ---
 
     @Test
-    fun `franchise screen renders with hero banner, title, and ownership progress`() = runComposeUiTest {
+    fun `franchise screen renders games filters and non-library state`() = runComposeUiTest {
         val harness = createHarness()
         harness.exploreRepo.franchiseDetails = mapOf("fr1" to sampleFranchiseDetail)
 
@@ -111,59 +111,20 @@ class FranchiseDetailTest {
         onNodeWithTag("franchise_ownership_progress").assertIsDisplayed()
         onNodeWithTag("franchise_ownership_text").assertIsDisplayed()
         onNodeWithText("You own 2 of 3 games").assertExists()
-    }
-
-    @Test
-    fun `franchise detail shows games in list`() = runComposeUiTest {
-        val harness = createHarness()
-        harness.exploreRepo.franchiseDetails = mapOf("fr1" to sampleFranchiseDetail)
-
-        setContent { harness.App() }
-        harness.navigationViewModel.onIntent(
-            NavigationIntent.NavigateTo(SpScreen.ExploreFranchise("fr1", "Castlevania"))
-        )
-        advance(harness)
 
         onNodeWithTag("franchise_game_2001").assertExists()
         onNodeWithTag("franchise_game_2002").assertExists()
         onNodeWithTag("franchise_game_2003").assertExists()
-    }
-
-    // --- Console filter chips ---
-
-    @Test
-    fun `console filter chips render`() = runComposeUiTest {
-        val harness = createHarness()
-        harness.exploreRepo.franchiseDetails = mapOf("fr1" to sampleFranchiseDetail)
-
-        setContent { harness.App() }
-        harness.navigationViewModel.onIntent(
-            NavigationIntent.NavigateTo(SpScreen.ExploreFranchise("fr1", "Castlevania"))
-        )
-        advance(harness)
 
         onNodeWithTag("franchise_console_filters").assertIsDisplayed()
         onNodeWithTag("franchise_console_chip_all").assertExists()
         onNodeWithTag("franchise_console_chip_NES").assertExists()
         onNodeWithTag("franchise_console_chip_PS1").assertExists()
         onNodeWithTag("franchise_console_chip_GBA").assertExists()
-    }
 
-    @Test
-    fun `console filter filters games`() = runComposeUiTest {
-        val harness = createHarness()
-        harness.exploreRepo.franchiseDetails = mapOf("fr1" to sampleFranchiseDetail)
-
-        setContent { harness.App() }
-        harness.navigationViewModel.onIntent(
-            NavigationIntent.NavigateTo(SpScreen.ExploreFranchise("fr1", "Castlevania"))
-        )
-        advance(harness)
-
-        // All 3 games visible initially
-        onNodeWithTag("franchise_game_2001").assertExists()
-        onNodeWithTag("franchise_game_2002").assertExists()
-        onNodeWithTag("franchise_game_2003").assertExists()
+        // Not-in-library game should indicate as such
+        onNodeWithTag("franchise_game_2003")
+            .assertContentDescriptionContains("not in library", substring = true)
 
         // Click PS1 filter
         onNodeWithTag("franchise_console_chip_PS1").performClick()
@@ -234,28 +195,6 @@ class FranchiseDetailTest {
         // Should show empty state
         onNodeWithTag("franchise_empty_state").assertExists()
         onNodeWithTag("franchise_game_3001").assertDoesNotExist()
-    }
-
-    // --- Dimmed treatment for non-library games ---
-
-    @Test
-    fun `non-library games show not in library in content description`() = runComposeUiTest {
-        val harness = createHarness()
-        harness.exploreRepo.franchiseDetails = mapOf("fr1" to sampleFranchiseDetail)
-
-        setContent { harness.App() }
-        harness.navigationViewModel.onIntent(
-            NavigationIntent.NavigateTo(SpScreen.ExploreFranchise("fr1", "Castlevania"))
-        )
-        advance(harness)
-
-        // In-library game
-        onNodeWithTag("franchise_game_2001").assertExists()
-
-        // Not-in-library game should indicate as such
-        onNodeWithTag("franchise_game_2003").assertExists()
-        onNodeWithTag("franchise_game_2003")
-            .assertContentDescriptionContains("not in library", substring = true)
     }
 
     // --- Navigation from global search ---
