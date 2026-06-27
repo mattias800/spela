@@ -95,6 +95,14 @@ if [ "$USE_EMULATOR" = true ]; then
   adb -s "$ADB_SERIAL" shell settings put global animator_duration_scale 0 >/dev/null 2>&1 || true
 fi
 
+GRADLE_ARGS=()
+if [ "$USE_EMULATOR" = true ]; then
+  # The emulator job can only execute x86_64 native libraries. Keep
+  # physical-device/default runs on the full ABI set, but avoid building
+  # unused ARM artifacts when running on the CI AVD.
+  GRADLE_ARGS+=("-Pspela.android.abiFilters=x86_64")
+fi
+
 if [ "$RESET_BACKEND" = true ]; then
   echo "── Resetting backend (docker compose down -v) ──"
   docker compose -f "$E2E_COMPOSE" down -v --remove-orphans >/dev/null 2>&1 || true
@@ -361,7 +369,7 @@ if [ "${#POSITIONAL_ARGS[@]}" -gt 0 ]; then
   #   ./run-e2e.sh com.spela.player.android.EmulationTest#playCastlevania
   #   ./run-e2e.sh com.spela.player.android.EmulationTest
   echo "Running test: ${POSITIONAL_ARGS[0]}"
-  ANDROID_SERIAL="$ADB_SERIAL" "$SCRIPT_DIR/gradlew" :android:connectedDebugAndroidTest \
+  ANDROID_SERIAL="$ADB_SERIAL" "$SCRIPT_DIR/gradlew" "${GRADLE_ARGS[@]+"${GRADLE_ARGS[@]}"}" :android:connectedDebugAndroidTest \
     -Pandroid.testInstrumentationRunnerArguments.class="${POSITIONAL_ARGS[0]}"
   exit $?
 fi
@@ -478,7 +486,7 @@ if [ "$USE_EMULATOR" = true ]; then
   # every physical-device-only class that would immediately Assume-skip.
   EMULATOR_CLASS_FILTER="$(IFS=,; printf '%s' "${TEST_CLASSES[*]}")"
   echo "════════ Android emulator batch (${#TEST_CLASSES[@]} classes) ════════"
-  ANDROID_SERIAL="$ADB_SERIAL" "$SCRIPT_DIR/gradlew" :android:connectedDebugAndroidTest \
+  ANDROID_SERIAL="$ADB_SERIAL" "$SCRIPT_DIR/gradlew" "${GRADLE_ARGS[@]+"${GRADLE_ARGS[@]}"}" :android:connectedDebugAndroidTest \
     -Pandroid.testInstrumentationRunnerArguments.class="$EMULATOR_CLASS_FILTER"
   exit $?
 fi
@@ -486,7 +494,7 @@ fi
 OVERALL_RESULT=0
 for cls in "${TEST_CLASSES[@]}"; do
   echo "════════ $cls ════════"
-  ANDROID_SERIAL="$ADB_SERIAL" "$SCRIPT_DIR/gradlew" :android:connectedDebugAndroidTest \
+  ANDROID_SERIAL="$ADB_SERIAL" "$SCRIPT_DIR/gradlew" "${GRADLE_ARGS[@]+"${GRADLE_ARGS[@]}"}" :android:connectedDebugAndroidTest \
     -Pandroid.testInstrumentationRunnerArguments.class="$cls" || {
     OVERALL_RESULT=$?
     echo "✗ $cls failed."

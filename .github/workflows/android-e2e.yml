@@ -84,6 +84,8 @@ jobs:
       # should mostly pay for install + test execution instead of the
       # initial app/test APK build. Android E2E only talks to the API, so
       # start the `server` compose service without building the web image.
+      # The CI AVD is x86_64, so build only that native ABI here; normal
+      # debug/release builds keep the full ABI set from android/build.gradle.kts.
       - name: Start backend and build Android test APKs
         run: |
           set -euo pipefail
@@ -93,7 +95,7 @@ jobs:
 
           (
             cd player
-            ./gradlew :android:assembleDebug :android:assembleDebugAndroidTest
+            ./gradlew -Pspela.android.abiFilters=x86_64 :android:assembleDebug :android:assembleDebugAndroidTest
           ) &
           gradle_pid=$!
 
