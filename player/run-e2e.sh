@@ -374,25 +374,115 @@ fi
 # nightly all-tests-summary).
 
 ANDROID_TEST_DIR="$SCRIPT_DIR/android/src/androidTest/java/com/spela/player/android"
+ANDROID_TEST_PACKAGE="com.spela.player.android"
+
+class_level_skip_reason() {
+  # Detect annotations that make an entire test class non-runnable for
+  # emulator CI. KDoc/comments are stripped first so explanatory comments
+  # mentioning annotations don't accidentally hide real coverage.
+  awk '
+    function strip_comments(input,    before, after) {
+      if (in_block) {
+        if (input ~ /\*\//) {
+          sub(/^.*\*\//, "", input)
+          in_block = 0
+        } else {
+          return ""
+        }
+      }
+
+      while (input ~ /\/\*/) {
+        before = input
+        sub(/\/\*.*$/, "", before)
+        after = input
+        sub(/^.*\/\*/, "", after)
+        if (after ~ /\*\//) {
+          sub(/^.*\*\//, "", after)
+          input = before after
+        } else {
+          in_block = 1
+          input = before
+          break
+        }
+      }
+
+      sub(/\/\/.*$/, "", input)
+      return input
+    }
+
+    {
+      line = strip_comments($0)
+      if (line ~ /^[[:space:]]*@RequiresPhysicalDevice([[:space:]]|[({]|$)/) requires_physical = 1
+      if (line ~ /^[[:space:]]*@Ignore([[:space:]]|[({]|$)/) ignored = 1
+      if (line ~ /^[[:space:]]*([A-Za-z_][A-Za-z0-9_]*[[:space:]]+)*(class|object)[[:space:]]+[A-Za-z_][A-Za-z0-9_]*Test([[:space:](:{]|$)/) {
+        if (ignored) {
+          print "ignored"
+        } else if (requires_physical) {
+          print "requires-physical-device"
+        }
+        exit
+      }
+    }
+  ' "$1"
+}
+
 # BaseE2ETest is an abstract base class — no @Test methods. Including it
 # in the batch produces an initializationError that's not actionable.
-TEST_CLASSES=$(find "$ANDROID_TEST_DIR" -name '*Test.kt' -maxdepth 1 \
-  | xargs -I{} basename {} .kt \
-  | grep -v '^BaseE2ETest$' \
-  | sort \
-  | sed 's|^|com.spela.player.android.|')
+TEST_CLASSES=()
+SKIPPED_TEST_CLASSES=()
+while IFS= read -r file; do
+  test_class="$(basename "$file" .kt)"
+  if [ "$test_class" = "BaseE2ETest" ]; then
+    continue
+  fi
 
-if [ -z "$TEST_CLASSES" ]; then
+  full_class="$ANDROID_TEST_PACKAGE.$test_class"
+  if [ "$USE_EMULATOR" = true ]; then
+    skip_reason="$(class_level_skip_reason "$file")"
+    if [ -n "$skip_reason" ]; then
+      SKIPPED_TEST_CLASSES+=("$full_class ($skip_reason)")
+      continue
+    fi
+  fi
+
+  TEST_CLASSES+=("$full_class")
+done < <(find "$ANDROID_TEST_DIR" -maxdepth 1 -name '*Test.kt' -print | sort)
+
+if [ "${#TEST_CLASSES[@]}" -eq 0 ]; then
   echo "No test classes found under $ANDROID_TEST_DIR"
   exit 1
 fi
 
-echo "Running E2E test classes ($([ "$FAIL_FAST" = true ] && echo 'fail-fast' || echo 'continue-on-failure')):"
-echo "$TEST_CLASSES" | sed 's|^|  - |'
+if [ "$USE_EMULATOR" = true ]; then
+  RUN_MODE_LABEL="emulator batch"
+elif [ "$FAIL_FAST" = true ]; then
+  RUN_MODE_LABEL="fail-fast"
+else
+  RUN_MODE_LABEL="continue-on-failure"
+fi
+
+echo "Running E2E test classes ($RUN_MODE_LABEL):"
+printf '  - %s\n' "${TEST_CLASSES[@]}"
+if [ "$USE_EMULATOR" = true ] && [ "${#SKIPPED_TEST_CLASSES[@]}" -gt 0 ]; then
+  echo
+  echo "Skipping emulator-incompatible test classes:"
+  printf '  - %s\n' "${SKIPPED_TEST_CLASSES[@]}"
+fi
 echo
 
+if [ "$USE_EMULATOR" = true ]; then
+  # The CI emulator only runs a small smoke subset. One Gradle invocation
+  # keeps the same executable coverage without paying runner startup for
+  # every physical-device-only class that would immediately Assume-skip.
+  EMULATOR_CLASS_FILTER="$(IFS=,; printf '%s' "${TEST_CLASSES[*]}")"
+  echo "════════ Android emulator batch (${#TEST_CLASSES[@]} classes) ════════"
+  ANDROID_SERIAL="$ADB_SERIAL" "$SCRIPT_DIR/gradlew" :android:connectedDebugAndroidTest \
+    -Pandroid.testInstrumentationRunnerArguments.class="$EMULATOR_CLASS_FILTER"
+  exit $?
+fi
+
 OVERALL_RESULT=0
-for cls in $TEST_CLASSES; do
+for cls in "${TEST_CLASSES[@]}"; do
   echo "════════ $cls ════════"
   ANDROID_SERIAL="$ADB_SERIAL" "$SCRIPT_DIR/gradlew" :android:connectedDebugAndroidTest \
     -Pandroid.testInstrumentationRunnerArguments.class="$cls" || {
