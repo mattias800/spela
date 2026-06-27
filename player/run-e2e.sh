@@ -102,7 +102,7 @@ else
   echo "── Skipping backend reset (--skip-reset) — keeping existing volumes ──"
 fi
 
-echo "── Ensuring backend is up (docker compose up -d --build --wait) ──"
+echo "── Ensuring backend is up (docker compose up -d --build --wait server) ──"
 # If the backend is already up and healthy (CI brought it up in a
 # previous step, or a local dev is iterating), skip the rebuild +
 # recreate. Recreating against an already-running container races on
@@ -111,7 +111,9 @@ echo "── Ensuring backend is up (docker compose up -d --build --wait) ──
 if curl -fs --max-time 2 http://localhost:8080/api/health >/dev/null 2>&1; then
   echo "Backend already healthy — skipping up to avoid port-race on container recreate."
 else
-  docker compose -f "$E2E_COMPOSE" up -d --build --wait
+  # Android E2E only talks to the API on :8080; the web service in
+  # docker-compose.e2e.yml is for browser E2E and needlessly runs npm ci.
+  docker compose -f "$E2E_COMPOSE" up -d --build --wait server
   echo "Backend up and healthy."
 fi
 

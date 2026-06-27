@@ -78,11 +78,38 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      # Start the e2e backend BEFORE the emulator step so the long-
-      # running emulator-runner action can run the test script directly
-      # against a healthy backend on `localhost:8080`.
-      - name: Start backend (docker compose)
-        run: docker compose -f docker-compose.e2e.yml up -d --build --wait
+      # Start the e2e backend and build the Android APKs BEFORE the
+      # emulator step. They do not depend on each other, so run them in
+      # parallel: by the time the AVD is booted, connectedDebugAndroidTest
+      # should mostly pay for install + test execution instead of the
+      # initial app/test APK build. Android E2E only talks to the API, so
+      # start the `server` compose service without building the web image.
+      - name: Start backend and build Android test APKs
+        run: |
+          set -euo pipefail
+
+          docker compose -f docker-compose.e2e.yml up -d --build --wait server &
+          backend_pid=$!
+
+          (
+            cd player
+            ./gradlew :android:assembleDebug :android:assembleDebugAndroidTest
+          ) &
+          gradle_pid=$!
+
+          backend_result=0
+          gradle_result=0
+          wait "$backend_pid" || backend_result=$?
+          wait "$gradle_pid" || gradle_result=$?
+
+          if [ "$backend_result" -ne 0 ]; then
+            echo "::error::Backend startup failed with exit code $backend_result"
+            exit "$backend_result"
+          fi
+          if [ "$gradle_result" -ne 0 ]; then
+            echo "::error::Android APK prebuild failed with exit code $gradle_result"
+            exit "$gradle_result"
+          fi
 
       # AVD cache: the system image + AVD snapshot are ~5GB; caching
       # them shaves 3-5min per run. The reactivecircus action handles
