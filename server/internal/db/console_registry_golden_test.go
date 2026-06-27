@@ -32,10 +32,6 @@ type consoleGolden struct {
 	Playable         bool    `json:"playable"`
 	MakerCode        *string `json:"makerCode"`
 	MediaCode        *string `json:"mediaCode"`
-	ReleaseYear      *int    `json:"releaseYear"`
-	UnitsSold        *int64  `json:"unitsSold"`
-	Summary          *string `json:"summary"`
-	Tag              *string `json:"tag"`
 }
 
 // seedAllConsoleData runs the full console seeding pipeline (consoles +
@@ -80,10 +76,6 @@ func seedAllConsoleData(t *testing.T) []consoleGolden {
 			SaveStateSupport: c.SaveStateSupport,
 			SaveStatePolicy:  string(c.SaveStatePolicy),
 			Playable:         c.Playable,
-			ReleaseYear:      c.ReleaseYear,
-			UnitsSold:        c.UnitsSold,
-			Summary:          c.Summary,
-			Tag:              c.Tag,
 		}
 		if c.HardwareMaker != nil {
 			code := c.HardwareMaker.Code

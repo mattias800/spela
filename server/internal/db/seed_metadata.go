@@ -158,10 +158,12 @@ func mediaTypeID(db *gorm.DB, code string) *uint {
 	return &mt.ID
 }
 
-// SeedConsoleMetadata applies the code, maker, media type and catalog
-// facts from the console registry to the existing console rows. Registry
-// entries without metadata (empty Code/MakerCode/...) resolve to no-ops,
-// since every update below is guarded on a non-empty/non-nil value.
+// SeedConsoleMetadata applies the code, maker and media-type foreign keys
+// from the console registry to the existing console rows. The catalog
+// facts (release year, units sold, summary, tag) are no longer stored —
+// they live in the registry and are derived into responses (#1443).
+// Registry entries without metadata (empty Code/MakerCode/...) resolve to
+// no-ops, since every update below is guarded on a non-empty value.
 func SeedConsoleMetadata(db *gorm.DB) error {
 	for _, m := range consoleRegistry {
 		var console Console
@@ -188,22 +190,6 @@ func SeedConsoleMetadata(db *gorm.DB) error {
 		mtid := mediaTypeID(db, m.MediaCode)
 		if mtid != nil && (console.MediaTypeID == nil || *console.MediaTypeID != *mtid) {
 			updates["media_type_id"] = *mtid
-		}
-
-		if m.ReleaseYear != nil && (console.ReleaseYear == nil || *console.ReleaseYear != *m.ReleaseYear) {
-			updates["release_year"] = *m.ReleaseYear
-		}
-
-		if m.UnitsSold != nil && (console.UnitsSold == nil || *console.UnitsSold != *m.UnitsSold) {
-			updates["units_sold"] = *m.UnitsSold
-		}
-
-		if m.Summary != nil && (console.Summary == nil || *console.Summary != *m.Summary) {
-			updates["summary"] = *m.Summary
-		}
-
-		if m.Tag != nil && (console.Tag == nil || *console.Tag != *m.Tag) {
-			updates["tag"] = *m.Tag
 		}
 
 		if len(updates) > 0 {
