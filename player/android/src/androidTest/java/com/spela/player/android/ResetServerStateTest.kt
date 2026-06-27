@@ -5,8 +5,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Focused integration test for resetServerState(). Runs against the
- * docker-compose E2E server. Deliberately does NOT extend BaseE2ETest
+ * Focused integration test for resetServerState(). Runs against the E2E
+ * server prepared by run-e2e.sh/CI. Deliberately does NOT extend BaseE2ETest
  * — the whole point is to exercise the reset call in isolation so a
  * future regression is easy to diagnose without the base-class setup
  * noise.

@@ -63,6 +63,12 @@ jobs:
           distribution: temurin
           java-version: 21
 
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
+
       - name: Cache Gradle
         uses: actions/cache@v5
         with:
@@ -72,6 +78,12 @@ jobs:
           key: android-e2e-gradle-${{ hashFiles('player/**/*.gradle*', 'player/gradle.properties', 'player/gradle/libs.versions.toml') }}
           restore-keys: |
             android-e2e-gradle-
+
+      - name: Cache E2E server binaries
+        uses: actions/cache@v5
+        with:
+          path: .e2e-cache
+          key: android-e2e-server-binaries-${{ runner.os }}-${{ hashFiles('server/**/*.go', 'server/internal/api/static/**', 'server/go.mod', 'server/go.sum') }}
 
       # KVM lets the x86_64 emulator boot hardware-accelerated. The
       # Ubuntu runner has /dev/kvm available but root-owned by default;
@@ -83,33 +95,21 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
-
-      - name: Build cached E2E server image
-        uses: docker/build-push-action@v7
-        with:
-          context: ./server
-          file: ./server/Dockerfile
-          load: true
-          tags: spela-e2e-server:ci
-          cache-from: type=gha,scope=android-e2e-server
-          cache-to: type=gha,scope=android-e2e-server,mode=max,ignore-error=true
-
       # Start the e2e backend and build the Android APKs BEFORE the
-      # emulator step. The server image is already built by the cached
-      # Buildx step above; start it while Gradle builds the APKs so by
-      # the time the AVD is booted, connectedDebugAndroidTest should
-      # mostly pay for install + test execution instead of setup work.
-      # Android E2E only talks to the API, so start the `server` compose
-      # service without building the web image.
+      # emulator step. Android E2E only talks to the API, so start a
+      # fresh test-mode server directly on the runner rather than paying
+      # for Docker/Compose. The script seeds the DB, scans public test
+      # ROMs, waits for the scanner to finish, and leaves the server
+      # running on host port 8080 for adb reverse.
       # The CI AVD is x86_64, so build only that native ABI here; normal
       # debug/release builds keep the full ABI set from android/build.gradle.kts.
       - name: Start backend and build Android test APKs
+        env:
+          SPELA_E2E_API_DIR: ${{ runner.temp }}/spela-android-e2e-api
         run: |
           set -euo pipefail
 
-          docker compose -f docker-compose.e2e.yml -f docker-compose.e2e.ci.yml up -d --no-build --wait server &
+          scripts/start-e2e-api.sh &
           backend_pid=$!
 
           (
@@ -207,7 +207,12 @@ jobs:
       - name: Backend logs on failure
         if: failure()
         run: |
-          echo "── docker compose ps ──"
-          docker compose -f docker-compose.e2e.yml ps || true
           echo "── spela-server logs (last 1500 lines) ──"
-          docker compose -f docker-compose.e2e.yml logs --tail=1500 server || true
+          tail -1500 "${RUNNER_TEMP}/spela-android-e2e-api/server.log" || true
+
+      - name: Stop backend
+        if: always()
+        run: |
+          if [ -f "${RUNNER_TEMP}/spela-android-e2e-api/server.pid" ]; then
+            kill "$(cat "${RUNNER_TEMP}/spela-android-e2e-api/server.pid")" 2>/dev/null || true
+          fi
