@@ -51,20 +51,24 @@ fun SpDialog(
     // Off by default so dialogs with text-field content (which should focus
     // the field, not a button) are unaffected. See #1439.
     autoFocusDismiss: Boolean = false,
+    // Optional focus anchor for picker-style dialogs whose safest first target
+    // is the currently selected row/chip instead of the dismiss button. See #1450.
+    initialFocusRequester: FocusRequester? = null,
     content: @Composable () -> Unit,
 ) {
     val dismissFocusRequester = remember { FocusRequester() }
+    val focusRequester = initialFocusRequester ?: if (autoFocusDismiss) dismissFocusRequester else null
     Dialog(
         onDismissRequest = { if (!isLoading) onDismiss() },
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
-        if (autoFocusDismiss) {
-            LaunchedEffect(Unit) {
+        if (focusRequester != null) {
+            LaunchedEffect(focusRequester) {
                 // Brief settle so the button is placed before we request —
                 // requestFocus on a just-composed node is otherwise unreliable.
                 delay(120)
                 try {
-                    dismissFocusRequester.requestFocus()
+                    focusRequester.requestFocus()
                 } catch (_: Exception) {
                     // Node not ready / focus owner busy — best effort.
                 }

@@ -34,6 +34,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
@@ -346,12 +348,15 @@ private fun PlayerSlotPickerDialog(
     onSelect: (Int) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    val initialFocusRequester = remember { FocusRequester() }
+    val initialFocusSlot = currentSlot ?: 0
     com.spela.player.presentation.ui.components.SpDialog(
         title = "Assign player",
         onDismiss = onDismiss,
         confirmText = "Done",
         onConfirm = onDismiss,
         modifier = Modifier.testTag("player_slot_picker"),
+        initialFocusRequester = initialFocusRequester,
     ) {
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
@@ -359,18 +364,28 @@ private fun PlayerSlotPickerDialog(
             verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
         ) {
             for (slot in 0 until GamepadPortManager.MAX_PORTS) {
-                SlotChip(slot = slot, selected = slot == currentSlot, onClick = { onSelect(slot) })
+                SlotChip(
+                    slot = slot,
+                    selected = slot == currentSlot,
+                    onClick = { onSelect(slot) },
+                    modifier = if (slot == initialFocusSlot) Modifier.focusRequester(initialFocusRequester) else Modifier,
+                )
             }
         }
     }
 }
 
 @Composable
-private fun SlotChip(slot: Int, selected: Boolean, onClick: () -> Unit) {
+private fun SlotChip(
+    slot: Int,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val interactionSource = remember { MutableInteractionSource() }
     val shape = RoundedCornerShape(SpSpacing.RadiusMedium)
     Box(
-        modifier = Modifier
+        modifier = modifier
             .clip(shape)
             .background(if (selected) SpColor.Primary else SpColor.SurfaceElevated)
             .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
