@@ -77,7 +77,7 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: player-gradle-${{ hashFiles('player/**/*.gradle*', 'player/gradle/libs.versions.toml') }}
+          key: player-gradle-${{ hashFiles('player/**/*.gradle*', 'player/gradle.properties', 'player/gradle/libs.versions.toml') }}
           restore-keys: |
             player-gradle-
       - name: Run shared desktop tests
@@ -132,7 +132,7 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: android-gradle-${{ hashFiles('player/**/*.gradle*', 'player/gradle/libs.versions.toml') }}
+          key: android-gradle-${{ hashFiles('player/**/*.gradle*', 'player/gradle.properties', 'player/gradle/libs.versions.toml') }}
           restore-keys: |
             android-gradle-
       - name: Decode release keystore
@@ -235,7 +235,7 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('player/**/*.gradle*', 'player/gradle/libs.versions.toml') }}
+          key: ${{ runner.os }}-gradle-${{ hashFiles('player/**/*.gradle*', 'player/gradle.properties', 'player/gradle/libs.versions.toml') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
       - name: Build package
@@ -317,7 +317,7 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: Linux-gradle-${{ hashFiles('player/**/*.gradle*', 'player/gradle/libs.versions.toml') }}
+          key: Linux-gradle-${{ hashFiles('player/**/*.gradle*', 'player/gradle.properties', 'player/gradle/libs.versions.toml') }}
           restore-keys: |
             Linux-gradle-
       - name: Build distributable
@@ -379,7 +379,7 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: Linux-gradle-${{ hashFiles('player/**/*.gradle*', 'player/gradle/libs.versions.toml') }}
+          key: Linux-gradle-${{ hashFiles('player/**/*.gradle*', 'player/gradle.properties', 'player/gradle/libs.versions.toml') }}
           restore-keys: |
             Linux-gradle-
       - name: Build distributable
@@ -433,7 +433,7 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: Linux-ARM64-gradle-${{ hashFiles('player/**/*.gradle*', 'player/gradle/libs.versions.toml') }}
+          key: Linux-ARM64-gradle-${{ hashFiles('player/**/*.gradle*', 'player/gradle.properties', 'player/gradle/libs.versions.toml') }}
           restore-keys: |
             Linux-ARM64-gradle-
       - name: Build distributable

@@ -70,7 +70,7 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('player/**/*.gradle*', 'player/gradle/libs.versions.toml') }}
+          key: ${{ runner.os }}-gradle-${{ hashFiles('player/**/*.gradle*', 'player/gradle.properties', 'player/gradle/libs.versions.toml') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
 
@@ -121,7 +121,7 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: Linux-gradle-${{ hashFiles('player/**/*.gradle*', 'player/gradle/libs.versions.toml') }}
+          key: Linux-gradle-${{ hashFiles('player/**/*.gradle*', 'player/gradle.properties', 'player/gradle/libs.versions.toml') }}
           restore-keys: |
             Linux-gradle-
 
@@ -177,7 +177,7 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: Linux-gradle-${{ hashFiles('player/**/*.gradle*', 'player/gradle/libs.versions.toml') }}
+          key: Linux-gradle-${{ hashFiles('player/**/*.gradle*', 'player/gradle.properties', 'player/gradle/libs.versions.toml') }}
           restore-keys: |
             Linux-gradle-
 
@@ -235,7 +235,7 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: Linux-ARM64-gradle-${{ hashFiles('player/**/*.gradle*', 'player/gradle/libs.versions.toml') }}
+          key: Linux-ARM64-gradle-${{ hashFiles('player/**/*.gradle*', 'player/gradle.properties', 'player/gradle/libs.versions.toml') }}
           restore-keys: |
             Linux-ARM64-gradle-
 
