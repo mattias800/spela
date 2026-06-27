@@ -68,7 +68,7 @@ cd player
 
 **Prerequisites:**
 - Android emulator OR physical device (see "Emulator vs Physical Device" below)
-- Docker E2E environment running (`docker compose -f docker-compose.e2e.yml up -d --build --wait`)
+- Docker E2E API server running (`docker compose -f docker-compose.e2e.yml up -d --build --wait server`)
 - Reverse port forwarding: `adb reverse tcp:8080 tcp:8080`
 
 #### Emulator vs Physical Device
@@ -113,7 +113,7 @@ between iterations. After a one-time setup, each test cycle is ~2 min:
 ```bash
 # One-time per machine (once per dev session):
 emulator -avd spela-test -no-snapshot-load &
-docker compose -f docker-compose.e2e.yml up -d --build --wait
+docker compose -f docker-compose.e2e.yml up -d --build --wait server
 
 # Iterate on a single class as many times as needed:
 ./player/scripts/e2e-android-quick.sh CloneSessionSmokeTest
@@ -181,7 +181,7 @@ class MyFeatureTest : BaseE2ETest() {
 
 **Run lifecycle (`player/run-e2e.sh`):**
 
-1. `docker compose -f docker-compose.e2e.yml down -v` then `up -d --build --wait` — fresh backend.
+1. `docker compose -f docker-compose.e2e.yml down -v` then `up -d --build --wait server` — fresh backend API server.
 2. `adb uninstall com.spela.player` — fresh app (no leftover auth, server, or local DB).
 3. `player/scripts/cache-nestopia.sh` — pre-cache the NES core from a host-local cache (first time only, downloaded once from libretro buildbot and reused forever after).
 4. Device hygiene: wake, screen timeout 10 min, a11y services off, launch-prime on display 0.

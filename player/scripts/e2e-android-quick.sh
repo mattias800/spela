@@ -5,7 +5,7 @@
 # "Iterating on a single Android E2E test"):
 #
 #   1. AVD running          : emulator -avd spela-test -no-snapshot-load &
-#   2. docker-compose up    : docker compose -f docker-compose.e2e.yml up -d --build --wait
+#   2. docker-compose up    : docker compose -f docker-compose.e2e.yml up -d --build --wait server
 #
 # Then iterate with:
 #
@@ -38,7 +38,7 @@ Examples:
 
 Prereqs (one-time per machine):
   emulator -avd spela-test -no-snapshot-load &
-  docker compose -f docker-compose.e2e.yml up -d --build --wait
+  docker compose -f docker-compose.e2e.yml up -d --build --wait server
 
 See docs/e2e-testing.md "Iterating on a single Android E2E test" for
 the full setup walkthrough.
@@ -70,8 +70,8 @@ if ! curl -fs --max-time 2 http://localhost:8080/api/health >/dev/null; then
   cat <<EOF >&2
 error: backend not responding on localhost:8080.
 
-Bring up the E2E stack (one-time per session):
-  docker compose -f $REPO_ROOT/docker-compose.e2e.yml up -d --build --wait
+Bring up the E2E API server (one-time per session):
+  docker compose -f $REPO_ROOT/docker-compose.e2e.yml up -d --build --wait server
 
 Then re-run this script.
 EOF
