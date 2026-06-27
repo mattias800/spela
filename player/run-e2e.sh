@@ -11,9 +11,11 @@ ENV_FILE="$SCRIPT_DIR/.env"
 # DEVICE_PIN is cleared, so the .env file isn't needed at all — that's
 # the path GitHub Actions takes (no .env in the runner workspace).
 USE_EMULATOR=false
+USE_PREBUILT_APKS=false
 for arg in "$@"; do
   case "$arg" in
     --emulator) USE_EMULATOR=true ;;
+    --prebuilt-apks) USE_PREBUILT_APKS=true ;;
   esac
 done
 
@@ -64,10 +66,16 @@ for arg in "$@"; do
   case "$arg" in
     --skip-reset) RESET_BACKEND=false ;;
     --emulator) ;; # already parsed; consume so it doesn't reach gradle
+    --prebuilt-apks) ;; # already parsed; consume so it doesn't reach gradle
     *) ARGS+=("$arg") ;;
   esac
 done
 set -- "${ARGS[@]+"${ARGS[@]}"}"
+
+if [ "$USE_PREBUILT_APKS" = true ] && [ "$USE_EMULATOR" != true ]; then
+  echo "Error: --prebuilt-apks is only supported with --emulator." >&2
+  exit 1
+fi
 
 if [ "$USE_EMULATOR" = true ]; then
   EMU_SERIAL=$(adb devices | awk '/^emulator-[0-9]+/ && $2 == "device" {print $1; exit}')
@@ -368,11 +376,88 @@ if [ "${#POSITIONAL_ARGS[@]}" -gt 0 ]; then
   # Usage:
   #   ./run-e2e.sh com.spela.player.android.EmulationTest#playCastlevania
   #   ./run-e2e.sh com.spela.player.android.EmulationTest
+  if [ "$USE_PREBUILT_APKS" = true ]; then
+    echo "Error: --prebuilt-apks is only supported for the emulator batch run." >&2
+    exit 1
+  fi
   echo "Running test: ${POSITIONAL_ARGS[0]}"
   ANDROID_SERIAL="$ADB_SERIAL" "$SCRIPT_DIR/gradlew" "${GRADLE_ARGS[@]+"${GRADLE_ARGS[@]}"}" :android:connectedDebugAndroidTest \
     -Pandroid.testInstrumentationRunnerArguments.class="${POSITIONAL_ARGS[0]}"
   exit $?
 fi
+
+find_single_apk() {
+  local dir="$1"
+  local label="$2"
+  local apk
+
+  if [ ! -d "$dir" ]; then
+    echo "Error: expected $label APK directory does not exist: $dir" >&2
+    echo "Build it first with: ./gradlew -Pspela.android.abiFilters=x86_64 :android:assembleDebug :android:assembleDebugAndroidTest" >&2
+    exit 1
+  fi
+
+  apk="$(find "$dir" -maxdepth 1 -type f -name '*.apk' | sort | head -n 1)"
+  if [ -z "$apk" ]; then
+    echo "Error: no $label APK found under $dir" >&2
+    echo "Build it first with: ./gradlew -Pspela.android.abiFilters=x86_64 :android:assembleDebug :android:assembleDebugAndroidTest" >&2
+    exit 1
+  fi
+
+  printf '%s\n' "$apk"
+}
+
+run_prebuilt_android_tests() {
+  local class_filter="$1"
+  local app_apk
+  local test_apk
+  local instrumentation
+  local runner
+  local output
+  local status
+
+  app_apk="$(find_single_apk "$SCRIPT_DIR/android/build/outputs/apk/debug" "debug app")"
+  test_apk="$(find_single_apk "$SCRIPT_DIR/android/build/outputs/apk/androidTest/debug" "debug androidTest")"
+
+  echo "Installing prebuilt APKs:"
+  echo "  app : $app_apk"
+  echo "  test: $test_apk"
+  adb -s "$ADB_SERIAL" uninstall com.spela.player.test >/dev/null 2>&1 || true
+  adb -s "$ADB_SERIAL" install -r -g "$app_apk" >/dev/null
+  adb -s "$ADB_SERIAL" install -r -g "$test_apk" >/dev/null
+
+  instrumentation="$(adb -s "$ADB_SERIAL" shell pm list instrumentation | tr -d '\r')"
+  runner="$(printf '%s\n' "$instrumentation" \
+    | sed -n 's/^instrumentation:\([^ ]*\) (target=com\.spela\.player)$/\1/p' \
+    | head -n 1)"
+  if [ -z "$runner" ]; then
+    echo "Error: could not find instrumentation runner targeting com.spela.player." >&2
+    echo "Installed instrumentations:" >&2
+    printf '%s\n' "$instrumentation" >&2
+    exit 1
+  fi
+
+  echo "Running instrumentation: $runner"
+  set +e
+  output="$(adb -s "$ADB_SERIAL" shell am instrument -w -r \
+    -e listener com.spela.player.android.FailureDiagnosticsListener \
+    -e class "$class_filter" \
+    "$runner" 2>&1)"
+  status=$?
+  set -e
+  printf '%s\n' "$output"
+
+  if [ "$status" -ne 0 ]; then
+    return "$status"
+  fi
+  if printf '%s\n' "$output" | grep -Eq 'FAILURES!!!|INSTRUMENTATION_STATUS_CODE: -2|INSTRUMENTATION_RESULT: shortMsg=|Process crashed'; then
+    return 1
+  fi
+  if ! printf '%s\n' "$output" | grep -Eq 'OK \([1-9][0-9]* tests?\)'; then
+    echo "Error: instrumentation output did not report a non-zero passing test count." >&2
+    return 1
+  fi
+}
 
 # ── Fail-fast batch run ──
 # Default: discover all `androidTest` test classes and run them one at a
@@ -481,13 +566,17 @@ fi
 echo
 
 if [ "$USE_EMULATOR" = true ]; then
-  # The CI emulator only runs a small smoke subset. One Gradle invocation
-  # keeps the same executable coverage without paying runner startup for
+  # The CI emulator only runs a small smoke subset. Batch the classes so
+  # we keep the same executable coverage without paying runner startup for
   # every physical-device-only class that would immediately Assume-skip.
   EMULATOR_CLASS_FILTER="$(IFS=,; printf '%s' "${TEST_CLASSES[*]}")"
   echo "════════ Android emulator batch (${#TEST_CLASSES[@]} classes) ════════"
-  ANDROID_SERIAL="$ADB_SERIAL" "$SCRIPT_DIR/gradlew" "${GRADLE_ARGS[@]+"${GRADLE_ARGS[@]}"}" :android:connectedDebugAndroidTest \
-    -Pandroid.testInstrumentationRunnerArguments.class="$EMULATOR_CLASS_FILTER"
+  if [ "$USE_PREBUILT_APKS" = true ]; then
+    run_prebuilt_android_tests "$EMULATOR_CLASS_FILTER"
+  else
+    ANDROID_SERIAL="$ADB_SERIAL" "$SCRIPT_DIR/gradlew" "${GRADLE_ARGS[@]+"${GRADLE_ARGS[@]}"}" :android:connectedDebugAndroidTest \
+      -Pandroid.testInstrumentationRunnerArguments.class="$EMULATOR_CLASS_FILTER"
+  fi
   exit $?
 fi
 
