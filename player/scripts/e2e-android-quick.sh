@@ -9,8 +9,8 @@
 #
 # Then iterate with:
 #
-#   ./player/scripts/e2e-android-quick.sh CloneSessionSmokeTest
-#   ./player/scripts/e2e-android-quick.sh com.spela.player.android.CloneSessionSmokeTest
+#   ./player/scripts/e2e-android-quick.sh AndroidApiGraphSmokeTest
+#   ./player/scripts/e2e-android-quick.sh com.spela.player.android.AndroidApiGraphSmokeTest
 #
 # Both forms work — the FQCN is auto-prefixed when missing. End-to-end
 # wall time is ~2 min after the first run instead of ~25 min via PR CI.
@@ -33,8 +33,8 @@ if [ "$#" -lt 1 ]; then
 usage: $0 <TestClass | FullyQualifiedClassName>
 
 Examples:
-  $0 CloneSessionSmokeTest
-  $0 com.spela.player.android.CoreDecisionFlagsSmokeTest
+  $0 AndroidApiGraphSmokeTest
+  $0 com.spela.player.android.AndroidApiGraphSmokeTest
 
 Prereqs (one-time per machine):
   emulator -avd spela-test -no-snapshot-load &

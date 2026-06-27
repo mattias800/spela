@@ -127,8 +127,8 @@ emulator -avd spela-test -no-snapshot-load &
 docker compose -f docker-compose.e2e.yml up -d --build --wait server
 
 # Iterate on a single class as many times as needed:
-./player/scripts/e2e-android-quick.sh CloneSessionSmokeTest
-# (FQCN also works: com.spela.player.android.CloneSessionSmokeTest)
+./player/scripts/e2e-android-quick.sh AndroidApiGraphSmokeTest
+# (FQCN also works: com.spela.player.android.AndroidApiGraphSmokeTest)
 ```
 
 The wrapper validates both prereqs up-front, then delegates to
