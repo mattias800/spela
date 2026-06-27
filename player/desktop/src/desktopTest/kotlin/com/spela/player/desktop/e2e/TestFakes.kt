@@ -101,7 +101,6 @@ fun ComposeUiTest.advanceFully(harness: SpelaTestHarness) = advanceN(harness, 6)
  */
 @OptIn(ExperimentalTestApi::class, ExperimentalCoroutinesApi::class)
 fun ComposeUiTest.navigateToGameDetail(harness: SpelaTestHarness, gameId: String = "1") {
-    advance(harness) // settle initial composition
     harness.navigationViewModel.onIntent(
         NavigationIntent.NavigateTo(SpScreen.GameDetail(gameId))
     )

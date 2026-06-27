@@ -1,7 +1,6 @@
 package com.spela.player.desktop.e2e
 
 import androidx.compose.ui.test.*
-import com.spela.player.domain.model.ActiveYears
 import com.spela.player.domain.model.CompanyInfo
 import com.spela.player.domain.model.DeveloperDetail
 import com.spela.player.domain.model.DeveloperDetailPlatformBreakdown
@@ -149,7 +148,7 @@ class ExploreDeveloperTest {
     // --- Developer spotlight on Explore screen ---
 
     @Test
-    fun developerSpotlightRendersOnExploreScreen() = runComposeUiTest {
+    fun developerSpotlightRendersNameAndStatsOnExploreScreen() = runComposeUiTest {
         val harness = createHarness()
         harness.exploreRepo.developerSpotlightData = sampleSpotlight
 
@@ -160,18 +159,6 @@ class ExploreDeveloperTest {
         onNodeWithTag("explore_screen").assertIsDisplayed()
         onNodeWithTag("explore_developer_spotlight_section").assertExists()
         onNodeWithText("Developer Spotlight").assertExists()
-    }
-
-    @Test
-    fun developerSpotlightDisplaysNameAndStats() = runComposeUiTest {
-        val harness = createHarness()
-        harness.exploreRepo.developerSpotlightData = sampleSpotlight
-
-        setContent { harness.App() }
-        harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.Explore))
-        advance(harness)
-
-        onNodeWithTag("explore_developer_spotlight_section").assertExists()
         onNodeWithText("Square").assertExists()
         onNodeWithText("24 games").assertExists()
     }
@@ -208,137 +195,7 @@ class ExploreDeveloperTest {
         assertEquals("explore_developer/Square", navState.currentScreen.route)
     }
 
-    // --- Hero Banner ---
-
-    @Test
-    fun heroBannerDisplaysNameAndStats() = runComposeUiTest {
-        val harness = createHarness()
-        harness.exploreRepo.developerDetails = mapOf("Capcom" to richDeveloperDetail)
-
-        setContent { harness.App() }
-        harness.navigationViewModel.onIntent(
-            NavigationIntent.NavigateTo(SpScreen.ExploreDeveloper("Capcom"))
-        )
-        advance(harness)
-
-        // Hero banner + info section are visible. The old per-stat
-        // testTags (developer_hero_name, developer_game_count, etc.)
-        // were consolidated into a single developer_info_section stat
-        // table; asserting the section + hero banner is enough to cover
-        // the hero-banner-renders contract.
-        onNodeWithTag("developer_hero_banner").assertExists()
-        onNodeWithTag("developer_info_section").assertExists()
-    }
-
-    @Test
-    fun heroBannerFallbackWhenNoHeroUrl() = runComposeUiTest {
-        val harness = createHarness()
-        harness.exploreRepo.developerDetails = mapOf("Square" to sampleDeveloperDetail)
-
-        setContent { harness.App() }
-        harness.navigationViewModel.onIntent(
-            NavigationIntent.NavigateTo(SpScreen.ExploreDeveloper("Square"))
-        )
-        advance(harness)
-
-        // Should still show hero banner with gradient fallback. Without a
-        // logo URL the company name renders via developer_letter_avatar.
-        onNodeWithTag("developer_hero_banner").assertExists()
-        onNodeWithTag("developer_letter_avatar").assertExists()
-    }
-
-    // --- Top Rated Row ---
-
-    @Test
-    fun topRatedRowShowsWhenEnoughGames() = runComposeUiTest {
-        val harness = createHarness()
-        harness.exploreRepo.developerDetails = mapOf("Capcom" to richDeveloperDetail)
-
-        setContent { harness.App() }
-        harness.navigationViewModel.onIntent(
-            NavigationIntent.NavigateTo(SpScreen.ExploreDeveloper("Capcom"))
-        )
-        advance(harness)
-
-        onNodeWithTag("developer_top_rated_section").assertExists()
-        onNodeWithText("Top Rated").assertExists()
-        onNodeWithTag("developer_top_game_top-1").assertExists()
-        onNodeWithTag("developer_top_game_top-2").assertExists()
-    }
-
-    @Test
-    fun topRatedRowHiddenWhenFewGames() = runComposeUiTest {
-        val harness = createHarness()
-        // sampleDeveloperDetail has no topGames, need 3+ for top rated section to show
-        harness.exploreRepo.developerDetails = mapOf("Square" to sampleDeveloperDetail)
-
-        setContent { harness.App() }
-        harness.navigationViewModel.onIntent(
-            NavigationIntent.NavigateTo(SpScreen.ExploreDeveloper("Square"))
-        )
-        advance(harness)
-
-        onNodeWithTag("developer_top_rated_section").assertDoesNotExist()
-    }
-
-    // --- User Stats Card ---
-
-    @Test
-    fun userStatsCardShowsStats() = runComposeUiTest {
-        val harness = createHarness()
-        harness.exploreRepo.developerDetails = mapOf("Capcom" to richDeveloperDetail)
-
-        setContent { harness.App() }
-        harness.navigationViewModel.onIntent(
-            NavigationIntent.NavigateTo(SpScreen.ExploreDeveloper("Capcom"))
-        )
-        advance(harness)
-
-        // developer_detail_content is an SpSectionList (Column) so it has
-        // no scroll semantics; the parent SpScreen scrolls. assertExists()
-        // is sufficient regardless of viewport position.
-        onNodeWithTag("developer_user_stats").assertExists()
-        onNodeWithText("Your Stats").assertExists()
-        onNodeWithTag("developer_user_stat_playtime").assertExists()
-        onNodeWithTag("developer_user_stat_played").assertExists()
-        onNodeWithTag("developer_user_stat_favorites").assertExists()
-        // 14400 seconds = 4h 0m
-        onNodeWithText("4h 0m").assertExists()
-        onNodeWithText("5/8").assertExists()
-        onNodeWithText("3").assertExists()
-    }
-
-    @Test
-    fun userStatsCardShowsMostPlayedGame() = runComposeUiTest {
-        val harness = createHarness()
-        harness.exploreRepo.developerDetails = mapOf("Capcom" to richDeveloperDetail)
-
-        setContent { harness.App() }
-        harness.navigationViewModel.onIntent(
-            NavigationIntent.NavigateTo(SpScreen.ExploreDeveloper("Capcom"))
-        )
-        advance(harness)
-
-        // See comment above: no scroll needed, assertExists suffices.
-        onNodeWithTag("developer_most_played_game").assertExists()
-        onNodeWithText("Most played:").assertExists()
-    }
-
-    @Test
-    fun userStatsHiddenWhenNoStats() = runComposeUiTest {
-        val harness = createHarness()
-        harness.exploreRepo.developerDetails = mapOf("Square" to sampleDeveloperDetail)
-
-        setContent { harness.App() }
-        harness.navigationViewModel.onIntent(
-            NavigationIntent.NavigateTo(SpScreen.ExploreDeveloper("Square"))
-        )
-        advance(harness)
-
-        onNodeWithTag("developer_user_stats").assertDoesNotExist()
-    }
-
-    // --- Company Info: Logo ---
+    // --- Developer detail sections ---
 
     private val companyInfoFull = CompanyInfo(
         logoUrl = "https://example.com/capcom-logo.png",
@@ -374,7 +231,7 @@ class ExploreDeveloperTest {
     )
 
     @Test
-    fun companyLogoShownWhenAvailable() = runComposeUiTest {
+    fun richDeveloperDetailShowsHeroCompanyTopRatedAndStatsSections() = runComposeUiTest {
         val harness = createHarness()
         harness.exploreRepo.developerDetails = mapOf("Capcom" to detailWithCompanyInfo)
 
@@ -385,12 +242,36 @@ class ExploreDeveloperTest {
         advance(harness)
 
         onNodeWithTag("developer_hero_banner").assertExists()
+        onNodeWithTag("developer_info_section").assertExists()
         onNodeWithTag("developer_company_logo").assertExists()
         onNodeWithTag("developer_letter_avatar").assertDoesNotExist()
+
+        onNodeWithTag("developer_company_description").assertExists()
+        onNodeWithTag("developer_company_metadata").assertExists()
+        onNodeWithText("Founded 1979 \u00b7 Japan").assertExists()
+
+        onNodeWithTag("developer_top_rated_section").assertExists()
+        onNodeWithText("Top Rated").assertExists()
+        onNodeWithTag("developer_top_game_top-1").assertExists()
+        onNodeWithTag("developer_top_game_top-2").assertExists()
+
+        // developer_detail_content is an SpSectionList (Column) so it has
+        // no scroll semantics; the parent SpScreen scrolls. assertExists()
+        // is sufficient regardless of viewport position.
+        onNodeWithTag("developer_user_stats").assertExists()
+        onNodeWithText("Your Stats").assertExists()
+        onNodeWithTag("developer_user_stat_playtime").assertExists()
+        onNodeWithTag("developer_user_stat_played").assertExists()
+        onNodeWithTag("developer_user_stat_favorites").assertExists()
+        onNodeWithText("4h 0m").assertExists()
+        onNodeWithText("5/8").assertExists()
+        onNodeWithText("3").assertExists()
+        onNodeWithTag("developer_most_played_game").assertExists()
+        onNodeWithText("Most played:").assertExists()
     }
 
     @Test
-    fun letterAvatarFallbackWhenNoLogo() = runComposeUiTest {
+    fun sparseDeveloperDetailShowsFallbacksAndHidesOptionalSections() = runComposeUiTest {
         val harness = createHarness()
         harness.exploreRepo.developerDetails = mapOf("Square" to sampleDeveloperDetail)
 
@@ -403,6 +284,9 @@ class ExploreDeveloperTest {
         onNodeWithTag("developer_hero_banner").assertExists()
         onNodeWithTag("developer_letter_avatar").assertExists()
         onNodeWithTag("developer_company_logo").assertDoesNotExist()
+        onNodeWithTag("developer_top_rated_section").assertDoesNotExist()
+        onNodeWithTag("developer_user_stats").assertDoesNotExist()
+        onNodeWithTag("developer_company_description").assertDoesNotExist()
     }
 
     @Test
@@ -418,24 +302,6 @@ class ExploreDeveloperTest {
 
         onNodeWithTag("developer_letter_avatar").assertExists()
         onNodeWithTag("developer_company_logo").assertDoesNotExist()
-    }
-
-    // --- Company Info: Description Section ---
-
-    @Test
-    fun companyDescriptionShownInHeroBanner() = runComposeUiTest {
-        val harness = createHarness()
-        harness.exploreRepo.developerDetails = mapOf("Capcom" to detailWithCompanyInfo)
-
-        setContent { harness.App() }
-        harness.navigationViewModel.onIntent(
-            NavigationIntent.NavigateTo(SpScreen.ExploreDeveloper("Capcom"))
-        )
-        advance(harness)
-
-        // Description is now inside the hero banner, no separate "About" section
-        onNodeWithTag("developer_hero_banner").assertExists()
-        onNodeWithTag("developer_company_description").assertExists()
     }
 
     @Test
@@ -467,23 +333,7 @@ class ExploreDeveloperTest {
     }
 
     @Test
-    fun companyMetadataShowsFoundedYearAndCountry() = runComposeUiTest {
-        val harness = createHarness()
-        harness.exploreRepo.developerDetails = mapOf("Capcom" to detailWithCompanyInfo)
-
-        setContent { harness.App() }
-        harness.navigationViewModel.onIntent(
-            NavigationIntent.NavigateTo(SpScreen.ExploreDeveloper("Capcom"))
-        )
-        advance(harness)
-
-        onNodeWithTag("developer_hero_banner").assertExists()
-        onNodeWithTag("developer_company_metadata").assertExists()
-        onNodeWithText("Founded 1979 \u00b7 Japan").assertExists()
-    }
-
-    @Test
-    fun companyDescriptionHiddenWhenNoDescription() = runComposeUiTest {
+    fun companyDescriptionHiddenWhenLogoOnly() = runComposeUiTest {
         val harness = createHarness()
         harness.exploreRepo.developerDetails = mapOf("Square" to detailWithLogoOnly)
 
@@ -493,29 +343,9 @@ class ExploreDeveloperTest {
         )
         advance(harness)
 
+        onNodeWithTag("developer_company_logo").assertExists()
         onNodeWithTag("developer_company_description").assertDoesNotExist()
     }
-
-    @Test
-    fun companyDescriptionHiddenWhenNoCompanyInfo() = runComposeUiTest {
-        val harness = createHarness()
-        harness.exploreRepo.developerDetails = mapOf("Square" to sampleDeveloperDetail)
-
-        setContent { harness.App() }
-        harness.navigationViewModel.onIntent(
-            NavigationIntent.NavigateTo(SpScreen.ExploreDeveloper("Square"))
-        )
-        advance(harness)
-
-        onNodeWithTag("developer_company_description").assertDoesNotExist()
-    }
-
-    // --- At a Glance Section ---
-
-    private val detailWithStats = richDeveloperDetail.copy(
-        activeYears = ActiveYears(first = 1987, last = 2003),
-        primaryGenre = "Platformer",
-    )
 
     // At a Glance stats are now integrated into the hero banner (DeveloperInfoSection)
 

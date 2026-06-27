@@ -57,6 +57,8 @@ class SessionsUiTest {
         // title — verify the session item itself instead.
         onNodeWithTag("session_item_s1").assertIsDisplayed()
         onNodeWithText("My First Run").assertIsDisplayed()
+        onNode(hasTestTag("session_current_badge"), useUnmergedTree = true).assertIsDisplayed()
+        onNodeWithText("Current").assertIsDisplayed()
     }
 
     // ── Empty state shows correctly ──
@@ -209,6 +211,8 @@ class SessionsUiTest {
         onNodeWithText("Casual Run").assertIsDisplayed()
         onNodeWithText("100% Completion").assertIsDisplayed()
         onNodeWithText("No Damage Run").assertIsDisplayed()
+        onAllNodes(hasTestTag("session_current_badge"), useUnmergedTree = true)
+            .assertCountEquals(1)
     }
 
     // ── Continue session triggers overlay with sessionId ──
@@ -260,7 +264,7 @@ class SessionsUiTest {
     // ── Multiplayer session shows member avatars ──
 
     @Test
-    fun multiplayerSessionShowsMemberAvatars() = runComposeUiTest {
+    fun multiplayerSessionShowsMemberAvatarsAndLastPlayedBy() = runComposeUiTest {
         val harness = createHarness()
         harness.sessionRepo.preAddSession(
             id = "s1",
@@ -272,6 +276,7 @@ class SessionsUiTest {
                 "https://example.com/avatar2.png",
                 "https://example.com/avatar3.png",
             ),
+            lastPlayedByUsername = "player2",
         )
 
         setContent { harness.App() }
@@ -282,60 +287,18 @@ class SessionsUiTest {
         onNode(hasTestTag("session_member_avatars_s1"), useUnmergedTree = true).assertIsDisplayed()
         onNode(hasTestTag("session_multiplayer_badge_s1"), useUnmergedTree = true).assertIsDisplayed()
         onNodeWithText("Multiplayer").assertIsDisplayed()
-    }
-
-    // ── Multiplayer session shows "Last played by X" text ──
-
-    @Test
-    fun multiplayerSessionShowsLastPlayedBy() = runComposeUiTest {
-        val harness = createHarness()
-        harness.sessionRepo.preAddSession(
-            id = "s1",
-            gameId = "1",
-            name = "Shared Run",
-            memberCount = 2,
-            lastPlayedByUsername = "player2",
-        )
-
-        setContent { harness.App() }
-        navigateToGameDetail(harness, "1")
-
-        scrollToSessions()
-        onNodeWithTag("session_item_s1").assertIsDisplayed()
         onNodeWithText("by player2", substring = true).assertIsDisplayed()
     }
 
-    // ── Shared session shows Shared Session badge ──
+    // ── Shared session shows Shared Session badge and member names ──
 
     @Test
-    fun sharedSessionShowsSharedSessionBadge() = runComposeUiTest {
+    fun sharedSessionShowsBadgeAndMemberNames() = runComposeUiTest {
         val harness = createHarness()
         harness.sessionRepo.preAddSession(
             id = "s1",
             gameId = "1",
             name = "Shared Session",
-            memberCount = 2,
-            isSharedSession = true,
-        )
-
-        setContent { harness.App() }
-        navigateToGameDetail(harness, "1")
-
-        scrollToSessions()
-        onNodeWithTag("session_item_s1").assertIsDisplayed()
-        onNode(hasTestTag("session_multiplayer_badge_s1"), useUnmergedTree = true).assertIsDisplayed()
-        onNodeWithText("Shared Session").assertIsDisplayed()
-    }
-
-    // ── Shared session shows member names ──
-
-    @Test
-    fun sharedSessionShowsMemberNames() = runComposeUiTest {
-        val harness = createHarness()
-        harness.sessionRepo.preAddSession(
-            id = "s1",
-            gameId = "1",
-            name = "Friday Night SNES",
             memberCount = 3,
             memberUsernames = listOf("alice", "bob", "charlie"),
             isSharedSession = true,
@@ -346,58 +309,10 @@ class SessionsUiTest {
 
         scrollToSessions()
         onNodeWithTag("session_item_s1").assertIsDisplayed()
+        onNode(hasTestTag("session_multiplayer_badge_s1"), useUnmergedTree = true).assertIsDisplayed()
+        onNodeWithText("Shared Session").assertIsDisplayed()
         onNode(hasTestTag("session_member_names_s1"), useUnmergedTree = true).assertIsDisplayed()
         onNodeWithText("alice, bob, charlie").assertIsDisplayed()
-    }
-
-    // ── First session shows "Current" badge ──
-
-    @Test
-    fun firstSessionShowsCurrentBadge() = runComposeUiTest {
-        val harness = createHarness()
-        harness.sessionRepo.preAddSession(id = "s1", gameId = "1", name = "Main Run")
-        harness.sessionRepo.preAddSession(id = "s2", gameId = "1", name = "Side Run")
-
-        setContent { harness.App() }
-        navigateToGameDetail(harness, "1")
-
-        scrollToSessions()
-        // First session should have the "Current" badge
-        onNode(hasTestTag("session_current_badge"), useUnmergedTree = true).assertIsDisplayed()
-        onNodeWithText("Current").assertIsDisplayed()
-    }
-
-    // ── Only the first session shows "Current" badge ──
-
-    @Test
-    fun onlyFirstSessionShowsCurrentBadge() = runComposeUiTest {
-        val harness = createHarness()
-        harness.sessionRepo.preAddSession(id = "s1", gameId = "1", name = "First Run")
-        harness.sessionRepo.preAddSession(id = "s2", gameId = "1", name = "Second Run")
-        harness.sessionRepo.preAddSession(id = "s3", gameId = "1", name = "Third Run")
-
-        setContent { harness.App() }
-        navigateToGameDetail(harness, "1")
-
-        scrollToSessions()
-        // There should be exactly one "Current" badge in the tree
-        onAllNodes(hasTestTag("session_current_badge"), useUnmergedTree = true)
-            .assertCountEquals(1)
-    }
-
-    // ── Single session shows "Current" badge ──
-
-    @Test
-    fun singleSessionShowsCurrentBadge() = runComposeUiTest {
-        val harness = createHarness()
-        harness.sessionRepo.preAddSession(id = "s1", gameId = "1", name = "Solo Run")
-
-        setContent { harness.App() }
-        navigateToGameDetail(harness, "1")
-
-        scrollToSessions()
-        onNode(hasTestTag("session_current_badge"), useUnmergedTree = true).assertIsDisplayed()
-        onNodeWithText("Current").assertIsDisplayed()
     }
 
     // ── Single-player session does NOT show multiplayer badge ──
