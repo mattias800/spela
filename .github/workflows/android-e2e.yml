@@ -118,9 +118,9 @@ jobs:
             exit "$gradle_result"
           fi
 
-      # AVD cache: the system image + AVD snapshot are ~5GB; caching
-      # them shaves 3-5min per run. The reactivecircus action handles
-      # creation if missing.
+      # AVD cache: keep the generated AVD plus its quickboot snapshot so
+      # cache-hit runs avoid a full cold boot. The reactivecircus action
+      # handles creation if missing.
       - name: AVD cache
         uses: actions/cache@v5
         id: avd-cache
@@ -128,7 +128,7 @@ jobs:
           path: |
             ~/.android/avd/*
             ~/.android/adb*
-          key: avd-api35-x86_64
+          key: avd-api35-x86_64-quickboot-v2
 
       - name: Create AVD snapshot (cache miss)
         if: steps.avd-cache.outputs.cache-hit != 'true'
@@ -138,7 +138,7 @@ jobs:
           arch: x86_64
           target: google_apis
           force-avd-creation: false
-          emulator-options: -no-window -no-snapshot-save -no-boot-anim -gpu swiftshader_indirect -noaudio
+          emulator-options: -no-window -no-boot-anim -gpu swiftshader_indirect -noaudio
           disable-animations: true
           script: echo "AVD snapshot generated."
 
