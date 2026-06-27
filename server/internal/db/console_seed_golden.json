@@ -14,11 +14,7 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": "sega",
-    "mediaCode": "cartridge",
-    "releaseYear": 1994,
-    "unitsSold": 665000,
-    "summary": "The Sega 32X was an add-on for the Genesis designed to extend its lifespan with 32-bit capabilities. Released just months before the Saturn, it confused consumers and developers alike, becoming one of the most notable commercial failures in console hardware history.",
-    "tag": null
+    "mediaCode": "cartridge"
   },
   {
     "abbreviation": "3DO",
@@ -35,11 +31,7 @@
     "saveStatePolicy": "medium",
     "playable": true,
     "makerCode": "panasonic",
-    "mediaCode": "cd-rom",
-    "releaseYear": 1993,
-    "unitsSold": 2000000,
-    "summary": "The 3DO Interactive Multiplayer was designed by EA founder Trip Hawkins and manufactured by Panasonic, LG, and Sanyo under an open licensing model. Its high launch price of $699 limited adoption despite impressive hardware and notable titles like Road Rash and Return Fire.",
-    "tag": null
+    "mediaCode": "cd-rom"
   },
   {
     "abbreviation": "3DS",
@@ -56,11 +48,7 @@
     "saveStatePolicy": "large",
     "playable": true,
     "makerCode": "nintendo",
-    "mediaCode": "game-card",
-    "releaseYear": 2011,
-    "unitsSold": 75940000,
-    "summary": "The Nintendo 3DS delivered glasses-free stereoscopic 3D visuals and featured backward compatibility with DS games. Its StreetPass social features and strong library including Pokemon X/Y, Fire Emblem Awakening, and Animal Crossing: New Leaf made it Nintendo's most successful dedicated handheld after the original DS family.",
-    "tag": null
+    "mediaCode": "game-card"
   },
   {
     "abbreviation": "A26",
@@ -77,11 +65,7 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": "atari",
-    "mediaCode": "cartridge",
-    "releaseYear": 1977,
-    "unitsSold": 30000000,
-    "summary": "The Atari 2600 popularized microprocessor-based home gaming and became the dominant console of the late 1970s and early 1980s. Its massive library of over 500 games helped establish video gaming as a mainstream entertainment medium, despite the infamous 1983 market crash.",
-    "tag": null
+    "mediaCode": "cartridge"
   },
   {
     "abbreviation": "A52",
@@ -98,11 +82,7 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": "atari",
-    "mediaCode": "cartridge",
-    "releaseYear": 1982,
-    "unitsSold": 1000000,
-    "summary": "The Atari 5200 was Atari's successor to the 2600, featuring improved graphics and analog joystick controllers. Despite its technical improvements, it struggled commercially due to controller reliability issues and competition from the ColecoVision.",
-    "tag": null
+    "mediaCode": "cartridge"
   },
   {
     "abbreviation": "A78",
@@ -119,11 +99,7 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": "atari",
-    "mediaCode": "cartridge",
-    "releaseYear": 1986,
-    "unitsSold": 3770000,
-    "summary": "The Atari 7800 was designed to be backward compatible with the Atari 2600 and featured improved graphics rivaling the NES. Delayed by two years due to Atari's sale to Jack Tramiel, it arrived too late to challenge Nintendo's dominance despite its competitive hardware.",
-    "tag": null
+    "mediaCode": "cartridge"
   },
   {
     "abbreviation": "A800",
@@ -140,11 +116,7 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": "atari",
-    "mediaCode": "cartridge",
-    "releaseYear": 1979,
-    "unitsSold": null,
-    "summary": "The Atari 8-bit family, starting with the Atari 400 and 800, featured custom chips designed by Jay Miner that provided advanced graphics and sound capabilities for their era. The line evolved through the XL and XE series, building a strong library of games and creative software that influenced a generation of programmers and game designers.",
-    "tag": null
+    "mediaCode": "cartridge"
   },
   {
     "abbreviation": "ACD32",
@@ -161,11 +133,7 @@
     "saveStatePolicy": "small",
     "playable": false,
     "makerCode": "commodore",
-    "mediaCode": "cd-rom",
-    "releaseYear": 1993,
-    "unitsSold": null,
-    "summary": "The Amiga CD32 was the world's first 32-bit CD-ROM-based home console, built on the Amiga 1200 architecture. Commodore's bankruptcy in 1994 cut short its promising start, particularly in Europe where it had gained meaningful traction in its brief time on the market.",
-    "tag": null
+    "mediaCode": "cd-rom"
   },
   {
     "abbreviation": "ADEMO",
@@ -182,11 +150,7 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": "commodore",
-    "mediaCode": "floppy-disk",
-    "releaseYear": null,
-    "unitsSold": null,
-    "summary": "The Amiga demo scene was one of the most vibrant creative computing communities, pushing the Amiga's custom hardware to produce stunning audiovisual demonstrations. Originating in the late 1980s, it became a breeding ground for future game developers, digital artists, and musicians.",
-    "tag": "Demos"
+    "mediaCode": "floppy-disk"
   },
   {
     "abbreviation": "AMIGA",
@@ -203,11 +167,7 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": "commodore",
-    "mediaCode": "floppy-disk",
-    "releaseYear": 1985,
-    "unitsSold": null,
-    "summary": "The Commodore Amiga was a revolutionary multimedia computer with custom chips for graphics, sound, and I/O that were years ahead of competing platforms. Its pre-emptive multitasking operating system and powerful capabilities made it the platform of choice for video production, music, and gaming in Europe throughout the late 1980s and early 1990s.",
-    "tag": null
+    "mediaCode": "floppy-disk"
   },
   {
     "abbreviation": "ARCADE",
@@ -224,11 +184,7 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": "various",
-    "mediaCode": "arcade-board",
-    "releaseYear": 1971,
-    "unitsSold": null,
-    "summary": "Arcade games have been a cornerstone of the video game industry since Computer Space in 1971 and Pong in 1972. From the golden age of Space Invaders and Pac-Man to modern fighting and rhythm games, arcades pioneered nearly every major gaming genre and remain a vibrant part of gaming culture worldwide.",
-    "tag": null
+    "mediaCode": "arcade-board"
   },
   {
     "abbreviation": "ATARIST",
@@ -245,11 +201,7 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": "atari",
-    "mediaCode": "floppy-disk",
-    "releaseYear": 1985,
-    "unitsSold": null,
-    "summary": "The Atari ST was a popular 16/32-bit home computer that rivaled the Commodore Amiga, particularly in Europe. Its built-in MIDI ports made it the standard platform for music production throughout the late 1980s and early 1990s, while also hosting a strong library of games and creative software.",
-    "tag": null
+    "mediaCode": "floppy-disk"
   },
   {
     "abbreviation": "C128",
@@ -266,11 +218,7 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": "commodore",
-    "mediaCode": "floppy-disk",
-    "releaseYear": 1985,
-    "unitsSold": 4000000,
-    "summary": "The Commodore 128 was the successor to the C64, featuring three operating modes including full C64 backward compatibility and a CP/M mode. While technically superior to its predecessor, most users simply ran it in C64 mode, and it never achieved the same cultural impact.",
-    "tag": null
+    "mediaCode": "floppy-disk"
   },
   {
     "abbreviation": "C64",
@@ -287,11 +235,7 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": "commodore",
-    "mediaCode": "floppy-disk",
-    "releaseYear": 1982,
-    "unitsSold": 17000000,
-    "summary": "The Commodore 64 is the best-selling single personal computer model of all time, renowned for its advanced sound chip (SID) and capable graphics. Its affordable price and massive software library of over 10,000 titles made it a cornerstone of 1980s home computing and gaming culture.",
-    "tag": null
+    "mediaCode": "floppy-disk"
   },
   {
     "abbreviation": "CDI",
@@ -308,11 +252,7 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": "philips",
-    "mediaCode": "cd-rom",
-    "releaseYear": 1991,
-    "unitsSold": 570000,
-    "summary": "The Philips CD-i was an interactive multimedia player that also functioned as a game console. Despite its ambitious vision as an all-in-one entertainment device, it is best remembered for its poorly received Zelda and Mario games licensed from Nintendo.",
-    "tag": null
+    "mediaCode": "cd-rom"
   },
   {
     "abbreviation": "CHAF",
@@ -329,11 +269,7 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": "fairchild",
-    "mediaCode": "cartridge",
-    "releaseYear": 1976,
-    "unitsSold": 250000,
-    "summary": "The Fairchild Channel F was the first home video game console to use programmable ROM cartridges, predating the Atari 2600 by a year. While commercially overshadowed by Atari, it pioneered the concept of interchangeable game cartridges that defined the industry for decades.",
-    "tag": null
+    "mediaCode": "cartridge"
   },
   {
     "abbreviation": "CPC",
@@ -350,11 +286,7 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": null,
-    "mediaCode": null,
-    "releaseYear": null,
-    "unitsSold": null,
-    "summary": null,
-    "tag": null
+    "mediaCode": null
   },
   {
     "abbreviation": "CV",
@@ -371,11 +303,7 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": "coleco",
-    "mediaCode": "cartridge",
-    "releaseYear": 1982,
-    "unitsSold": 2000000,
-    "summary": "The ColecoVision offered near-arcade-quality graphics and was bundled with Donkey Kong, making it a strong competitor in the early 1980s. Its expansion module allowed backward compatibility with Atari 2600 games, but the 1983 video game crash cut its lifespan short.",
-    "tag": null
+    "mediaCode": "cartridge"
   },
   {
     "abbreviation": "DC",
@@ -392,11 +320,7 @@
     "saveStatePolicy": "medium",
     "playable": true,
     "makerCode": "sega",
-    "mediaCode": "gd-rom",
-    "releaseYear": 1998,
-    "unitsSold": 9130000,
-    "summary": "The Dreamcast was Sega's final home console and the first of the sixth generation, featuring built-in modem support for online gaming. Despite critical acclaim and innovative titles like Shenmue, Jet Set Radio, and Sonic Adventure, it was unable to compete against the upcoming PlayStation 2 and was discontinued in 2001.",
-    "tag": null
+    "mediaCode": "gd-rom"
   },
   {
     "abbreviation": "DDEMO",
@@ -413,11 +337,7 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": "various",
-    "mediaCode": "digital",
-    "releaseYear": null,
-    "unitsSold": null,
-    "summary": "The DOS demo scene produced creative real-time audiovisual programs that showcased programming skill and artistic expression on IBM PC compatibles. Demos like Second Reality by Future Crew became legendary, and the scene continues to thrive at events like Assembly and Revision.",
-    "tag": "Demos"
+    "mediaCode": "digital"
   },
   {
     "abbreviation": "DOS",
@@ -434,11 +354,7 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": "ibm",
-    "mediaCode": "floppy-disk",
-    "releaseYear": 1981,
-    "unitsSold": null,
-    "summary": "DOS, the Disk Operating System for IBM PC compatibles, became the dominant personal computing platform through the 1980s and early 1990s. Its open architecture spawned the PC gaming industry, with classic titles like Doom, Commander Keen, and Civilization defining entire genres.",
-    "tag": null
+    "mediaCode": "floppy-disk"
   },
   {
     "abbreviation": "FDS",
@@ -455,11 +371,7 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": "nintendo",
-    "mediaCode": "floppy-disk",
-    "releaseYear": 1986,
-    "unitsSold": 4440000,
-    "summary": "The Famicom Disk System was a Japan-exclusive add-on for the Famicom that used rewritable floppy disks, enabling larger games, saved data, and lower-cost distribution through disk-rewriting kiosks. It debuted landmark titles including the original versions of The Legend of Zelda, Metroid, and Kid Icarus.",
-    "tag": null
+    "mediaCode": "floppy-disk"
   },
   {
     "abbreviation": "GB",
@@ -476,11 +388,7 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": "nintendo",
-    "mediaCode": "cartridge",
-    "releaseYear": 1989,
-    "unitsSold": 118690000,
-    "summary": "The Game Boy launched portable gaming into the mainstream with its compact design and exceptional battery life. Bundled with Tetris at launch, it dominated the handheld market for over a decade despite its monochrome green-tinted screen.",
-    "tag": null
+    "mediaCode": "cartridge"
   },
   {
     "abbreviation": "GBA",
@@ -497,11 +405,7 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": "nintendo",
-    "mediaCode": "cartridge",
-    "releaseYear": 2001,
-    "unitsSold": 81510000,
-    "summary": "The Game Boy Advance brought 32-bit gaming to Nintendo's handheld line with graphics comparable to the SNES. Its impressive library included Pokemon Ruby and Sapphire, The Legend of Zelda: The Minish Cap, and Metroid Fusion, cementing Nintendo's dominance in portable gaming.",
-    "tag": null
+    "mediaCode": "cartridge"
   },
   {
     "abbreviation": "GBC",
@@ -518,11 +422,7 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": "nintendo",
-    "mediaCode": "cartridge",
-    "releaseYear": 1998,
-    "unitsSold": 49020000,
-    "summary": "The Game Boy Color added a color screen to the Game Boy line while maintaining backward compatibility with the original library. It extended the Game Boy platform's dominance with titles like Pokemon Gold and Silver, The Legend of Zelda: Oracle games, and Wario Land 3.",
-    "tag": null
+    "mediaCode": "cartridge"
   },
   {
     "abbreviation": "GC",
@@ -539,11 +439,7 @@
     "saveStatePolicy": "large",
     "playable": true,
     "makerCode": "nintendo",
-    "mediaCode": "dvd-rom",
-    "releaseYear": 2001,
-    "unitsSold": 21740000,
-    "summary": "The Nintendo GameCube used proprietary mini-DVDs and featured a distinctive compact design with a carrying handle. While it sold fewer units than the PS2 and Xbox, it hosted beloved exclusives like Super Smash Bros. Melee, Metroid Prime, and The Legend of Zelda: The Wind Waker.",
-    "tag": null
+    "mediaCode": "dvd-rom"
   },
   {
     "abbreviation": "GEN",
@@ -560,11 +456,7 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": "sega",
-    "mediaCode": "cartridge",
-    "releaseYear": 1988,
-    "unitsSold": 30750000,
-    "summary": "The Sega Genesis, known as the Mega Drive outside North America, was Sega's most successful console and a fierce rival to the SNES. Its aggressive marketing campaign and Sonic the Hedgehog made it the first serious challenger to Nintendo's dominance in the home console market.",
-    "tag": null
+    "mediaCode": "cartridge"
   },
   {
     "abbreviation": "GG",
@@ -581,11 +473,7 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": "sega",
-    "mediaCode": "cartridge",
-    "releaseYear": 1990,
-    "unitsSold": 10620000,
-    "summary": "The Sega Game Gear was a portable console with a full-color backlit screen, positioned as a direct competitor to the Game Boy. Essentially a portable Master System, it offered superior graphics but suffered from short battery life and a higher price point.",
-    "tag": null
+    "mediaCode": "cartridge"
   },
   {
     "abbreviation": "GW",
@@ -602,11 +490,7 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": "nintendo",
-    "mediaCode": "digital",
-    "releaseYear": 1980,
-    "unitsSold": 43400000,
-    "summary": "Nintendo Game \u0026 Watch was a line of handheld electronic games created by Gunpei Yokoi, featuring LCD screens with fixed game graphics. Spanning 59 models from 1980 to 1991, they introduced the cross-shaped directional pad that became standard on all subsequent Nintendo controllers.",
-    "tag": null
+    "mediaCode": "digital"
   },
   {
     "abbreviation": "INTV",
@@ -623,11 +507,7 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": "mattel",
-    "mediaCode": "cartridge",
-    "releaseYear": 1979,
-    "unitsSold": 3000000,
-    "summary": "The Mattel Intellivision was the first console to pose a serious challenge to Atari's dominance, featuring superior graphics and distinctive disc-shaped controllers with numeric keypads. Its sports games were particularly acclaimed, and it introduced the concept of downloadable content through the PlayCable service.",
-    "tag": null
+    "mediaCode": "cartridge"
   },
   {
     "abbreviation": "JAG",
@@ -644,11 +524,7 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": "atari",
-    "mediaCode": "cartridge",
-    "releaseYear": 1993,
-    "unitsSold": 250000,
-    "summary": "The Atari Jaguar was marketed as the first 64-bit console, though its complex multi-chip architecture made it difficult to develop for. It was Atari's final home console, and despite titles like Alien vs Predator and Tempest 2000, its small library led to commercial failure.",
-    "tag": null
+    "mediaCode": "cartridge"
   },
   {
     "abbreviation": "LYNX",
@@ -665,11 +541,7 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": "atari",
-    "mediaCode": "cartridge",
-    "releaseYear": 1989,
-    "unitsSold": 3000000,
-    "summary": "The Atari Lynx was the first handheld console with a color LCD screen and hardware sprite scaling. Despite its technical superiority over the Game Boy, its large size, high price, and short battery life limited its commercial success.",
-    "tag": null
+    "mediaCode": "cartridge"
   },
   {
     "abbreviation": "MSX1",
@@ -686,11 +558,7 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": "microsoft",
-    "mediaCode": "cartridge",
-    "releaseYear": 1983,
-    "unitsSold": null,
-    "summary": "MSX was a standardized home computer architecture initiated by Microsoft and ASCII Corporation, adopted by manufacturers across Japan, South Korea, and Europe. It became a major gaming platform in Japan, launching the Metal Gear and Bomberman franchises.",
-    "tag": null
+    "mediaCode": "cartridge"
   },
   {
     "abbreviation": "MSX2",
@@ -707,11 +575,7 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": "microsoft",
-    "mediaCode": "cartridge",
-    "releaseYear": 1985,
-    "unitsSold": null,
-    "summary": "MSX2 was the second generation of the MSX standard, offering improved graphics with more colors and hardware scrolling. It saw continued success in Japan and the Netherlands, with notable titles including Metal Gear 2: Solid Snake and Vampire Killer.",
-    "tag": null
+    "mediaCode": "cartridge"
   },
   {
     "abbreviation": "N64",
@@ -728,11 +592,7 @@
     "saveStatePolicy": "medium",
     "playable": true,
     "makerCode": "nintendo",
-    "mediaCode": "cartridge",
-    "releaseYear": 1996,
-    "unitsSold": 32930000,
-    "summary": "The Nintendo 64 pioneered 3D console gaming with revolutionary titles like Super Mario 64, The Legend of Zelda: Ocarina of Time, and GoldenEye 007. Its decision to use cartridges over CD-ROMs limited third-party support but enabled faster load times and introduced the analog stick to mainstream gaming.",
-    "tag": null
+    "mediaCode": "cartridge"
   },
   {
     "abbreviation": "NDS",
@@ -749,11 +609,7 @@
     "saveStatePolicy": "medium",
     "playable": true,
     "makerCode": "nintendo",
-    "mediaCode": "game-card",
-    "releaseYear": 2004,
-    "unitsSold": 154020000,
-    "summary": "The Nintendo DS introduced dual screens and touch input to handheld gaming, creating entirely new gameplay possibilities. As the second best-selling console ever, it reached massive audiences with titles like Brain Age, Nintendogs, New Super Mario Bros., and Pokemon Diamond and Pearl.",
-    "tag": null
+    "mediaCode": "game-card"
   },
   {
     "abbreviation": "NEOCD",
@@ -770,11 +626,7 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": "snk",
-    "mediaCode": "cd-rom",
-    "releaseYear": 1994,
-    "unitsSold": null,
-    "summary": "The Neo Geo CD was SNK's more affordable alternative to the expensive AES cartridge system, using CD-ROM media to drastically reduce game prices. However, its single-speed CD drive resulted in extremely long loading times that frustrated players despite access to the same excellent arcade library.",
-    "tag": null
+    "mediaCode": "cd-rom"
   },
   {
     "abbreviation": "NEOGEO",
@@ -791,11 +643,7 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": "snk",
-    "mediaCode": "cartridge",
-    "releaseYear": 1990,
-    "unitsSold": 1000000,
-    "summary": "The Neo Geo AES brought arcade-perfect gaming to the home by using identical hardware to SNK's arcade cabinets. Its premium price tag and expensive cartridges made it a luxury item, but its fighting game library featuring The King of Fighters and Fatal Fury was unmatched.",
-    "tag": null
+    "mediaCode": "cartridge"
   },
   {
     "abbreviation": "NES",
@@ -812,11 +660,7 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": "nintendo",
-    "mediaCode": "cartridge",
-    "releaseYear": 1983,
-    "unitsSold": 61910000,
-    "summary": "The Nintendo Entertainment System revived the video game industry after the 1983 crash and established Nintendo as a dominant force in gaming. With iconic franchises like Super Mario Bros., The Legend of Zelda, and Metroid, it defined the template for home console gaming for decades to come.",
-    "tag": null
+    "mediaCode": "cartridge"
   },
   {
     "abbreviation": "NGP",
@@ -833,11 +677,7 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": "snk",
-    "mediaCode": "cartridge",
-    "releaseYear": 1998,
-    "unitsSold": 2000000,
-    "summary": "The Neo Geo Pocket, and its color successor the Neo Geo Pocket Color, was SNK's entry into the handheld market. Known for its excellent micro-switch joystick and strong fighting game library including SNK vs. Capcom: Match of the Millennium, it could not overcome the Game Boy Color's market dominance.",
-    "tag": null
+    "mediaCode": "cartridge"
   },
   {
     "abbreviation": "NSW",
@@ -854,11 +694,7 @@
     "saveStatePolicy": "large",
     "playable": false,
     "makerCode": "nintendo",
-    "mediaCode": "game-card",
-    "releaseYear": 2017,
-    "unitsSold": 143420000,
-    "summary": "The Nintendo Switch combined home console and portable gaming into a single hybrid device with detachable Joy-Con controllers. Its versatile design and critically acclaimed games like The Legend of Zelda: Breath of the Wild, Animal Crossing: New Horizons, and Mario Kart 8 Deluxe made it one of the best-selling consoles in history.",
-    "tag": null
+    "mediaCode": "game-card"
   },
   {
     "abbreviation": "O2",
@@ -875,11 +711,7 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": "magnavox",
-    "mediaCode": "cartridge",
-    "releaseYear": 1978,
-    "unitsSold": 2000000,
-    "summary": "The Magnavox Odyssey 2, known as the Philips Videopac G7000 in Europe, featured a built-in membrane keyboard that set it apart from competitors. Its unique combination of gaming and limited computing capabilities made it popular in Europe, though it struggled against the Atari 2600 in North America.",
-    "tag": null
+    "mediaCode": "cartridge"
   },
   {
     "abbreviation": "PCE",
@@ -896,11 +728,7 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": "nec",
-    "mediaCode": "hucard",
-    "releaseYear": 1987,
-    "unitsSold": 10000000,
-    "summary": "The TurboGrafx-16, developed jointly by NEC and Hudson Soft, was the first console of the 16-bit era. It used compact HuCard cartridges and was hugely popular in Japan, though it struggled against the Genesis and SNES in Western markets.",
-    "tag": null
+    "mediaCode": "hucard"
   },
   {
     "abbreviation": "PCECD",
@@ -917,11 +745,7 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": "nec",
-    "mediaCode": "cd-rom",
-    "releaseYear": 1988,
-    "unitsSold": null,
-    "summary": "The TurboGrafx-CD was a CD-ROM add-on for the TurboGrafx-16, making it one of the first CD-based gaming platforms. It enabled larger games with CD-quality audio and full-motion video, pioneering the shift from cartridges to optical media in console gaming.",
-    "tag": null
+    "mediaCode": "cd-rom"
   },
   {
     "abbreviation": "PCFX",
@@ -938,11 +762,7 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": "nec",
-    "mediaCode": "cd-rom",
-    "releaseYear": 1994,
-    "unitsSold": 400000,
-    "summary": "The PC-FX was NEC's successor to the TurboGrafx-16, focusing on full-motion video and 2D graphics rather than competing in the 3D polygon race. Sold only in Japan, it failed to gain traction against the PlayStation and Saturn due to its lack of 3D capabilities and limited game library.",
-    "tag": null
+    "mediaCode": "cd-rom"
   },
   {
     "abbreviation": "PET",
@@ -959,11 +779,7 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": "commodore",
-    "mediaCode": "cartridge",
-    "releaseYear": 1977,
-    "unitsSold": null,
-    "summary": "The Commodore PET was one of the first mass-produced personal computers, featuring an all-in-one design with built-in monitor and cassette drive. Primarily used in education and business, it established Commodore as a major force in the personal computer industry.",
-    "tag": null
+    "mediaCode": "cartridge"
   },
   {
     "abbreviation": "PKMN",
@@ -980,11 +796,7 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": "nintendo",
-    "mediaCode": "cartridge",
-    "releaseYear": 2001,
-    "unitsSold": null,
-    "summary": "The Pokemon Mini is the smallest cartridge-based game console ever produced by Nintendo. Designed as a novelty device tied to the Pokemon franchise, it featured a small monochrome screen, a rumble motor, and an infrared port for multiplayer, with a library of just ten games.",
-    "tag": null
+    "mediaCode": "cartridge"
   },
   {
     "abbreviation": "PLUS4",
@@ -1001,11 +813,7 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": "commodore",
-    "mediaCode": "cartridge",
-    "releaseYear": 1984,
-    "unitsSold": null,
-    "summary": "The Commodore Plus/4 was positioned as a business-oriented home computer with built-in productivity software. Despite improved BASIC and graphics capabilities over the C64, its incompatibility with the C64's software library and lack of hardware sprites limited its appeal to gamers and hobbyists.",
-    "tag": null
+    "mediaCode": "cartridge"
   },
   {
     "abbreviation": "PS2",
@@ -1022,11 +830,7 @@
     "saveStatePolicy": "large",
     "playable": true,
     "makerCode": "sony",
-    "mediaCode": "dvd-rom",
-    "releaseYear": 2000,
-    "unitsSold": 155000000,
-    "summary": "The PlayStation 2 is the best-selling video game console of all time, with a library of over 4,000 games spanning every genre. Its built-in DVD player, backward compatibility with PS1 games, and landmark titles like Grand Theft Auto: San Andreas, Shadow of the Colossus, and Final Fantasy X made it a cultural phenomenon.",
-    "tag": null
+    "mediaCode": "dvd-rom"
   },
   {
     "abbreviation": "PS3",
@@ -1043,11 +847,7 @@
     "saveStatePolicy": "large",
     "playable": false,
     "makerCode": "sony",
-    "mediaCode": "blu-ray",
-    "releaseYear": 2006,
-    "unitsSold": 87400000,
-    "summary": "The PlayStation 3 was the first console with a built-in Blu-ray player and featured the powerful Cell processor co-developed with IBM. Despite a rocky launch at a premium price, it recovered with critically acclaimed exclusives like The Last of Us, Uncharted 2, and free online multiplayer.",
-    "tag": null
+    "mediaCode": "blu-ray"
   },
   {
     "abbreviation": "PS4",
@@ -1064,11 +864,7 @@
     "saveStatePolicy": "large",
     "playable": false,
     "makerCode": "sony",
-    "mediaCode": "blu-ray",
-    "releaseYear": 2013,
-    "unitsSold": 117200000,
-    "summary": "The PlayStation 4 focused on being a developer-friendly gaming powerhouse with a standard x86 architecture. Its massive install base and acclaimed exclusives like God of War, Horizon Zero Dawn, and Marvel's Spider-Man made it the dominant console of the eighth generation.",
-    "tag": null
+    "mediaCode": "blu-ray"
   },
   {
     "abbreviation": "PS5",
@@ -1085,11 +881,7 @@
     "saveStatePolicy": "large",
     "playable": false,
     "makerCode": "sony",
-    "mediaCode": "blu-ray",
-    "releaseYear": 2020,
-    "unitsSold": 67000000,
-    "summary": "The PlayStation 5 introduced an ultra-fast custom SSD that virtually eliminated loading times and featured the innovative DualSense controller with haptic feedback and adaptive triggers. Exclusives like Demon's Souls, Ratchet \u0026 Clank: Rift Apart, and Astro Bot showcase its next-generation capabilities.",
-    "tag": null
+    "mediaCode": "blu-ray"
   },
   {
     "abbreviation": "PSP",
@@ -1106,11 +898,7 @@
     "saveStatePolicy": "medium",
     "playable": true,
     "makerCode": "sony",
-    "mediaCode": "umd",
-    "releaseYear": 2004,
-    "unitsSold": 80000000,
-    "summary": "The PlayStation Portable was Sony's first handheld console, featuring a widescreen display and near-PS2 quality graphics. Its UMD optical disc format enabled console-quality games like God of War: Chains of Olympus, Monster Hunter Freedom Unite, and Crisis Core: Final Fantasy VII.",
-    "tag": null
+    "mediaCode": "umd"
   },
   {
     "abbreviation": "PSX",
@@ -1127,11 +915,7 @@
     "saveStatePolicy": "medium",
     "playable": true,
     "makerCode": "sony",
-    "mediaCode": "cd-rom",
-    "releaseYear": 1994,
-    "unitsSold": 102490000,
-    "summary": "The PlayStation was Sony's debut in the console market and became one of the best-selling consoles of all time. Its CD-ROM format attracted third-party developers with lower manufacturing costs, spawning landmark franchises like Final Fantasy VII, Metal Gear Solid, and Crash Bandicoot.",
-    "tag": null
+    "mediaCode": "cd-rom"
   },
   {
     "abbreviation": "SAT",
@@ -1148,11 +932,7 @@
     "saveStatePolicy": "medium",
     "playable": true,
     "makerCode": "sega",
-    "mediaCode": "cd-rom",
-    "releaseYear": 1994,
-    "unitsSold": 9260000,
-    "summary": "The Sega Saturn featured powerful 2D capabilities and a dual-CPU architecture that was notoriously difficult to program for. While it thrived in Japan with titles like Nights into Dreams and Virtua Fighter 2, its surprise early launch in North America damaged retailer relationships and developer support.",
-    "tag": null
+    "mediaCode": "cd-rom"
   },
   {
     "abbreviation": "SCD",
@@ -1169,11 +949,7 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": "sega",
-    "mediaCode": "cd-rom",
-    "releaseYear": 1991,
-    "unitsSold": 2240000,
-    "summary": "The Sega CD was a CD-ROM add-on for the Genesis that enabled full-motion video, CD-quality audio, and larger game worlds. While it produced standout titles like Sonic CD and Lunar, many of its games relied heavily on grainy FMV gimmicks.",
-    "tag": null
+    "mediaCode": "cd-rom"
   },
   {
     "abbreviation": "SCUMMVM",
@@ -1190,11 +966,7 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": "various",
-    "mediaCode": "digital",
-    "releaseYear": null,
-    "unitsSold": null,
-    "summary": "ScummVM is a collection of game engine reimplementations that allows classic point-and-click adventure games to run on modern hardware. Originally created to run LucasArts SCUMM games like Monkey Island and Day of the Tentacle, it now supports hundreds of adventure games from numerous publishers.",
-    "tag": null
+    "mediaCode": "digital"
   },
   {
     "abbreviation": "SG1K",
@@ -1211,11 +983,7 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": "sega",
-    "mediaCode": "cartridge",
-    "releaseYear": 1983,
-    "unitsSold": null,
-    "summary": "The Sega SG-1000 was Sega's first home console, launched in Japan on the same day as the Nintendo Famicom. While it was commercially overshadowed by Nintendo, it established Sega in the console market and its hardware architecture evolved directly into the more successful Sega Master System.",
-    "tag": null
+    "mediaCode": "cartridge"
   },
   {
     "abbreviation": "SGX",
@@ -1232,11 +1000,7 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": "nec",
-    "mediaCode": "hucard",
-    "releaseYear": 1989,
-    "unitsSold": null,
-    "summary": "The PC Engine SuperGrafx was an enhanced version of the PC Engine with additional video hardware for improved sprite and background capabilities. Only seven games were released specifically for the system, making it one of the shortest-lived and rarest consoles, though it maintained full backward compatibility with the original PC Engine library.",
-    "tag": null
+    "mediaCode": "hucard"
   },
   {
     "abbreviation": "SMS",
@@ -1253,11 +1017,7 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": "sega",
-    "mediaCode": "cartridge",
-    "releaseYear": 1985,
-    "unitsSold": 13000000,
-    "summary": "The Sega Master System was Sega's first major home console and a strong competitor to the NES in Europe and Brazil. While it was technically superior to the NES, Nintendo's exclusive licensing agreements limited its game library and market share in North America and Japan.",
-    "tag": null
+    "mediaCode": "cartridge"
   },
   {
     "abbreviation": "SNES",
@@ -1274,11 +1034,7 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": "nintendo",
-    "mediaCode": "cartridge",
-    "releaseYear": 1990,
-    "unitsSold": 49100000,
-    "summary": "The Super Nintendo Entertainment System delivered a generational leap with Mode 7 graphics, advanced sound capabilities, and an extraordinary game library. Titles like Super Mario World, A Link to the Past, and Chrono Trigger are widely regarded as some of the greatest games ever made.",
-    "tag": null
+    "mediaCode": "cartridge"
   },
   {
     "abbreviation": "TIC80",
@@ -1295,11 +1051,7 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": null,
-    "mediaCode": null,
-    "releaseYear": null,
-    "unitsSold": null,
-    "summary": null,
-    "tag": null
+    "mediaCode": null
   },
   {
     "abbreviation": "VB",
@@ -1316,11 +1068,7 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": "nintendo",
-    "mediaCode": "cartridge",
-    "releaseYear": 1995,
-    "unitsSold": 770000,
-    "summary": "The Virtual Boy was Nintendo's experimental tabletop console that displayed stereoscopic 3D graphics in red and black. Designed by Game Boy creator Gunpei Yokoi, it was discontinued after less than a year due to poor sales caused by its uncomfortable design and monochromatic display.",
-    "tag": null
+    "mediaCode": "cartridge"
   },
   {
     "abbreviation": "VEC",
@@ -1337,11 +1085,7 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": "gce",
-    "mediaCode": "cartridge",
-    "releaseYear": 1982,
-    "unitsSold": null,
-    "summary": "The GCE Vectrex was unique among home consoles for its built-in vector display monitor, producing crisp line graphics similar to arcade games like Asteroids and Tempest. Despite critical acclaim and innovative accessories including a 3D imager, it was discontinued after the 1983 video game crash.",
-    "tag": null
+    "mediaCode": "cartridge"
   },
   {
     "abbreviation": "VIC20",
@@ -1358,11 +1102,7 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": "commodore",
-    "mediaCode": "cartridge",
-    "releaseYear": 1980,
-    "unitsSold": 2500000,
-    "summary": "The Commodore VIC-20 was one of the first computers to sell over a million units, priced affordably at under $300. While limited to 5KB of RAM, it introduced an entire generation to home computing and programming, serving as a stepping stone to the legendary Commodore 64.",
-    "tag": null
+    "mediaCode": "cartridge"
   },
   {
     "abbreviation": "VITA",
@@ -1379,11 +1119,7 @@
     "saveStatePolicy": "medium",
     "playable": false,
     "makerCode": "sony",
-    "mediaCode": "game-card",
-    "releaseYear": 2011,
-    "unitsSold": 15900000,
-    "summary": "The PlayStation Vita was Sony's second handheld console, featuring a 5-inch OLED touchscreen, rear touchpad, and dual analog sticks. Despite powerful hardware capable of near-PS3 quality visuals, it struggled against mobile gaming competition, though it found a devoted audience for its strong library of JRPGs, indie games, and remote play functionality.",
-    "tag": null
+    "mediaCode": "game-card"
   },
   {
     "abbreviation": "WII",
@@ -1400,11 +1136,7 @@
     "saveStatePolicy": "large",
     "playable": true,
     "makerCode": "nintendo",
-    "mediaCode": "dvd-rom",
-    "releaseYear": 2006,
-    "unitsSold": 101630000,
-    "summary": "The Wii revolutionized gaming with its motion-sensing Wii Remote controller, attracting millions of non-traditional gamers. Wii Sports became a cultural phenomenon, and the console outsold both the PS3 and Xbox 360, proving that innovative gameplay could triumph over raw processing power.",
-    "tag": null
+    "mediaCode": "dvd-rom"
   },
   {
     "abbreviation": "WIIU",
@@ -1421,11 +1153,7 @@
     "saveStatePolicy": "large",
     "playable": false,
     "makerCode": "nintendo",
-    "mediaCode": "disc",
-    "releaseYear": 2012,
-    "unitsSold": 13560000,
-    "summary": "The Wii U featured an innovative GamePad controller with a built-in touchscreen for asymmetric gameplay and off-TV play. Despite underperforming commercially due to confused marketing and slow software output, it produced excellent first-party titles like Super Mario 3D World, Splatoon, and Super Smash Bros. for Wii U.",
-    "tag": null
+    "mediaCode": "disc"
   },
   {
     "abbreviation": "WS",
@@ -1442,11 +1170,7 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": "bandai",
-    "mediaCode": "cartridge",
-    "releaseYear": 1999,
-    "unitsSold": 3500000,
-    "summary": "The WonderSwan was designed by Gunpei Yokoi after leaving Nintendo and was sold exclusively in Japan. Its low price and excellent battery life attracted Square for exclusive Final Fantasy remakes, but the Game Boy Advance's arrival halted its momentum.",
-    "tag": null
+    "mediaCode": "cartridge"
   },
   {
     "abbreviation": "X360",
@@ -1463,11 +1187,7 @@
     "saveStatePolicy": "large",
     "playable": false,
     "makerCode": "microsoft",
-    "mediaCode": "dvd-rom",
-    "releaseYear": 2005,
-    "unitsSold": 84700000,
-    "summary": "The Xbox 360 launched a year ahead of its competitors and established Xbox Live as the premier online gaming service. Its achievement system, party chat, and blockbuster exclusives like Gears of War and Halo 3 defined the era of connected console gaming.",
-    "tag": null
+    "mediaCode": "dvd-rom"
   },
   {
     "abbreviation": "X68K",
@@ -1484,11 +1204,7 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": null,
-    "mediaCode": null,
-    "releaseYear": null,
-    "unitsSold": null,
-    "summary": null,
-    "tag": null
+    "mediaCode": null
   },
   {
     "abbreviation": "XBOX",
@@ -1505,11 +1221,7 @@
     "saveStatePolicy": "large",
     "playable": false,
     "makerCode": "microsoft",
-    "mediaCode": "dvd-rom",
-    "releaseYear": 2001,
-    "unitsSold": 24000000,
-    "summary": "The Xbox was Microsoft's first entry into the console market, featuring PC-derived hardware with a built-in hard drive and Ethernet port. Halo: Combat Evolved became its killer app and system seller, while Xbox Live pioneered unified online console gaming.",
-    "tag": null
+    "mediaCode": "dvd-rom"
   },
   {
     "abbreviation": "XONE",
@@ -1526,11 +1238,7 @@
     "saveStatePolicy": "large",
     "playable": false,
     "makerCode": "microsoft",
-    "mediaCode": "blu-ray",
-    "releaseYear": 2013,
-    "unitsSold": 51000000,
-    "summary": "The Xbox One initially focused on being an all-in-one entertainment hub before pivoting back to games. Microsoft introduced backward compatibility and the Xbox Game Pass subscription service, which became the most significant shift in console business models since digital distribution.",
-    "tag": null
+    "mediaCode": "blu-ray"
   },
   {
     "abbreviation": "XSX",
@@ -1547,11 +1255,7 @@
     "saveStatePolicy": "large",
     "playable": false,
     "makerCode": "microsoft",
-    "mediaCode": "digital",
-    "releaseYear": 2020,
-    "unitsSold": 21000000,
-    "summary": "The Xbox Series X/S continued Microsoft's shift toward a service-based model, with Game Pass at its core. The Series X offered the most powerful console hardware at launch, while the disc-less Series S provided an affordable entry point for next-gen gaming.",
-    "tag": null
+    "mediaCode": "digital"
   },
   {
     "abbreviation": "ZXS",
@@ -1568,10 +1272,6 @@
     "saveStatePolicy": "small",
     "playable": true,
     "makerCode": null,
-    "mediaCode": null,
-    "releaseYear": null,
-    "unitsSold": null,
-    "summary": null,
-    "tag": null
+    "mediaCode": null
   }
 ]

@@ -266,6 +266,10 @@ func ToConsoleResponse(c db.Console) ConsoleResponse {
 		code = *c.Code
 	}
 
+	// Static catalog facts now live in the console code registry (#1443),
+	// not on the row. Derive them by the console's abbreviation.
+	spec, _ := db.ConsoleSpecByAbbreviation(c.Abbreviation)
+
 	// ConsoleResponse.maker and mediaType are always-present per the OpenAPI
 	// contract. Post-seed every console has both; rows that haven't been
 	// re-seeded fall back to the zero struct so the wire shape stays valid.
@@ -298,9 +302,9 @@ func ToConsoleResponse(c db.Console) ConsoleResponse {
 		Abbreviation:     c.Abbreviation,
 		Maker:            maker,
 		MediaType:        mediaType,
-		ReleaseYear:      c.ReleaseYear,
-		UnitsSold:        c.UnitsSold,
-		Summary:          c.Summary,
+		ReleaseYear:      spec.ReleaseYear,
+		UnitsSold:        spec.UnitsSold,
+		Summary:          spec.Summary,
 		Extensions:       exts,
 		DefaultCore:      c.DefaultCore,
 		EmulatorJSCore:   c.EmulatorJSCore,
@@ -312,7 +316,7 @@ func ToConsoleResponse(c db.Console) ConsoleResponse {
 		LogoURL:          "/api/consoles/" + abbr + "/logo",
 		LogoPngURL:       "/api/consoles/" + abbr + "/logo.png",
 		PhotoURL:         consolePhotoURL(abbr),
-		Tag:              c.Tag,
+		Tag:              spec.Tag,
 		GameCount:        c.GameCount,
 		SaveStateSupport: c.SaveStateSupport,
 		SaveStatePolicy:  saveStatePolicyOrDefault(c.SaveStatePolicy),

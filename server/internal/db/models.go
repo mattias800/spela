@@ -182,18 +182,11 @@ type Console struct {
 	HardwareMaker   *HardwareMaker  `gorm:"foreignKey:HardwareMakerID" json:"hardwareMaker"`
 	MediaTypeID     *uint           `json:"mediaTypeId"`
 	MediaType       *MediaType      `gorm:"foreignKey:MediaTypeID" json:"mediaType"`
-	ReleaseYear     *int            `json:"releaseYear"`
-	UnitsSold       *int64          `json:"unitsSold"`
-	Summary         *string         `gorm:"type:text" json:"summary"`
-	// Tag is an optional short qualifier shown as a chip on console cards
-	// (e.g. "Demos" for the demoscene platforms, whose inherited parent
-	// logo — the Amiga / DOS logo — would otherwise be indistinguishable
-	// from the parent console). Generic and optional: any console may set
-	// one, nil means none. Keeps the distinction data-driven instead of
-	// name-matching in the UI.
-	Tag       *string `gorm:"size:32" json:"tag"`
-	Games     []Game  `gorm:"foreignKey:ConsoleID" json:"games"`
-	GameCount int     `gorm:"-" json:"gameCount"`
+	// ReleaseYear, UnitsSold, Summary and Tag are static catalog facts now
+	// owned by the console code registry (see ConsoleSpec / #1443) and
+	// derived into responses there — no longer stored on this row.
+	Games     []Game `gorm:"foreignKey:ConsoleID" json:"games"`
+	GameCount int    `gorm:"-" json:"gameCount"`
 }
 
 // Game represents a detected ROM/game file.
