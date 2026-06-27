@@ -89,10 +89,8 @@ class SearchSeeMoreTest {
         ),
     )
 
-    // --- "See all" visibility ---
-
     @Test
-    fun `see all shown when total is greater than displayed count`() = runComposeUiTest {
+    fun `see all visibility follows total versus displayed count`() = runComposeUiTest {
         val harness = createHarness()
         harness.searchRepo.searchResult = searchResultWithMoreGames()
 
@@ -105,57 +103,12 @@ class SearchSeeMoreTest {
 
         // "See all 10" should be visible for Games (total 10 > displayed 2)
         onNodeWithTag("search_section_see_all_Games").assertExists()
-    }
-
-    @Test
-    fun `see all not shown when total equals displayed count`() = runComposeUiTest {
-        val harness = createHarness()
-        harness.searchRepo.searchResult = searchResultWithMoreGames()
-
-        setContent { harness.App() }
-        harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.GlobalSearch))
-        advance(harness)
-
-        searchInputNode().performTextInput("mario")
-        advanceFully(harness)
-
         // Consoles has total == 1 == displayed count, so "See all" should NOT show
         onNodeWithTag("search_section_see_all_Consoles").assertDoesNotExist()
     }
 
     @Test
-    fun `see all not shown when total is less than or equal to displayed count`() = runComposeUiTest {
-        val harness = createHarness()
-        // All counts match displayed
-        harness.searchRepo.searchResult = GlobalSearchResult(
-            games = SearchCategory(
-                results = listOf(
-                    SearchGameResult(
-                        id = "g1",
-                        title = "Super Mario World",
-                        consoleName = "SNES",
-                        consoleId = "snes",
-                        coverUrl = null,
-                    ),
-                ),
-                total = 1,
-            ),
-        )
-
-        setContent { harness.App() }
-        harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.GlobalSearch))
-        advance(harness)
-
-        searchInputNode().performTextInput("mario")
-        advanceFully(harness)
-
-        onNodeWithTag("search_section_see_all_Games").assertDoesNotExist()
-    }
-
-    // --- Expand / Collapse ---
-
-    @Test
-    fun `tapping see all expands category and shows more results`() = runComposeUiTest {
+    fun `see all expands category and show less collapses it`() = runComposeUiTest {
         val harness = createHarness()
         harness.searchRepo.searchResult = searchResultWithMoreGames()
 
@@ -173,70 +126,23 @@ class SearchSeeMoreTest {
 
         // Tap "See all 10"
         onNodeWithTag("search_section_see_all_Games").performClick()
-
-        // The expanded search will be fetched — set the result for the second call
         harness.searchRepo.searchResult = expandedSearchResult()
         advanceFully(harness)
 
         // Verify the category is in expanded state on the ViewModel
-        val state = harness.globalSearchViewModel.state.value
-        assertTrue(state.expandedCategories.contains("Games"))
-    }
-
-    @Test
-    fun `show less shown after expanding category`() = runComposeUiTest {
-        val harness = createHarness()
-        harness.searchRepo.searchResult = searchResultWithMoreGames()
-
-        setContent { harness.App() }
-        harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.GlobalSearch))
-        advance(harness)
-
-        searchInputNode().performTextInput("mario")
-        advanceFully(harness)
-
-        // "See all" should be visible before expanding
-        onNodeWithTag("search_section_see_all_Games").assertExists()
-        onNodeWithTag("search_section_show_less_Games").assertDoesNotExist()
-
-        // Tap "See all"
-        onNodeWithTag("search_section_see_all_Games").performClick()
-
-        harness.searchRepo.searchResult = expandedSearchResult()
-        advanceFully(harness)
-
-        // After expanding, "Show less" should be visible
+        val expandedState = harness.globalSearchViewModel.state.value
+        assertTrue(expandedState.expandedCategories.contains("Games"))
+        onNodeWithTag("search_result_game_g3").assertExists()
         onNodeWithTag("search_section_show_less_Games").assertExists()
         onNodeWithTag("search_section_see_all_Games").assertDoesNotExist()
-    }
-
-    @Test
-    fun `tapping show less collapses category back`() = runComposeUiTest {
-        val harness = createHarness()
-        harness.searchRepo.searchResult = searchResultWithMoreGames()
-
-        setContent { harness.App() }
-        harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.GlobalSearch))
-        advance(harness)
-
-        searchInputNode().performTextInput("mario")
-        advanceFully(harness)
-
-        // Expand the category
-        onNodeWithTag("search_section_see_all_Games").performClick()
-        harness.searchRepo.searchResult = expandedSearchResult()
-        advanceFully(harness)
-
-        // "Show less" should be visible
-        onNodeWithTag("search_section_show_less_Games").assertExists()
 
         // Click "Show less"
         onNodeWithTag("search_section_show_less_Games").performClick()
         advanceQuick(harness)
 
         // Category should be collapsed
-        val state = harness.globalSearchViewModel.state.value
-        assertTrue(!state.expandedCategories.contains("Games"))
+        val collapsedState = harness.globalSearchViewModel.state.value
+        assertTrue(!collapsedState.expandedCategories.contains("Games"))
 
         // "See all" should reappear
         onNodeWithTag("search_section_see_all_Games").assertExists()

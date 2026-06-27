@@ -85,7 +85,7 @@ class BiosWarningTest {
     }
 
     @Test
-    fun missingBiosDialogGoBackDismissesAndExitsOverlay() = runComposeUiTest {
+    fun missingBiosDialogCanGoBackThenTryAnyway() = runComposeUiTest {
         val harness = createLoggedInHarness()
         harness.downloadRepo.preCacheGame("1")
         harness.biosRepo.preSetPreLaunchMissingFiles(
@@ -110,21 +110,10 @@ class BiosWarningTest {
 
         onAllNodesWithText("Missing BIOS Files").assertCountEquals(0)
         onNodeWithText("Castlevania").assertIsDisplayed()
-    }
 
-    @Test
-    fun missingBiosDialogTryAnywayDismissesAndRetries() = runComposeUiTest {
-        val harness = createLoggedInHarness()
-        harness.downloadRepo.preCacheGame("1")
-        harness.biosRepo.preSetPreLaunchMissingFiles(
-            listOf(
-                BiosMissingFile("disksys.rom", "Famicom Disk System BIOS", true),
-            ),
-        )
-
-        setContent { harness.App() }
-        navigateToGameDetail(harness, gameId = "1")
-
+        // The next launch attempt shows the same pre-launch warning; Try
+        // Anyway dismisses it and continues through the retry path. The
+        // EmulationViewModel unit tests cover the bypass flag details.
         onNodeWithTag("game_detail_play_button").performClick()
         advance(harness)
 

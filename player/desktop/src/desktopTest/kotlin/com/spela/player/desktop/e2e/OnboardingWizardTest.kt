@@ -93,7 +93,7 @@ class OnboardingWizardTest {
     }
 
     @Test
-    fun wizardSkipsConnectBacksAndRegistersWithEmail() = runComposeUiTest {
+    fun wizardSkipsConnectBacksRegistersSkipsDeviceAndPersistsButtonConvention() = runComposeUiTest {
         val harness = createWizardHarness(serverKnown = true)
 
         showWizard(harness)
@@ -131,24 +131,6 @@ class OnboardingWizardTest {
 
         // Registration succeeds → advances to the device-naming step.
         onNodeWithText("Name this device").assertIsDisplayed()
-    }
-
-    @Test
-    fun wizardCanSkipDeviceNamingAndPersistButtonConvention() = runComposeUiTest {
-        val harness = createWizardHarness(serverKnown = true)
-
-        showWizard(harness)
-
-        onNodeWithTag(OnboardingTestTags.WELCOME_START).performClick()
-        advanceQuick(harness)
-
-        // Sign in (Connect skipped — server already active)
-        onNodeWithText("Username").performClick()
-        onNodeWithText("Username").performTextInput("player")
-        onNodeWithText("Password").performClick()
-        onNodeWithText("Password").performTextInput("player123")
-        onNodeWithTag(OnboardingTestTags.SIGNIN_SUBMIT).performClick()
-        advance(harness)
 
         // Skip device naming → Controls (Verify, no controller) → convention → All set
         onNodeWithText("Skip for now").performClick()
