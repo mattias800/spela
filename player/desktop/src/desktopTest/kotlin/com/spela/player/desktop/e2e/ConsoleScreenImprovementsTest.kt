@@ -75,93 +75,32 @@ class ConsoleScreenImprovementsTest {
     // ────────────────────────────────────────────────
 
     @Test
-    fun sortButtonIsDisplayed() = runComposeUiTest {
+    fun sortMenuShowsOptionsUpdatesStateAndDismisses() = runComposeUiTest {
         val harness = createLoggedInHarness()
         setContent { harness.App() }
         navigateToConsoleGames(harness)
 
-        // The SwapVert icon button should be accessible
         onNodeWithContentDescription("Sort games").assertIsDisplayed()
-    }
 
-    @Test
-    fun sortMenuShowsOptionsOnClick() = runComposeUiTest {
-        val harness = createLoggedInHarness()
-        setContent { harness.App() }
-        navigateToConsoleGames(harness)
-
-        // Click the sort button to open the dropdown menu
         onNodeWithContentDescription("Sort games").performClick()
         advanceQuick(harness)
 
-        // All four sort options should be visible
         onNodeWithText("Title (A–Z)").assertIsDisplayed()
         onNodeWithText("Rating").assertIsDisplayed()
         onNodeWithText("Release date").assertIsDisplayed()
         onNodeWithText("Recently played").assertIsDisplayed()
-    }
 
-    @Test
-    fun selectingSortOptionChangesOrder() = runComposeUiTest {
-        val harness = createLoggedInHarness()
-        setContent { harness.App() }
-        navigateToConsoleGames(harness)
-
-        // Default sort is "title" — games should be alphabetically sorted
-        // NES games: Castlevania (1986), Mega Man 2 (1988), Super Mario Bros. (1985)
-
-        // Open sort menu and select "Release date"
-        onNodeWithContentDescription("Sort games").performClick()
-        advanceQuick(harness)
         onNodeWithText("Release date").performClick()
         advanceQuick(harness)
-
-        // Verify the sort state changed
         assertEquals("releaseDate", harness.gameListViewModel.state.value.sortBy)
-    }
+        onNodeWithText("Rating").assertDoesNotExist()
 
-    @Test
-    fun sortMenuShowsCheckmarkForActiveOption() = runComposeUiTest {
-        val harness = createLoggedInHarness()
-        setContent { harness.App() }
-        navigateToConsoleGames(harness)
-
-        // Default sort is "title", open menu — Title should have a check icon
         onNodeWithContentDescription("Sort games").performClick()
         advanceQuick(harness)
-
-        // "Title (A–Z)" should be displayed (the active option)
-        onNodeWithText("Title (A–Z)").assertIsDisplayed()
-
-        // Select "Rating" and reopen to verify it's now active
         onNodeWithText("Rating").performClick()
         advanceQuick(harness)
-
-        onNodeWithContentDescription("Sort games").performClick()
-        advanceQuick(harness)
-        onNodeWithText("Rating").assertIsDisplayed()
-
         assertEquals("rating", harness.gameListViewModel.state.value.sortBy)
-    }
-
-    @Test
-    fun selectingSortOptionClosesMenu() = runComposeUiTest {
-        val harness = createLoggedInHarness()
-        setContent { harness.App() }
-        navigateToConsoleGames(harness)
-
-        // Open sort menu and select an option
-        onNodeWithContentDescription("Sort games").performClick()
-        advanceQuick(harness)
-        onNodeWithText("Rating").assertIsDisplayed()
-
-        // Selecting an option should close the menu
-        onNodeWithText("Rating").performClick()
-        advanceQuick(harness)
-
-        // The menu items should no longer be visible
-        // (DropdownMenu dismissed after selection)
-        assertEquals("rating", harness.gameListViewModel.state.value.sortBy)
+        onNodeWithText("Release date").assertDoesNotExist()
     }
 
     // ────────────────────────────────────────────────
@@ -169,13 +108,14 @@ class ConsoleScreenImprovementsTest {
     // ────────────────────────────────────────────────
 
     @Test
-    fun multipleFavoriteGamesShowBadges() = runComposeUiTest {
+    fun gameCardsShowFavoritesAndRatingsTogether() = runComposeUiTest {
         val harness = createLoggedInHarness()
 
-        // Mark two NES games as favorite
         harness.gameRepo.games = harness.gameRepo.games.map {
             when (it.id) {
-                "1", "3" -> it.copy(isFavorite = true)
+                "1" -> it.copy(isFavorite = true, communityRating = 4.8)
+                "2" -> it.copy(communityRating = 1.0)
+                "3" -> it.copy(isFavorite = true, communityRating = 0.5)
                 else -> it
             }
         }
@@ -187,8 +127,10 @@ class ConsoleScreenImprovementsTest {
         onNodeWithContentDescription("Castlevania, NES, favorited").assertIsDisplayed()
         onNodeWithContentDescription("Mega Man 2, NES, favorited").assertIsDisplayed()
 
-        // Non-favorited games should not.
         onNodeWithContentDescription("Super Mario Bros., NES").assertIsDisplayed()
+        onNodeWithText("4.8").assertIsDisplayed()
+        onNodeWithText("1.0").assertIsDisplayed()
+        onNodeWithText("0.5").assertExists()
     }
 
     // ────────────────────────────────────────────────
@@ -199,51 +141,13 @@ class ConsoleScreenImprovementsTest {
     // isLoading = true when coverUrl == null && scrapeAttempts == 0.
 
     @Test
-    fun gameWithNoCoverAndZeroScrapeAttemptsTriggersLoadingState() = runComposeUiTest {
+    fun coverLoadingAndLoadedGamesRenderCards() = runComposeUiTest {
         val harness = createLoggedInHarness()
 
-        // Set a game with no cover and 0 scrape attempts (should show shimmer)
-        harness.gameRepo.games = harness.gameRepo.games.map {
-            if (it.id == "1") it.copy(coverUrl = null, scrapeAttempts = 0) else it
-        }
-
-        setContent { harness.App() }
-        navigateToConsoleGames(harness)
-
-        // The game card should still be displayed (shimmer replaces placeholder)
-        onNodeWithContentDescription("Castlevania, NES").assertIsDisplayed()
-    }
-
-    @Test
-    fun gameWithCoverUrlDoesNotShowShimmer() = runComposeUiTest {
-        val harness = createLoggedInHarness()
-
-        // Game has a cover URL — no shimmer
-        harness.gameRepo.games = harness.gameRepo.games.map {
-            if (it.id == "1") it.copy(coverUrl = "https://example.com/cover.jpg", scrapeAttempts = 1) else it
-        }
-
-        setContent { harness.App() }
-        navigateToConsoleGames(harness)
-
-        // Card should render normally
-        onNodeWithContentDescription("Castlevania, NES").assertIsDisplayed()
-    }
-
-    // ────────────────────────────────────────────────
-    // #7: Star rating row
-    // ────────────────────────────────────────────────
-
-    @Test
-    fun gamesWithRatingsShowStarRating() = runComposeUiTest {
-        val harness = createLoggedInHarness()
-
-        // Current card behaviour: any non-zero rating renders as formatted text.
         harness.gameRepo.games = harness.gameRepo.games.map {
             when (it.id) {
-                "1" -> it.copy(communityRating = 4.5)
-                "2" -> it.copy(communityRating = 1.0)
-                "3" -> it.copy(communityRating = 0.5)
+                "1" -> it.copy(coverUrl = null, scrapeAttempts = 0)
+                "2" -> it.copy(coverUrl = "https://example.com/cover.jpg", scrapeAttempts = 1)
                 else -> it
             }
         }
@@ -251,10 +155,13 @@ class ConsoleScreenImprovementsTest {
         setContent { harness.App() }
         navigateToConsoleGames(harness)
 
-        onNodeWithText("4.5").assertIsDisplayed()
-        onNodeWithText("1.0").assertIsDisplayed()
-        onNodeWithText("0.5").assertExists()
+        onNodeWithContentDescription("Castlevania, NES").assertIsDisplayed()
+        onNodeWithContentDescription("Super Mario Bros., NES").assertIsDisplayed()
     }
+
+    // ────────────────────────────────────────────────
+    // #7: Star rating row
+    // ────────────────────────────────────────────────
 
     @Test
     fun gameWithLowRatingDoesNotShowStarRating() = runComposeUiTest {
@@ -321,23 +228,6 @@ class ConsoleScreenImprovementsTest {
     // ────────────────────────────────────────────────
     // Combined scenarios
     // ────────────────────────────────────────────────
-
-    @Test
-    fun gameCardShowsFavoriteAndRatingTogether() = runComposeUiTest {
-        val harness = createLoggedInHarness()
-
-        // Game with both favorite and high rating
-        harness.gameRepo.games = harness.gameRepo.games.map {
-            if (it.id == "1") it.copy(isFavorite = true, communityRating = 4.8) else it
-        }
-
-        setContent { harness.App() }
-        navigateToConsoleGames(harness)
-
-        // Both features should be visible on the same card
-        onNodeWithContentDescription("Castlevania, NES, favorited").assertIsDisplayed()
-        onNodeWithText("4.8").assertIsDisplayed()
-    }
 
     @Test
     fun sortByRatingOrdersCorrectly() = runComposeUiTest {

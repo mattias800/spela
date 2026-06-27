@@ -42,18 +42,41 @@ class InGameOverlayTest {
     }
 
     @Test
-    fun overlayShowsSaveLoadScreenshotButtons() = runComposeUiTest {
+    fun overlayActionsSaveFastForwardAndResume() = runComposeUiTest {
         val harness = createHarnessWithGameReady()
         startGame(harness)
 
-        // Verify overlay action buttons are present
         onNodeWithContentDescription("Save").assertIsDisplayed()
         onNodeWithContentDescription("Load").assertIsDisplayed()
         onNodeWithContentDescription("Screenshot").assertIsDisplayed()
+
+        val saveCountBefore = harness.libretroController.saveCallCount
+        onNodeWithContentDescription("Save").performClick()
+        advance(harness)
+        assertTrue(
+            harness.libretroController.saveCallCount > saveCountBefore,
+            "Save should have triggered serialization",
+        )
+
+        assertFalse(harness.libretroController.isFastForward, "Fast forward should be off initially")
+        onNodeWithContentDescription("Fast").performClick()
+        advanceQuick(harness)
+        assertTrue(harness.libretroController.isFastForward, "Fast forward should be on")
+        onNodeWithContentDescription("Normal").performClick()
+        advanceQuick(harness)
+        assertFalse(harness.libretroController.isFastForward, "Fast forward should be off again")
+
+        onNodeWithText("Continue").assertIsDisplayed()
+        onNodeWithText("Continue").performClick()
+        advanceQuick(harness)
+
+        onNodeWithText("Exit Game").assertDoesNotExist()
+        assertTrue(harness.libretroController.isRunning)
+        assertFalse(harness.libretroController.isPaused)
     }
 
     @Test
-    fun keyMappingOverlayShowsLabeledList() = runComposeUiTest {
+    fun keyMappingOverlayShowsListAndSavesPerGameOverride() = runComposeUiTest {
         val harness = createHarnessWithGameReady()
         startGame(harness)
 
@@ -63,26 +86,6 @@ class InGameOverlayTest {
         // The editor now shows a per-console labeled mapping list (#1335), not a
         // pictorial controller diagram.
         onNodeWithTag("mapping_list").assertExists()
-
-        // Tapping a button row enters single-button listening mode for it.
-        onNodeWithTag("mapping_list").onChildren().onFirst().performClick()
-        advanceQuick(harness)
-        assertTrue(
-            harness.keyMappingViewModel.state.value.currentMappingButton != null,
-            "Tapping a mapping row should enter listening mode",
-        )
-    }
-
-    @Test
-    fun keyMappingOverlayOffersPerGameOverrideAndSaves() = runComposeUiTest {
-        val harness = createHarnessWithGameReady()
-        startGame(harness)
-
-        // Open the in-game key-mapping editor.
-        harness.emulationViewModel.onIntent(EmulationIntent.ShowKeyMapping)
-        advanceQuick(harness)
-
-        // A game is loaded, so the per-game override affordance is offered (#1336).
         onNodeWithTag("save_game_override").assertExists()
 
         onNodeWithTag("save_game_override").performClick()
@@ -92,22 +95,13 @@ class InGameOverlayTest {
             harness.keyMappingViewModel.state.value.hasGameOverride,
             "Saving in the overlay should create a per-game override",
         )
-    }
 
-    @Test
-    fun saveTriggersSerialization() = runComposeUiTest {
-        val harness = createHarnessWithGameReady()
-        startGame(harness)
-
-        val saveCountBefore = harness.libretroController.saveCallCount
-
-        // Tap Save
-        onNodeWithContentDescription("Save").performClick()
-        advance(harness)
-
+        // Tapping a button row enters single-button listening mode for it.
+        onNodeWithTag("mapping_list").onChildren().onFirst().performClick()
+        advanceQuick(harness)
         assertTrue(
-            harness.libretroController.saveCallCount > saveCountBefore,
-            "Save should have triggered serialization"
+            harness.keyMappingViewModel.state.value.currentMappingButton != null,
+            "Tapping a mapping row should enter listening mode",
         )
     }
 
@@ -136,46 +130,6 @@ class InGameOverlayTest {
             harness.libretroController.loadCallCount > loadCountBefore,
             "Load should have triggered unserialization"
         )
-    }
-
-    @Test
-    fun fastForwardToggle() = runComposeUiTest {
-        val harness = createHarnessWithGameReady()
-        startGame(harness)
-
-        assertFalse(harness.libretroController.isFastForward, "Fast forward should be off initially")
-
-        // Tap Fast Forward button (labeled "Fast" initially)
-        onNodeWithContentDescription("Fast").performClick()
-        advanceQuick(harness)
-
-        assertTrue(harness.libretroController.isFastForward, "Fast forward should be on")
-
-        // Tap again to toggle off (now labeled "Normal")
-        onNodeWithContentDescription("Normal").performClick()
-        advanceQuick(harness)
-
-        assertFalse(harness.libretroController.isFastForward, "Fast forward should be off again")
-    }
-
-    @Test
-    fun resumeHidesOverlay() = runComposeUiTest {
-        val harness = createHarnessWithGameReady()
-        startGame(harness)
-
-        // Overlay should be visible
-        onNodeWithText("Continue").assertIsDisplayed()
-
-        // Tap Resume
-        onNodeWithText("Continue").performClick()
-        advanceQuick(harness)
-
-        // Overlay panel should be hidden (Exit Game text should no longer be visible)
-        onNodeWithText("Exit Game").assertDoesNotExist()
-
-        // But the game should still be running
-        assertTrue(harness.libretroController.isRunning)
-        assertFalse(harness.libretroController.isPaused)
     }
 
     @Test

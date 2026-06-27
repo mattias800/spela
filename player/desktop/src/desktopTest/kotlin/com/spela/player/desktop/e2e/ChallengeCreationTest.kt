@@ -28,7 +28,7 @@ class ChallengeCreationTest {
     }
 
     @Test
-    fun challengeButtonAppearsInOverlay() = runComposeUiTest {
+    fun challengeOverlayCreatesChallengeFromPrefilledForm() = runComposeUiTest {
         val harness = createHarnessWithGameReady()
 
         mainClock.autoAdvance = false
@@ -43,85 +43,26 @@ class ChallengeCreationTest {
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
         advanceQuick(harness)
 
-        // "Challenge" button should be visible in overlay
         onNodeWithContentDescription("Challenge").assertIsDisplayed()
-    }
-
-    @Test
-    fun challengeButtonOpensCreationForm() = runComposeUiTest {
-        val harness = createHarnessWithGameReady()
-
-        mainClock.autoAdvance = false
-        setContent { harness.App() }
-        advance(harness)
-
-        // Start game -> open overlay -> tap Challenge
-        onNodeWithTag("game_detail_play_button").performClick()
-        advance(harness)
-        harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advanceQuick(harness)
         onNodeWithContentDescription("Challenge").performClick()
         advanceQuick(harness)
 
-        // Creation form should appear with expected fields
         onNodeWithText("Create Challenge").assertIsDisplayed()
         onNodeWithText("Title").assertIsDisplayed()
-        // Default type and difficulty chips should be visible
         onNodeWithText("Completion").assertIsDisplayed()
         onNodeWithText("Medium").assertIsDisplayed()
-    }
-
-    @Test
-    fun createChallengeSubmitsToRepository() = runComposeUiTest {
-        val harness = createHarnessWithGameReady()
-
-        mainClock.autoAdvance = false
-        setContent { harness.App() }
-        advance(harness)
-
-        // Start game -> open overlay -> create challenge
-        onNodeWithTag("game_detail_play_button").performClick()
-        advance(harness)
-        harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advanceQuick(harness)
-        onNodeWithContentDescription("Challenge").performClick()
-        advanceQuick(harness)
-
-        // Title is pre-filled with "Castlevania Challenge", submit it
+        onNodeWithText("Castlevania Challenge").assertIsDisplayed()
         onNodeWithText("Create").performClick()
         advance(harness)
 
-        // Verify save state was serialized (CreateChallenge -> initChallengeCreation -> serialize)
         assertTrue(
             harness.libretroController.saveCallCount > 0,
             "Challenge creation should serialize the save state"
         )
-
-        // Verify challenge was created in repository
         assertTrue(
             harness.challengeRepo.challenges.isNotEmpty(),
             "Challenge should be persisted via repository"
         )
-    }
-
-    @Test
-    fun creationFormPreFillsTitle() = runComposeUiTest {
-        val harness = createHarnessWithGameReady()
-
-        mainClock.autoAdvance = false
-        setContent { harness.App() }
-        advance(harness)
-
-        // Start game -> open overlay -> open creation form
-        onNodeWithTag("game_detail_play_button").performClick()
-        advance(harness)
-        harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advanceQuick(harness)
-        onNodeWithContentDescription("Challenge").performClick()
-        advanceQuick(harness)
-
-        // Title should be pre-filled with game title
-        onNodeWithText("Castlevania Challenge").assertIsDisplayed()
     }
 
     @Test

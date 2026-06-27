@@ -33,10 +33,8 @@ class CreateChallengeTest {
         onNodeWithTag("game_detail_content").performScrollToNode(matcher)
     }
 
-    // --- Create Challenge Button ---
-
     @Test
-    fun challengesSectionShowsCreateButton() = runComposeUiTest {
+    fun createChallengeDialogShowsFieldsValidationAndCanCancel() = runComposeUiTest {
         val harness = createHarness()
 
         setContent { harness.App() }
@@ -44,118 +42,29 @@ class CreateChallengeTest {
 
         scrollToSection(hasTestTag("create_challenge_button"))
         onNodeWithTag("create_challenge_button").assertIsDisplayed()
-    }
-
-    @Test
-    fun createButtonOpensDialog() = runComposeUiTest {
-        val harness = createHarness()
-
-        setContent { harness.App() }
-        navigateToGameDetail(harness)
-
-        scrollToSection(hasTestTag("create_challenge_button"))
         onNodeWithTag("create_challenge_button").performClick()
         advance(harness)
 
         onNodeWithTag("create_challenge_dialog").assertIsDisplayed()
         onNodeWithText("Create Challenge").assertIsDisplayed()
-    }
-
-    // --- Dialog Form Fields ---
-
-    @Test
-    fun dialogShowsTitleField() = runComposeUiTest {
-        val harness = createHarness()
-
-        setContent { harness.App() }
-        navigateToGameDetail(harness)
-
-        scrollToSection(hasTestTag("create_challenge_button"))
-        onNodeWithTag("create_challenge_button").performClick()
-        advance(harness)
 
         // SpTextField merges semantics, so use unmerged tree for tag lookup
         onNodeWithTag("challenge_title_field", useUnmergedTree = true).assertExists()
-    }
-
-    @Test
-    fun dialogShowsTypeSelector() = runComposeUiTest {
-        val harness = createHarness()
-
-        setContent { harness.App() }
-        navigateToGameDetail(harness)
-
-        scrollToSection(hasTestTag("create_challenge_button"))
-        onNodeWithTag("create_challenge_button").performClick()
-        advance(harness)
 
         // Verify type chips are present (use unmerged tree since parent clickable merges)
         onNodeWithTag("challenge_type_selector", useUnmergedTree = true).assertExists()
         onNodeWithText("Completion", useUnmergedTree = true).assertExists()
         onNodeWithText("Speedrun", useUnmergedTree = true).assertExists()
         onNodeWithText("Survival", useUnmergedTree = true).assertExists()
-    }
-
-    @Test
-    fun dialogShowsDifficultySelector() = runComposeUiTest {
-        val harness = createHarness()
-
-        setContent { harness.App() }
-        navigateToGameDetail(harness)
-
-        scrollToSection(hasTestTag("create_challenge_button"))
-        onNodeWithTag("create_challenge_button").performClick()
-        advance(harness)
 
         // Verify difficulty chips are present (use unmerged tree since parent clickable merges)
         onNodeWithTag("challenge_difficulty_selector", useUnmergedTree = true).assertExists()
         onNodeWithText("Easy", useUnmergedTree = true).assertExists()
         onNodeWithText("Medium", useUnmergedTree = true).assertExists()
         onNodeWithText("Hard", useUnmergedTree = true).assertExists()
-    }
-
-    @Test
-    fun dialogShowsNoSavesMessage() = runComposeUiTest {
-        val harness = createHarness()
-        // No save states = default empty list
-
-        setContent { harness.App() }
-        navigateToGameDetail(harness)
-
-        scrollToSection(hasTestTag("create_challenge_button"))
-        onNodeWithTag("create_challenge_button").performClick()
-        advance(harness)
 
         onNodeWithText("No save states available", substring = true).assertIsDisplayed()
-    }
-
-    @Test
-    fun submitDisabledWithoutSaveState() = runComposeUiTest {
-        val harness = createHarness()
-        // No save states
-
-        setContent { harness.App() }
-        navigateToGameDetail(harness)
-
-        scrollToSection(hasTestTag("create_challenge_button"))
-        onNodeWithTag("create_challenge_button").performClick()
-        advance(harness)
-
         onNodeWithTag("create_challenge_submit").assertIsNotEnabled()
-    }
-
-    @Test
-    fun cancelDismissesDialog() = runComposeUiTest {
-        val harness = createHarness()
-
-        setContent { harness.App() }
-        navigateToGameDetail(harness)
-
-        scrollToSection(hasTestTag("create_challenge_button"))
-        onNodeWithTag("create_challenge_button").performClick()
-        advance(harness)
-
-        onNodeWithTag("create_challenge_dialog").assertIsDisplayed()
 
         onNodeWithText("Cancel").performClick()
         advance(harness)

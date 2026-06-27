@@ -1,6 +1,5 @@
 package com.spela.player.desktop.e2e
 
-import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.*
 import com.spela.player.presentation.intent.EmulationIntent
 import com.spela.player.presentation.navigation.NavigationIntent
@@ -38,92 +37,42 @@ class EscapeKeyOverlayTest {
         setContent { harness.App() }
         advance(harness)
 
-        // Start game from detail screen (overlay is hidden by default)
         onNodeWithTag("game_detail_play_button").performClick()
         advance(harness)
     }
 
     @Test
-    fun overlayTogglesViaViewModel() = runComposeUiTest {
+    fun overlayTogglesShowsActionsAndResumes() = runComposeUiTest {
         val harness = createHarnessWithGameRunning()
         launchAndStartGame(harness)
 
-        // Game is running, overlay should be hidden
         onNodeWithText("Exit Game").assertDoesNotExist()
+        assertFalse(harness.emulationViewModel.state.value.showOverlay, "Overlay should initially be hidden")
 
-        // Simulate what Escape key handler does: toggle overlay
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
         advanceQuick(harness)
 
-        // Overlay should now be visible with Resume and Exit Game
         onNodeWithText("Continue").assertIsDisplayed()
         onNodeWithText("Exit Game").assertIsDisplayed()
-    }
-
-    @Test
-    fun overlayToggleShowsGameTitle() = runComposeUiTest {
-        val harness = createHarnessWithGameRunning()
-        launchAndStartGame(harness)
-
-        // Open overlay
-        harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advanceQuick(harness)
-
-        // Game title should be shown in overlay (multiple nodes may match due to merged semantics)
         onAllNodesWithText("Castlevania").onFirst().assertIsDisplayed()
-    }
-
-    @Test
-    fun overlayCanBeDismissedByTogglingAgain() = runComposeUiTest {
-        val harness = createHarnessWithGameRunning()
-        launchAndStartGame(harness)
-
-        // Open overlay
-        harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advanceQuick(harness)
-
-        onNodeWithText("Exit Game").assertIsDisplayed()
-
-        // Toggle overlay again (simulates second Escape press)
-        harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advanceQuick(harness)
-
-        // Overlay should be hidden
-        onNodeWithText("Exit Game").assertDoesNotExist()
-    }
-
-    @Test
-    fun overlayShowsActionButtonsWhenOpened() = runComposeUiTest {
-        val harness = createHarnessWithGameRunning()
-        launchAndStartGame(harness)
-
-        // Open overlay
-        harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advanceQuick(harness)
-
-        // All overlay action buttons should be present
         onNodeWithContentDescription("Save").assertIsDisplayed()
         onNodeWithContentDescription("Load").assertIsDisplayed()
         onNodeWithContentDescription("Screenshot").assertIsDisplayed()
         onNodeWithContentDescription("Fast").assertIsDisplayed()
-    }
+        assertTrue(harness.emulationViewModel.state.value.showOverlay, "Overlay should be shown after toggle")
 
-    @Test
-    fun resumeFromOverlayHidesOverlayAndContinuesGame() = runComposeUiTest {
-        val harness = createHarnessWithGameRunning()
-        launchAndStartGame(harness)
-
-        // Open overlay via toggle
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
         advanceQuick(harness)
 
-        onNodeWithText("Continue").assertIsDisplayed()
+        onNodeWithText("Exit Game").assertDoesNotExist()
+        assertFalse(harness.emulationViewModel.state.value.showOverlay, "Overlay should be hidden after second toggle")
+        assertTrue(harness.libretroController.isRunning, "Game should remain running through toggle cycles")
 
-        // Click Resume
+        harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
+        advanceQuick(harness)
         onNodeWithText("Continue").performClick()
         advanceQuick(harness)
 
-        // Overlay should be hidden, game should be running
         onNodeWithText("Exit Game").assertDoesNotExist()
         assertTrue(harness.libretroController.isRunning, "Game should still be running after resume")
         assertFalse(harness.libretroController.isPaused, "Game should not be paused after resume")
@@ -136,64 +85,13 @@ class EscapeKeyOverlayTest {
 
         assertTrue(harness.libretroController.isRunning, "Game should be running")
 
-        // Open overlay
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
         advanceQuick(harness)
 
-        // Click Exit Game
         onNodeWithText("Exit Game").performClick()
         advance(harness)
 
-        // Game should be stopped
         assertFalse(harness.libretroController.isRunning, "Game should be stopped after exit")
         assertTrue(harness.libretroController.stopCallCount > 0, "Stop should have been called")
-    }
-
-    @Test
-    fun multipleOverlayToggleCyclesWorkCorrectly() = runComposeUiTest {
-        val harness = createHarnessWithGameRunning()
-        launchAndStartGame(harness)
-
-        // Cycle 1: open and close
-        harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advanceQuick(harness)
-        onNodeWithText("Continue").assertIsDisplayed()
-
-        harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advanceQuick(harness)
-        onNodeWithText("Exit Game").assertDoesNotExist()
-
-        // Cycle 2: open and close
-        harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advanceQuick(harness)
-        onNodeWithText("Continue").assertIsDisplayed()
-
-        harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advanceQuick(harness)
-        onNodeWithText("Exit Game").assertDoesNotExist()
-
-        // Game should still be running throughout
-        assertTrue(harness.libretroController.isRunning, "Game should remain running through toggle cycles")
-    }
-
-    @Test
-    fun overlayStateReflectsInViewModel() = runComposeUiTest {
-        val harness = createHarnessWithGameRunning()
-        launchAndStartGame(harness)
-
-        val state1 = harness.emulationViewModel.state.value
-        assertFalse(state1.showOverlay, "Overlay should initially be hidden")
-
-        harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advanceQuick(harness)
-
-        val state2 = harness.emulationViewModel.state.value
-        assertTrue(state2.showOverlay, "Overlay should be shown after toggle")
-
-        harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
-        advanceQuick(harness)
-
-        val state3 = harness.emulationViewModel.state.value
-        assertFalse(state3.showOverlay, "Overlay should be hidden after second toggle")
     }
 }

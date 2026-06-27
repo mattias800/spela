@@ -23,16 +23,26 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalCoroutinesApi::class, ExperimentalTestApi::class)
 class OnboardingWizardTest {
 
-    @Test
-    fun fullWizardFlowConnectsSignsInNamesDeviceAndCompletes() = runComposeUiTest {
+    private fun createWizardHarness(serverKnown: Boolean = false): SpelaTestHarness {
         val harness = SpelaTestHarness(StandardTestDispatcher())
-        harness.serverRepo.validateServerResult = true
+        if (serverKnown) {
+            harness.serverRepo.preAddServer("Local", "http://localhost:8080", active = true)
+        }
+        harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.OnboardingWizard))
+        return harness
+    }
 
+    private fun ComposeUiTest.showWizard(harness: SpelaTestHarness) {
         setContent { harness.App() }
         advance(harness)
+    }
 
-        harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.OnboardingWizard))
-        advance(harness)
+    @Test
+    fun fullWizardFlowConnectsSignsInNamesDeviceAndCompletes() = runComposeUiTest {
+        val harness = createWizardHarness()
+        harness.serverRepo.validateServerResult = true
+
+        showWizard(harness)
 
         // Step 1: Welcome
         onNodeWithText("Welcome to Spela").assertIsDisplayed()
@@ -83,16 +93,12 @@ class OnboardingWizardTest {
     }
 
     @Test
-    fun wizardSkipsConnectStepWhenServerAlreadyKnown() = runComposeUiTest {
-        val harness = SpelaTestHarness(StandardTestDispatcher())
-        harness.serverRepo.preAddServer("Local", "http://localhost:8080", active = true)
+    fun wizardSkipsConnectBacksAndRegistersWithEmail() = runComposeUiTest {
+        val harness = createWizardHarness(serverKnown = true)
 
-        setContent { harness.App() }
-        advance(harness)
+        showWizard(harness)
 
-        harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.OnboardingWizard))
-        advance(harness)
-
+        onNodeWithText("Back").assertDoesNotExist()
         onNodeWithText("Welcome to Spela").assertIsDisplayed()
         onNodeWithTag(OnboardingTestTags.WELCOME_START).performClick()
         advanceQuick(harness)
@@ -100,18 +106,12 @@ class OnboardingWizardTest {
         // Goes straight to Sign in — the Connect step is skipped.
         onNodeWithText("Username").assertIsDisplayed()
         onNodeWithText("Connect your server").assertDoesNotExist()
-    }
 
-    @Test
-    fun wizardRegistersWithEmailWhenToggledToRegisterMode() = runComposeUiTest {
-        val harness = SpelaTestHarness(StandardTestDispatcher())
-        harness.serverRepo.preAddServer("Local", "http://localhost:8080", active = true)
+        // Back returns to Welcome.
+        onNodeWithText("Back").performClick()
+        advanceQuick(harness)
+        onNodeWithText("Welcome to Spela").assertIsDisplayed()
 
-        setContent { harness.App() }
-        advance(harness)
-
-        harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.OnboardingWizard))
-        advance(harness)
         onNodeWithTag(OnboardingTestTags.WELCOME_START).performClick()
         advanceQuick(harness)
 
@@ -134,15 +134,10 @@ class OnboardingWizardTest {
     }
 
     @Test
-    fun wizardCanSkipDeviceNaming() = runComposeUiTest {
-        val harness = SpelaTestHarness(StandardTestDispatcher())
-        harness.serverRepo.preAddServer("Local", "http://localhost:8080", active = true)
+    fun wizardCanSkipDeviceNamingAndPersistButtonConvention() = runComposeUiTest {
+        val harness = createWizardHarness(serverKnown = true)
 
-        setContent { harness.App() }
-        advance(harness)
-
-        harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.OnboardingWizard))
-        advance(harness)
+        showWizard(harness)
 
         onNodeWithTag(OnboardingTestTags.WELCOME_START).performClick()
         advanceQuick(harness)
@@ -161,22 +156,23 @@ class OnboardingWizardTest {
         onNodeWithText("Verify your controller").assertIsDisplayed()
         onNodeWithTag(OnboardingTestTags.VERIFY_CONTINUE).performClick()
         advanceQuick(harness)
-        onNodeWithTag(OnboardingTestTags.CONVENTION_CONTINUE).performClick()
+
+        // Choose Nintendo convention and finish; it must persist.
+        onNodeWithTag(OnboardingTestTags.CONVENTION_NINTENDO).performClick()
         advanceQuick(harness)
+        onNodeWithTag(OnboardingTestTags.CONVENTION_CONTINUE).performClick()
+        advance(harness)
         onNodeWithText("You're all set!").assertIsDisplayed()
+        assertEquals("nintendo", harness.preferencesRepo.getConfirmButtonConvention())
     }
 
     @Test
     fun wizardControllerStepListsConnectedControllerAndOpensDetail() = runComposeUiTest {
-        val harness = SpelaTestHarness(StandardTestDispatcher())
-        harness.serverRepo.preAddServer("Local", "http://localhost:8080", active = true)
+        val harness = createWizardHarness(serverKnown = true)
         harness.gamepadPortManager.connectDevice(1, "Xbox Controller")
 
-        setContent { harness.App() }
-        advance(harness)
+        showWizard(harness)
 
-        harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.OnboardingWizard))
-        advance(harness)
         onNodeWithTag(OnboardingTestTags.WELCOME_START).performClick()
         advanceQuick(harness)
 
@@ -213,61 +209,5 @@ class OnboardingWizardTest {
         onNodeWithTag(OnboardingTestTags.CONVENTION_CONTINUE).performClick()
         advanceQuick(harness)
         onNodeWithText("You're all set!").assertIsDisplayed()
-    }
-
-    @Test
-    fun wizardBackReturnsToThePreviousPage() = runComposeUiTest {
-        val harness = SpelaTestHarness(StandardTestDispatcher())
-        harness.serverRepo.preAddServer("Local", "http://localhost:8080", active = true)
-
-        setContent { harness.App() }
-        advance(harness)
-        harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.OnboardingWizard))
-        advance(harness)
-
-        // Welcome has no Back; Get started → Sign in (Connect skipped).
-        onNodeWithText("Back").assertDoesNotExist()
-        onNodeWithTag(OnboardingTestTags.WELCOME_START).performClick()
-        advanceQuick(harness)
-        onNodeWithText("Username").assertIsDisplayed()
-
-        // Back returns to Welcome.
-        onNodeWithText("Back").performClick()
-        advanceQuick(harness)
-        onNodeWithText("Welcome to Spela").assertIsDisplayed()
-    }
-
-    @Test
-    fun wizardButtonConventionSelectionPersists() = runComposeUiTest {
-        val harness = SpelaTestHarness(StandardTestDispatcher())
-        harness.serverRepo.preAddServer("Local", "http://localhost:8080", active = true)
-
-        setContent { harness.App() }
-        advance(harness)
-        harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.OnboardingWizard))
-        advance(harness)
-        onNodeWithTag(OnboardingTestTags.WELCOME_START).performClick()
-        advanceQuick(harness)
-
-        onNodeWithText("Username").performClick()
-        onNodeWithText("Username").performTextInput("player")
-        onNodeWithText("Password").performClick()
-        onNodeWithText("Password").performTextInput("player123")
-        onNodeWithTag(OnboardingTestTags.SIGNIN_SUBMIT).performClick()
-        advance(harness)
-
-        onNodeWithTag(OnboardingTestTags.NAME_DEVICE_CONTINUE).performClick()
-        advanceQuick(harness)
-        // Verify (no controller) → convention
-        onNodeWithTag(OnboardingTestTags.VERIFY_CONTINUE).performClick()
-        advanceQuick(harness)
-
-        // Choose Nintendo convention and finish; it must persist.
-        onNodeWithTag(OnboardingTestTags.CONVENTION_NINTENDO).performClick()
-        advanceQuick(harness)
-        onNodeWithTag(OnboardingTestTags.CONVENTION_CONTINUE).performClick()
-        advance(harness)
-        onNodeWithText("You're all set!").assertIsDisplayed()
-        assertEquals("nintendo", harness.preferencesRepo.getConfirmButtonConvention())
     }
 }
