@@ -3,7 +3,10 @@ package com.spela.player.presentation.ui.components.gamepad
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
 import com.spela.player.domain.model.ControllerStyle
 import com.spela.player.presentation.ui.components.SpDialog
@@ -29,12 +32,14 @@ fun ControllerStylePickerDialog(
     onSelect: (ControllerStyle?) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    val initialFocusRequester = remember { FocusRequester() }
     SpDialog(
         title = "Controller type",
         onDismiss = onDismiss,
         confirmText = "Done",
         onConfirm = onDismiss,
         modifier = Modifier.testTag("controller_style_picker"),
+        initialFocusRequester = initialFocusRequester,
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             SpRadioOption(
@@ -42,6 +47,7 @@ fun ControllerStylePickerDialog(
                 description = "Use the detected type (${detectedStyle.displayName})",
                 isSelected = currentOverride == null,
                 onClick = { onSelect(null) },
+                modifier = if (currentOverride == null) Modifier.focusRequester(initialFocusRequester) else Modifier,
             )
             SettingsDivider()
             ControllerStyle.entries.forEachIndexed { index, style ->
@@ -50,6 +56,7 @@ fun ControllerStylePickerDialog(
                     description = "Treat this controller as ${style.displayName}",
                     isSelected = currentOverride == style,
                     onClick = { onSelect(style) },
+                    modifier = if (currentOverride == style) Modifier.focusRequester(initialFocusRequester) else Modifier,
                 )
                 if (index < ControllerStyle.entries.size - 1) {
                     SettingsDivider()

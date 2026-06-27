@@ -320,6 +320,7 @@ class SettingsConsoleNavigationTest {
         )
         onNodeWithTag("controller_detail_change_player").performScrollTo().performClick()
         advanceQuick(harness)
+        onNodeWithTag("slot_chip_1").assertIsFocused()
         onNodeWithTag("slot_chip_0").performClick()
         advanceQuick(harness)
 
