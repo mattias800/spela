@@ -13,17 +13,6 @@ import kotlin.test.Test
 class AppLaunchAndConnectionTest {
 
     @Test
-    fun appLaunchShowsServerConnectionScreen() = runComposeUiTest {
-        val harness = SpelaTestHarness(StandardTestDispatcher())
-
-        setContent { harness.App() }
-        advance(harness)
-
-        onNodeWithText("Nu spelar vi!", substring = true).assertIsDisplayed()
-        onNodeWithText("Add Server").assertIsDisplayed()
-    }
-
-    @Test
     fun addServerFormCanBeOpenedWhenServersExist() = runComposeUiTest {
         val harness = SpelaTestHarness(StandardTestDispatcher())
 
@@ -92,12 +81,15 @@ class AppLaunchAndConnectionTest {
     }
 
     @Test
-    fun addServerValidationCanFailThenRetryAndSave() = runComposeUiTest {
+    fun appLaunchShowsConnectionScreenAndCanRetryServerValidation() = runComposeUiTest {
         val harness = SpelaTestHarness(StandardTestDispatcher())
         harness.serverRepo.validateServerResult = false
 
         setContent { harness.App() }
         advance(harness)
+
+        onNodeWithText("Nu spelar vi!", substring = true).assertIsDisplayed()
+        onNodeWithText("Add Server").assertIsDisplayed()
 
         // Form auto-opens — fill it in
         onNodeWithText("Server Name").performTextInput("Bad Server")

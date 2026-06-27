@@ -132,6 +132,8 @@ val desktopTestShardWeightOverrides = mapOf(
     "com.spela.player.desktop.e2e.ExploreSearchTest" to 13,
     "com.spela.player.desktop.e2e.FranchiseDetailTest" to 9,
     "com.spela.player.desktop.e2e.SimilarGamesTest" to 6,
+    "com.spela.player.desktop.e2e.SearchSeeMoreTest" to 6,
+    "com.spela.player.desktop.e2e.RecentSearchTest" to 8,
 )
 
 fun discoverDesktopTestClasses(): List<DesktopTestClass> {
@@ -287,7 +289,6 @@ tasks.withType<Test> {
     val defaultForks = (Runtime.getRuntime().availableProcessors() / 2).coerceAtLeast(2)
     maxParallelForks = (project.findProperty("desktopTestForks") as String?)?.toIntOrNull() ?: defaultForks
     jvmArgs("-Xmx1024m")
-    systemProperty("kotlinx.coroutines.debug", "on") // TEMP DIAGNOSTIC: name leaking coroutines in UncompletedCoroutinesError
     // Fail individual tests that hang instead of blocking the entire suite.
     // Per-test timeout: 30 seconds. Per-class (suite) timeout: 120 seconds.
     systemProperty("junit.jupiter.execution.timeout.default", "30s")
@@ -308,11 +309,6 @@ tasks.withType<Test> {
     )
     testLogging {
         events("failed")
-        // TEMP DIAGNOSTIC: full exception + active-coroutines list for the
-        // UncompletedCoroutinesError investigation (#1448 flakiness).
-        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
-        showStackTraces = true
-        showCauses = true
     }
     // Retry transient failures (default 0 = off locally). On CI the suite runs
     // at 4 forks under a software renderer, so timing-sensitive Compose UI tests

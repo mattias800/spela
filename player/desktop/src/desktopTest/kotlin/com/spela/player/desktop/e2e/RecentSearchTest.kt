@@ -62,9 +62,9 @@ class RecentSearchTest {
     // --- Recent searches section visibility ---
 
     @Test
-    fun `recent searches section shown when query is empty and recents exist`() = runComposeUiTest {
+    fun `recent searches section shows stored items when query is empty`() = runComposeUiTest {
         val harness = createHarness()
-        harness.setRecentSearches(listOf("mario", "zelda", "metroid"))
+        harness.setRecentSearches(listOf("mario", "zelda", "metroid", "kirby", "pokemon"))
 
         setContent { harness.App() }
         harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.GlobalSearch))
@@ -74,6 +74,8 @@ class RecentSearchTest {
         onNodeWithTag("recent_search_item_mario").assertIsDisplayed()
         onNodeWithTag("recent_search_item_zelda").assertIsDisplayed()
         onNodeWithTag("recent_search_item_metroid").assertIsDisplayed()
+        onNodeWithTag("recent_search_item_kirby").assertIsDisplayed()
+        onNodeWithTag("recent_search_item_pokemon").assertIsDisplayed()
     }
 
     @Test
@@ -91,9 +93,9 @@ class RecentSearchTest {
     }
 
     @Test
-    fun `recent searches section hidden when query has text`() = runComposeUiTest {
+    fun `recent searches hide during query and reappear after clearing search`() = runComposeUiTest {
         val harness = createHarness()
-        harness.setRecentSearches(listOf("mario", "zelda"))
+        harness.setRecentSearches(listOf("mario"))
         harness.searchRepo.searchResult = fullSearchResult()
 
         setContent { harness.App() }
@@ -103,15 +105,21 @@ class RecentSearchTest {
         // Initially, recent searches should be visible
         onNodeWithTag("recent_searches_section").assertIsDisplayed()
 
-        // Type a query
+        // Type a query to trigger search
         searchInputNode().performTextInput("mario")
         advanceFully(harness)
 
-        // Recent searches section should be hidden
+        // Recent searches gone, results shown
         onNodeWithTag("recent_searches_section").assertDoesNotExist()
-    }
+        onNodeWithTag("search_results_list").assertIsDisplayed()
 
-    // --- Interacting with recent searches ---
+        // Clear the search via the clear button
+        onNodeWithTag("search_clear_button").performClick()
+        advanceQuick(harness)
+
+        // Recent searches should reappear (now with "mario" still in the list)
+        onNodeWithTag("recent_searches_section").assertIsDisplayed()
+    }
 
     @Test
     fun `tapping a recent search fills query and triggers search`() = runComposeUiTest {
@@ -140,7 +148,7 @@ class RecentSearchTest {
     }
 
     @Test
-    fun `remove button removes individual recent search`() = runComposeUiTest {
+    fun `remove button and clear all update recent searches`() = runComposeUiTest {
         val harness = createHarness()
         harness.setRecentSearches(listOf("mario", "zelda", "metroid"))
 
@@ -164,19 +172,6 @@ class RecentSearchTest {
 
         // Verify the underlying store was updated
         assertEquals(listOf("mario", "metroid"), harness.searchRepo.storedRecentSearches)
-    }
-
-    @Test
-    fun `clear all clears all recent searches`() = runComposeUiTest {
-        val harness = createHarness()
-        harness.setRecentSearches(listOf("mario", "zelda", "metroid"))
-
-        setContent { harness.App() }
-        harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.GlobalSearch))
-        advance(harness)
-
-        // Recent searches should be visible
-        onNodeWithTag("recent_searches_section").assertIsDisplayed()
 
         // Tap "Clear all"
         onNodeWithTag("recent_searches_clear_all").performClick()
@@ -190,50 +185,5 @@ class RecentSearchTest {
 
         // Verify underlying store is empty
         assertEquals(emptyList<String>(), harness.searchRepo.storedRecentSearches)
-    }
-
-    @Test
-    fun `recent searches show up to 5 items`() = runComposeUiTest {
-        val harness = createHarness()
-        harness.setRecentSearches(listOf("mario", "zelda", "metroid", "kirby", "pokemon"))
-
-        setContent { harness.App() }
-        harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.GlobalSearch))
-        advance(harness)
-
-        onNodeWithTag("recent_search_item_mario").assertExists()
-        onNodeWithTag("recent_search_item_zelda").assertExists()
-        onNodeWithTag("recent_search_item_metroid").assertExists()
-        onNodeWithTag("recent_search_item_kirby").assertExists()
-        onNodeWithTag("recent_search_item_pokemon").assertExists()
-    }
-
-    @Test
-    fun `recent searches reappear after clearing search`() = runComposeUiTest {
-        val harness = createHarness()
-        harness.setRecentSearches(listOf("mario"))
-        harness.searchRepo.searchResult = fullSearchResult()
-
-        setContent { harness.App() }
-        harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.GlobalSearch))
-        advance(harness)
-
-        // Recent searches visible initially
-        onNodeWithTag("recent_searches_section").assertIsDisplayed()
-
-        // Type a query to trigger search
-        searchInputNode().performTextInput("mario")
-        advanceFully(harness)
-
-        // Recent searches gone, results shown
-        onNodeWithTag("recent_searches_section").assertDoesNotExist()
-        onNodeWithTag("search_results_list").assertIsDisplayed()
-
-        // Clear the search via the clear button
-        onNodeWithTag("search_clear_button").performClick()
-        advanceQuick(harness)
-
-        // Recent searches should reappear (now with "mario" still in the list)
-        onNodeWithTag("recent_searches_section").assertIsDisplayed()
     }
 }

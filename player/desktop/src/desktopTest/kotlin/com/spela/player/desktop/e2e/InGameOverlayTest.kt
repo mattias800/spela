@@ -42,8 +42,18 @@ class InGameOverlayTest {
     }
 
     @Test
-    fun overlayActionsSaveFastForwardAndResume() = runComposeUiTest {
+    fun overlayActionsSaveLoadFastForwardResumeAndExit() = runComposeUiTest {
         val harness = createHarnessWithGameReady()
+
+        // The Load button downloads the session's auto-save. Seed a
+        // session + auto-save so there's something to unserialize;
+        // mirrors the state "a prior play left an auto-save behind".
+        val sessionId = "session-1"
+        harness.sessionRepo.sessions.add(
+            com.spela.player.domain.model.GameSession(id = sessionId, gameId = "1", name = "Default"),
+        )
+        harness.sessionRepo.preSeedAutoSave(sessionId)
+
         startGame(harness)
 
         onNodeWithContentDescription("Save").assertIsDisplayed()
@@ -56,6 +66,14 @@ class InGameOverlayTest {
         assertTrue(
             harness.libretroController.saveCallCount > saveCountBefore,
             "Save should have triggered serialization",
+        )
+
+        val loadCountBefore = harness.libretroController.loadCallCount
+        onNodeWithContentDescription("Load").performClick()
+        advance(harness)
+        assertTrue(
+            harness.libretroController.loadCallCount > loadCountBefore,
+            "Load should have triggered unserialization",
         )
 
         assertFalse(harness.libretroController.isFastForward, "Fast forward should be off initially")
@@ -73,6 +91,14 @@ class InGameOverlayTest {
         onNodeWithText("Exit Game").assertDoesNotExist()
         assertTrue(harness.libretroController.isRunning)
         assertFalse(harness.libretroController.isPaused)
+
+        harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
+        advanceQuick(harness)
+        onNodeWithText("Exit Game").performClick()
+        advance(harness)
+        assertFalse(harness.libretroController.isRunning, "Emulation should be stopped after exit")
+        assertTrue(harness.libretroController.stopCallCount > 0, "Stop should have been called")
+        onNodeWithText("Exit Game").assertDoesNotExist()
     }
 
     @Test
@@ -106,52 +132,6 @@ class InGameOverlayTest {
     }
 
     @Test
-    fun loadTriggersUnserialization() = runComposeUiTest {
-        val harness = createHarnessWithGameReady()
-
-        // The Load button downloads the session's auto-save. Seed a
-        // session + auto-save so there's something to unserialize;
-        // mirrors the state "a prior play left an auto-save behind".
-        val sessionId = "session-1"
-        harness.sessionRepo.sessions.add(
-            com.spela.player.domain.model.GameSession(id = sessionId, gameId = "1", name = "Default"),
-        )
-        harness.sessionRepo.preSeedAutoSave(sessionId)
-
-        startGame(harness)
-
-        val loadCountBefore = harness.libretroController.loadCallCount
-
-        // Tap Load
-        onNodeWithContentDescription("Load").performClick()
-        advance(harness)
-
-        assertTrue(
-            harness.libretroController.loadCallCount > loadCountBefore,
-            "Load should have triggered unserialization"
-        )
-    }
-
-    @Test
-    fun exitGameStopsEmulationAndHidesOverlay() = runComposeUiTest {
-        val harness = createHarnessWithGameReady()
-        startGame(harness)
-
-        assertTrue(harness.libretroController.isRunning, "Game should be running before exit")
-
-        // Tap Exit Game
-        onNodeWithText("Exit Game").performClick()
-        advance(harness)
-
-        // Emulation should stop
-        assertFalse(harness.libretroController.isRunning, "Emulation should be stopped after exit")
-        assertTrue(harness.libretroController.stopCallCount > 0, "Stop should have been called")
-
-        // Overlay should be hidden
-        onNodeWithText("Exit Game").assertDoesNotExist()
-    }
-
-    @Test
     fun overlayHidesSaveLoadForNonSaveStateConsoles() = runComposeUiTest {
         val harness = createHarnessWithGameReady()
 
@@ -160,11 +140,9 @@ class InGameOverlayTest {
 
         startGame(harness)
 
-        // Save and Load buttons should NOT be present
         onNodeWithContentDescription("Save").assertDoesNotExist()
         onNodeWithContentDescription("Load").assertDoesNotExist()
-
-        // Other action buttons should still be present
         onNodeWithContentDescription("Screenshot").assertIsDisplayed()
     }
+
 }
