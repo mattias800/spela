@@ -26,14 +26,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.spela.player.presentation.ui.components.SpBrandHero
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpGradientBackground
-import com.spela.player.presentation.ui.components.SpLogo
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -159,17 +158,7 @@ private fun ColumnScope.WizardForm(
 
 @Composable
 private fun WizardBrand(logoSize: Dp) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        SpLogo(size = logoSize)
-        Spacer(Modifier.height(SpSpacing.Small))
-        Text(
-            text = "\"Nu spelar vi!\"",
-            style = SpTypography.BodyMedium,
-            color = SpColor.OnBackgroundSecondary,
-            fontStyle = FontStyle.Italic,
-            textAlign = TextAlign.Center,
-        )
-    }
+    SpBrandHero(logoSize = logoSize)
 }
 
 /** Pill-style step indicator: the active step is an elongated accent pill, the
