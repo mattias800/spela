@@ -1,10 +1,12 @@
 package com.spela.player.android
 
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.data.remote.interceptor.TokenManager
 import com.spela.player.domain.repository.SessionRepository
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
+import org.junit.runner.RunWith
 import org.koin.mp.KoinPlatformTools
 import java.net.HttpURLConnection
 import java.net.URL
@@ -35,26 +37,8 @@ import java.net.URL
  * and seed the production Koin graph (TokenManager + SpelaApiClient
  * baseUrl) directly with the bootstrap login result.
  */
-class CloneSessionSmokeTest : BaseE2ETest() {
-
-    /**
-     * Override BaseE2ETest's UI-driven login. We still reset server state
-     * (the test depends on a clean session table) but skip ensureLoggedIn
-     * and assertOnHome — auth state is seeded into Koin in the @Test
-     * method instead. The Activity is launched by the @Rule but its UI
-     * state doesn't matter for this test.
-     */
-    override fun baseSetUp() {
-        resetServerState()
-    }
-
-    /**
-     * Override BaseE2ETest's @After Home-restore: there's no logged-in
-     * Home to restore to, since we never drove the UI login.
-     */
-    override fun baseTearDown() {
-        // intentionally empty
-    }
+@RunWith(AndroidJUnit4::class)
+class CloneSessionSmokeTest : AndroidApiSmokeBase() {
 
     @Test
     fun cloneSessionRoundTripsThroughRealApi() {
