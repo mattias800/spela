@@ -83,19 +83,33 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build cached E2E server image
+        uses: docker/build-push-action@v7
+        with:
+          context: ./server
+          file: ./server/Dockerfile
+          load: true
+          tags: spela-e2e-server:ci
+          cache-from: type=gha,scope=android-e2e-server
+          cache-to: type=gha,scope=android-e2e-server,mode=max,ignore-error=true
+
       # Start the e2e backend and build the Android APKs BEFORE the
-      # emulator step. They do not depend on each other, so run them in
-      # parallel: by the time the AVD is booted, connectedDebugAndroidTest
-      # should mostly pay for install + test execution instead of the
-      # initial app/test APK build. Android E2E only talks to the API, so
-      # start the `server` compose service without building the web image.
+      # emulator step. The server image is already built by the cached
+      # Buildx step above; start it while Gradle builds the APKs so by
+      # the time the AVD is booted, connectedDebugAndroidTest should
+      # mostly pay for install + test execution instead of setup work.
+      # Android E2E only talks to the API, so start the `server` compose
+      # service without building the web image.
       # The CI AVD is x86_64, so build only that native ABI here; normal
       # debug/release builds keep the full ABI set from android/build.gradle.kts.
       - name: Start backend and build Android test APKs
         run: |
           set -euo pipefail
 
-          docker compose -f docker-compose.e2e.yml up -d --build --wait server &
+          docker compose -f docker-compose.e2e.yml -f docker-compose.e2e.ci.yml up -d --no-build --wait server &
           backend_pid=$!
 
           (

@@ -1,0 +1,3 @@
+services:
+  server:
+    image: spela-e2e-server:ci
