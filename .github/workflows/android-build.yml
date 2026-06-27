@@ -30,7 +30,7 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: android-gradle-${{ hashFiles('player/**/*.gradle*', 'player/gradle/libs.versions.toml') }}
+          key: android-gradle-${{ hashFiles('player/**/*.gradle*', 'player/gradle.properties', 'player/gradle/libs.versions.toml') }}
           restore-keys: |
             android-gradle-
 

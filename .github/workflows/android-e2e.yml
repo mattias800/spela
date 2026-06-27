@@ -69,7 +69,7 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: android-e2e-gradle-${{ hashFiles('player/**/*.gradle*', 'player/gradle/libs.versions.toml') }}
+          key: android-e2e-gradle-${{ hashFiles('player/**/*.gradle*', 'player/gradle.properties', 'player/gradle/libs.versions.toml') }}
           restore-keys: |
             android-e2e-gradle-
 
