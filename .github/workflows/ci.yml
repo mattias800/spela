@@ -159,6 +159,93 @@ jobs:
       - name: Run detekt (design-system rules + style:UnusedImport, type resolution)
         run: ./gradlew :shared:detektMainDesktop :android:detektDebugAndroid :desktop:detektMainDesktop
 
+  player-api-contract:
+    name: Player API contract smokes
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: player
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Cache Gradle
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: player-api-contract-gradle-${{ hashFiles('player/**/*.gradle*', 'player/gradle.properties', 'player/gradle/libs.versions.toml') }}
+          restore-keys: |
+            player-api-contract-gradle-
+            player-gradle-
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: ''
+      - name: Pre-install pinned Android NDK + cmake
+        run: |
+          for i in 1 2 3; do
+            yes | sdkmanager --install "ndk;27.0.12077973" "cmake;3.22.1" && exit 0
+            echo "::warning::sdkmanager install attempt $i failed; retrying in 15s" >&2
+            sleep 15
+          done
+          echo "::error::NDK/cmake install failed after 3 attempts" >&2
+          exit 1
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+      - name: Build cached E2E server image
+        uses: docker/build-push-action@v7
+        with:
+          context: ./server
+          file: ./server/Dockerfile
+          load: true
+          tags: spela-e2e-server:ci
+          cache-from: type=gha,scope=player-api-contract-server
+          cache-to: type=gha,scope=player-api-contract-server,mode=max,ignore-error=true
+      - name: Start E2E API server
+        working-directory: ${{ github.workspace }}
+        run: |
+          docker compose -f docker-compose.e2e.yml -f docker-compose.e2e.ci.yml up -d --no-build --wait server
+
+          login=$(curl -fsS -X POST http://localhost:8080/api/auth/login \
+            -H 'Content-Type: application/json' \
+            -d '{"username":"admin","password":"admin123"}')
+          token=$(printf '%s' "$login" | sed -n 's/.*"accessToken":"\([^"]*\)".*/\1/p')
+          if [ -z "$token" ]; then
+            echo "::error::admin login failed while waiting for scan"
+            exit 1
+          fi
+
+          deadline=$(( $(date +%s) + 90 ))
+          while [ "$(date +%s)" -lt "$deadline" ]; do
+            status=$(curl -fsS -H "Authorization: Bearer $token" \
+              http://localhost:8080/api/admin/games/scan/status)
+            if printf '%s' "$status" | grep -q '"active":false'; then
+              echo "Initial scan done."
+              exit 0
+            fi
+            sleep 0.5
+          done
+
+          echo "::error::initial scan still active after 90s"
+          exit 1
+      - name: Run live API contract smokes
+        run: |
+          ./gradlew :shared:desktopTest \
+            --tests com.spela.player.data.remote.LiveApiContractSmokeTest \
+            -Dspela.liveApiContract=true \
+            -Dspela.liveApiBaseUrl=http://127.0.0.1:8080
+      - name: Backend logs on failure
+        if: failure()
+        working-directory: ${{ github.workspace }}
+        run: docker compose -f docker-compose.e2e.yml logs --tail=1000 server || true
+      - name: Stop E2E API server
+        if: always()
+        working-directory: ${{ github.workspace }}
+        run: docker compose -f docker-compose.e2e.yml down -v --remove-orphans || true
+
   docker:
     name: Build & push Docker image
     needs: [go-test, web-test]

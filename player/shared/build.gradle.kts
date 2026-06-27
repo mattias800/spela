@@ -113,6 +113,10 @@ kotlin {
 tasks.withType<Test> {
     maxParallelForks = (Runtime.getRuntime().availableProcessors() / 2).coerceAtLeast(2)
     jvmArgs("-Xmx1024m")
+    systemProperty("spela.liveApiContract", System.getProperty("spela.liveApiContract") ?: "false")
+    System.getProperty("spela.liveApiBaseUrl")?.let {
+        systemProperty("spela.liveApiBaseUrl", it)
+    }
     // Fail individual tests that hang instead of blocking the entire suite.
     systemProperty("junit.jupiter.execution.timeout.default", "30s")
     systemProperty("junit.jupiter.execution.timeout.testable.method.default", "30s")
