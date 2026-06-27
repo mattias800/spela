@@ -19,6 +19,13 @@ on:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
+# Cancel superseded runs for the same PR or branch. A newer PR commit or master
+# push contains the state we need to validate, so keeping stale CI fan-out alive
+# only burns runners and can slow the current gate.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   go-test-api:
     name: Go tests API (${{ matrix.shard }}/8)

@@ -97,7 +97,18 @@ fun findExecutable(name: String): String? {
 data class DesktopTestClass(
     val fqcn: String,
     val staticTestCount: Int,
+    val shardWeight: Int,
     val relativePath: String,
+)
+
+val desktopTestShardWeightOverrides = mapOf(
+    // CI runtime hints from #1460. These full-app focus/navigation flows are
+    // slower than their static @Test counts imply; keep them split across
+    // shards so one runner does not become the PR long pole.
+    "com.spela.player.desktop.e2e.SettingsConsoleNavigationTest" to 50,
+    "com.spela.player.desktop.e2e.OnboardingWizardTest" to 35,
+    "com.spela.player.desktop.e2e.ScrollRestorationTest" to 30,
+    "com.spela.player.desktop.e2e.LazyCarouselFocusRestoreTest" to 20,
 )
 
 fun discoverDesktopTestClasses(): List<DesktopTestClass> {
@@ -129,9 +140,14 @@ fun discoverDesktopTestClasses(): List<DesktopTestClass> {
                     ?: error("Missing package declaration in $relativePath")
 
                 classNames.map { className ->
+                    val fqcn = "$packageName.$className"
+                    val normalizedTestCount = staticTestCount.coerceAtLeast(1)
                     DesktopTestClass(
-                        fqcn = "$packageName.$className",
-                        staticTestCount = staticTestCount.coerceAtLeast(1),
+                        fqcn = fqcn,
+                        staticTestCount = normalizedTestCount,
+                        shardWeight = desktopTestShardWeightOverrides[fqcn]
+                            ?.coerceAtLeast(normalizedTestCount)
+                            ?: normalizedTestCount,
                         relativePath = relativePath,
                     )
                 }.stream()
@@ -154,11 +170,11 @@ fun selectDesktopTestShard(
     val weights = IntArray(shardCount)
 
     classes
-        .sortedWith(compareByDescending<DesktopTestClass> { it.staticTestCount }.thenBy { it.fqcn })
+        .sortedWith(compareByDescending<DesktopTestClass> { it.shardWeight }.thenBy { it.fqcn })
         .forEach { testClass ->
             val target = weights.indices.minWith(compareBy<Int> { weights[it] }.thenBy { it })
             shards[target].add(testClass)
-            weights[target] += testClass.staticTestCount
+            weights[target] += testClass.shardWeight
         }
 
     return shards[shardIndex - 1].sortedBy { it.fqcn }
@@ -312,7 +328,8 @@ tasks.named<Test>("desktopTest") {
         logger.lifecycle(
             "Desktop test shard $shardIndex/$shardCount selected " +
                 "${selectedClasses.size}/${allClasses.size} classes and " +
-                "${selectedClasses.sumOf { it.staticTestCount }}/${allClasses.sumOf { it.staticTestCount }} static @Test annotations",
+                "${selectedClasses.sumOf { it.staticTestCount }}/${allClasses.sumOf { it.staticTestCount }} static @Test annotations " +
+                "(${selectedClasses.sumOf { it.shardWeight }}/${allClasses.sumOf { it.shardWeight }} shard weight)",
         )
 
         filter {
