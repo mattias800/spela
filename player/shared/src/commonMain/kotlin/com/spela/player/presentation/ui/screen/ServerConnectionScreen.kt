@@ -42,7 +42,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
@@ -58,9 +57,9 @@ import com.spela.player.presentation.ui.theme.SpTypography
 import androidx.compose.ui.platform.testTag
 import com.spela.player.presentation.ui.TestTags
 import com.spela.player.presentation.ui.components.SpActionCard
+import com.spela.player.presentation.ui.components.SpBrandHero
 import com.spela.player.presentation.ui.theme.spelaBrandGradient
 import com.spela.player.presentation.ui.components.SpGradientBackground
-import com.spela.player.presentation.ui.components.SpLogo
 import com.spela.player.presentation.viewmodel.ServerConnectionIntent
 import com.spela.player.presentation.viewmodel.ServerConnectionViewModel
 
@@ -148,15 +147,7 @@ private fun MobileLayout(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Spacer(Modifier.height(SpSpacing.XLarge))
-            AppIcon(size = 192.dp, radius = 16.dp)
-            Spacer(Modifier.height(SpSpacing.Small))
-            Text(
-                text = "\"Nu spelar vi!\"",
-                style = SpTypography.BodyMedium,
-                color = SpColor.OnBackgroundSecondary,
-                fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
-                textAlign = TextAlign.Center,
-            )
+            SpBrandHero(logoSize = 192.dp)
             Spacer(Modifier.height(SpSpacing.XLarge))
 
             if (state.isLoading) {
@@ -197,15 +188,7 @@ private fun SplitLayout(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center,
                 ) {
-                    AppIcon(size = 240.dp, radius = 20.dp)
-                    Spacer(Modifier.height(SpSpacing.Small))
-                    Text(
-                        text = "\"Nu spelar vi!\"",
-                        style = SpTypography.BodyMedium,
-                        color = SpColor.OnBackgroundSecondary,
-                        fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
-                        textAlign = TextAlign.Center,
-                    )
+                    SpBrandHero(logoSize = 240.dp)
                     Spacer(Modifier.height(SpSpacing.XLarge))
                     SnesButtonDots()
                 }
@@ -417,11 +400,6 @@ private fun ServerListOrForm(
 // ────────────────────────────────────────────────────────
 
 @Composable
-private fun AppIcon(size: androidx.compose.ui.unit.Dp, radius: androidx.compose.ui.unit.Dp) {
-    SpLogo(size = size)
-}
-
-@Composable
 private fun SnesButtonDots() {
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         listOf(SnesRed, SnesYellow, SnesBlue, SnesGreen).forEach { color ->
@@ -434,4 +412,3 @@ private fun SnesButtonDots() {
         }
     }
 }
-

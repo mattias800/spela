@@ -25,7 +25,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -34,8 +33,8 @@ import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import androidx.compose.ui.platform.testTag
 import com.spela.player.presentation.ui.TestTags
+import com.spela.player.presentation.ui.components.SpBrandHero
 import com.spela.player.presentation.ui.components.SpGradientBackground
-import com.spela.player.presentation.ui.components.SpLogo
 import com.spela.player.presentation.ui.components.SpServerPill
 import com.spela.player.presentation.ui.components.SpTextField
 import com.spela.player.presentation.ui.theme.SpColor
@@ -118,7 +117,7 @@ private fun MobileLoginLayout(
         ) {
             Spacer(Modifier.height(100.dp))
 
-            SpLogo(size = 384.dp)
+            SpBrandHero(logoSize = 384.dp, tagline = null)
 
             Spacer(Modifier.height(SpSpacing.XLarge))
 
@@ -161,15 +160,7 @@ private fun SplitLoginLayout(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center,
                 ) {
-                    SpLogo(size = 240.dp)
-                    Spacer(Modifier.height(SpSpacing.Small))
-                    Text(
-                        text = "\"Nu spelar vi!\"",
-                        style = SpTypography.BodyMedium,
-                        color = SpColor.OnBackgroundSecondary,
-                        fontStyle = FontStyle.Italic,
-                        textAlign = TextAlign.Center,
-                    )
+                    SpBrandHero(logoSize = 240.dp)
                 }
             }
 
