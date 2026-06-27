@@ -330,6 +330,9 @@ tasks.named<Test>("desktopTest") {
     val shardCountProperty = project.findProperty("desktopTestShardCount") as String?
 
     if (shardIndexProperty != null || shardCountProperty != null) {
+        outputs.upToDateWhen { false }
+        outputs.doNotCacheIf("Sharded Desktop E2E must execute selected tests") { true }
+
         val shardIndex = shardIndexProperty?.toIntOrNull()
             ?: error("desktopTestShardIndex must be an integer when desktop test sharding is enabled")
         val shardCount = shardCountProperty?.toIntOrNull()
@@ -350,6 +353,7 @@ tasks.named<Test>("desktopTest") {
                 "${selectedClasses.sumOf { it.staticTestCount }}/${allClasses.sumOf { it.staticTestCount }} static @Test annotations " +
                 "(${selectedClasses.sumOf { it.shardWeight }}/${allClasses.sumOf { it.shardWeight }} shard weight)",
         )
+        logger.lifecycle("Desktop test shard $shardIndex/$shardCount will execute; test output cache is disabled for sharded E2E")
 
         filter {
             selectedClasses.forEach { includeTestsMatching(it.fqcn) }
