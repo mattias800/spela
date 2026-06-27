@@ -46,7 +46,7 @@ class GamepadMappingTest {
     }
 
     @Test
-    fun editorListsConsoleButtonsWithBoundPositions() = runComposeUiTest {
+    fun editorListsBindingsCapturesHeldButtonAndCancelsPrompt() = runComposeUiTest {
         val harness = createLoggedInHarness()
         setContent { harness.App() }
         openGamepadEditor(harness, "nes")
@@ -60,13 +60,6 @@ class GamepadMappingTest {
         // query the value Text unmerged.
         onNodeWithTag("mapping_bound_$NES_B", useUnmergedTree = true).assertTextEquals("Bottom button")
         onNodeWithTag("mapping_bound_$NES_A", useUnmergedTree = true).assertTextEquals("Right button")
-    }
-
-    @Test
-    fun openingAConsoleButtonStartsHoldToBindPrompt() = runComposeUiTest {
-        val harness = createLoggedInHarness()
-        setContent { harness.App() }
-        openGamepadEditor(harness, "nes")
 
         onNodeWithTag("mapping_output_$NES_A").performScrollTo().performClick()
         advanceQuick(harness) // stay under the 5s abort window
@@ -75,17 +68,6 @@ class GamepadMappingTest {
         onNodeWithText("Assign A").assertExists()
         // Capture is now active so a held button would feed the binder.
         assert(harness.gamepadPortManager.bindCaptureActive.value)
-    }
-
-    @Test
-    fun pressingAButtonInThePromptCapturesItWithoutClosing() = runComposeUiTest {
-        val harness = createLoggedInHarness()
-        setContent { harness.App() }
-        openGamepadEditor(harness, "nes")
-
-        onNodeWithTag("mapping_output_$NES_A").performScrollTo().performClick()
-        advanceQuick(harness)
-        onNodeWithTag("binding_prompt").assertExists()
 
         // Press (hold) the bottom face button. This used to just activate the
         // focused Cancel button and close the prompt (the #1377 bug the dialog's
@@ -97,17 +79,6 @@ class GamepadMappingTest {
 
         onNodeWithTag("binding_prompt").assertExists() // did NOT close
         onNodeWithTag("binding_held", useUnmergedTree = true).assertTextEquals("Bottom button")
-    }
-
-    @Test
-    fun cancellingBindingReturnsToTheButtonList() = runComposeUiTest {
-        val harness = createLoggedInHarness()
-        setContent { harness.App() }
-        openGamepadEditor(harness, "nes")
-
-        onNodeWithTag("mapping_output_$NES_A").performScrollTo().performClick()
-        advanceQuick(harness)
-        onNodeWithTag("binding_prompt").assertExists()
 
         onNodeWithTag("binding_cancel").performClick()
         advanceQuick(harness)

@@ -32,7 +32,6 @@ class SessionDetailUiTest {
     }
 
     private fun ComposeUiTest.navigateToSessionDetail(harness: SpelaTestHarness, sessionId: String) {
-        advance(harness) // settle initial composition
         harness.navigationViewModel.onIntent(
             NavigationIntent.NavigateTo(SpScreen.SessionDetail(sessionId))
         )
@@ -47,34 +46,16 @@ class SessionDetailUiTest {
         advanceFully(harness)
     }
 
-    // ── Session detail renders with session info ──
+    // ── Session detail renders with session info and saves ──
 
     @Test
-    fun sessionDetailRendersSessionInfo() = runComposeUiTest {
+    fun sessionDetailRendersInfoAndSaveStates() = runComposeUiTest {
         val harness = createHarness()
         harness.sessionRepo.preAddSession(
             id = "s1",
             gameId = "1",
             name = "My First Run",
             totalPlayTime = 3600,
-        )
-
-        setContent { harness.App() }
-        navigateToSessionDetail(harness, "s1")
-
-        onNodeWithTag("session_detail_header").assertIsDisplayed()
-        onNodeWithContentDescription("Session: My First Run").assertIsDisplayed()
-    }
-
-    // ── Save states display correctly ──
-
-    @Test
-    fun saveStatesDisplayCorrectly() = runComposeUiTest {
-        val harness = createHarness()
-        harness.sessionRepo.preAddSession(
-            id = "s1",
-            gameId = "1",
-            name = "My Run",
         )
         harness.sessionRepo.preAddSessionSave(
             sessionId = "s1",
@@ -90,6 +71,8 @@ class SessionDetailUiTest {
         setContent { harness.App() }
         navigateToSessionDetail(harness, "s1")
 
+        onNodeWithTag("session_detail_header").assertIsDisplayed()
+        onNodeWithContentDescription("Session: My First Run").assertIsDisplayed()
         onNodeWithTag("session_save_item_1").assertIsDisplayed()
         onNodeWithText("Boss Fight Save").assertIsDisplayed()
         onNodeWithTag("session_save_item_2").assertIsDisplayed()
@@ -117,7 +100,7 @@ class SessionDetailUiTest {
     // ── Cheat toggle works ──
 
     @Test
-    fun cheatToggleWorks() = runComposeUiTest {
+    fun masterCheatToggleEnablesAndHidesCheatList() = runComposeUiTest {
         val harness = createHarness()
         harness.sessionRepo.preAddSession(
             id = "s1",
@@ -142,6 +125,13 @@ class SessionDetailUiTest {
         // Verify the cheat config was updated
         val config = harness.sessionRepo.getLastCheatConfig("s1")
         assertTrue(config?.cheatsEnabled == true, "Expected cheats to be enabled")
+
+        onNodeWithTag("session_cheats_toggle").performClick()
+        advanceFully(harness)
+
+        val config2 = harness.sessionRepo.getLastCheatConfig("s1")
+        assertFalse(config2?.cheatsEnabled == true, "Expected cheats to be disabled")
+        onNodeWithTag("session_cheats_list").assertDoesNotExist()
     }
 
     // ── Delete session from detail screen works ──
@@ -216,7 +206,7 @@ class SessionDetailUiTest {
     // ── Cheats show count when enabled ──
 
     @Test
-    fun cheatsShowCountWhenEnabled() = runComposeUiTest {
+    fun cheatsEnabledShowsCountRowsDescriptionsAndCodes() = runComposeUiTest {
         val harness = createHarness()
         harness.sessionRepo.preAddSession(
             id = "s1",
@@ -235,9 +225,20 @@ class SessionDetailUiTest {
 
         onNodeWithTag("session_cheats_count").assertIsDisplayed()
         onNodeWithText("3 cheat(s) active").assertIsDisplayed()
+
+        onNodeWithTag("session_detail_content")
+            .performScrollToNode(hasTestTag("session_cheats_list"))
+
+        onNodeWithTag("session_cheat_item_0").assertIsDisplayed()
+        onNodeWithTag("session_cheat_item_1").assertIsDisplayed()
+        onNodeWithTag("session_cheat_item_2").assertIsDisplayed()
+        onNodeWithContentDescription("Cheat: Infinite Lives").assertIsDisplayed()
+        onNodeWithText("7E0073:09").assertIsDisplayed()
+        onNodeWithContentDescription("Cheat: Max Health").assertIsDisplayed()
+        onNodeWithText("7E0DBE:63").assertIsDisplayed()
     }
 
-    // ── Per-cheat selection: individual cheat rows appear when cheats enabled ──
+    // ── Per-cheat selection controls ──
 
     private fun SpelaTestHarness.addSampleCheats(gameId: String = "1"): List<Cheat> {
         val cheats = listOf(
@@ -250,48 +251,7 @@ class SessionDetailUiTest {
     }
 
     @Test
-    fun individualCheatRowsAppearWhenCheatsEnabled() = runComposeUiTest {
-        val harness = createHarness()
-        harness.sessionRepo.preAddSession(id = "s1", gameId = "1", name = "Cheat Run")
-        harness.sessionRepo.preSetSessionCheats("s1", cheatsEnabled = true)
-        harness.addSampleCheats()
-
-        setContent { harness.App() }
-        navigateToSessionDetailWithCheats(harness, "s1")
-
-        onNodeWithTag("session_detail_content")
-            .performScrollToNode(hasTestTag("session_cheats_list"))
-
-        onNodeWithTag("session_cheat_item_0").assertIsDisplayed()
-        onNodeWithTag("session_cheat_item_1").assertIsDisplayed()
-        onNodeWithTag("session_cheat_item_2").assertIsDisplayed()
-    }
-
-    // ── Cheat description and code are displayed ──
-
-    @Test
-    fun cheatDescriptionAndCodeDisplayed() = runComposeUiTest {
-        val harness = createHarness()
-        harness.sessionRepo.preAddSession(id = "s1", gameId = "1", name = "Cheat Run")
-        harness.sessionRepo.preSetSessionCheats("s1", cheatsEnabled = true)
-        harness.addSampleCheats()
-
-        setContent { harness.App() }
-        navigateToSessionDetailWithCheats(harness, "s1")
-
-        onNodeWithTag("session_detail_content")
-            .performScrollToNode(hasTestTag("session_cheats_list"))
-
-        onNodeWithContentDescription("Cheat: Infinite Lives").assertIsDisplayed()
-        onNodeWithText("7E0073:09").assertIsDisplayed()
-        onNodeWithContentDescription("Cheat: Max Health").assertIsDisplayed()
-        onNodeWithText("7E0DBE:63").assertIsDisplayed()
-    }
-
-    // ── Toggling individual cheat works ──
-
-    @Test
-    fun toggleIndividualCheat() = runComposeUiTest {
+    fun individualSelectAllAndDeselectAllCheatControlsUpdateConfig() = runComposeUiTest {
         val harness = createHarness()
         harness.sessionRepo.preAddSession(id = "s1", gameId = "1", name = "Cheat Run")
         harness.sessionRepo.preSetSessionCheats("s1", cheatsEnabled = true)
@@ -317,19 +277,6 @@ class SessionDetailUiTest {
 
         val config2 = harness.sessionRepo.getLastCheatConfig("s1")
         assertFalse(0 in (config2?.enabledIndices ?: emptyList()), "Cheat index 0 should be disabled")
-    }
-
-    // ── Select All cheats ──
-
-    @Test
-    fun selectAllCheatsWorks() = runComposeUiTest {
-        val harness = createHarness()
-        harness.sessionRepo.preAddSession(id = "s1", gameId = "1", name = "Cheat Run")
-        harness.sessionRepo.preSetSessionCheats("s1", cheatsEnabled = true)
-        harness.addSampleCheats()
-
-        setContent { harness.App() }
-        navigateToSessionDetailWithCheats(harness, "s1")
 
         onNodeWithTag("session_detail_content")
             .performScrollToNode(hasTestTag("session_cheats_select_all"))
@@ -337,21 +284,12 @@ class SessionDetailUiTest {
         onNodeWithTag("session_cheats_select_all").performClick()
         advanceFully(harness)
 
-        val config = harness.sessionRepo.getLastCheatConfig("s1")
-        assertEquals(listOf(0, 1, 2), config?.enabledIndices?.sorted(), "All cheats should be enabled")
-    }
-
-    // ── Deselect All cheats ──
-
-    @Test
-    fun deselectAllCheatsWorks() = runComposeUiTest {
-        val harness = createHarness()
-        harness.sessionRepo.preAddSession(id = "s1", gameId = "1", name = "Cheat Run")
-        harness.sessionRepo.preSetSessionCheats("s1", cheatsEnabled = true, enabledIndices = listOf(0, 1, 2))
-        harness.addSampleCheats()
-
-        setContent { harness.App() }
-        navigateToSessionDetailWithCheats(harness, "s1")
+        val configAfterSelectAll = harness.sessionRepo.getLastCheatConfig("s1")
+        assertEquals(
+            listOf(0, 1, 2),
+            configAfterSelectAll?.enabledIndices?.sorted(),
+            "All cheats should be enabled",
+        )
 
         onNodeWithTag("session_detail_content")
             .performScrollToNode(hasTestTag("session_cheats_deselect_all"))
@@ -359,28 +297,8 @@ class SessionDetailUiTest {
         onNodeWithTag("session_cheats_deselect_all").performClick()
         advanceFully(harness)
 
-        val config = harness.sessionRepo.getLastCheatConfig("s1")
-        assertTrue(config?.enabledIndices?.isEmpty() == true, "All cheats should be deselected")
-    }
-
-    // ── Master toggle off hides individual cheat list ──
-
-    @Test
-    fun masterToggleOffHidesCheatList() = runComposeUiTest {
-        val harness = createHarness()
-        harness.sessionRepo.preAddSession(id = "s1", gameId = "1", name = "Cheat Run")
-        harness.sessionRepo.preSetSessionCheats("s1", cheatsEnabled = false)
-        harness.addSampleCheats()
-
-        setContent { harness.App() }
-        navigateToSessionDetailWithCheats(harness, "s1")
-
-        onNodeWithTag("session_detail_content")
-            .performScrollToNode(hasTestTag("session_cheats_section"))
-
-        // Master toggle is off — cheat list should not exist
-        onNodeWithTag("session_cheats_list").assertDoesNotExist()
-        onNodeWithTag("session_cheat_item_0").assertDoesNotExist()
+        val configAfterDeselectAll = harness.sessionRepo.getLastCheatConfig("s1")
+        assertTrue(configAfterDeselectAll?.enabledIndices?.isEmpty() == true, "All cheats should be deselected")
     }
 
     // ── Search filter works for large cheat lists ──

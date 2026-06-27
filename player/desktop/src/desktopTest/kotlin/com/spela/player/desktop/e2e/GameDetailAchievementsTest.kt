@@ -69,7 +69,7 @@ class GameDetailAchievementsTest {
     }
 
     @Test
-    fun achievementsSectionShowsGrid() = runComposeUiTest {
+    fun achievementsSectionShowsGridProgressCardsToggleAndNoWarning() = runComposeUiTest {
         val harness = createHarnessWithAchievements()
         setUpAchievementData(harness)
 
@@ -81,32 +81,15 @@ class GameDetailAchievementsTest {
         // section heading; assert the section tag + grid directly.
         onNodeWithTag("achievements_section").assertIsDisplayed()
         onNodeWithTag("achievements_grid").assertIsDisplayed()
-    }
 
-    @Test
-    fun achievementsShowsProgressBar() = runComposeUiTest {
-        val harness = createHarnessWithAchievements()
-        setUpAchievementData(harness)
-
-        setContent { harness.App() }
-        navigateToAchievementsScreen(harness)
-
-        scrollToSection(hasTestTag("achievements_section"))
-        // Progress label: "2 of 4 unlocked (30/100 pts)"
         onNodeWithText("2 of 4 unlocked", substring = true).assertIsDisplayed()
-    }
-
-    @Test
-    fun achievementsShowsCardTitles() = runComposeUiTest {
-        val harness = createHarnessWithAchievements()
-        setUpAchievementData(harness)
-
-        setContent { harness.App() }
-        navigateToAchievementsScreen(harness)
-
-        scrollToSection(hasTestTag("achievements_section"))
         onNodeWithText("First Blood").assertIsDisplayed()
         onNodeWithText("Speed Run").assertIsDisplayed()
+        onNodeWithTag("achievements_view_toggle").assertIsDisplayed()
+        onNodeWithTag("achievements_tab_grid").assertIsDisplayed()
+        onNodeWithTag("achievements_tab_timeline").assertIsDisplayed()
+        onNodeWithTag("achievements_tab_leaderboard").assertIsDisplayed()
+        onNodeWithTag("achievements_warning_banner").assertDoesNotExist()
     }
 
     @Test
@@ -126,44 +109,10 @@ class GameDetailAchievementsTest {
     // --- View Mode Toggle ---
 
     @Test
-    fun viewModeToggleIsDisplayed() = runComposeUiTest {
-        val harness = createHarnessWithAchievements()
-        setUpAchievementData(harness)
-
-        setContent { harness.App() }
-        navigateToAchievementsScreen(harness)
-
-        scrollToSection(hasTestTag("achievements_section"))
-        onNodeWithTag("achievements_view_toggle").assertIsDisplayed()
-        onNodeWithTag("achievements_tab_grid").assertIsDisplayed()
-        onNodeWithTag("achievements_tab_timeline").assertIsDisplayed()
-        onNodeWithTag("achievements_tab_leaderboard").assertIsDisplayed()
-    }
-
-    @Test
-    fun switchToTimelineView() = runComposeUiTest {
+    fun timelineAndLeaderboardViewsRenderDetails() = runComposeUiTest {
         val harness = createHarnessWithAchievements()
         setUpAchievementData(harness)
         setUpTimelineData(harness)
-
-        setContent { harness.App() }
-        navigateToAchievementsScreen(harness)
-
-        scrollToSection(hasTestTag("achievements_section"))
-
-        // Switch to timeline
-        onNodeWithTag("achievements_tab_timeline").performClick()
-        advance(harness)
-        advance(harness)
-
-        scrollToSection(hasTestTag("achievements_timeline"))
-        onNodeWithTag("achievements_timeline").assertIsDisplayed()
-    }
-
-    @Test
-    fun switchToLeaderboardView() = runComposeUiTest {
-        val harness = createHarnessWithAchievements()
-        setUpAchievementData(harness)
         setUpLeaderboardData(harness)
 
         setContent { harness.App() }
@@ -171,7 +120,13 @@ class GameDetailAchievementsTest {
 
         scrollToSection(hasTestTag("achievements_section"))
 
-        // Switch to leaderboard
+        onNodeWithTag("achievements_tab_timeline").performClick()
+        advance(harness)
+        advance(harness)
+
+        scrollToSection(hasTestTag("achievements_timeline"))
+        onNodeWithTag("achievements_timeline").assertIsDisplayed()
+
         onNodeWithTag("achievements_tab_leaderboard").performClick()
         advance(harness)
         advance(harness)
@@ -180,24 +135,6 @@ class GameDetailAchievementsTest {
         onNodeWithTag("achievements_leaderboard").assertIsDisplayed()
         onNodeWithText("SpeedMaster").assertIsDisplayed()
         onNodeWithText("CasualPro").assertIsDisplayed()
-    }
-
-    @Test
-    fun leaderboardShowsRankAndPoints() = runComposeUiTest {
-        val harness = createHarnessWithAchievements()
-        setUpAchievementData(harness)
-        setUpLeaderboardData(harness)
-
-        setContent { harness.App() }
-        navigateToAchievementsScreen(harness)
-
-        scrollToSection(hasTestTag("achievements_section"))
-
-        onNodeWithTag("achievements_tab_leaderboard").performClick()
-        advance(harness)
-        advance(harness)
-
-        scrollToSection(hasTestTag("achievements_leaderboard"))
         onNodeWithText("#1").assertIsDisplayed()
         onNodeWithText("#2").assertIsDisplayed()
         onNodeWithText("80 pts").assertIsDisplayed()
@@ -224,19 +161,6 @@ class GameDetailAchievementsTest {
         scrollToSection(hasTestTag("achievements_section"))
         onNodeWithTag("achievements_warning_banner").assertIsDisplayed()
         onNodeWithText("createdvd", substring = true).assertIsDisplayed()
-    }
-
-    @Test
-    fun achievementsWarningBannerHiddenWhenNoWarning() = runComposeUiTest {
-        val harness = createHarnessWithAchievements()
-        setUpAchievementData(harness)
-        // Default games have no achievementsWarning (null)
-
-        setContent { harness.App() }
-        navigateToAchievementsScreen(harness)
-
-        scrollToSection(hasTestTag("achievements_section"))
-        onNodeWithTag("achievements_warning_banner").assertDoesNotExist()
     }
 
     // --- Test Data Helpers ---

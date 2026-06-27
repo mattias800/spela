@@ -22,7 +22,7 @@ class GameDetailActionsMenuTest {
     // ---- Split button tests ----
 
     @Test
-    fun cachedGameShowsPlayButton() = runComposeUiTest {
+    fun cachedGameShowsPlaySplitButtonAndDeleteDownloadAction() = runComposeUiTest {
         val harness = createLoggedInHarness()
         harness.downloadRepo.preCacheGame("1")
 
@@ -30,10 +30,14 @@ class GameDetailActionsMenuTest {
         navigateToGameDetail(harness, "1")
 
         onNodeWithTag("game_detail_play_button").assertIsDisplayed()
+        onNodeWithContentDescription("More options").assertIsDisplayed()
+        onNodeWithContentDescription("More options").performClick()
+        advanceQuick(harness)
+        onNodeWithText("Delete Download").assertIsDisplayed()
     }
 
     @Test
-    fun uncachedGameShowsDownloadButton() = runComposeUiTest {
+    fun uncachedGameShowsDownloadButtonAndHidesOpenDownloadFolderAction() = runComposeUiTest {
         val harness = createLoggedInHarness()
 
         setContent { harness.App() }
@@ -43,108 +47,34 @@ class GameDetailActionsMenuTest {
         navigateToGameDetail(harness, "6")
 
         onNodeWithTag("game_detail_download_button").assertIsDisplayed()
-    }
 
-    @Test
-    fun cachedGameSplitButtonShowsMoreOptions() = runComposeUiTest {
-        val harness = createLoggedInHarness()
-        harness.downloadRepo.preCacheGame("1")
-
-        setContent { harness.App() }
-        navigateToGameDetail(harness, "1")
-
-        // The split button should have a "More options" trigger
-        onNodeWithContentDescription("More options").assertIsDisplayed()
-    }
-
-    @Test
-    fun splitButtonMenuShowsDeleteDownload() = runComposeUiTest {
-        val harness = createLoggedInHarness()
-        harness.downloadRepo.preCacheGame("1")
-
-        setContent { harness.App() }
-        navigateToGameDetail(harness, "1")
-
-        // Open the split button dropdown menu
-        onNodeWithContentDescription("More options").performClick()
+        onNodeWithContentDescription("More actions").performClick()
         advanceQuick(harness)
-
-        // Should show "Delete Download" menu item
-        onNodeWithText("Delete Download").assertIsDisplayed()
+        onNodeWithText("Show in folder").assertDoesNotExist()
     }
 
     // ---- Actions menu tests ----
 
     @Test
-    fun actionsMenuButtonIsVisible() = runComposeUiTest {
+    fun actionsMenuShowsItemsTogglesFavoriteAndDismissesOnItemClick() = runComposeUiTest {
         val harness = createLoggedInHarness()
 
         setContent { harness.App() }
         navigateToGameDetail(harness, "1")
 
         onNodeWithContentDescription("More actions").assertIsDisplayed()
-    }
-
-    @Test
-    fun actionsMenuShowsFavoriteItem() = runComposeUiTest {
-        val harness = createLoggedInHarness()
-
-        setContent { harness.App() }
-        navigateToGameDetail(harness, "1")
-
-        // Open the actions menu
         onNodeWithContentDescription("More actions").performClick()
         advanceQuick(harness)
-
         onNodeWithText("Favorite").assertIsDisplayed()
-    }
-
-    @Test
-    fun actionsMenuShowsPlayLaterItem() = runComposeUiTest {
-        val harness = createLoggedInHarness()
-
-        setContent { harness.App() }
-        navigateToGameDetail(harness, "1")
-
-        // Open the actions menu
-        onNodeWithContentDescription("More actions").performClick()
-        advanceQuick(harness)
-
         onNodeWithText("Play Later").assertIsDisplayed()
-    }
-
-    @Test
-    fun actionsMenuShowsAddToCollectionItem() = runComposeUiTest {
-        val harness = createLoggedInHarness()
-
-        setContent { harness.App() }
-        navigateToGameDetail(harness, "1")
-
-        // Open the actions menu
-        onNodeWithContentDescription("More actions").performClick()
-        advanceQuick(harness)
-
         onNodeWithText("Add to Collection").assertIsDisplayed()
-    }
 
-    @Test
-    fun favoriteToggleChangesMenuItemText() = runComposeUiTest {
-        val harness = createLoggedInHarness()
-
-        setContent { harness.App() }
-        navigateToGameDetail(harness, "1")
-
-        // Open the actions menu and click Favorite
-        onNodeWithContentDescription("More actions").performClick()
-        advanceQuick(harness)
         onNodeWithText("Favorite").performClick()
         advanceQuick(harness)
+        onNodeWithText("Play Later").assertDoesNotExist()
 
-        // Re-open the actions menu
         onNodeWithContentDescription("More actions").performClick()
         advanceQuick(harness)
-
-        // Should now show "Unfavorite"
         onNodeWithText("Unfavorite").assertIsDisplayed()
     }
 
@@ -162,38 +92,5 @@ class GameDetailActionsMenuTest {
         advanceQuick(harness)
 
         onNodeWithText("Show in folder").assertIsDisplayed()
-    }
-
-    @Test
-    fun uncachedGameActionsMenuHidesOpenDownloadFolder() = runComposeUiTest {
-        // Not downloaded → nothing to reveal → item hidden.
-        val harness = createLoggedInHarness()
-
-        setContent { harness.App() }
-        navigateToGameDetail(harness, "1")
-
-        onNodeWithContentDescription("More actions").performClick()
-        advanceQuick(harness)
-
-        onNodeWithText("Show in folder").assertDoesNotExist()
-    }
-
-    @Test
-    fun actionsMenuDismissesOnItemClick() = runComposeUiTest {
-        val harness = createLoggedInHarness()
-
-        setContent { harness.App() }
-        navigateToGameDetail(harness, "1")
-
-        // Open the actions menu
-        onNodeWithContentDescription("More actions").performClick()
-        advanceQuick(harness)
-
-        // Click a menu item
-        onNodeWithText("Favorite").performClick()
-        advanceQuick(harness)
-
-        // Menu should be dismissed
-        onNodeWithText("Play Later").assertDoesNotExist()
     }
 }

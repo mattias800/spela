@@ -23,43 +23,27 @@ class BiosWarningTest {
         return harness
     }
 
-    @Test
-    fun gameDetailShowsBiosWarningChipWhenBiosMissing() = runComposeUiTest {
-        val harness = createLoggedInHarness()
-
-        // Configure missing BIOS for the NES console (game "1" is NES)
-        harness.biosRepo.consolesWithMissingBios = mapOf(
-            "nes" to BiosConsoleStatus(
-                consoleId = "nes",
-                consoleName = "NES",
-                biosRequired = true,
-                status = "missing",
-                missingFiles = listOf(
-                    BiosMissingFile("disksys.rom", "Famicom Disk System BIOS", true),
-                ),
-            ),
-        )
-
-        setContent { harness.App() }
-
-        navigateToGameDetail(harness, gameId = "1")
-
-        // The BIOS warning chip should be displayed
-        onNodeWithText("BIOS Required").assertIsDisplayed()
-        onNodeWithContentDescription("Missing BIOS files: disksys.rom").assertIsDisplayed()
-    }
+    private fun missingBiosStatus(
+        consoleId: String = "nes",
+        consoleName: String = "NES",
+        files: List<BiosMissingFile> = listOf(
+            BiosMissingFile("disksys.rom", "Famicom Disk System BIOS", true),
+        ),
+    ) = BiosConsoleStatus(
+        consoleId = consoleId,
+        consoleName = consoleName,
+        biosRequired = true,
+        status = "missing",
+        missingFiles = files,
+    )
 
     @Test
-    fun biosWarningChipTapShowsMissingFilesList() = runComposeUiTest {
+    fun gameDetailMissingBiosShowsChipDetailsAndPlayGate() = runComposeUiTest {
         val harness = createLoggedInHarness()
-
+        harness.downloadRepo.preCacheGame("1")
         harness.biosRepo.consolesWithMissingBios = mapOf(
-            "nes" to BiosConsoleStatus(
-                consoleId = "nes",
-                consoleName = "NES",
-                biosRequired = true,
-                status = "missing",
-                missingFiles = listOf(
+            "nes" to missingBiosStatus(
+                files = listOf(
                     BiosMissingFile("disksys.rom", "Famicom Disk System BIOS", true),
                     BiosMissingFile("nes.pal", "NES PAL BIOS", false),
                 ),
@@ -67,103 +51,43 @@ class BiosWarningTest {
         )
 
         setContent { harness.App() }
-
         navigateToGameDetail(harness, gameId = "1")
 
-        // Chip should be visible
+        onNodeWithTag("game_detail_play_button").assertIsDisplayed()
         onNodeWithText("BIOS Required").assertIsDisplayed()
-
-        // Info panel should NOT be visible yet
+        onNodeWithContentDescription("Missing BIOS files: disksys.rom, nes.pal").assertIsDisplayed()
         onAllNodesWithText("Missing BIOS files:").assertCountEquals(0)
 
-        // Tap the chip
         onNodeWithText("BIOS Required").performClick()
         waitForIdle()
 
-        // Info panel should now be visible listing the missing files
         onNodeWithContentDescription("Missing BIOS files info").assertIsDisplayed()
         onNodeWithText("Missing BIOS files:").assertIsDisplayed()
         onNodeWithText("disksys.rom").assertIsDisplayed()
         onNodeWithText("nes.pal").assertIsDisplayed()
 
-        // Tap the chip again to toggle off
         onNodeWithText("BIOS Required").performClick()
         waitForIdle()
 
-        // Info panel should be hidden again
         onAllNodesWithContentDescription("Missing BIOS files info").assertCountEquals(0)
     }
 
     @Test
-    fun gameDetailDoesNotShowBiosWarningChipWhenBiosPresent() = runComposeUiTest {
+    fun gameDetailWithoutMissingBiosShowsPlayableButtonOnly() = runComposeUiTest {
         val harness = createLoggedInHarness()
+        harness.downloadRepo.preCacheGame("1")
 
-        // No missing BIOS files configured
         setContent { harness.App() }
-
         navigateToGameDetail(harness, gameId = "1")
 
-        // The BIOS warning chip should NOT be displayed
+        onNodeWithTag("game_detail_play_button").assertIsDisplayed()
         onAllNodesWithText("BIOS Required").assertCountEquals(0)
     }
 
     @Test
-    fun playButtonDisabledWhenRequiredBiosMissing() = runComposeUiTest {
+    fun missingBiosDialogGoBackDismissesAndExitsOverlay() = runComposeUiTest {
         val harness = createLoggedInHarness()
-
-        // Pre-cache game so Play button is available
         harness.downloadRepo.preCacheGame("1")
-
-        // Configure missing BIOS for the NES console
-        harness.biosRepo.consolesWithMissingBios = mapOf(
-            "nes" to BiosConsoleStatus(
-                consoleId = "nes",
-                consoleName = "NES",
-                biosRequired = true,
-                status = "missing",
-                missingFiles = listOf(
-                    BiosMissingFile("disksys.rom", "Famicom Disk System BIOS", true),
-                ),
-            ),
-        )
-
-        setContent { harness.App() }
-
-        navigateToGameDetail(harness, gameId = "1")
-
-        // The Play button is disabled when required BIOS is missing via
-        // the SpSplitButton enabled=false property, not via a dedicated
-        // "Play disabled, BIOS required" contentDescription (which was
-        // never wired up). Verify the button is present and the
-        // BIOS-required warning chip is visible.
-        onNodeWithTag("game_detail_play_button").assertIsDisplayed()
-        onNodeWithText("BIOS Required").assertIsDisplayed()
-    }
-
-    @Test
-    fun playButtonEnabledWhenNoBiosMissing() = runComposeUiTest {
-        val harness = createLoggedInHarness()
-
-        // Pre-cache game so Play button is available
-        harness.downloadRepo.preCacheGame("1")
-
-        // No missing BIOS configured
-        setContent { harness.App() }
-
-        navigateToGameDetail(harness, gameId = "1")
-
-        // The play button should be enabled
-        onNodeWithTag("game_detail_play_button").assertIsDisplayed()
-    }
-
-    @Test
-    fun missingBiosDialogShowsWhenLaunchingGameWithMissingBios() = runComposeUiTest {
-        val harness = createLoggedInHarness()
-
-        // Pre-cache game so Play button is available
-        harness.downloadRepo.preCacheGame("1")
-
-        // Configure pre-launch BIOS check to return missing files
         harness.biosRepo.preSetPreLaunchMissingFiles(
             listOf(
                 BiosMissingFile("disksys.rom", "Famicom Disk System BIOS", true),
@@ -172,46 +96,18 @@ class BiosWarningTest {
         )
 
         setContent { harness.App() }
-
         navigateToGameDetail(harness, gameId = "1")
 
-        // Tap Play to trigger the game launch
         onNodeWithTag("game_detail_play_button").performClick()
         advance(harness)
 
-        // The Missing BIOS dialog should appear
         onNodeWithText("Missing BIOS Files").assertIsDisplayed()
         onNodeWithText("Go Back").assertIsDisplayed()
         onNodeWithText("Try Anyway").assertIsDisplayed()
-    }
 
-    @Test
-    fun missingBiosDialogGoBackDismissesAndExitsOverlay() = runComposeUiTest {
-        val harness = createLoggedInHarness()
-
-        harness.downloadRepo.preCacheGame("1")
-        harness.biosRepo.preSetPreLaunchMissingFiles(
-            listOf(
-                BiosMissingFile("disksys.rom", "Famicom Disk System BIOS", true),
-            ),
-        )
-
-        setContent { harness.App() }
-
-        navigateToGameDetail(harness, gameId = "1")
-
-        // Launch game
-        onNodeWithTag("game_detail_play_button").performClick()
-        advance(harness)
-
-        // Verify dialog is shown
-        onNodeWithText("Missing BIOS Files").assertIsDisplayed()
-
-        // Tap "Go Back"
         onNodeWithText("Go Back").performClick()
         advance(harness)
 
-        // Dialog should be dismissed and we should be back at game detail
         onAllNodesWithText("Missing BIOS Files").assertCountEquals(0)
         onNodeWithText("Castlevania").assertIsDisplayed()
     }
@@ -219,9 +115,7 @@ class BiosWarningTest {
     @Test
     fun missingBiosDialogTryAnywayDismissesAndRetries() = runComposeUiTest {
         val harness = createLoggedInHarness()
-
         harness.downloadRepo.preCacheGame("1")
-        // Configure BIOS check to return missing files
         harness.biosRepo.preSetPreLaunchMissingFiles(
             listOf(
                 BiosMissingFile("disksys.rom", "Famicom Disk System BIOS", true),
@@ -229,51 +123,34 @@ class BiosWarningTest {
         )
 
         setContent { harness.App() }
-
         navigateToGameDetail(harness, gameId = "1")
 
-        // Launch game
         onNodeWithTag("game_detail_play_button").performClick()
         advance(harness)
 
-        // Verify dialog is shown
         onNodeWithText("Missing BIOS Files").assertIsDisplayed()
 
-        // Tap "Try Anyway" — this should dismiss dialog and retry with skipBiosCheck=true
         onNodeWithText("Try Anyway").performClick()
         advanceFully(harness)
 
-        // Dialog should be dismissed — the game launch was retried with BIOS check skipped
         onAllNodesWithText("Missing BIOS Files").assertCountEquals(0)
     }
 
     @Test
     fun consoleGameListShowsBiosWarningBannerWhenBiosMissing() = runComposeUiTest {
         val harness = createLoggedInHarness()
-
-        // Configure missing BIOS for NES console
         harness.biosRepo.consolesWithMissingBios = mapOf(
-            "nes" to BiosConsoleStatus(
-                consoleId = "nes",
-                consoleName = "NES",
-                biosRequired = true,
-                status = "missing",
-                missingFiles = listOf(
-                    BiosMissingFile("disksys.rom", "Famicom Disk System BIOS", true),
-                ),
-            ),
+            "nes" to missingBiosStatus(),
         )
 
         setContent { harness.App() }
 
-        // Navigate to the NES console game list
         advance(harness)
         harness.navigationViewModel.onIntent(
             NavigationIntent.NavigateTo(SpScreen.Console("nes"))
         )
         advanceFully(harness)
 
-        // The BIOS warning banner should be displayed
         onNodeWithContentDescription(
             "Missing BIOS files for Nintendo Entertainment System. Contact your server admin to upload the required firmware files."
         ).assertIsDisplayed()
@@ -283,17 +160,14 @@ class BiosWarningTest {
     fun consoleGameListDoesNotShowBiosWarningBannerWhenBiosPresent() = runComposeUiTest {
         val harness = createLoggedInHarness()
 
-        // No missing BIOS configured
         setContent { harness.App() }
 
-        // Navigate to the NES console game list
         advance(harness)
         harness.navigationViewModel.onIntent(
             NavigationIntent.NavigateTo(SpScreen.Console("nes"))
         )
         advanceFully(harness)
 
-        // The BIOS warning banner should NOT be displayed
         onAllNodesWithContentDescription(
             "Missing BIOS files for Nintendo Entertainment System. Contact your server admin to upload the required firmware files."
         ).assertCountEquals(0)
@@ -302,32 +176,22 @@ class BiosWarningTest {
     @Test
     fun consoleListShowsWarningIconWhenBiosMissing() = runComposeUiTest {
         val harness = createLoggedInHarness()
-
-        // Configure missing BIOS for SNES console
         harness.biosRepo.consolesWithMissingBios = mapOf(
-            "snes" to BiosConsoleStatus(
+            "snes" to missingBiosStatus(
                 consoleId = "snes",
                 consoleName = "SNES",
-                biosRequired = true,
-                status = "missing",
-                missingFiles = listOf(
-                    BiosMissingFile("snes_bios.bin", "SNES BIOS", true),
-                ),
+                files = listOf(BiosMissingFile("snes_bios.bin", "SNES BIOS", true)),
             ),
         )
 
         setContent { harness.App() }
 
-        // Navigate to Library (consoles tab)
         harness.navigationViewModel.onIntent(
             NavigationIntent.NavigateTo(SpScreen.Consoles)
         )
         advanceFully(harness)
 
-        // SNES console card should have BIOS missing in its content description
         onNodeWithContentDescription("Super Nintendo, 2 games, BIOS missing").assertIsDisplayed()
-
-        // NES console card should NOT have the BIOS missing indicator
         onNodeWithContentDescription("Nintendo Entertainment System, 3 games").assertIsDisplayed()
     }
 
@@ -335,7 +199,6 @@ class BiosWarningTest {
     fun consoleListNoWarningIconWhenAllBiosPresent() = runComposeUiTest {
         val harness = createLoggedInHarness()
 
-        // No missing BIOS configured
         setContent { harness.App() }
 
         harness.navigationViewModel.onIntent(
@@ -343,7 +206,6 @@ class BiosWarningTest {
         )
         advanceFully(harness)
 
-        // Both console cards should NOT mention BIOS missing
         onNodeWithContentDescription("Nintendo Entertainment System, 3 games").assertIsDisplayed()
         onNodeWithContentDescription("Super Nintendo, 2 games").assertIsDisplayed()
     }
