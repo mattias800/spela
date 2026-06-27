@@ -5,6 +5,20 @@ plugins {
     alias(libs.plugins.compose.multiplatform)
 }
 
+val defaultAndroidNativeAbiFilters = listOf("arm64-v8a", "armeabi-v7a", "x86_64")
+val androidNativeAbiFilters = providers.gradleProperty("spela.android.abiFilters")
+    .map { raw ->
+        raw.split(",")
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .also {
+                require(it.isNotEmpty()) {
+                    "spela.android.abiFilters must contain at least one ABI when provided"
+                }
+            }
+    }
+    .getOrElse(defaultAndroidNativeAbiFilters)
+
 kotlin {
     androidTarget {
         compilerOptions {
@@ -61,7 +75,7 @@ android {
             "com.spela.player.android.FailureDiagnosticsListener"
 
         ndk {
-            abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64")
+            abiFilters += androidNativeAbiFilters
         }
     }
 
