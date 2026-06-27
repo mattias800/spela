@@ -31,11 +31,11 @@ class SimilarGamesTest {
     // --- Section visibility ---
 
     @Test
-    fun similarGamesSectionShownWhenDataAvailable() = runComposeUiTest {
+    fun similarGamesSectionShowsCardContentRatingsAndAvailability() = runComposeUiTest {
         val harness = createHarnessOnGameDetail()
         harness.gameRepo.similarGames = listOf(
-            SimilarGame(name = "Dracula X", rating = 78.0, localGameId = null),
             SimilarGame(name = "Super Mario Bros.", rating = 85.0, localGameId = "2"),
+            SimilarGame(name = "Dracula X", rating = 78.0, localGameId = null),
         )
 
         setContent { harness.App() }
@@ -44,6 +44,18 @@ class SimilarGamesTest {
         onNodeWithText("Castlevania").assertIsDisplayed()
         scrollToSection(hasText("Similar Games"))
         onNodeWithText("Similar Games").assertIsDisplayed()
+
+        // Game names visible as text
+        onNodeWithText("Dracula X").assertExists()
+        onNodeWithText("Super Mario Bros.").assertExists()
+
+        // Rating values render via formatRating() as "85.0" / "78.0" on the
+        // card. The "Not in library" badge is the only user-visible signal
+        // of unavailability right now (rating+availability in semantics
+        // would be a nice a11y improvement — see #633 for a follow-up).
+        onNodeWithText("85.0").assertExists()
+        onNodeWithText("78.0").assertExists()
+        onNodeWithText("Not in library").assertExists()
     }
 
     @Test
@@ -56,48 +68,6 @@ class SimilarGamesTest {
 
         onNodeWithText("Castlevania").assertIsDisplayed()
         onNodeWithText("Similar Games").assertDoesNotExist()
-    }
-
-    // --- Card content ---
-
-    @Test
-    fun similarGameCardsShowGameName() = runComposeUiTest {
-        val harness = createHarnessOnGameDetail()
-        harness.gameRepo.similarGames = listOf(
-            SimilarGame(name = "Dracula X", rating = 78.0, localGameId = null),
-            SimilarGame(name = "Super Mario Bros.", rating = 85.0, localGameId = "2"),
-        )
-
-        setContent { harness.App() }
-        navigateToGameDetail(harness, "1")
-
-        scrollToSection(hasText("Similar Games"))
-
-        // Game names visible as text
-        onNodeWithText("Dracula X").assertExists()
-        onNodeWithText("Super Mario Bros.").assertExists()
-    }
-
-    @Test
-    fun similarGameCardsShowRatingAndAvailabilityBadge() = runComposeUiTest {
-        val harness = createHarnessOnGameDetail()
-        harness.gameRepo.similarGames = listOf(
-            SimilarGame(name = "Super Mario Bros.", rating = 85.0, localGameId = "2"),
-            SimilarGame(name = "Dracula X", rating = 78.0, localGameId = null),
-        )
-
-        setContent { harness.App() }
-        navigateToGameDetail(harness, "1")
-
-        scrollToSection(hasText("Similar Games"))
-
-        // Rating values render via formatRating() as "85.0" / "78.0" on the
-        // card. The "Not in library" badge is the only user-visible signal
-        // of unavailability right now (rating+availability in semantics
-        // would be a nice a11y improvement — see #633 for a follow-up).
-        onNodeWithText("85.0").assertExists()
-        onNodeWithText("78.0").assertExists()
-        onNodeWithText("Not in library").assertExists()
     }
 
     // --- Playability ---
@@ -119,22 +89,4 @@ class SimilarGamesTest {
         onNodeWithText("Super Mario Bros.").assertExists()
     }
 
-    @Test
-    fun nonPlayableSimilarGameCardShowsNotInLibraryBadge() = runComposeUiTest {
-        val harness = createHarnessOnGameDetail()
-        harness.gameRepo.similarGames = listOf(
-            SimilarGame(name = "Dracula X", rating = 78.0, localGameId = null),
-        )
-
-        setContent { harness.App() }
-        navigateToGameDetail(harness, "1")
-
-        scrollToSection(hasText("Similar Games"))
-
-        // Use assertExists rather than assertIsDisplayed — the card can sit
-        // below the fold on the default viewport; visible-on-screen status
-        // depends on viewport height that varies across CI hosts.
-        onNodeWithText("Not in library").assertExists()
-        onNodeWithText("Dracula X").assertExists()
-    }
 }

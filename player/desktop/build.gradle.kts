@@ -129,6 +129,9 @@ val desktopTestShardWeightOverrides = mapOf(
     "com.spela.player.desktop.e2e.SaveLoadStateTest" to 10,
     "com.spela.player.desktop.e2e.HomeContinuePlayingFocusRestoreTest" to 9,
     "com.spela.player.desktop.e2e.BackNavigationFocusTest" to 9,
+    "com.spela.player.desktop.e2e.ExploreSearchTest" to 13,
+    "com.spela.player.desktop.e2e.FranchiseDetailTest" to 9,
+    "com.spela.player.desktop.e2e.SimilarGamesTest" to 6,
 )
 
 fun discoverDesktopTestClasses(): List<DesktopTestClass> {

@@ -54,6 +54,7 @@ class InputLagMeasurementTest {
         val inputTimestamps = mutableListOf<Long>()
         val runTimestamps = mutableListOf<Long>()
         val frameReadTimestamps = mutableListOf<Long>()
+        private var clockNs = 0L
 
         // Track button state changes
         val buttonEvents = mutableListOf<ButtonEvent>()
@@ -83,7 +84,7 @@ class InputLagMeasurementTest {
          * In the real pipeline, this is called from the Compose UI thread.
          */
         fun setButton(port: Int, buttonId: Int, pressed: Boolean) {
-            val now = System.nanoTime()
+            val now = clockNs
             inputTimestamps.add(now)
             buttonEvents.add(ButtonEvent(port, buttonId, pressed, now))
         }
@@ -93,7 +94,7 @@ class InputLagMeasurementTest {
          * In the real pipeline, this runs on the emulation thread.
          */
         fun simulateRun() {
-            val now = System.nanoTime()
+            val now = clockNs
             runTimestamps.add(now)
             frameCount++
         }
@@ -103,9 +104,13 @@ class InputLagMeasurementTest {
          * In the real pipeline, this is polled from the Compose frame loop.
          */
         fun simulateFrameRead(): ByteArray {
-            val now = System.nanoTime()
+            val now = clockNs
             frameReadTimestamps.add(now)
             return ByteArray(256 * 240 * 2) // NES-sized frame
+        }
+
+        fun advanceByMs(milliseconds: Long) {
+            clockNs += milliseconds * 1_000_000L
         }
 
         /**
@@ -167,9 +172,9 @@ class InputLagMeasurementTest {
         // 1. Button press (UI thread)
         controller.setButton(0, 8, true) // A button pressed
 
-        // 2. Small delay simulating thread scheduling between UI and emulation threads
-        //    In practice this is near-zero since setButton is just setting a volatile flag
-        Thread.sleep(1)
+        // 2. Small delay simulating thread scheduling between UI and emulation threads.
+        //    In practice this is near-zero since setButton is just setting a volatile flag.
+        controller.advanceByMs(1)
 
         // 3. Emulation tick processes the input
         controller.simulateRun()
@@ -192,8 +197,8 @@ class InputLagMeasurementTest {
         // Simulate: run produces a frame, then it gets read
         controller.simulateRun()
 
-        // Small delay simulating Compose frame polling interval
-        Thread.sleep(1)
+        // Small delay simulating Compose frame polling interval.
+        controller.advanceByMs(1)
 
         controller.simulateFrameRead()
 
@@ -215,11 +220,11 @@ class InputLagMeasurementTest {
         // Full pipeline simulation:
         // 1. Input arrives
         controller.setButton(0, 4, true) // UP pressed
-        Thread.sleep(1)
+        controller.advanceByMs(1)
 
         // 2. Emulation tick
         controller.simulateRun()
-        Thread.sleep(1)
+        controller.advanceByMs(1)
 
         // 3. Frame read
         controller.simulateFrameRead()
@@ -244,9 +249,9 @@ class InputLagMeasurementTest {
         // Simulate 10 input-run-frame cycles
         repeat(10) {
             controller.setButton(0, 8, true) // Press
-            Thread.sleep(1)
+            controller.advanceByMs(1)
             controller.simulateRun()
-            Thread.sleep(1)
+            controller.advanceByMs(1)
             controller.simulateFrameRead()
 
             val latencyNs = controller.measureTotalPipelineLatencyNs()
@@ -256,9 +261,9 @@ class InputLagMeasurementTest {
 
             // Release
             controller.setButton(0, 8, false)
-            Thread.sleep(1)
+            controller.advanceByMs(1)
             controller.simulateRun()
-            Thread.sleep(1)
+            controller.advanceByMs(1)
             controller.simulateFrameRead()
         }
 
@@ -352,7 +357,6 @@ class InputLagMeasurementTest {
         val controller = InstrumentedController()
         controller.start()
 
-        val frameTimeMs = 16L // ~60fps
         val totalLatencies = mutableListOf<Double>()
 
         // Simulate 60 frames (1 second) with input on every 10th frame
@@ -362,7 +366,7 @@ class InputLagMeasurementTest {
             }
 
             // Simulate emulation frame
-            Thread.sleep(1) // Shortened sleep for test speed (real would be ~16ms)
+            controller.advanceByMs(1) // Shortened simulated delay (real would be ~16ms)
             controller.simulateRun()
 
             // Simulate Compose frame read
@@ -382,8 +386,8 @@ class InputLagMeasurementTest {
         val avg = totalLatencies.average()
         val p95 = totalLatencies.sorted().let { it[(it.size * 0.95).toInt().coerceAtMost(it.size - 1)] }
 
-        // In the simulated test, latencies will be very low because Thread.sleep(1)
-        // is much faster than a real frame. The point is to validate the measurement
+        // In the simulated test, latencies are deterministic and intentionally
+        // much faster than a real frame. The point is to validate the measurement
         // infrastructure works and can be used with real hardware in integration tests.
         assertTrue(avg >= 0, "Average latency should be non-negative: ${avg}ms")
         assertTrue(p95 >= 0, "P95 latency should be non-negative: ${p95}ms")
@@ -415,8 +419,8 @@ class InputLagMeasurementTest {
 
             // Simulate worst-case scheduling: input arrives just after a frame tick,
             // so we wait up to 1 frame before the next emulation tick picks it up.
-            // Using Thread.sleep(1) to simulate minimal scheduling delay.
-            Thread.sleep(1)
+            // Use the fake clock to simulate minimal scheduling delay.
+            controller.advanceByMs(1)
 
             // Emulation tick picks up the input
             controller.simulateRun()
@@ -427,7 +431,7 @@ class InputLagMeasurementTest {
 
             // Release
             controller.setButton(0, 8, false)
-            Thread.sleep(1)
+            controller.advanceByMs(1)
             controller.simulateRun()
         }
 
@@ -457,7 +461,7 @@ class InputLagMeasurementTest {
             controller.reset()
 
             controller.setButton(0, 4, true) // UP
-            Thread.sleep(1)
+            controller.advanceByMs(1)
             controller.simulateRun()
             controller.simulateFrameRead()
 
@@ -466,7 +470,7 @@ class InputLagMeasurementTest {
             latencies.add(latencyNs / 1_000_000.0)
 
             controller.setButton(0, 4, false)
-            Thread.sleep(1)
+            controller.advanceByMs(1)
             controller.simulateRun()
             controller.simulateFrameRead()
         }
