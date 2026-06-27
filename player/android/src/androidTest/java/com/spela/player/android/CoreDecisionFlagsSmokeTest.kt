@@ -1,10 +1,12 @@
 package com.spela.player.android
 
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.data.remote.interceptor.TokenManager
 import com.spela.player.domain.repository.SessionRepository
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
+import org.junit.runner.RunWith
 import org.koin.mp.KoinPlatformTools
 import java.net.HttpURLConnection
 import java.net.URL
@@ -32,22 +34,8 @@ import java.net.URL
  * test is based on — same Koin-bound production repo + cURL-based
  * bootstrap/teardown/cross-check structure.
  */
-class CoreDecisionFlagsSmokeTest : BaseE2ETest() {
-
-    /**
-     * Skip the UI-driven login (see CloneSessionSmokeTest for the same
-     * pattern + rationale, #1146). This test exists to verify the
-     * core-flags PUT round-trip, not the login UX. We seed Koin's
-     * TokenManager + SpelaApiClient directly from the bootstrap login
-     * result instead.
-     */
-    override fun baseSetUp() {
-        resetServerState()
-    }
-
-    override fun baseTearDown() {
-        // intentionally empty
-    }
+@RunWith(AndroidJUnit4::class)
+class CoreDecisionFlagsSmokeTest : AndroidApiSmokeBase() {
 
     @Test
     fun coreDecisionFlagsRoundTripThroughRealApi() {
