@@ -42,16 +42,27 @@ cd player
 Desktop tests use `SpelaTestHarness` with fake repositories — no device or
 backend needed. This is the primary UI test suite for the player app.
 
-**Netplay E2E lives here, not on Android.** Netplay requires two real
-clients exchanging WebSocket frames; only desktop can stand up two
-`SpelaTestHarness` instances in the same JVM and drive both. Android
-E2E can't honestly test netplay — a single device can only simulate
-the second player via direct REST calls, which tests the lobby UI
-in isolation but not the actual peer sync. Add new netplay tests
-under `player/desktop/src/test/`. Do not migrate netplay tests
-under `player/android/src/androidTest/`; the existing
-`NetplayTest.kt` there is `@Ignore`d for this reason and is
-scheduled to move to desktop.
+#### Two-Client Netplay E2E
+
+Full netplay E2E is a separate desktop runner, not part of the normal
+sharded Desktop Compose UI suite:
+
+```bash
+cd player
+./run-netplay-e2e.sh
+```
+
+`run-netplay-e2e.sh` starts the E2E docker backend, launches two headless
+desktop player JVM processes through `NetplayTestRunnerKt`, creates and joins a
+real netplay session, drives controller input on both clients, and verifies
+cross-player input propagation by comparing screenshots.
+
+Keep two-client netplay validation in this runner. The regular Desktop E2E
+suite uses `SpelaTestHarness` with fake repositories and is still the right
+place for shared UI/state coverage, but it does not validate two real clients
+communicating through the netplay WebSocket/input path. Android E2E has only one
+device/client, so it should cover Android integration smoke behavior, not
+pretend to validate peer sync with direct REST calls.
 
 ### Android Player (Instrumented Tests)
 
