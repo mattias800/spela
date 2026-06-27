@@ -101,8 +101,11 @@ cd player
 #### Iterating on a single Android E2E test
 
 The full `run-e2e.sh` invocation tears down the docker volumes, rebuilds the
-backend image, uninstalls + reinstalls the APK, and runs every test class.
-End-to-end that's ~25 min — fine for CI, brutal for iterating on one bug.
+backend image, uninstalls + reinstalls the APK, and then runs the Android test
+set for the selected device. On physical devices that means every test class,
+one at a time. On `--emulator`, class-level `@RequiresPhysicalDevice` and
+`@Ignore` tests are filtered before Gradle starts and the remaining emulator-safe
+smoke classes are batched into one instrumentation run.
 
 Use `player/scripts/e2e-android-quick.sh` to keep the backend + AVD warm
 between iterations. After a one-time setup, each test cycle is ~2 min:
@@ -149,7 +152,7 @@ When adding new screens or interactive elements, add a test tag constant and app
 
 ### Android Test Lifecycle
 
-Every Android E2E test class extends `BaseE2ETest`. The base class enforces a per-method contract:
+Most Android E2E test classes extend `BaseE2ETest`. The base class enforces a per-method contract:
 
 - **Entry:** user is logged in, on the Home screen, backend reset to seed state.
 - **Exit:** user is logged in, on the Home screen.
@@ -182,7 +185,7 @@ class MyFeatureTest : BaseE2ETest() {
 2. `adb uninstall com.spela.player` — fresh app (no leftover auth, server, or local DB).
 3. `player/scripts/cache-nestopia.sh` — pre-cache the NES core from a host-local cache (first time only, downloaded once from libretro buildbot and reused forever after).
 4. Device hygiene: wake, screen timeout 10 min, a11y services off, launch-prime on display 0.
-5. Gradle runs the test classes one at a time, fail-fast by default.
+5. Gradle runs the test set. Physical-device runs execute classes one at a time, fail-fast by default. Default emulator runs filter out class-level `@RequiresPhysicalDevice` / `@Ignore` tests before Gradle starts, then batch the remaining smoke classes into one invocation.
 
 **Opting out of core pre-cache:**
 

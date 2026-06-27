@@ -1,12 +1,13 @@
 name: Android E2E
 
 # Runs the Android instrumented suite on a GitHub-hosted Linux runner via
-# an x86_64 Android emulator. Tagged @RequiresPhysicalDevice tests are
-# auto-skipped (BaseE2ETest does the assumeFalse).
+# an x86_64 Android emulator. The default --emulator runner filters
+# class-level @RequiresPhysicalDevice / @Ignore tests before Gradle starts,
+# then batches the remaining emulator-safe smoke classes. Explicit class
+# invocations still rely on BaseE2ETest's assumeFalse guard.
 #
 # Public repos get unlimited Linux runner minutes and the runner has KVM
-# enabled, so the AVD boots hardware-accelerated. Total wall-clock is
-# typically ~25-35min per run.
+# enabled, so the AVD boots hardware-accelerated.
 #
 # Security: this workflow doesn't interpolate any github.event.* or
 # github.head_ref inputs into shell commands — those are the standard
@@ -21,9 +22,8 @@ on:
   push:
     branches: [master]
   # PR runs are pure opt-in: only when the `android-e2e` label is
-  # added (or already present at PR open / sync). The full suite is
-  # ~17-20 min; running it for every web/docs PR would burn minutes
-  # for no signal.
+  # added (or already present at PR open / sync). Running the emulator
+  # smoke suite for every web/docs PR would burn minutes for no signal.
   pull_request:
     branches: [master]
     types: [opened, synchronize, reopened, labeled]
