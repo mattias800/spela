@@ -55,18 +55,23 @@ jobs:
     timeout-minutes: 60
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 21
 
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v3
+      - name: Cache Gradle
+        uses: actions/cache@v5
         with:
-          cache-read-only: ${{ github.ref != 'refs/heads/master' }}
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: android-e2e-gradle-${{ hashFiles('player/**/*.gradle*', 'player/gradle/libs.versions.toml') }}
+          restore-keys: |
+            android-e2e-gradle-
 
       # KVM lets the x86_64 emulator boot hardware-accelerated. The
       # Ubuntu runner has /dev/kvm available but root-owned by default;
@@ -117,7 +122,7 @@ jobs:
       # them shaves 3-5min per run. The reactivecircus action handles
       # creation if missing.
       - name: AVD cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         id: avd-cache
         with:
           path: |
