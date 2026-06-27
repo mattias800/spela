@@ -106,7 +106,8 @@ class LoginViewModelTest {
     }
 
     @Test
-    fun registerWithoutEmailShowsError() {
+    fun registerWithoutEmailSubmitsBlankEmail() = runTest(testDispatcher) {
+        fakeAuthRepository.shouldSucceed = true
         val vm = createViewModel()
         vm.onIntent(LoginIntent.SetServerUrl("http://localhost:8080"))
         vm.onIntent(LoginIntent.SetUsername("testuser"))
@@ -114,7 +115,10 @@ class LoginViewModelTest {
         vm.onIntent(LoginIntent.ToggleRegisterMode)
         vm.onIntent(LoginIntent.Submit)
 
-        assertEquals("Email is required for registration", vm.state.value.error)
+        advanceUntilIdle()
+
+        assertTrue(vm.state.value.isLoggedIn)
+        assertEquals("", fakeAuthRepository.lastRegisterEmail)
     }
 
     @Test
@@ -196,6 +200,7 @@ class LoginViewModelTest {
 /** Fake AuthRepository for testing */
 class FakeAuthRepository : AuthRepository {
     var shouldSucceed = true
+    var lastRegisterEmail: String? = null
 
     private val successTokens = AuthTokens(
         accessToken = "test-access-token",
@@ -215,6 +220,7 @@ class FakeAuthRepository : AuthRepository {
     }
 
     override suspend fun register(serverUrl: String, username: String, email: String, password: String): Result<AuthTokens> {
+        lastRegisterEmail = email
         return if (shouldSucceed) {
             loggedIn = true
             Result.success(successTokens)

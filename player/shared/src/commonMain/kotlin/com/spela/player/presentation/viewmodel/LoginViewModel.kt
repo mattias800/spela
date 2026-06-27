@@ -59,10 +59,6 @@ class LoginViewModel(
             _state.update { it.copy(error = "All fields are required") }
             return
         }
-        if (current.isRegisterMode && current.email.isBlank()) {
-            _state.update { it.copy(error = "Email is required for registration") }
-            return
-        }
 
         _state.update { it.copy(isLoading = true, error = null) }
 

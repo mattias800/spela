@@ -160,7 +160,7 @@ fun SignInStepContent(
         enabled = !state.isLoading,
         modifier = Modifier.testTag(OnboardingTestTags.SIGNIN_USERNAME),
     )
-    // Registration requires an email; only shown (and required) in register mode.
+    // Email is optional for self-hosted servers; keep it available in register mode.
     // No transition in test mode (LocalAnimationsEnabled=false) so an in-flight fade
     // doesn't leave a coroutine active at runComposeUiTest teardown (#1448).
     val emailAnims = com.spela.player.presentation.ui.components.LocalAnimationsEnabled.current
@@ -174,7 +174,7 @@ fun SignInStepContent(
             SpTextField(
                 value = state.email,
                 onValueChange = onEmailChange,
-                label = "Email",
+                label = "Email (optional)",
                 placeholder = "you@example.com",
                 enabled = !state.isLoading,
                 keyboardType = KeyboardType.Email,

@@ -686,7 +686,7 @@ func ToUserResponse(u db.User) UserResponse {
 	return UserResponse{
 		ID:              strconv.FormatUint(uint64(u.ID), 10),
 		Username:        u.Username,
-		Email:           u.Email,
+		Email:           publicUserEmail(u.Email),
 		Role:            u.Role,
 		AvatarURL:       u.AvatarURL,
 		Disabled:        u.Disabled,
@@ -717,7 +717,7 @@ func ToDeletedUserResponse(u db.User) DeletedUserResponse {
 	return DeletedUserResponse{
 		ID:        strconv.FormatUint(uint64(u.ID), 10),
 		Username:  u.Username,
-		Email:     u.Email,
+		Email:     publicUserEmail(u.Email),
 		Role:      u.Role,
 		Disabled:  u.Disabled,
 		CreatedAt: u.CreatedAt,
