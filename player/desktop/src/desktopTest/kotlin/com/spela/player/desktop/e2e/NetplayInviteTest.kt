@@ -134,11 +134,15 @@ class NetplayInviteTest {
     // ---- Netplay lobby: invite sheet opens/closes ----
 
     @Test
-    fun clickingInvitePlayerOpensInviteSheet() = runComposeUiTest {
+    fun inviteSheetShowsUsersAndRecentPartners() = runComposeUiTest {
         val harness = createLoggedInHarness()
         harness.netplayRepo.currentSession = createHostSession()
+        harness.userRepo.recentPartners = listOf(
+            UserSearchResult(id = "5", username = "recent-buddy", avatarUrl = null),
+        )
         harness.userRepo.searchResults = listOf(
             UserSearchResult(id = "2", username = "alice", avatarUrl = null),
+            UserSearchResult(id = "3", username = "bob", avatarUrl = null),
         )
 
         setContent { harness.App() }
@@ -154,6 +158,10 @@ class NetplayInviteTest {
         // plus search field and user list section
         onNodeWithText("Search users...").assertExists()
         onNodeWithText("All Users").assertExists()
+        onNodeWithText("Previous").assertExists()
+        onNodeWithText("recent-buddy").assertExists()
+        onNodeWithText("alice").assertExists()
+        onNodeWithText("bob").assertExists()
     }
 
     @Test
@@ -167,7 +175,6 @@ class NetplayInviteTest {
         setContent { harness.App() }
         navigateToNetplayLobby(harness)
 
-        // Open the invite sheet
         onNode(hasScrollToNodeAction())
             .performScrollToNode(hasText("Invite Player"))
         onNodeWithText("Invite Player").performClick()
@@ -179,54 +186,6 @@ class NetplayInviteTest {
 
         // Dialog should be gone — "All Users" only appears in the dialog
         onNodeWithText("All Users").assertDoesNotExist()
-    }
-
-    // ---- Netplay lobby: invite sheet content ----
-
-    @Test
-    fun inviteSheetShowsUserList() = runComposeUiTest {
-        val harness = createLoggedInHarness()
-        harness.netplayRepo.currentSession = createHostSession()
-        harness.userRepo.searchResults = listOf(
-            UserSearchResult(id = "2", username = "alice", avatarUrl = null),
-            UserSearchResult(id = "3", username = "bob", avatarUrl = null),
-        )
-
-        setContent { harness.App() }
-        navigateToNetplayLobby(harness)
-
-        onNode(hasScrollToNodeAction())
-            .performScrollToNode(hasText("Invite Player"))
-        onNodeWithText("Invite Player").performClick()
-        advanceFully(harness)
-
-        // User list should show both users
-        onNodeWithText("alice").assertExists()
-        onNodeWithText("bob").assertExists()
-    }
-
-    @Test
-    fun inviteSheetShowsRecentPartners() = runComposeUiTest {
-        val harness = createLoggedInHarness()
-        harness.netplayRepo.currentSession = createHostSession()
-        harness.userRepo.recentPartners = listOf(
-            UserSearchResult(id = "5", username = "recent-buddy", avatarUrl = null),
-        )
-        harness.userRepo.searchResults = listOf(
-            UserSearchResult(id = "2", username = "alice", avatarUrl = null),
-        )
-
-        setContent { harness.App() }
-        navigateToNetplayLobby(harness)
-
-        onNode(hasScrollToNodeAction())
-            .performScrollToNode(hasText("Invite Player"))
-        onNodeWithText("Invite Player").performClick()
-        advanceFully(harness)
-
-        // Recent partners section should be visible
-        onNodeWithText("Previous").assertExists()
-        onNodeWithText("recent-buddy").assertExists()
     }
 
     @Test

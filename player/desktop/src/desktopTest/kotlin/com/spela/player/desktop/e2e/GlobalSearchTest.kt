@@ -540,27 +540,18 @@ class GlobalSearchTest {
         // Verify the state has exactly 5 suggestions
         val state = harness.globalSearchViewModel.state.value
         assertEquals(5, state.suggestions.size)
-    }
-
-    @Test
-    fun `quick results prioritizes games as first items`() = runComposeUiTest {
-        val harness = createHarness()
-        harness.searchRepo.searchResult = fullSearchResult()
-
-        setContent { harness.App() }
-        harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.GlobalSearch))
-        advance(harness)
-
-        searchInputNode().performTextInput("mario")
-        advanceFully(harness)
-
-        // The suggestion order should be: games first, then console, developer, publisher
-        val suggestions = harness.globalSearchViewModel.state.value.suggestions
+        // The suggestion order should be: games first, then console, developer, publisher.
+        val suggestions = state.suggestions
         assertEquals("Game", suggestions[0].type)
         assertEquals("Game", suggestions[1].type)
         assertEquals("Console", suggestions[2].type)
         assertEquals("Developer", suggestions[3].type)
         assertEquals("Publisher", suggestions[4].type)
+        // The per-type badge text appears with a matching cardinality.
+        onAllNodesWithText("Game").assertCountEquals(2)
+        onAllNodesWithText("Console").assertCountEquals(1)
+        onAllNodesWithText("Developer").assertCountEquals(1)
+        onAllNodesWithText("Publisher").assertCountEquals(1)
     }
 
     @Test
@@ -618,33 +609,6 @@ class GlobalSearchTest {
 
         onNodeWithTag("search_hint").assertIsDisplayed()
         onNodeWithTag("quick_results_section").assertDoesNotExist()
-    }
-
-    @Test
-    fun `quick result type badges show correct category names`() = runComposeUiTest {
-        val harness = createHarness()
-        harness.searchRepo.searchResult = fullSearchResult()
-
-        setContent { harness.App() }
-        harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.GlobalSearch))
-        advance(harness)
-
-        searchInputNode().performTextInput("mario")
-        advanceFully(harness)
-
-        // Each quick result item renders its type as card text (not
-        // contentDescription). Assert presence of the tagged nodes +
-        // the type-badge text inside each.
-        onNodeWithTag("quick_result_game_g1").assertExists()
-        onNodeWithTag("quick_result_console_snes").assertExists()
-        onNodeWithTag("quick_result_developer_Nintendo").assertExists()
-        onNodeWithTag("quick_result_publisher_Konami").assertExists()
-        // The fixture has 2 games + 1 console + 1 developer + 1 publisher,
-        // so the per-type badge text appears with a matching cardinality.
-        onAllNodesWithText("Game").assertCountEquals(2)
-        onAllNodesWithText("Console").assertCountEquals(1)
-        onAllNodesWithText("Developer").assertCountEquals(1)
-        onAllNodesWithText("Publisher").assertCountEquals(1)
     }
 
     // --- Edge cases ---

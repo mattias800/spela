@@ -102,13 +102,31 @@ data class DesktopTestClass(
 )
 
 val desktopTestShardWeightOverrides = mapOf(
-    // CI runtime hints from #1460. These full-app focus/navigation flows are
-    // slower than their static @Test counts imply; keep them split across
+    // CI/runtime hints from #1460 and #1462. Many full-app Compose journeys are
+    // much slower than their static @Test counts imply; keep them split across
     // shards so one runner does not become the PR long pole.
-    "com.spela.player.desktop.e2e.SettingsConsoleNavigationTest" to 50,
-    "com.spela.player.desktop.e2e.OnboardingWizardTest" to 35,
+    "com.spela.player.desktop.e2e.OnboardingWizardTest" to 41,
+    "com.spela.player.desktop.e2e.InGameOverlayTest" to 30,
     "com.spela.player.desktop.e2e.ScrollRestorationTest" to 30,
+    "com.spela.player.desktop.e2e.AppLaunchAndConnectionTest" to 28,
+    "com.spela.player.desktop.e2e.SessionDetailUiTest" to 26,
+    "com.spela.player.desktop.e2e.NetplayInviteTest" to 25,
+    "com.spela.player.desktop.e2e.SessionsUiTest" to 23,
+    "com.spela.player.desktop.e2e.EscapeKeyOverlayTest" to 23,
     "com.spela.player.desktop.e2e.LazyCarouselFocusRestoreTest" to 20,
+    "com.spela.player.desktop.e2e.BiosWarningTest" to 20,
+    "com.spela.player.desktop.e2e.ResumeVsNewGameTest" to 18,
+    "com.spela.player.desktop.e2e.GameDetailActionsMenuTest" to 17,
+    "com.spela.player.desktop.e2e.CreateChallengeTest" to 17,
+    "com.spela.player.desktop.e2e.ChallengeCreationTest" to 17,
+    "com.spela.player.desktop.e2e.GamepadMappingTest" to 17,
+    "com.spela.player.desktop.e2e.GameDetailAchievementsTest" to 16,
+    "com.spela.player.desktop.e2e.SettingsConsoleNavigationTest" to 14,
+    "com.spela.player.desktop.e2e.EmulationVerificationTest" to 14,
+    "com.spela.player.desktop.e2e.PauseHintTest" to 12,
+    "com.spela.player.desktop.e2e.SaveLoadStateTest" to 10,
+    "com.spela.player.desktop.e2e.HomeContinuePlayingFocusRestoreTest" to 9,
+    "com.spela.player.desktop.e2e.BackNavigationFocusTest" to 9,
 )
 
 fun discoverDesktopTestClasses(): List<DesktopTestClass> {

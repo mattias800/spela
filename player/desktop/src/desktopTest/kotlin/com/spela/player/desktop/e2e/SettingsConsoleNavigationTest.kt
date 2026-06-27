@@ -8,7 +8,6 @@ import com.spela.player.domain.model.GamepadPosition
 import com.spela.player.presentation.navigation.NavigationIntent
 import com.spela.player.presentation.navigation.SpScreen
 import com.spela.player.presentation.ui.gamepad.InputMode
-import com.spela.player.presentation.viewmodel.GamepadConfigIntent
 import com.spela.player.presentation.viewmodel.SettingsIntent
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -45,7 +44,7 @@ class SettingsConsoleNavigationTest {
     }
 
     @Test
-    fun settingsScreenShowsConsoleSettingsSection() = runComposeUiTest {
+    fun consoleSettingsRowsListLoadedConsolesNavigateAndRestoreCategory() = runComposeUiTest {
         val harness = createLoggedInHarness()
 
         setContent { harness.App() }
@@ -56,54 +55,34 @@ class SettingsConsoleNavigationTest {
         assertEquals(2, consoles.size, "Should have 2 consoles loaded")
 
         onNodeWithText("Nintendo Entertainment System").assertIsDisplayed()
-    }
-
-    @Test
-    fun consoleSettingsSectionListsAllConsoles() = runComposeUiTest {
-        val harness = createLoggedInHarness()
-
-        setContent { harness.App() }
-        navigateToSettings(harness)
-        navigateToControlsCategory(harness)
-
-        onNodeWithText("Nintendo Entertainment System").assertIsDisplayed()
         onNodeWithText("Super Nintendo").assertIsDisplayed()
-    }
-
-    @Test
-    fun clickingConsoleNavigatesToConsoleSettings() = runComposeUiTest {
-        val harness = createLoggedInHarness()
-
-        setContent { harness.App() }
-        navigateToSettings(harness)
-        navigateToControlsCategory(harness)
+        onNodeWithContentDescription("Open Nintendo Entertainment System settings")
+            .assertExists()
 
         onNodeWithText("Nintendo Entertainment System").performClick()
         advance(harness)
 
-        val currentScreen = harness.navigationViewModel.state.value.currentScreen
         assertEquals(
             SpScreen.ConsoleSettings("nes"),
-            currentScreen,
+            harness.navigationViewModel.state.value.currentScreen,
             "Clicking NES should navigate to ConsoleSettings(\"nes\")",
         )
-    }
 
-    @Test
-    fun clickingSnesConsoleNavigatesToSnesConsoleSettings() = runComposeUiTest {
-        val harness = createLoggedInHarness()
-
-        setContent { harness.App() }
-        navigateToSettings(harness)
-        navigateToControlsCategory(harness)
+        // Back should restore the Per-Console category, not reset Settings to General.
+        harness.navigationViewModel.onIntent(NavigationIntent.GoBack)
+        advance(harness)
+        assertEquals(
+            SpScreen.Settings,
+            harness.navigationViewModel.state.value.currentScreen,
+        )
+        onNodeWithText("Nintendo Entertainment System").assertIsDisplayed()
 
         onNodeWithText("Super Nintendo").performClick()
         advance(harness)
 
-        val currentScreen = harness.navigationViewModel.state.value.currentScreen
         assertEquals(
             SpScreen.ConsoleSettings("snes"),
-            currentScreen,
+            harness.navigationViewModel.state.value.currentScreen,
             "Clicking SNES should navigate to ConsoleSettings(\"snes\")",
         )
     }
@@ -376,35 +355,6 @@ class SettingsConsoleNavigationTest {
         assertEquals(-1, harness.gamepadPortManager.getPort(500))
     }
 
-    @Test
-    fun backFromConsoleSettingsReturnsToPerConsoleNotGeneral() = runComposeUiTest {
-        val harness = createLoggedInHarness()
-
-        setContent { harness.App() }
-        navigateToSettings(harness)
-        navigateToControlsCategory(harness)
-
-        // Into a console's settings...
-        onNodeWithText("Nintendo Entertainment System").performClick()
-        advance(harness)
-        assertEquals(
-            SpScreen.ConsoleSettings("nes"),
-            harness.navigationViewModel.state.value.currentScreen,
-        )
-
-        // ...then Back. We should return to the Per-Console list, not General.
-        harness.navigationViewModel.onIntent(NavigationIntent.GoBack)
-        advance(harness)
-
-        assertEquals(
-            SpScreen.Settings,
-            harness.navigationViewModel.state.value.currentScreen,
-        )
-        // The console rows are only rendered in the Per-Console category content;
-        // before the rememberSaveable fix this reset to General and the rows were gone.
-        onNodeWithText("Nintendo Entertainment System").assertIsDisplayed()
-    }
-
     /**
      * Back from a console's settings restores focus to that console row (#1382),
      * so D-pad navigation continues from there. Uses SNES (not the default first
@@ -441,15 +391,4 @@ class SettingsConsoleNavigationTest {
         onNodeWithTag("console_settings_row_snes").assertIsFocused()
     }
 
-    @Test
-    fun consoleSettingsRowsHaveArrowIcon() = runComposeUiTest {
-        val harness = createLoggedInHarness()
-
-        setContent { harness.App() }
-        navigateToSettings(harness)
-        navigateToControlsCategory(harness)
-
-        onNodeWithContentDescription("Open Nintendo Entertainment System settings")
-            .assertExists()
-    }
 }

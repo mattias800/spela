@@ -57,7 +57,7 @@ class ConsoleScreenImprovementsTest {
     // ────────────────────────────────────────────────
 
     @Test
-    fun consoleInfoSectionShowsManufacturer() = runComposeUiTest {
+    fun consoleInfoSectionShowsMetadata() = runComposeUiTest {
         val harness = createLoggedInHarness()
         setContent { harness.App() }
         navigateToConsole(harness, "nes")
@@ -65,24 +65,8 @@ class ConsoleScreenImprovementsTest {
         // The ConsoleInfoSection should display static metadata for NES
         onNodeWithText("Nintendo").assertExists()
         onNodeWithText("1983").assertExists()
-    }
-
-    @Test
-    fun consoleInfoSectionShowsMediaType() = runComposeUiTest {
-        val harness = createLoggedInHarness()
-        setContent { harness.App() }
-        navigateToConsole(harness, "nes")
-
         onNodeWithText("Cartridge").assertExists()
         onNodeWithText("Media", substring = true).assertExists()
-    }
-
-    @Test
-    fun consoleInfoSectionShowsUnitsSold() = runComposeUiTest {
-        val harness = createLoggedInHarness()
-        setContent { harness.App() }
-        navigateToConsole(harness, "nes")
-
         onNodeWithText("61.9M units").assertExists()
     }
 
@@ -185,34 +169,6 @@ class ConsoleScreenImprovementsTest {
     // ────────────────────────────────────────────────
 
     @Test
-    fun favoriteGameShowsHeartBadge() = runComposeUiTest {
-        val harness = createLoggedInHarness()
-
-        // Mark Castlevania (id=1) as favorite
-        harness.gameRepo.games = harness.gameRepo.games.map {
-            if (it.id == "1") it.copy(isFavorite = true) else it
-        }
-
-        setContent { harness.App() }
-        navigateToConsoleGames(harness)
-
-        // The favorited game card should include "favorited" in its content description
-        onNodeWithContentDescription("Castlevania, NES, favorited").assertIsDisplayed()
-    }
-
-    @Test
-    fun nonFavoriteGameDoesNotShowHeartBadge() = runComposeUiTest {
-        val harness = createLoggedInHarness()
-
-        // Ensure no games are favorited (default)
-        setContent { harness.App() }
-        navigateToConsoleGames(harness)
-
-        // Castlevania should not have "favorited" in content description
-        onNodeWithContentDescription("Castlevania, NES").assertIsDisplayed()
-    }
-
-    @Test
     fun multipleFavoriteGamesShowBadges() = runComposeUiTest {
         val harness = createLoggedInHarness()
 
@@ -227,11 +183,11 @@ class ConsoleScreenImprovementsTest {
         setContent { harness.App() }
         navigateToConsoleGames(harness)
 
-        // Both favorited games should show the badge
+        // Favorited games should include the badge in their content description.
         onNodeWithContentDescription("Castlevania, NES, favorited").assertIsDisplayed()
         onNodeWithContentDescription("Mega Man 2, NES, favorited").assertIsDisplayed()
 
-        // Non-favorited game should not
+        // Non-favorited games should not.
         onNodeWithContentDescription("Super Mario Bros., NES").assertIsDisplayed()
     }
 
@@ -279,19 +235,25 @@ class ConsoleScreenImprovementsTest {
     // ────────────────────────────────────────────────
 
     @Test
-    fun gameWithHighRatingShowsStarRating() = runComposeUiTest {
+    fun gamesWithRatingsShowStarRating() = runComposeUiTest {
         val harness = createLoggedInHarness()
 
-        // Set Castlevania to have communityRating = 4.5
+        // Current card behaviour: any non-zero rating renders as formatted text.
         harness.gameRepo.games = harness.gameRepo.games.map {
-            if (it.id == "1") it.copy(communityRating = 4.5) else it
+            when (it.id) {
+                "1" -> it.copy(communityRating = 4.5)
+                "2" -> it.copy(communityRating = 1.0)
+                "3" -> it.copy(communityRating = 0.5)
+                else -> it
+            }
         }
 
         setContent { harness.App() }
         navigateToConsoleGames(harness)
 
-        // The formatted rating text should be displayed
         onNodeWithText("4.5").assertIsDisplayed()
+        onNodeWithText("1.0").assertIsDisplayed()
+        onNodeWithText("0.5").assertExists()
     }
 
     @Test
@@ -304,63 +266,6 @@ class ConsoleScreenImprovementsTest {
 
         // No rating text for any game
         onAllNodesWithText("0.0").assertCountEquals(0)
-    }
-
-    @Test
-    fun gameWithRatingExactlyOneShowsStarRating() = runComposeUiTest {
-        val harness = createLoggedInHarness()
-
-        // Edge case: exactly 1.0 should show the star
-        harness.gameRepo.games = harness.gameRepo.games.map {
-            if (it.id == "2") it.copy(communityRating = 1.0) else it
-        }
-
-        setContent { harness.App() }
-        navigateToConsoleGames(harness)
-
-        onNodeWithText("1.0").assertIsDisplayed()
-    }
-
-    // The following two tests documented an intended "hide ratings below
-    // 1.0" rule — but SpGameCard currently shows any non-zero rating as
-    // text ("0.5", "0.9"). Filed as a product decision question, not a
-    // test fix. Tests updated to match current card behaviour; if the
-    // threshold is restored, change `assertCountEquals(N)` back to 0.
-
-    @Test
-    fun gameWithRatingJustBelowOneStillShowsStar() = runComposeUiTest {
-        val harness = createLoggedInHarness()
-
-        harness.gameRepo.games = harness.gameRepo.games.map {
-            if (it.id == "1") it.copy(communityRating = 0.9) else it
-        }
-
-        setContent { harness.App() }
-        navigateToConsoleGames(harness)
-
-        // Current behaviour: any non-zero rating renders as formatted text.
-        onNodeWithText("0.9").assertExists()
-    }
-
-    @Test
-    fun multipleGamesWithRatingsShowIndividualStars() = runComposeUiTest {
-        val harness = createLoggedInHarness()
-
-        harness.gameRepo.games = harness.gameRepo.games.map {
-            when (it.id) {
-                "1" -> it.copy(communityRating = 4.5)
-                "2" -> it.copy(communityRating = 3.2)
-                "3" -> it.copy(communityRating = 0.5)
-                else -> it
-            }
-        }
-
-        setContent { harness.App() }
-        navigateToConsoleGames(harness)
-
-        onNodeWithText("4.5").assertIsDisplayed()
-        onNodeWithText("3.2").assertIsDisplayed()
-        onNodeWithText("0.5").assertExists()
     }
 
     // ────────────────────────────────────────────────

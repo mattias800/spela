@@ -43,11 +43,12 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/setup-java@v5
         with:
-          # JBR — matches the desktop-build Linux job (the desktop app targets
-          # the JetBrains Runtime).
-          distribution: jetbrains
+          # Desktop E2E runs the Compose UI test task, not native packaging.
+          # Use the same stable JDK as the main CI player job; resolving the
+          # JetBrains Runtime dynamically can hit GitHub API rate limits across
+          # the eight-shard matrix before tests even start (#1463).
+          distribution: temurin
           java-version: 21
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       # :desktop:desktopTest depends on buildNativeLibrary (the desktop libretro
       # bridge) and renders real Compose/Skia surfaces, so it needs the native
