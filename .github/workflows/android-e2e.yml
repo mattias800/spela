@@ -142,7 +142,7 @@ jobs:
           path: |
             ~/.android/avd/*
             ~/.android/adb*
-          key: avd-api35-x86_64-quickboot-v2
+          key: avd-api35-aosp_atd-x86_64-quickboot-v1
 
       - name: Create AVD snapshot (cache miss)
         if: steps.avd-cache.outputs.cache-hit != 'true'
@@ -150,7 +150,7 @@ jobs:
         with:
           api-level: 35
           arch: x86_64
-          target: google_apis
+          target: aosp_atd
           force-avd-creation: false
           emulator-options: -no-window -no-boot-anim -gpu swiftshader_indirect -noaudio
           disable-animations: true
@@ -161,7 +161,7 @@ jobs:
         with:
           api-level: 35
           arch: x86_64
-          target: google_apis
+          target: aosp_atd
           force-avd-creation: false
           emulator-options: -no-window -no-snapshot-save -no-boot-anim -gpu swiftshader_indirect -noaudio
           disable-animations: true
