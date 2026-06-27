@@ -197,6 +197,63 @@ func TestRegisterAndLogin(t *testing.T) {
 	assert.NotEmpty(t, loginResp["accessToken"])
 }
 
+func TestRegisterWithoutEmail(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+
+	body, _ := json.Marshal(map[string]string{
+		"username": "noemail",
+		"password": "SecureTestPass!2024",
+	})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/auth/register", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusCreated, w.Code, w.Body.String())
+
+	var registerResp map[string]interface{}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &registerResp))
+	user := registerResp["user"].(map[string]interface{})
+	assert.Equal(t, "", user["email"])
+
+	var stored db.User
+	require.NoError(t, database.Where("username = ?", "noemail").First(&stored).Error)
+	assert.Equal(t, "noemail@users.spela.invalid", stored.Email)
+
+	body, _ = json.Marshal(map[string]string{
+		"username": "noemail2",
+		"email":    "",
+		"password": "SecureTestPass!2024",
+	})
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("POST", "/api/auth/register", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusAccepted, w.Code, w.Body.String())
+
+	stored = db.User{}
+	require.NoError(t, database.Where("username = ?", "noemail2").First(&stored).Error)
+	assert.Equal(t, "noemail2@users.spela.invalid", stored.Email)
+}
+
+func TestRegisterInvalidEmailRejected(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+
+	body, _ := json.Marshal(map[string]string{
+		"username": "bademail",
+		"email":    "not-an-email",
+		"password": "SecureTestPass!2024",
+	})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/auth/register", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusUnprocessableEntity, w.Code, w.Body.String())
+}
+
 func TestRegister_DuplicateUsername(t *testing.T) {
 	_, cfg := setupTestEnv(t)
 	router, cleanup := NewRouter(*cfg)

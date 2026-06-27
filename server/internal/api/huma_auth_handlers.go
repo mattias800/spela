@@ -27,11 +27,12 @@ type AuthLoginRequest struct {
 }
 
 // AuthRegisterRequest is the body for POST /api/auth/register and /api/auth/setup.
-// Matches the original gin binding (alphanum, min=3, max=64 for username; valid
-// email; min=8, max=72 for password).
+// Matches the original gin binding for username/password. Email is optional for
+// self-hosted servers; when blank, the handler stores an internal placeholder so
+// the DB's non-null unique email column stays satisfied.
 type AuthRegisterRequest struct {
 	Username string `json:"username" minLength:"3" maxLength:"64" pattern:"^[a-zA-Z0-9]+$" doc:"New account username (3-64 alphanumeric characters)."`
-	Email    string `json:"email" format:"email" maxLength:"254" doc:"New account email (RFC 5321 cap)."`
+	Email    string `json:"email,omitempty" maxLength:"254" doc:"Optional new account email (RFC 5321 cap)."`
 	Password string `json:"password" minLength:"8" maxLength:"72" doc:"New account password (8-72 characters)."`
 }
 
@@ -408,6 +409,10 @@ func isRegistrationEnabled(database *gorm.DB) bool {
 // when the new account is awaiting admin approval — matching the raw gin shape.
 func (h *AuthHandler) HumaRegister(ctx context.Context, in *AuthRegisterInput) (*AuthRegisterOutput, error) {
 	req := in.Body
+	email, err := normalizeRegistrationEmail(req.Username, req.Email)
+	if err != nil {
+		return nil, huma.NewError(http.StatusUnprocessableEntity, "Email must be a valid email address.")
+	}
 
 	// Issue #1131(A): refuse the most-common / most-leaked passwords.
 	// Length already enforced via the schema tag.
@@ -432,7 +437,7 @@ func (h *AuthHandler) HumaRegister(ctx context.Context, in *AuthRegisterInput) (
 	var txErr error
 	_ = h.DB.Transaction(func(tx *gorm.DB) error {
 		var count int64
-		tx.Model(&db.User{}).Where("username = ? OR email = ?", req.Username, req.Email).Count(&count)
+		tx.Model(&db.User{}).Where("username = ? OR email = ?", req.Username, email).Count(&count)
 		if count > 0 {
 			// Issue #1132: keep the response indistinguishable from
 			// any other unprocessable-registration error so an
@@ -457,7 +462,7 @@ func (h *AuthHandler) HumaRegister(ctx context.Context, in *AuthRegisterInput) (
 
 		user = db.User{
 			Username:        req.Username,
-			Email:           req.Email,
+			Email:           email,
 			PasswordHash:    hash,
 			Role:            role,
 			PendingApproval: pendingApproval,
@@ -614,6 +619,10 @@ const setupCompletedKey = "setup_completed"
 // initial owner account; fails with 403 if a user already exists.
 func (h *AuthHandler) HumaSetup(_ context.Context, in *AuthSetupInput) (*AuthSetupOutput, error) {
 	req := in.Body
+	email, err := normalizeRegistrationEmail(req.Username, req.Email)
+	if err != nil {
+		return nil, huma.NewError(http.StatusUnprocessableEntity, "Email must be a valid email address.")
+	}
 
 	// Issue #1130: refuse setup outright if a previous successful setup
 	// left a marker, even if the users table is currently empty. An
@@ -641,7 +650,7 @@ func (h *AuthHandler) HumaSetup(_ context.Context, in *AuthSetupInput) (*AuthSet
 
 		user = db.User{
 			Username:     req.Username,
-			Email:        req.Email,
+			Email:        email,
 			PasswordHash: hash,
 			Role:         db.RoleOwner,
 		}

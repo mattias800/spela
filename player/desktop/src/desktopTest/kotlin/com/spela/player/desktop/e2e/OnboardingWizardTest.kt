@@ -115,15 +115,15 @@ class OnboardingWizardTest {
         onNodeWithTag(OnboardingTestTags.WELCOME_START).performClick()
         advanceQuick(harness)
 
-        // Toggle to register mode — the email field must appear (CR #1 fix).
+        // Toggle to register mode — the optional email field appears.
         onNodeWithText("Don't have an account? Register").performClick()
         advanceQuick(harness)
-        onNodeWithText("Email").assertIsDisplayed()
+        onNodeWithText("Email (optional)").assertIsDisplayed()
 
         onNodeWithText("Username").performClick()
         onNodeWithText("Username").performTextInput("newplayer")
-        onNodeWithText("Email").performClick()
-        onNodeWithText("Email").performTextInput("new@example.com")
+        onNodeWithText("Email (optional)").performClick()
+        onNodeWithText("Email (optional)").performTextInput("new@example.com")
         onNodeWithText("Password").performClick()
         onNodeWithText("Password").performTextInput("secret123")
         onNodeWithTag(OnboardingTestTags.SIGNIN_SUBMIT).performClick()
