@@ -133,8 +133,10 @@ jobs:
           fi
 
       # AVD cache: keep the generated AVD plus its quickboot snapshot so
-      # cache-hit runs avoid a full cold boot. The reactivecircus action
-      # handles creation if missing.
+      # cache-hit runs avoid a full cold boot. Include the ATD system
+      # image too, so android-emulator-runner's sdkmanager install is a
+      # quick no-op on warm caches. The reactivecircus action handles
+      # creation if missing.
       - name: AVD cache
         uses: actions/cache@v5
         id: avd-cache
@@ -142,7 +144,8 @@ jobs:
           path: |
             ~/.android/avd/*
             ~/.android/adb*
-          key: avd-api35-aosp_atd-x86_64-quickboot-v1
+            /usr/local/lib/android/sdk/system-images/android-35/aosp_atd/x86_64
+          key: avd-api35-aosp_atd-x86_64-quickboot-system-image-v1
 
       - name: Create AVD snapshot (cache miss)
         if: steps.avd-cache.outputs.cache-hit != 'true'
