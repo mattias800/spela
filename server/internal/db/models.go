@@ -155,23 +155,15 @@ type Console struct {
 	DefaultCore    string `gorm:"size:128" json:"defaultCore"`
 	EmulatorJSCore string `gorm:"size:64" json:"emulatorJsCore"`
 	FolderName     string `gorm:"size:64" json:"folderName"`
-	// CoverAspect (box-art ratio) and Generation (console generation) are
-	// intrinsic facts that never change and are never admin-settable, so
-	// they are not stored: AfterFind derives them from the console registry
-	// on load. See #1443.
-	CoverAspect string `gorm:"-" json:"coverAspect"`
-	// LogoAspectRatio is the intrinsic width/height ratio of this
-	// console's logo asset, computed once at seed time from the SVG's
-	// viewBox. The player app uses it to size the logo container
-	// correctly on first render — without it, SpAreaSizedImage would
-	// fall back to a square guess and then re-layout once the image
-	// decoded, producing a visible size-A → size-B jump on the
-	// console-detail hero. Null is acceptable (clients fall back to
-	// the legacy fluid sizing). See #1166.
-	LogoAspectRatio  *float64 `json:"logoAspectRatio"`
-	ColorTheme       string   `gorm:"size:7;default:#6366f1" json:"colorTheme"`
-	Generation       int      `gorm:"-" json:"generation"`
-	SaveStateSupport bool     `gorm:"default:true" json:"saveStateSupport"`
+	// CoverAspect (box-art ratio) and Generation are intrinsic facts that
+	// never change and are never admin-settable, so they are not stored:
+	// AfterFind derives them from the console registry on load. (LogoAspect-
+	// Ratio is likewise derived — from the logo SVG's viewBox at response
+	// time, see consoleLogoAspectRatio.) See #1443 / #1166.
+	CoverAspect      string `gorm:"-" json:"coverAspect"`
+	ColorTheme       string `gorm:"size:7;default:#6366f1" json:"colorTheme"`
+	Generation       int    `gorm:"-" json:"generation"`
+	SaveStateSupport bool   `gorm:"default:true" json:"saveStateSupport"`
 	// Size tier driving retention/slot/UX behaviour for save states on
 	// this console. See [SaveStatePolicy]. The column has NO default
 	// at the schema level — empty is the "needs seeding" sentinel that
