@@ -255,10 +255,10 @@ func (h *ConsoleHandler) buildTopRatedResponses(cached []db.TopRatedGame, rerank
 		if rerank {
 			rank = i + 1
 		}
-		// Resolve console name
+		// Resolve console name (registry-derived via AfterFind — #1443)
 		var consoleName string
 		var console db.Console
-		if err := h.DB.Select("name").First(&console, tr.ConsoleID).Error; err == nil {
+		if err := h.DB.Select("abbreviation").First(&console, tr.ConsoleID).Error; err == nil {
 			consoleName = console.Name
 		}
 

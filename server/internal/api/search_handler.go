@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"math"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -197,7 +198,6 @@ func (h *SearchHandler) searchGames(gameQuery string, limit int, priorityAbbr st
 		ID          uint
 		Title       string
 		CoverURL    string
-		ConsoleName string
 		ConsoleAbbr string
 		Developer   string
 		Genre       string
@@ -215,7 +215,7 @@ func (h *SearchHandler) searchGames(gameQuery string, limit int, priorityAbbr st
 	var rows []gameRow
 	q := h.DB.
 		Table("games").
-		Select("games.id, games.title, games.cover_url, consoles.name as console_name, consoles.abbreviation as console_abbr, games.developer, games.genre").
+		Select("games.id, games.title, games.cover_url, consoles.abbreviation as console_abbr, games.developer, games.genre").
 		Joins("JOIN consoles ON consoles.id = games.console_id").
 		Where(likeClause, titleArgs...)
 
@@ -258,7 +258,7 @@ func (h *SearchHandler) searchGames(gameQuery string, limit int, priorityAbbr st
 			ID:               strconv.FormatUint(uint64(r.ID), 10),
 			Title:            r.Title,
 			CoverURL:         coverURL,
-			ConsoleName:      r.ConsoleName,
+			ConsoleName:      db.ConsoleName(r.ConsoleAbbr), // registry-derived (#1443)
 			ConsoleID:        strings.ToLower(r.ConsoleAbbr),
 			Developer:        r.Developer,
 			Genre:            r.Genre,
@@ -269,69 +269,62 @@ func (h *SearchHandler) searchGames(gameQuery string, limit int, priorityAbbr st
 	return SearchCategoryResult[SearchGameResult]{Results: results, Total: int(total)}
 }
 
-// searchConsoles searches for consoles matching the query, only returning those with at least 1 game.
-func (h *SearchHandler) searchConsoles(likePattern string, limit int) SearchCategoryResult[SearchConsoleResult] {
+// searchConsoles searches consoles by display name, returning only those
+// with at least one game. Console names live in the code registry now
+// (#1443), so the SQL pulls consoles-with-games and the name match + sort
+// happen in Go over the ~75-entry catalog.
+func (h *SearchHandler) searchConsoles(query string, limit int) SearchCategoryResult[SearchConsoleResult] {
 	type consoleRow struct {
 		ID           uint
-		Name         string
 		Abbreviation string
 		ColorTheme   string
 		GameCount    int
 	}
 
-	likeClause := "consoles.name LIKE ?" + likeEscape
-
-	// Build the base query for consoles with games
-	baseQuery := func() *gorm.DB {
-		return h.DB.
-			Table("consoles").
-			Joins("JOIN games ON games.console_id = consoles.id AND games.deleted_at IS NULL").
-			Where(likeClause, likePattern).
-			Group("consoles.id").
-			Having("COUNT(games.id) > 0")
-	}
-
-	// Count total matching consoles
-	var total int64
-	row := baseQuery().Select("COUNT(*) as total").Row()
-	if err := row.Scan(&total); err != nil {
-		// Fallback: count via subquery approach
-		total = 0
-	}
-
 	var rows []consoleRow
 	if err := h.DB.
 		Table("consoles").
-		Select("consoles.id, consoles.name, consoles.abbreviation, consoles.color_theme, COUNT(games.id) as game_count").
+		Select("consoles.id, consoles.abbreviation, consoles.color_theme, COUNT(games.id) as game_count").
 		Joins("JOIN games ON games.console_id = consoles.id AND games.deleted_at IS NULL").
-		Where(likeClause, likePattern).
 		Group("consoles.id").
 		Having("game_count > 0").
-		Order("consoles.name ASC").
-		Limit(limit).
 		Scan(&rows).Error; err != nil {
 		slog.Error("search: failed to search consoles", "error", err)
 		return SearchCategoryResult[SearchConsoleResult]{Results: []SearchConsoleResult{}, Total: 0}
 	}
 
-	// If the Row() scan above failed, fall back to result length (imprecise but functional)
-	if total == 0 && len(rows) > 0 {
-		total = int64(len(rows))
+	needle := strings.ToLower(query)
+	type match struct {
+		row  consoleRow
+		name string
+	}
+	var matches []match
+	for _, r := range rows {
+		name := db.ConsoleName(r.Abbreviation)
+		if strings.Contains(strings.ToLower(name), needle) {
+			matches = append(matches, match{row: r, name: name})
+		}
+	}
+	sort.SliceStable(matches, func(i, j int) bool { return matches[i].name < matches[j].name })
+
+	total := len(matches)
+	if limit > 0 && len(matches) > limit {
+		matches = matches[:limit]
 	}
 
-	results := make([]SearchConsoleResult, len(rows))
-	for i, r := range rows {
-		abbr := strings.ToLower(r.Abbreviation)
+	results := make([]SearchConsoleResult, len(matches))
+	for i, m := range matches {
+		abbr := strings.ToLower(m.row.Abbreviation)
 		results[i] = SearchConsoleResult{
 			ID:         abbr,
-			Name:       r.Name,
+			Name:       m.name,
 			IconURL:    "/api/consoles/" + abbr + "/icon",
-			GameCount:  r.GameCount,
-			ColorTheme: r.ColorTheme,
+			GameCount:  m.row.GameCount,
+			ColorTheme: m.row.ColorTheme,
 		}
 	}
 
-	return SearchCategoryResult[SearchConsoleResult]{Results: results, Total: int(total)}
+	return SearchCategoryResult[SearchConsoleResult]{Results: results, Total: total}
 }
 
 // searchDevelopers searches for developers matching the query.

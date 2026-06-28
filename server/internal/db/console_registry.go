@@ -124,7 +124,6 @@ var consoleRegistry = []ConsoleSpec{
 // the registry on load via Console.AfterFind (#1443).
 func (s ConsoleSpec) toConsole() Console {
 	return Console{
-		Name:             s.Name,
 		Abbreviation:     s.Abbreviation,
 		Extensions:       s.Extensions,
 		DefaultCore:      s.DefaultCore,
@@ -150,6 +149,17 @@ func ConsoleCoverAspect(abbr string) string {
 		return s.CoverAspect
 	}
 	return DefaultCoverAspect
+}
+
+// ConsoleName returns a console's display name from the registry, matched
+// case-insensitively on abbreviation. Falls back to the abbreviation itself
+// when no registry entry exists (only synthetic test consoles). Used by
+// Console.AfterFind and the raw-SQL read paths that bypass the model hook.
+func ConsoleName(abbr string) string {
+	if s, ok := ConsoleSpecByAbbreviation(strings.ToUpper(abbr)); ok {
+		return s.Name
+	}
+	return abbr
 }
 
 // ConsoleSpecByAbbreviation returns the registry entry for an abbreviation

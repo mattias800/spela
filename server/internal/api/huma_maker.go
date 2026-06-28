@@ -102,10 +102,9 @@ func (h *MakerHandler) HumaGetMaker(_ context.Context, in *GetMakerInput) (*GetM
 		Preload("HardwareMaker").
 		Preload("MediaType").
 		Preload("MediaType.Category").
-		Order("name ASC").
 		Find(&consoles)
-	// Generation is registry-derived (#1443), not a sortable DB column, so
-	// order by (generation, name) in Go after AfterFind has populated it.
+	// Name and Generation are registry-derived (#1443), not sortable DB
+	// columns, so order by (generation, name) in Go after AfterFind populates them.
 	sort.SliceStable(consoles, func(i, j int) bool {
 		if consoles[i].Generation != consoles[j].Generation {
 			return consoles[i].Generation < consoles[j].Generation
