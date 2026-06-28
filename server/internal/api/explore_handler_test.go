@@ -2792,12 +2792,16 @@ func TestGetArtworkGallery_Success(t *testing.T) {
 	assert.Equal(t, "Chrono Trigger", resp.Artworks[0].GameTitle)
 	assert.Equal(t, 1920, resp.Artworks[0].Width)
 	assert.Equal(t, 1080, resp.Artworks[0].Height)
+	// Console name is registry-derived now (#1443) — assert the exact value.
+	assert.Equal(t, "Super Nintendo", resp.Artworks[0].ConsoleName)
+	assert.Equal(t, "snes", resp.Artworks[0].ConsoleAbbr)
 	// Verify local image path
 	assert.Contains(t, resp.Artworks[0].URL, "/api/images/")
 	assert.Contains(t, resp.Artworks[0].URL, "artwork_abc123")
 
 	assert.Equal(t, "Super Mario Bros", resp.Artworks[1].GameTitle)
-	assert.NotEmpty(t, resp.Artworks[1].ConsoleAbbr)
+	assert.Equal(t, "Nintendo Entertainment System", resp.Artworks[1].ConsoleName)
+	assert.Equal(t, "nes", resp.Artworks[1].ConsoleAbbr)
 	assert.NotEmpty(t, resp.Artworks[1].ConsoleColor)
 }
 
@@ -2830,10 +2834,13 @@ func TestGetCoverGallery_Success(t *testing.T) {
 	assert.Equal(t, "Chrono Trigger", resp.Covers[0].GameTitle)
 	assert.Equal(t, 95.0, resp.Covers[0].IGDBCriticsRating)
 	assert.Contains(t, resp.Covers[0].CoverURL, "snes/chrono/cover.jpg")
-	assert.Greater(t, resp.Covers[0].CoverAspectRatio, 0.0)
+	// cover_aspect is registry-derived now (#1443): SNES declares "4:3".
+	assert.InDelta(t, 4.0/3.0, resp.Covers[0].CoverAspectRatio, 0.001)
 
 	assert.Equal(t, "Super Mario Bros", resp.Covers[1].GameTitle)
 	assert.Equal(t, 85.0, resp.Covers[1].IGDBCriticsRating)
+	// NES declares "5:7".
+	assert.InDelta(t, 5.0/7.0, resp.Covers[1].CoverAspectRatio, 0.001)
 }
 
 func TestGetCoverGallery_ConsoleFilter(t *testing.T) {
@@ -4408,16 +4415,25 @@ func TestGetCompletionistMap_WithPlayHistory(t *testing.T) {
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 
 	assert.Equal(t, 3, resp.TotalPlayed)
-	assert.Greater(t, resp.TotalGames, 0)
+	assert.Equal(t, 4, resp.TotalGames)
 
-	// Find SNES and NES in the response
-	for _, c := range resp.Consoles {
-		if c.Name == "Super Nintendo Entertainment System" || c.Name == "SNES" {
-			assert.Equal(t, 2, c.PlayedGames)
-			assert.Equal(t, 3, c.TotalGames)
-			assert.Equal(t, 66, c.Percentage) // 2/3 = 66%
-		}
-	}
+	// Only NES and SNES have games. Names are registry-derived (#1443) and the
+	// list is sorted by name in Go, so "Nintendo Entertainment System" sorts
+	// before "Super Nintendo". (The previous loop asserted nothing — it matched
+	// names that never occur, so it always passed vacuously.)
+	require.Len(t, resp.Consoles, 2)
+
+	assert.Equal(t, "Nintendo Entertainment System", resp.Consoles[0].Name)
+	assert.Equal(t, "NES", resp.Consoles[0].ID)
+	assert.Equal(t, 1, resp.Consoles[0].PlayedGames)
+	assert.Equal(t, 1, resp.Consoles[0].TotalGames)
+	assert.Equal(t, 100, resp.Consoles[0].Percentage)
+
+	assert.Equal(t, "Super Nintendo", resp.Consoles[1].Name)
+	assert.Equal(t, "SNES", resp.Consoles[1].ID)
+	assert.Equal(t, 2, resp.Consoles[1].PlayedGames)
+	assert.Equal(t, 3, resp.Consoles[1].TotalGames)
+	assert.Equal(t, 66, resp.Consoles[1].Percentage) // 2/3 = 66%
 }
 
 func TestGetCompletionistMap_Unauthenticated(t *testing.T) {

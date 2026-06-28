@@ -72,3 +72,35 @@ func TestParseViewBoxAspectRatio(t *testing.T) {
 		})
 	}
 }
+
+// TestConsoleLogoAspectRatio covers the SVG-derived cache that replaced the
+// stored logo_aspect_ratio column (#1443). That value-flow had no coverage
+// before: handler tests never ran the old startup backfill, so the field was
+// always null in tests.
+func TestConsoleLogoAspectRatio(t *testing.T) {
+	// A real console with a bundled logo resolves to a positive ratio,
+	// case-insensitively on abbreviation.
+	nes := consoleLogoAspectRatio("NES")
+	if nes == nil || *nes <= 0 {
+		t.Fatalf("consoleLogoAspectRatio(NES) = %v, want positive ratio", nes)
+	}
+	if lower := consoleLogoAspectRatio("nes"); lower == nil || *lower != *nes {
+		t.Fatalf("lookup not case-insensitive: NES=%v nes=%v", nes, lower)
+	}
+
+	// Unknown consoles resolve to nil (client falls back to fluid sizing).
+	if got := consoleLogoAspectRatio("NOSUCHCONSOLE"); got != nil {
+		t.Fatalf("consoleLogoAspectRatio(unknown) = %v, want nil", got)
+	}
+
+	// Child platforms inherit their parent's logo asset (ADEMO → AMIGA), so
+	// their derived ratio must match the parent's.
+	amiga := consoleLogoAspectRatio("AMIGA")
+	ademo := consoleLogoAspectRatio("ADEMO")
+	if amiga == nil || ademo == nil {
+		t.Fatalf("AMIGA=%v ADEMO=%v, want both non-nil", amiga, ademo)
+	}
+	if *amiga != *ademo {
+		t.Fatalf("ADEMO ratio %v != parent AMIGA ratio %v", *ademo, *amiga)
+	}
+}
