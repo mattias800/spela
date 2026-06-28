@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -182,10 +183,12 @@ func (h *ExploreHandler) HumaGetConsoleHighlights(ctx context.Context, _ *GetCon
 	userID := UserIDFromContext(ctx)
 
 	var consoles []db.Console
-	if err := h.DB.Order("name ASC").Find(&consoles).Error; err != nil {
+	if err := h.DB.Find(&consoles).Error; err != nil {
 		slog.Error("failed to fetch consoles for highlights", "error", err)
 		return nil, huma.Error500InternalServerError("failed to fetch consoles")
 	}
+	// Name is registry-derived (#1443); sort in Go after AfterFind populates it.
+	sort.SliceStable(consoles, func(i, j int) bool { return consoles[i].Name < consoles[j].Name })
 
 	type consoleCount struct {
 		ConsoleID uint

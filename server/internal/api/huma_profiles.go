@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"math"
 	"net/http"
+	"sort"
 	"strings"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -163,7 +164,6 @@ func (h *ExploreHandler) HumaGetTasteProfile(ctx context.Context, _ *GetTastePro
 	}
 
 	type consoleRow struct {
-		Name         string
 		Abbreviation string
 		PlayTime     int64
 		GameCount    int
@@ -171,7 +171,7 @@ func (h *ExploreHandler) HumaGetTasteProfile(ctx context.Context, _ *GetTastePro
 	var consoleRows []consoleRow
 	if err := h.DB.
 		Table("play_histories").
-		Select("consoles.name, consoles.abbreviation, SUM(play_histories.play_time) as play_time, COUNT(DISTINCT play_histories.game_id) as game_count").
+		Select("consoles.abbreviation, SUM(play_histories.play_time) as play_time, COUNT(DISTINCT play_histories.game_id) as game_count").
 		Joins("JOIN games ON games.id = play_histories.game_id AND games.deleted_at IS NULL").
 		Joins("JOIN consoles ON consoles.id = games.console_id").
 		Where("play_histories.user_id = ? AND play_histories.play_time > 0 AND play_histories.deleted_at IS NULL", userID).
@@ -185,7 +185,7 @@ func (h *ExploreHandler) HumaGetTasteProfile(ctx context.Context, _ *GetTastePro
 	topConsoles := make([]TasteProfileConsole, len(consoleRows))
 	for i, r := range consoleRows {
 		topConsoles[i] = TasteProfileConsole{
-			Name:         r.Name,
+			Name:         db.ConsoleName(r.Abbreviation), // registry-derived (#1443)
 			Abbreviation: strings.ToLower(r.Abbreviation),
 			PlayTime:     r.PlayTime,
 			GameCount:    r.GameCount,
@@ -337,19 +337,18 @@ func (h *ExploreHandler) HumaGetCompletionistMap(ctx context.Context, _ *GetComp
 
 	type consoleRow struct {
 		ConsoleID    uint
-		ConsoleName  string
 		Abbreviation string
 		TotalGames   int
 	}
 	var consoleRows []consoleRow
+	// Console name lives in the registry now (#1443); derive + sort by it in Go.
 	if err := h.DB.Raw(`
-		SELECT c.id AS console_id, c.name AS console_name, c.abbreviation, COUNT(g.id) AS total_games
+		SELECT c.id AS console_id, c.abbreviation, COUNT(g.id) AS total_games
 		FROM consoles c
 		JOIN games g ON g.console_id = c.id AND g.deleted_at IS NULL AND g.is_primary = true
 		WHERE c.deleted_at IS NULL
 		GROUP BY c.id
 		HAVING COUNT(g.id) > 0
-		ORDER BY c.name
 	`).Scan(&consoleRows).Error; err != nil {
 		slog.Error("failed to query console counts", "error", err)
 		return nil, huma.Error500InternalServerError("failed to compute completionist map")
@@ -388,7 +387,7 @@ func (h *ExploreHandler) HumaGetCompletionistMap(ctx context.Context, _ *GetComp
 		}
 		consoles = append(consoles, CompletionistConsole{
 			ID:          cr.Abbreviation,
-			Name:        cr.ConsoleName,
+			Name:        db.ConsoleName(cr.Abbreviation), // registry-derived (#1443)
 			TotalGames:  cr.TotalGames,
 			PlayedGames: played,
 			Percentage:  pct,
@@ -396,6 +395,8 @@ func (h *ExploreHandler) HumaGetCompletionistMap(ctx context.Context, _ *GetComp
 		totalGames += cr.TotalGames
 		totalPlayed += played
 	}
+	// Preserve the previous ORDER BY name ordering, now that name is derived.
+	sort.SliceStable(consoles, func(i, j int) bool { return consoles[i].Name < consoles[j].Name })
 
 	overallPct := 0
 	if totalGames > 0 {

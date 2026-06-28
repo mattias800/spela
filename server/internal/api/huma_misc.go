@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -263,13 +264,16 @@ func (h *SessionHandler) HumaGetStorageUsage(ctx context.Context, _ *GetStorageU
 		Joins("JOIN games ON games.id = game_sessions.game_id AND games.deleted_at IS NULL").
 		Joins("JOIN consoles ON consoles.id = games.console_id AND consoles.deleted_at IS NULL").
 		Where("session_save_states.user_id = ? AND session_save_states.deleted_at IS NULL", uid).
-		Select("consoles.abbreviation AS console_id, consoles.name AS console_name, COALESCE(SUM(session_save_states.file_size), 0) AS bytes, COUNT(*) AS save_count").
+		Select("consoles.abbreviation AS console_id, COALESCE(SUM(session_save_states.file_size), 0) AS bytes, COUNT(*) AS save_count").
 		Group("consoles.id").
 		Order("bytes DESC").
 		Scan(&rows)
 
 	if rows == nil {
 		rows = []SessionStorageConsoleBreakdown{}
+	}
+	for i := range rows {
+		rows[i].ConsoleName = db.ConsoleName(rows[i].ConsoleID) // registry-derived (#1443)
 	}
 
 	return &GetStorageUsageOutput{Body: StorageUsageResponse{
@@ -472,9 +476,11 @@ func (h *AdminHandler) HumaMetadataMatches(ctx context.Context, _ *MetadataMatch
 // HumaGetCoreCompatibility is the huma handler for GET /api/admin/core-compatibility.
 func (h *AdminHandler) HumaGetCoreCompatibility(_ context.Context, _ *GetCoreCompatibilityInput) (*GetCoreCompatibilityOutput, error) {
 	var consoles []db.Console
-	if err := h.DB.Order("name ASC").Find(&consoles).Error; err != nil {
+	if err := h.DB.Find(&consoles).Error; err != nil {
 		return nil, huma.Error500InternalServerError("failed to fetch consoles")
 	}
+	// Name is registry-derived (#1443); sort in Go after AfterFind populates it.
+	sort.SliceStable(consoles, func(i, j int) bool { return consoles[i].Name < consoles[j].Name })
 
 	result := make([]CoreCompatibilityEntry, 0, len(consoles))
 	for _, console := range consoles {

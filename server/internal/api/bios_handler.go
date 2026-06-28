@@ -34,7 +34,8 @@ func consoleNameMap(database *gorm.DB) map[string]string {
 		return names
 	}
 	var consoles []db.Console
-	database.Select("abbreviation, name").Find(&consoles)
+	// name is registry-derived (#1443); AfterFind populates c.Name on load.
+	database.Select("abbreviation").Find(&consoles)
 	for _, c := range consoles {
 		names[strings.ToLower(c.Abbreviation)] = c.Name
 	}

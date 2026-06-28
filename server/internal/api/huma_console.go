@@ -202,11 +202,11 @@ func RegisterConsoleRoutes(api huma.API, h *ConsoleHandler, jwtSecret string, da
 func (h *ConsoleHandler) HumaListConsoles(_ context.Context, _ *ListConsolesInput) (*ListConsolesOutput, error) {
 	var consoles []db.Console
 	if err := h.DB.Preload("HardwareMaker").Preload("MediaType").Preload("MediaType.Category").
-		Order("name ASC").Find(&consoles).Error; err != nil {
+		Find(&consoles).Error; err != nil {
 		return nil, huma.Error500InternalServerError("failed to fetch consoles")
 	}
-	// Generation is registry-derived (#1443), not a sortable DB column, so
-	// order by (generation, name) in Go after AfterFind has populated it.
+	// Name and Generation are registry-derived (#1443), not sortable DB
+	// columns, so order by (generation, name) in Go after AfterFind populates them.
 	sort.SliceStable(consoles, func(i, j int) bool {
 		if consoles[i].Generation != consoles[j].Generation {
 			return consoles[i].Generation < consoles[j].Generation
@@ -527,7 +527,6 @@ func (h *ConsoleHandler) humaTopListByRating(ratingColumn, ratingFilter, console
 		GameID      uint
 		Name        string
 		CoverURL    string
-		ConsoleName string
 		ConsoleAbbr string
 		Rating      float64
 	}
@@ -537,7 +536,6 @@ func (h *ConsoleHandler) humaTopListByRating(ratingColumn, ratingFilter, console
 		Select(`MIN(games.id) AS game_id,
 				top_rated_games.name AS name,
 				MIN(games.cover_url) AS cover_url,
-				consoles.name AS console_name,
 				consoles.abbreviation AS console_abbr,
 				` + ratingColumn + ` AS rating`).
 		Joins("JOIN games ON (games.scraper_id = ('igdb:' || CAST(top_rated_games.igdb_game_id AS TEXT)) OR LOWER(games.title) = LOWER(top_rated_games.name)) AND games.console_id = top_rated_games.console_id AND games.deleted_at IS NULL AND games.is_primary = true").
@@ -551,7 +549,7 @@ func (h *ConsoleHandler) humaTopListByRating(ratingColumn, ratingFilter, console
 
 	var rows []row
 	err := q.
-		Group("top_rated_games.id, top_rated_games.name, consoles.name, consoles.abbreviation, " + ratingColumn).
+		Group("top_rated_games.id, top_rated_games.name, consoles.abbreviation, " + ratingColumn).
 		Order(ratingColumn + " DESC").
 		Limit(50).
 		Find(&rows).Error
@@ -567,7 +565,7 @@ func (h *ConsoleHandler) humaTopListByRating(ratingColumn, ratingFilter, console
 			GameId:            fmt.Sprintf("%d", r.GameID),
 			Name:              r.Name,
 			CoverUrl:          resolveImageURL(r.CoverURL),
-			ConsoleName:       r.ConsoleName,
+			ConsoleName:       db.ConsoleName(r.ConsoleAbbr), // registry-derived (#1443)
 			ConsoleId:         strings.ToLower(r.ConsoleAbbr),
 			IGDBCriticsRating: r.Rating,
 		}
@@ -583,7 +581,6 @@ func (h *ConsoleHandler) humaTopListLongest(consoleParam string) (*TopListLonges
 		GameID               uint
 		Title                string
 		CoverURL             string
-		ConsoleName          string
 		ConsoleAbbr          string
 		TimeToBeatNormally   int
 		TimeToBeatHastily    int
@@ -595,7 +592,6 @@ func (h *ConsoleHandler) humaTopListLongest(consoleParam string) (*TopListLonges
 		Select(`games.id AS game_id,
 				games.title,
 				games.cover_url,
-				consoles.name AS console_name,
 				consoles.abbreviation AS console_abbr,
 				games.time_to_beat_normally,
 				games.time_to_beat_hastily,
@@ -625,7 +621,7 @@ func (h *ConsoleHandler) humaTopListLongest(consoleParam string) (*TopListLonges
 			GameId:               fmt.Sprintf("%d", r.GameID),
 			Name:                 r.Title,
 			CoverUrl:             resolveImageURL(r.CoverURL),
-			ConsoleName:          r.ConsoleName,
+			ConsoleName:          db.ConsoleName(r.ConsoleAbbr), // registry-derived (#1443)
 			ConsoleId:            strings.ToLower(r.ConsoleAbbr),
 			TimeToBeatNormally:   r.TimeToBeatNormally,
 			TimeToBeatHastily:    r.TimeToBeatHastily,

@@ -1119,16 +1119,6 @@ func MigrateSharedSessions(database *gorm.DB) error {
 	return nil
 }
 
-// consoleNameMigrations maps historical seed names that we want to rename
-// to their canonical new names. Used by SeedConsoles to safely backfill a
-// rename without clobbering admin customisations: a backfill only fires
-// when the existing DB value is a key in this map AND maps to the new
-// seed value. Add a new entry here whenever the canonical name in the
-// SeedConsoles list changes. See #974.
-var consoleNameMigrations = map[string]string{
-	"Neo Geo Pocket": "Neo Geo Pocket / Color",
-}
-
 // SeedConsoles inserts the default console definitions if they don't exist.
 // For existing consoles, it backfills the EmulatorJSCore field if empty.
 func SeedConsoles(db *gorm.DB) error {
@@ -1139,7 +1129,7 @@ func SeedConsoles(db *gorm.DB) error {
 		result := db.Where("abbreviation = ?", c.Abbreviation).First(&existing)
 		if result.Error == gorm.ErrRecordNotFound {
 			if err := db.Create(&c).Error; err != nil {
-				return fmt.Errorf("seeding console %s: %w", c.Name, err)
+				return fmt.Errorf("seeding console %s: %w", spec.Abbreviation, err)
 			}
 			// GORM's Create mutates bool fields with default:true, setting them
 			// to true even when the struct had false. Fix by comparing against
@@ -1147,21 +1137,8 @@ func SeedConsoles(db *gorm.DB) error {
 			if !wantPlayable {
 				db.Exec("UPDATE consoles SET playable = 0 WHERE abbreviation = ?", c.Abbreviation)
 			}
-			slog.Info("seeded console", "name", c.Name)
+			slog.Info("seeded console", "name", spec.Name)
 		} else {
-			// Backfill renames only when the existing name is a known
-			// historical seed value — never overwrite an admin
-			// customisation. Pre-#974 this fired any time the DB
-			// differed from the seed, so an admin who renamed a
-			// console via the admin UI saw their change silently
-			// reverted on the next restart, violating the f(f(x))=f(x)
-			// rule (a customisation is valid starting state).
-			if c.Name != "" && existing.Name != c.Name {
-				if knownPrev, ok := consoleNameMigrations[existing.Name]; ok && knownPrev == c.Name {
-					db.Model(&existing).Update("name", c.Name)
-					slog.Info("migrated Name", "old", existing.Name, "new", c.Name)
-				}
-			}
 			if c.EmulatorJSCore != "" && existing.EmulatorJSCore != c.EmulatorJSCore {
 				db.Model(&existing).Update("emulator_js_core", c.EmulatorJSCore)
 				slog.Info("backfilled EmulatorJSCore", "name", existing.Name, "old", existing.EmulatorJSCore, "new", c.EmulatorJSCore)

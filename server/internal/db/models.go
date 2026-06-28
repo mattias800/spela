@@ -1,6 +1,7 @@
 package db
 
 import (
+	"strings"
 	"time"
 
 	"gorm.io/gorm"
@@ -143,7 +144,9 @@ type Console struct {
 	CreatedAt time.Time      `json:"createdAt"`
 	UpdatedAt time.Time      `json:"updatedAt"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
-	Name      string         `gorm:"uniqueIndex;size:128;not null" json:"name"`
+	// Name is a static display name owned by the console registry, derived
+	// in AfterFind (#1443) — not stored on the row.
+	Name string `gorm:"-" json:"name"`
 	// Abbreviation is the canonical short identifier (e.g. "NES", "SNES",
 	// "PS2"). Every seed function and backfill loop in database.go uses
 	// `WHERE abbreviation = ?` as the lookup key, so the schema must
@@ -185,15 +188,16 @@ type Console struct {
 	GameCount int    `gorm:"-" json:"gameCount"`
 }
 
-// AfterFind derives the intrinsic-fact fields (CoverAspect, Generation)
-// from the console registry whenever a Console is loaded — including as a
-// preloaded association on a Game. These are not stored on the row (#1443);
-// the registry is authoritative. Consoles absent from the registry keep
-// their zero values, except CoverAspect which falls back to the historical
-// default so the API always emits a valid ratio.
+// AfterFind derives the registry-owned fields (Name, CoverAspect,
+// Generation) whenever a Console is loaded — including as a preloaded
+// association on a Game. These are not stored on the row (#1443); the
+// registry is authoritative. Consoles absent from the registry fall back to
+// the abbreviation (Name) / the historical default (CoverAspect) so the API
+// always emits valid values; Generation stays zero.
 func (c *Console) AfterFind(*gorm.DB) error {
 	c.CoverAspect = ConsoleCoverAspect(c.Abbreviation)
-	if spec, ok := ConsoleSpecByAbbreviation(c.Abbreviation); ok {
+	c.Name = ConsoleName(c.Abbreviation)
+	if spec, ok := ConsoleSpecByAbbreviation(strings.ToUpper(c.Abbreviation)); ok {
 		c.Generation = spec.Generation
 	}
 	return nil
