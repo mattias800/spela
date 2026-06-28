@@ -1,14 +1,12 @@
 package api
 
 import (
-	"log/slog"
-	"math"
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/spela/server/internal/db"
-	"gorm.io/gorm"
 )
 
 // viewBoxRe matches an SVG viewBox attribute and captures width + height.
@@ -18,66 +16,46 @@ var viewBoxRe = regexp.MustCompile(
 	`viewBox\s*=\s*"\s*[-0-9.]+\s+[-0-9.]+\s+([-0-9.]+)\s+([-0-9.]+)\s*"`,
 )
 
-// BackfillConsoleLogoAspectRatios reads each console's logo SVG from
-// the embedded assets, parses its viewBox to determine intrinsic
-// width/height, and stores the ratio on the console row's
-// LogoAspectRatio field. Runs after [db.SeedConsoles] from cmd/server.
-//
-// Why this exists — without an intrinsic ratio cached server-side,
-// the player app's console-detail hero shows the logo at a square-
-// equivalent fallback size on first render, then re-layouts to the
-// correct dimensions once the image bytes have decoded and the
-// SubcomposeAsyncImage onSuccess callback fires. The visible
-// size-A → size-B "jump" is exactly what shipping the ratio with
-// the Console DTO removes (#1166).
-//
-// Idempotent — only writes when the stored value differs from the
-// freshly-computed one (within 0.001 tolerance for floating-point
-// noise). Consoles whose SVG can't be read or doesn't have a viewBox
-// silently keep LogoAspectRatio nil; the client falls back to the
-// legacy fluid sizing for them.
-//
-// Honours consoleLogoFallbacks the same way HumaGetConsoleLogo does
-// so child platforms (ADEMO → AMIGA, DDEMO → DOS) inherit their
-// parent's aspect ratio when they have no asset of their own.
-func BackfillConsoleLogoAspectRatios(database *gorm.DB) error {
-	var consoles []db.Console
-	if err := database.Find(&consoles).Error; err != nil {
-		return err
-	}
+var (
+	logoAspectOnce   sync.Once
+	logoAspectByAbbr map[string]float64 // keyed by lowercase abbreviation
+)
 
-	updated := 0
-	for _, c := range consoles {
-		abbr := strings.ToLower(c.Abbreviation)
+// buildLogoAspectCache computes every console's intrinsic logo aspect ratio
+// from its embedded SVG's viewBox, once. Child platforms (ADEMO → AMIGA,
+// DDEMO → DOS) inherit their parent's asset via consoleLogoFallbacks, the
+// same way HumaGetConsoleLogo serves them.
+func buildLogoAspectCache() {
+	logoAspectByAbbr = make(map[string]float64)
+	for _, spec := range db.ConsoleRegistry() {
+		abbr := strings.ToLower(spec.Abbreviation)
 		lookup := abbr
 		if parent, ok := consoleLogoFallbacks[abbr]; ok {
 			lookup = parent
 		}
-
 		data, err := consoleLogos.ReadFile("static/console-logos/" + lookup + ".svg")
 		if err != nil {
 			continue
 		}
-
-		ratio, ok := parseViewBoxAspectRatio(data)
-		if !ok {
-			continue
+		if ratio, ok := parseViewBoxAspectRatio(data); ok {
+			logoAspectByAbbr[abbr] = ratio
 		}
-
-		if c.LogoAspectRatio != nil && math.Abs(*c.LogoAspectRatio-ratio) < 0.001 {
-			continue
-		}
-
-		if err := database.Model(&c).Update("logo_aspect_ratio", ratio).Error; err != nil {
-			slog.Warn("failed to set logo_aspect_ratio",
-				"console", c.Abbreviation, "ratio", ratio, "error", err)
-			continue
-		}
-		updated++
 	}
+}
 
-	if updated > 0 {
-		slog.Info("backfilled console logo aspect ratios", "count", updated)
+// consoleLogoAspectRatio returns a console's intrinsic logo width/height
+// ratio, derived (and cached) from its SVG viewBox. Nil when the asset is
+// missing or has no usable viewBox — the client then falls back to legacy
+// fluid sizing.
+//
+// Why this exists: shipping the ratio with the Console DTO lets the player
+// app size the console-detail hero logo correctly on first render instead
+// of guessing square and re-laying-out once the image decodes (#1166). It
+// is derived from the bundled asset rather than stored on the row (#1443).
+func consoleLogoAspectRatio(abbr string) *float64 {
+	logoAspectOnce.Do(buildLogoAspectCache)
+	if r, ok := logoAspectByAbbr[strings.ToLower(abbr)]; ok {
+		return &r
 	}
 	return nil
 }

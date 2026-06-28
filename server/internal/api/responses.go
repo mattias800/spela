@@ -309,7 +309,7 @@ func ToConsoleResponse(c db.Console) ConsoleResponse {
 		DefaultCore:      c.DefaultCore,
 		EmulatorJSCore:   c.EmulatorJSCore,
 		CoverAspectRatio: ratio,
-		LogoAspectRatio:  c.LogoAspectRatio,
+		LogoAspectRatio:  consoleLogoAspectRatio(c.Abbreviation),
 		ColorTheme:       c.ColorTheme,
 		Generation:       c.Generation,
 		IconURL:          "/api/consoles/" + abbr + "/icon",

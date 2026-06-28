@@ -185,15 +185,6 @@ func main() {
 		slog.Warn("failed to migrate azahar core to buildbot default", "error", err)
 	}
 
-	// Compute LogoAspectRatio for every seeded console by parsing the
-	// embedded SVG's viewBox. Lets the player app size the console-
-	// detail hero logo correctly on first render — without this, the
-	// client falls back to a square-equivalent guess and then re-
-	// layouts once the image decodes (#1166).
-	if err := api.BackfillConsoleLogoAspectRatios(database); err != nil {
-		slog.Warn("failed to backfill console logo aspect ratios", "error", err)
-	}
-
 	// Backfill per-source scrape results from legacy ScraperID field (one-time on upgrade)
 	if err := db.MigrateScrapeResults(database); err != nil {
 		slog.Warn("failed to migrate scrape results", "error", err)
