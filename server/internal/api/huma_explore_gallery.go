@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/danielgtaylor/huma/v2"
+	"github.com/spela/server/internal/db"
 	"gorm.io/gorm"
 )
 
@@ -286,12 +287,11 @@ func (h *ExploreHandler) HumaGetCoverGallery(_ context.Context, in *GetCoverGall
 		ConsoleAbbr  string
 		ConsoleColor string
 		Rating       float64
-		CoverAspect  string
 	}
 
 	var rows []coverRow
 	if err := baseQuery.
-		Select("games.cover_url, games.id as game_id, games.title as game_title, games.rating, consoles.name as console_name, LOWER(consoles.abbreviation) as console_abbr, consoles.color_theme as console_color, consoles.cover_aspect").
+		Select("games.cover_url, games.id as game_id, games.title as game_title, games.rating, consoles.name as console_name, LOWER(consoles.abbreviation) as console_abbr, consoles.color_theme as console_color").
 		Order("games.rating DESC").
 		Offset(offset).
 		Limit(limit).
@@ -310,7 +310,8 @@ func (h *ExploreHandler) HumaGetCoverGallery(_ context.Context, in *GetCoverGall
 			ConsoleAbbr:       r.ConsoleAbbr,
 			ConsoleColor:      r.ConsoleColor,
 			IGDBCriticsRating: r.Rating,
-			CoverAspectRatio:  parseAspectRatio(r.CoverAspect),
+			// cover_aspect is registry-derived (#1443), not a DB column.
+			CoverAspectRatio: parseAspectRatio(db.ConsoleCoverAspect(r.ConsoleAbbr)),
 		})
 	}
 

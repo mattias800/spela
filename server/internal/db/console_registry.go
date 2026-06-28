@@ -1,5 +1,7 @@
 package db
 
+import "strings"
+
 // ConsoleSpec is the single source of truth for one console's static
 // metadata (#1443). The seeders build every console row from this
 // registry, and response builders derive presentation fields from it,
@@ -116,8 +118,10 @@ var consoleRegistry = []ConsoleSpec{
 }
 
 // toConsole builds the database row for this spec. It carries only the
-// fields SeedConsoles owns directly; the maker/media foreign keys and the
-// catalog columns are applied separately by SeedConsoleMetadata.
+// fields SeedConsoles persists directly; the maker/media foreign keys are
+// applied by SeedConsoleMetadata, and the intrinsic-fact fields
+// (CoverAspect, Generation) are not stored at all — they are derived from
+// the registry on load via Console.AfterFind (#1443).
 func (s ConsoleSpec) toConsole() Console {
 	return Console{
 		Name:             s.Name,
@@ -126,13 +130,26 @@ func (s ConsoleSpec) toConsole() Console {
 		DefaultCore:      s.DefaultCore,
 		EmulatorJSCore:   s.EmulatorJSCore,
 		FolderName:       s.FolderName,
-		CoverAspect:      s.CoverAspect,
 		ColorTheme:       s.ColorTheme,
-		Generation:       s.Generation,
 		SaveStateSupport: s.SaveStateSupport,
 		SaveStatePolicy:  s.SaveStatePolicy,
 		Playable:         s.Playable,
 	}
+}
+
+// DefaultCoverAspect is the fallback cover-art aspect for consoles whose
+// registry entry declares none. Mirrors the historical column default.
+const DefaultCoverAspect = "3:4"
+
+// ConsoleCoverAspect returns a console's cover-art aspect string from the
+// registry, matched case-insensitively on abbreviation and falling back to
+// DefaultCoverAspect. Used by both Console.AfterFind and the raw-SQL read
+// paths that can't go through the model hook.
+func ConsoleCoverAspect(abbr string) string {
+	if s, ok := ConsoleSpecByAbbreviation(strings.ToUpper(abbr)); ok && s.CoverAspect != "" {
+		return s.CoverAspect
+	}
+	return DefaultCoverAspect
 }
 
 // ConsoleSpecByAbbreviation returns the registry entry for an abbreviation

@@ -155,7 +155,11 @@ type Console struct {
 	DefaultCore    string `gorm:"size:128" json:"defaultCore"`
 	EmulatorJSCore string `gorm:"size:64" json:"emulatorJsCore"`
 	FolderName     string `gorm:"size:64" json:"folderName"`
-	CoverAspect    string `gorm:"size:16;default:3:4" json:"coverAspect"`
+	// CoverAspect (box-art ratio) and Generation (console generation) are
+	// intrinsic facts that never change and are never admin-settable, so
+	// they are not stored: AfterFind derives them from the console registry
+	// on load. See #1443.
+	CoverAspect string `gorm:"-" json:"coverAspect"`
 	// LogoAspectRatio is the intrinsic width/height ratio of this
 	// console's logo asset, computed once at seed time from the SVG's
 	// viewBox. The player app uses it to size the logo container
@@ -166,7 +170,7 @@ type Console struct {
 	// the legacy fluid sizing). See #1166.
 	LogoAspectRatio  *float64 `json:"logoAspectRatio"`
 	ColorTheme       string   `gorm:"size:7;default:#6366f1" json:"colorTheme"`
-	Generation       int      `gorm:"default:0" json:"generation"`
+	Generation       int      `gorm:"-" json:"generation"`
 	SaveStateSupport bool     `gorm:"default:true" json:"saveStateSupport"`
 	// Size tier driving retention/slot/UX behaviour for save states on
 	// this console. See [SaveStatePolicy]. The column has NO default
@@ -187,6 +191,20 @@ type Console struct {
 	// derived into responses there — no longer stored on this row.
 	Games     []Game `gorm:"foreignKey:ConsoleID" json:"games"`
 	GameCount int    `gorm:"-" json:"gameCount"`
+}
+
+// AfterFind derives the intrinsic-fact fields (CoverAspect, Generation)
+// from the console registry whenever a Console is loaded — including as a
+// preloaded association on a Game. These are not stored on the row (#1443);
+// the registry is authoritative. Consoles absent from the registry keep
+// their zero values, except CoverAspect which falls back to the historical
+// default so the API always emits a valid ratio.
+func (c *Console) AfterFind(*gorm.DB) error {
+	c.CoverAspect = ConsoleCoverAspect(c.Abbreviation)
+	if spec, ok := ConsoleSpecByAbbreviation(c.Abbreviation); ok {
+		c.Generation = spec.Generation
+	}
+	return nil
 }
 
 // Game represents a detected ROM/game file.
