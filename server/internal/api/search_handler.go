@@ -201,7 +201,6 @@ func (h *SearchHandler) searchGames(gameQuery string, limit int, priorityAbbr st
 		ConsoleAbbr string
 		Developer   string
 		Genre       string
-		CoverAspect string
 	}
 
 	titleClause, titleArgs := titleLikeClauses("games.title", gameQuery)
@@ -216,7 +215,7 @@ func (h *SearchHandler) searchGames(gameQuery string, limit int, priorityAbbr st
 	var rows []gameRow
 	q := h.DB.
 		Table("games").
-		Select("games.id, games.title, games.cover_url, consoles.name as console_name, consoles.abbreviation as console_abbr, games.developer, games.genre, consoles.cover_aspect").
+		Select("games.id, games.title, games.cover_url, consoles.name as console_name, consoles.abbreviation as console_abbr, games.developer, games.genre").
 		Joins("JOIN consoles ON consoles.id = games.console_id").
 		Where(likeClause, titleArgs...)
 
@@ -263,7 +262,7 @@ func (h *SearchHandler) searchGames(gameQuery string, limit int, priorityAbbr st
 			ConsoleID:        strings.ToLower(r.ConsoleAbbr),
 			Developer:        r.Developer,
 			Genre:            r.Genre,
-			CoverAspectRatio: parseAspectRatio(r.CoverAspect),
+			CoverAspectRatio: parseAspectRatio(db.ConsoleCoverAspect(r.ConsoleAbbr)), // registry-derived (#1443)
 		}
 	}
 

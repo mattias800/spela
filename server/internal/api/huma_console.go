@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"sort"
 	"strings"
 	"time"
 
@@ -201,9 +202,17 @@ func RegisterConsoleRoutes(api huma.API, h *ConsoleHandler, jwtSecret string, da
 func (h *ConsoleHandler) HumaListConsoles(_ context.Context, _ *ListConsolesInput) (*ListConsolesOutput, error) {
 	var consoles []db.Console
 	if err := h.DB.Preload("HardwareMaker").Preload("MediaType").Preload("MediaType.Category").
-		Order("generation ASC, name ASC").Find(&consoles).Error; err != nil {
+		Order("name ASC").Find(&consoles).Error; err != nil {
 		return nil, huma.Error500InternalServerError("failed to fetch consoles")
 	}
+	// Generation is registry-derived (#1443), not a sortable DB column, so
+	// order by (generation, name) in Go after AfterFind has populated it.
+	sort.SliceStable(consoles, func(i, j int) bool {
+		if consoles[i].Generation != consoles[j].Generation {
+			return consoles[i].Generation < consoles[j].Generation
+		}
+		return consoles[i].Name < consoles[j].Name
+	})
 
 	// Attach game counts (only primary, non-pre-release games — matches what users see).
 	// One GROUP BY query instead of N COUNT queries — on a 40-console install this turns

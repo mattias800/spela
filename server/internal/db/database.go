@@ -1170,10 +1170,6 @@ func SeedConsoles(db *gorm.DB) error {
 				db.Model(&existing).Update("default_core", c.DefaultCore)
 				slog.Info("backfilled DefaultCore", "name", existing.Name, "core", c.DefaultCore)
 			}
-			if c.CoverAspect != "" && existing.CoverAspect != c.CoverAspect {
-				db.Model(&existing).Update("cover_aspect", c.CoverAspect)
-				slog.Info("backfilled CoverAspect", "name", existing.Name, "aspect", c.CoverAspect)
-			}
 			if c.FolderName != "" && existing.FolderName != c.FolderName {
 				db.Model(&existing).Update("folder_name", c.FolderName)
 				slog.Info("backfilled FolderName", "name", existing.Name, "folder", c.FolderName)
@@ -1211,11 +1207,6 @@ func SeedConsoles(db *gorm.DB) error {
 				}
 				db.Exec("UPDATE consoles SET playable = ? WHERE abbreviation = ?", playableInt, c.Abbreviation)
 				slog.Info("backfilled Playable", "name", existing.Name, "playable", wantPlayable)
-			}
-			// Backfill Generation for existing consoles
-			if existing.Generation != c.Generation && c.Generation != 0 {
-				db.Model(&existing).Update("generation", c.Generation)
-				slog.Info("backfilled Generation", "name", existing.Name, "generation", c.Generation)
 			}
 			// Backfill any new extensions from the seed that are missing in the DB
 			for _, ext := range strings.Split(c.Extensions, ",") {

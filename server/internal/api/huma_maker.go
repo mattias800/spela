@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"net/http"
+	"sort"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/spela/server/internal/db"
@@ -101,8 +102,16 @@ func (h *MakerHandler) HumaGetMaker(_ context.Context, in *GetMakerInput) (*GetM
 		Preload("HardwareMaker").
 		Preload("MediaType").
 		Preload("MediaType.Category").
-		Order("generation ASC, name ASC").
+		Order("name ASC").
 		Find(&consoles)
+	// Generation is registry-derived (#1443), not a sortable DB column, so
+	// order by (generation, name) in Go after AfterFind has populated it.
+	sort.SliceStable(consoles, func(i, j int) bool {
+		if consoles[i].Generation != consoles[j].Generation {
+			return consoles[i].Generation < consoles[j].Generation
+		}
+		return consoles[i].Name < consoles[j].Name
+	})
 
 	// Attach game counts (only primary, non-pre-release games).
 	for i := range consoles {
