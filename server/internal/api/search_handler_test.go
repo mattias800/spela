@@ -321,11 +321,43 @@ func TestSearch_Consoles_OnlyWithGames(t *testing.T) {
 	code, resp := searchGet(t, router, token, "/api/search?q=Nintendo")
 	assert.Equal(t, http.StatusOK, code)
 
-	// Only SNES should appear (it's the only one with games)
-	// The name contains "Nintendo" (Super Nintendo Entertainment System)
-	for _, c := range resp.Consoles.Results {
-		assert.Greater(t, c.GameCount, 0, "console %s should have games", c.Name)
-	}
+	// Many console names contain "Nintendo" (NES, N64, GameCube, ...) but only
+	// SNES has a game, so it must be the sole result — and it must actually be
+	// there. A bare range loop would pass on an empty result set, so assert the
+	// exact result explicitly (the name match + games filter both ran).
+	require.Len(t, resp.Consoles.Results, 1)
+	assert.Equal(t, 1, resp.Consoles.Total)
+	assert.Equal(t, "snes", resp.Consoles.Results[0].ID)
+	assert.Equal(t, "Super Nintendo", resp.Consoles.Results[0].Name)
+	assert.Equal(t, 1, resp.Consoles.Results[0].GameCount)
+}
+
+// TestSearch_Consoles_MatchesRegistryName locks in that console search matches
+// against the registry-derived name (#1443) — case-insensitively — and returns
+// the correct console, discriminating between candidates. Console names are no
+// longer a DB column, so this match happens in Go; without a positive
+// assertion a broken match would silently return nothing.
+func TestSearch_Consoles_MatchesRegistryName(t *testing.T) {
+	database, router, token := setupSearchEnv(t)
+
+	var snes, gen db.Console
+	require.NoError(t, database.Where("abbreviation = ?", "SNES").First(&snes).Error)
+	require.NoError(t, database.Where("abbreviation = ?", "GEN").First(&gen).Error)
+	require.NoError(t, database.Create(&db.Game{ConsoleID: snes.ID, Title: "A", FileName: "a.smc", FilePath: "/roms/snes/a.smc"}).Error)
+	require.NoError(t, database.Create(&db.Game{ConsoleID: gen.ID, Title: "B", FileName: "b.md", FilePath: "/roms/gen/b.md"}).Error)
+
+	// "genesis" (lowercase) must match "Sega Genesis" and not "Super Nintendo".
+	code, resp := searchGet(t, router, token, "/api/search?q=genesis")
+	assert.Equal(t, http.StatusOK, code)
+	require.Len(t, resp.Consoles.Results, 1)
+	assert.Equal(t, "gen", resp.Consoles.Results[0].ID)
+	assert.Equal(t, "Sega Genesis", resp.Consoles.Results[0].Name)
+
+	// A term in neither name returns no consoles.
+	code, resp = searchGet(t, router, token, "/api/search?q=zzznoconsole")
+	assert.Equal(t, http.StatusOK, code)
+	assert.Equal(t, 0, resp.Consoles.Total)
+	assert.Empty(t, resp.Consoles.Results)
 }
 
 func TestSearch_Developers(t *testing.T) {
