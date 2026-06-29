@@ -1011,10 +1011,14 @@ func consolePhotoFor(abbr string) (string, bool) {
 // photo is bundled (so the DTO carries an explicit null and the UI falls back
 // to the logo/watermark). [abbr] is the lowercase console abbreviation.
 func consolePhotoURL(abbr string) *string {
-	if _, ok := consolePhotoFor(abbr); !ok {
+	resolved, ok := consolePhotoFor(abbr)
+	if !ok {
 		return nil
 	}
-	u := "/api/consoles/" + abbr + "/photo"
+	// Hash the actually-served file (which may be a parent platform's photo via
+	// the fallback) so the ?v= cache-buster tracks the real bytes. See #1441.
+	hash := assetHash(consolePhotos, "static/console-photos/"+resolved+"."+consolePhotoFiles[resolved])
+	u := withVersion("/api/consoles/"+abbr+"/photo", hash)
 	return &u
 }
 

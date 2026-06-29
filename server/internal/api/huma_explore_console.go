@@ -263,8 +263,8 @@ func (h *ExploreHandler) HumaGetConsoleHighlights(ctx context.Context, _ *GetCon
 			ID:              abbr,
 			Name:            con.Name,
 			ColorTheme:      con.ColorTheme,
-			IconURL:         "/api/consoles/" + abbr + "/icon",
-			LogoURL:         "/api/consoles/" + abbr + "/logo",
+			IconURL:         consoleIconURL(abbr),
+			LogoURL:         consoleLogoURL(abbr),
 			LogoAspectRatio: consoleLogoAspectRatio(con.Abbreviation),
 			GameCount:       gc,
 		}
