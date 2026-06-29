@@ -317,7 +317,7 @@ func (h *SearchHandler) searchConsoles(query string, limit int) SearchCategoryRe
 		results[i] = SearchConsoleResult{
 			ID:         abbr,
 			Name:       m.name,
-			IconURL:    "/api/consoles/" + abbr + "/icon",
+			IconURL:    consoleIconURL(abbr),
 			GameCount:  m.row.GameCount,
 			ColorTheme: db.ConsoleColorTheme(m.row.Abbreviation), // registry-derived (#1443)
 		}
