@@ -158,13 +158,13 @@ type Console struct {
 	DefaultCore    string `gorm:"size:128" json:"defaultCore"`
 	EmulatorJSCore string `gorm:"size:64" json:"emulatorJsCore"`
 	FolderName     string `gorm:"size:64" json:"folderName"`
-	// CoverAspect (box-art ratio) and Generation are intrinsic facts that
-	// never change and are never admin-settable, so they are not stored:
-	// AfterFind derives them from the console registry on load. (LogoAspect-
-	// Ratio is likewise derived — from the logo SVG's viewBox at response
-	// time, see consoleLogoAspectRatio.) See #1443 / #1166.
+	// CoverAspect (box-art ratio), Generation and ColorTheme (card-gradient
+	// colour) are static facts owned by the console registry, not stored:
+	// AfterFind derives them on load. (LogoAspectRatio is likewise derived —
+	// from the logo SVG's viewBox at response time, see consoleLogoAspect-
+	// Ratio.) See #1443 / #1166.
 	CoverAspect      string `gorm:"-" json:"coverAspect"`
-	ColorTheme       string `gorm:"size:7;default:#6366f1" json:"colorTheme"`
+	ColorTheme       string `gorm:"-" json:"colorTheme"`
 	Generation       int    `gorm:"-" json:"generation"`
 	SaveStateSupport bool   `gorm:"default:true" json:"saveStateSupport"`
 	// Size tier driving retention/slot/UX behaviour for save states on
@@ -196,6 +196,7 @@ type Console struct {
 // always emits valid values; Generation stays zero.
 func (c *Console) AfterFind(*gorm.DB) error {
 	c.CoverAspect = ConsoleCoverAspect(c.Abbreviation)
+	c.ColorTheme = ConsoleColorTheme(c.Abbreviation)
 	c.Name = ConsoleName(c.Abbreviation)
 	if spec, ok := ConsoleSpecByAbbreviation(strings.ToUpper(c.Abbreviation)); ok {
 		c.Generation = spec.Generation
