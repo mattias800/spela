@@ -157,7 +157,7 @@ type Console struct {
 	Extensions     string `gorm:"-" json:"extensions"` // registry-derived in AfterFind (#1513), not stored
 	DefaultCore    string `gorm:"size:128" json:"defaultCore"`
 	EmulatorJSCore string `gorm:"size:64" json:"emulatorJsCore"`
-	FolderName     string `gorm:"size:64" json:"folderName"`
+	FolderName     string `gorm:"-" json:"folderName"` // registry-derived in AfterFind (#1513), not stored
 	// CoverAspect (box-art ratio), Generation and ColorTheme (card-gradient
 	// colour) are static facts owned by the console registry, not stored:
 	// AfterFind derives them on load. (LogoAspectRatio is likewise derived —
@@ -199,6 +199,7 @@ func (c *Console) AfterFind(*gorm.DB) error {
 	c.ColorTheme = ConsoleColorTheme(c.Abbreviation)
 	c.Name = ConsoleName(c.Abbreviation)
 	c.Extensions = ConsoleExtensions(c.Abbreviation)
+	c.FolderName = ConsoleFolderName(c.Abbreviation)
 	if spec, ok := ConsoleSpecByAbbreviation(strings.ToUpper(c.Abbreviation)); ok {
 		c.Generation = spec.Generation
 	}
