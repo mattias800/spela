@@ -12,6 +12,17 @@ transparency has clean anti-aliased edges; keying a white bg never cuts as
 cleanly (it leaves a jagged/haloed boundary). Only key photos with no
 transparent twin.
 
+NON-WHITE / GRADIENT / BUSY BACKGROUNDS: the flood-fill below only works on a
+(near-)white background. For photos shot on a grey studio gradient or a cluttered
+scene with no transparent twin on Commons (e.g. Commodore PET, Plus/4, Sharp
+X68000, Amstrad CPC — obscure systems, #1441), use ML background removal instead:
+    python3 -m venv /tmp/rembg-venv
+    /tmp/rembg-venv/bin/pip install rembg onnxruntime pillow
+    /tmp/rembg-venv/bin/python -c "from rembg import remove; from PIL import Image; \\
+        r=remove(Image.open('in.jpg').convert('RGBA')); r.crop(r.getbbox()).save('out.png')"
+(crop to the alpha bbox so the card region fills). Record author/license/source
+in CREDITS.json exactly as for keyed photos — attribution still applies.
+
 Per-file rule:
   - Top-left already transparent -> skip (fine as-is).
   - Top-left exactly white        -> remove the background with a flood-fill from

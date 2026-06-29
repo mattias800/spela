@@ -128,6 +128,15 @@
       "bytes": 467026
     },
     {
+      "console": "cpc",
+      "file": "cpc.png",
+      "title": "Amstrad CPC 464.jpg",
+      "author": "Ismael Olea",
+      "license": "CC BY-SA 2.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Amstrad_CPC_464.jpg",
+      "bytes": 182337
+    },
+    {
       "console": "cv",
       "file": "cv.png",
       "title": "ColecoVision-wController-L.png",
@@ -372,12 +381,12 @@
     },
     {
       "console": "pet",
-      "file": "pet.jpg",
+      "file": "pet.png",
       "title": "Commodore 2001 Series-IMG 0448b.jpg",
       "author": "Rama &amp; Mus\u00e9e Bolo",
       "license": "CC BY-SA 2.0 fr",
       "source": "https://commons.wikimedia.org/wiki/File:Commodore_2001_Series-IMG_0448b.jpg",
-      "bytes": 74032
+      "bytes": 309600
     },
     {
       "console": "pkmn",
@@ -390,12 +399,12 @@
     },
     {
       "console": "plus4",
-      "file": "plus4.jpg",
+      "file": "plus4.png",
       "title": "Commodore Plus-4.jpg",
       "author": "Jumbo1435",
       "license": "CC BY-SA 3.0",
       "source": "https://commons.wikimedia.org/wiki/File:Commodore_Plus-4.jpg",
-      "bytes": 207503
+      "bytes": 479708
     },
     {
       "console": "ps2",
@@ -576,6 +585,15 @@
       "license": "Public domain",
       "source": "https://commons.wikimedia.org/wiki/File:Xbox-360S-Console-Set.png",
       "bytes": 888906
+    },
+    {
+      "console": "x68k",
+      "file": "x68k.png",
+      "title": "Sharp X68000 XVI.jpg",
+      "author": "htomari",
+      "license": "CC BY-SA 2.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Sharp_X68000_XVI.jpg",
+      "bytes": 732835
     },
     {
       "console": "xbox",

@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/spela/server/internal/db"
@@ -81,7 +82,9 @@ func TestConsolePhotoCreditsManifestCoversEveryBundledPhoto(t *testing.T) {
 func TestConsolePhotoURLGating(t *testing.T) {
 	bundled := ToConsoleResponse(db.Console{Abbreviation: "NES"})
 	require.NotNil(t, bundled.PhotoURL, "NES is bundled, expected a photo URL")
-	assert.Equal(t, "/api/consoles/nes/photo", *bundled.PhotoURL)
+	// URL carries a content-hash cache-buster (?v=...) so changed assets refetch (#1441).
+	assert.True(t, strings.HasPrefix(*bundled.PhotoURL, "/api/consoles/nes/photo?v="),
+		"expected versioned photo URL, got %q", *bundled.PhotoURL)
 
 	// scummvm is intentionally not bundled (it's an engine, not hardware).
 	none := ToConsoleResponse(db.Console{Abbreviation: "SCUMMVM"})
@@ -91,7 +94,8 @@ func TestConsolePhotoURLGating(t *testing.T) {
 	// parent-platform fallback (#1441).
 	demos := ToConsoleResponse(db.Console{Abbreviation: "ADEMO"})
 	require.NotNil(t, demos.PhotoURL, "ADEMO should inherit the Amiga photo")
-	assert.Equal(t, "/api/consoles/ademo/photo", *demos.PhotoURL)
+	assert.True(t, strings.HasPrefix(*demos.PhotoURL, "/api/consoles/ademo/photo?v="),
+		"expected versioned photo URL, got %q", *demos.PhotoURL)
 }
 
 // TestConsolePhotoFallbackServesParent verifies the photo handler resolves a
