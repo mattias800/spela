@@ -43,7 +43,10 @@ func setupTestDB(t *testing.T) *gorm.DB {
 
 func seedNESConsole(t *testing.T, database *gorm.DB) Console {
 	t.Helper()
-	c := Console{Name: "NES", Abbreviation: "NES", Extensions: ".nes", FolderName: "nes"}
+	// Name/Extensions/FolderName are registry-derived (gorm:"-") and not
+	// persisted; callers only need the row's ID and Abbreviation. Setting them
+	// here would be silently dropped and misleading (#1513).
+	c := Console{Abbreviation: "NES"}
 	require.NoError(t, database.Create(&c).Error)
 	return c
 }

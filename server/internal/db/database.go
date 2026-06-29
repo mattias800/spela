@@ -527,14 +527,13 @@ func dedupePreMigration(database *gorm.DB) error {
 }
 
 func MigrateToRelativePaths(database *gorm.DB, gameDirs []string) error {
-	// Load console folder names for fallback detection
-	var consoles []Console
-	if err := database.Select("folder_name").Where("folder_name != ''").Find(&consoles).Error; err != nil {
-		return fmt.Errorf("loading console folder names: %w", err)
-	}
-	folderNames := make(map[string]bool, len(consoles))
-	for _, c := range consoles {
-		folderNames[c.FolderName] = true
+	// Console folder names are registry-owned (#1513); build the fallback
+	// detection set from the registry rather than a now-dropped DB column.
+	folderNames := make(map[string]bool)
+	for _, spec := range ConsoleRegistry() {
+		if spec.FolderName != "" {
+			folderNames[spec.FolderName] = true
+		}
 	}
 
 	// Migrate Game records: absolute paths AND stale relative paths (e.g. ../testdata/roms/nes/...)
@@ -1146,10 +1145,6 @@ func SeedConsoles(db *gorm.DB) error {
 			if c.DefaultCore != "" && existing.DefaultCore != c.DefaultCore {
 				db.Model(&existing).Update("default_core", c.DefaultCore)
 				slog.Info("backfilled DefaultCore", "name", existing.Name, "core", c.DefaultCore)
-			}
-			if c.FolderName != "" && existing.FolderName != c.FolderName {
-				db.Model(&existing).Update("folder_name", c.FolderName)
-				slog.Info("backfilled FolderName", "name", existing.Name, "folder", c.FolderName)
 			}
 			if !existing.SaveStateSupport && c.SaveStateSupport {
 				db.Model(&existing).Update("save_state_support", true)

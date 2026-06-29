@@ -127,7 +127,6 @@ func (s ConsoleSpec) toConsole() Console {
 		Abbreviation:     s.Abbreviation,
 		DefaultCore:      s.DefaultCore,
 		EmulatorJSCore:   s.EmulatorJSCore,
-		FolderName:       s.FolderName,
 		SaveStateSupport: s.SaveStateSupport,
 		SaveStatePolicy:  s.SaveStatePolicy,
 		Playable:         s.Playable,
@@ -182,6 +181,18 @@ func ConsoleName(abbr string) string {
 func ConsoleExtensions(abbr string) string {
 	if s, ok := ConsoleSpecByAbbreviation(strings.ToUpper(abbr)); ok {
 		return s.Extensions
+	}
+	return ""
+}
+
+// ConsoleFolderName returns a console's on-disk folder name from the registry,
+// matched case-insensitively on abbreviation. Returns "" for an unknown
+// console. Static, registry-owned (#1513) — derived in Console.AfterFind and
+// read directly from the registry in the raw-SQL path (MigrateToRelativePaths),
+// no longer stored on the row.
+func ConsoleFolderName(abbr string) string {
+	if s, ok := ConsoleSpecByAbbreviation(strings.ToUpper(abbr)); ok {
+		return s.FolderName
 	}
 	return ""
 }
