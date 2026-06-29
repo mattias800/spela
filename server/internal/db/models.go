@@ -154,7 +154,7 @@ type Console struct {
 	// rows for the same abbreviation and subsequent `First()` calls
 	// would silently pick whichever SQLite returns first. See #970.
 	Abbreviation   string `gorm:"uniqueIndex;size:16;not null" json:"abbreviation"`
-	Extensions     string `gorm:"size:255;not null" json:"extensions"` // comma-separated
+	Extensions     string `gorm:"-" json:"extensions"` // registry-derived in AfterFind (#1513), not stored
 	DefaultCore    string `gorm:"size:128" json:"defaultCore"`
 	EmulatorJSCore string `gorm:"size:64" json:"emulatorJsCore"`
 	FolderName     string `gorm:"size:64" json:"folderName"`
@@ -198,6 +198,7 @@ func (c *Console) AfterFind(*gorm.DB) error {
 	c.CoverAspect = ConsoleCoverAspect(c.Abbreviation)
 	c.ColorTheme = ConsoleColorTheme(c.Abbreviation)
 	c.Name = ConsoleName(c.Abbreviation)
+	c.Extensions = ConsoleExtensions(c.Abbreviation)
 	if spec, ok := ConsoleSpecByAbbreviation(strings.ToUpper(c.Abbreviation)); ok {
 		c.Generation = spec.Generation
 	}

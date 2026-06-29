@@ -1178,15 +1178,6 @@ func SeedConsoles(db *gorm.DB) error {
 				db.Exec("UPDATE consoles SET playable = ? WHERE abbreviation = ?", playableInt, c.Abbreviation)
 				slog.Info("backfilled Playable", "name", existing.Name, "playable", wantPlayable)
 			}
-			// Backfill any new extensions from the seed that are missing in the DB
-			for _, ext := range strings.Split(c.Extensions, ",") {
-				ext = strings.TrimSpace(ext)
-				if ext != "" && !strings.Contains(existing.Extensions, ext) {
-					existing.Extensions = existing.Extensions + "," + ext
-					db.Model(&existing).Update("extensions", existing.Extensions)
-					slog.Info("backfilled extension", "name", existing.Name, "ext", ext)
-				}
-			}
 		}
 	}
 

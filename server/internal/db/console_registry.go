@@ -125,7 +125,6 @@ var consoleRegistry = []ConsoleSpec{
 func (s ConsoleSpec) toConsole() Console {
 	return Console{
 		Abbreviation:     s.Abbreviation,
-		Extensions:       s.Extensions,
 		DefaultCore:      s.DefaultCore,
 		EmulatorJSCore:   s.EmulatorJSCore,
 		FolderName:       s.FolderName,
@@ -174,6 +173,17 @@ func ConsoleName(abbr string) string {
 		return s.Name
 	}
 	return abbr
+}
+
+// ConsoleExtensions returns a console's comma-separated supported file
+// extensions from the registry, matched case-insensitively on abbreviation.
+// Returns "" for an unknown console. Static, registry-owned (#1513) — derived
+// in Console.AfterFind, no longer stored on the row.
+func ConsoleExtensions(abbr string) string {
+	if s, ok := ConsoleSpecByAbbreviation(strings.ToUpper(abbr)); ok {
+		return s.Extensions
+	}
+	return ""
 }
 
 // ConsoleSpecByAbbreviation returns the registry entry for an abbreviation
