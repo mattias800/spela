@@ -16,7 +16,19 @@ func normalizeRegistrationEmail(username string, email string) (string, error) {
 	if !isValidPlainEmail(trimmed) {
 		return "", fmt.Errorf("invalid email")
 	}
+	if isGeneratedRegistrationEmailDomain(trimmed) {
+		return "", fmt.Errorf("reserved email domain")
+	}
 	return trimmed, nil
+}
+
+// isGeneratedRegistrationEmailDomain reports whether email is in the reserved
+// internal placeholder domain (case-insensitive). Only generatedRegistrationEmail
+// mints addresses here; user- and admin-supplied input must be rejected so nobody
+// can squat a placeholder (blocking a real user's no-email signup) or store a
+// reserved-namespace address that publicUserEmail would silently hide. (#1516)
+func isGeneratedRegistrationEmailDomain(email string) bool {
+	return strings.HasSuffix(strings.ToLower(strings.TrimSpace(email)), "@"+generatedRegistrationEmailDomain)
 }
 
 func generatedRegistrationEmail(username string) string {
@@ -24,7 +36,7 @@ func generatedRegistrationEmail(username string) string {
 }
 
 func publicUserEmail(email string) string {
-	if strings.HasSuffix(email, "@"+generatedRegistrationEmailDomain) {
+	if isGeneratedRegistrationEmailDomain(email) {
 		return ""
 	}
 	return email

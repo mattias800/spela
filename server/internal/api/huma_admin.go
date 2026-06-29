@@ -272,6 +272,9 @@ func (h *AdminHandler) HumaAdminCreateUser(ctx context.Context, in *AdminCreateU
 	if req.Role != db.RoleAdmin && req.Role != db.RoleUser {
 		return nil, huma.Error400BadRequest("role must be 'admin' or 'user'")
 	}
+	if isGeneratedRegistrationEmailDomain(req.Email) {
+		return nil, huma.Error422UnprocessableEntity("email domain is reserved")
+	}
 
 	hash, err := auth.HashPassword(req.Password)
 	if err != nil {
@@ -347,6 +350,9 @@ func (h *AdminHandler) HumaAdminUpdateUser(ctx context.Context, in *AdminUpdateU
 		user.Role = req.Role
 	}
 	if req.Email != "" {
+		if isGeneratedRegistrationEmailDomain(req.Email) {
+			return nil, huma.Error422UnprocessableEntity("email domain is reserved")
+		}
 		// Issue #1123: prevent collisions and overwrite of owner email.
 		if user.Role == db.RoleOwner && caller.Role != db.RoleOwner {
 			return nil, huma.Error403Forbidden("cannot change the owner's email")

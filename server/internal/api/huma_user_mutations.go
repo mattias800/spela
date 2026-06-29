@@ -134,6 +134,9 @@ func (h *UserHandler) HumaUpdateProfile(ctx context.Context, in *UpdateProfileIn
 
 	emailChanged := false
 	if req.Email != "" {
+		if isGeneratedRegistrationEmailDomain(req.Email) {
+			return nil, huma.Error422UnprocessableEntity("email domain is reserved")
+		}
 		if req.CurrentPassword == "" {
 			return nil, huma.Error400BadRequest("current password is required to change email")
 		}
