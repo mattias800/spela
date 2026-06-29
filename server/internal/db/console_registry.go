@@ -119,9 +119,9 @@ var consoleRegistry = []ConsoleSpec{
 
 // toConsole builds the database row for this spec. It carries only the
 // fields SeedConsoles persists directly; the maker/media foreign keys are
-// applied by SeedConsoleMetadata, and the intrinsic-fact fields
-// (CoverAspect, Generation) are not stored at all — they are derived from
-// the registry on load via Console.AfterFind (#1443).
+// applied by SeedConsoleMetadata, and the registry-owned fields (Name,
+// CoverAspect, Generation, ColorTheme) are not stored at all — they are
+// derived from the registry on load via Console.AfterFind (#1443).
 func (s ConsoleSpec) toConsole() Console {
 	return Console{
 		Abbreviation:     s.Abbreviation,
@@ -129,7 +129,6 @@ func (s ConsoleSpec) toConsole() Console {
 		DefaultCore:      s.DefaultCore,
 		EmulatorJSCore:   s.EmulatorJSCore,
 		FolderName:       s.FolderName,
-		ColorTheme:       s.ColorTheme,
 		SaveStateSupport: s.SaveStateSupport,
 		SaveStatePolicy:  s.SaveStatePolicy,
 		Playable:         s.Playable,
@@ -139,6 +138,21 @@ func (s ConsoleSpec) toConsole() Console {
 // DefaultCoverAspect is the fallback cover-art aspect for consoles whose
 // registry entry declares none. Mirrors the historical column default.
 const DefaultCoverAspect = "3:4"
+
+// DefaultColorTheme is the fallback card-gradient colour for consoles whose
+// registry entry declares none. Mirrors the historical column default.
+const DefaultColorTheme = "#6366f1"
+
+// ConsoleColorTheme returns a console's card-gradient colour from the
+// registry, matched case-insensitively on abbreviation and falling back to
+// DefaultColorTheme. Used by Console.AfterFind and the raw-SQL read paths
+// that bypass the model hook.
+func ConsoleColorTheme(abbr string) string {
+	if s, ok := ConsoleSpecByAbbreviation(strings.ToUpper(abbr)); ok && s.ColorTheme != "" {
+		return s.ColorTheme
+	}
+	return DefaultColorTheme
+}
 
 // ConsoleCoverAspect returns a console's cover-art aspect string from the
 // registry, matched case-insensitively on abbreviation and falling back to

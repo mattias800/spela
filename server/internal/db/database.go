@@ -1151,13 +1151,6 @@ func SeedConsoles(db *gorm.DB) error {
 				db.Model(&existing).Update("folder_name", c.FolderName)
 				slog.Info("backfilled FolderName", "name", existing.Name, "folder", c.FolderName)
 			}
-			// ColorTheme drives the per-platform card gradient and is seed-owned
-			// (the single source of truth — see #1167), so keep existing rows in
-			// sync whenever the seed colour changes.
-			if c.ColorTheme != "" && existing.ColorTheme != c.ColorTheme {
-				db.Model(&existing).Update("color_theme", c.ColorTheme)
-				slog.Info("backfilled ColorTheme", "name", existing.Name, "color", c.ColorTheme)
-			}
 			if !existing.SaveStateSupport && c.SaveStateSupport {
 				db.Model(&existing).Update("save_state_support", true)
 				slog.Info("backfilled SaveStateSupport", "name", existing.Name)

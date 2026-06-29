@@ -277,14 +277,13 @@ func (h *SearchHandler) searchConsoles(query string, limit int) SearchCategoryRe
 	type consoleRow struct {
 		ID           uint
 		Abbreviation string
-		ColorTheme   string
 		GameCount    int
 	}
 
 	var rows []consoleRow
 	if err := h.DB.
 		Table("consoles").
-		Select("consoles.id, consoles.abbreviation, consoles.color_theme, COUNT(games.id) as game_count").
+		Select("consoles.id, consoles.abbreviation, COUNT(games.id) as game_count").
 		Joins("JOIN games ON games.console_id = consoles.id AND games.deleted_at IS NULL").
 		Group("consoles.id").
 		Having("game_count > 0").
@@ -320,7 +319,7 @@ func (h *SearchHandler) searchConsoles(query string, limit int) SearchCategoryRe
 			Name:       m.name,
 			IconURL:    "/api/consoles/" + abbr + "/icon",
 			GameCount:  m.row.GameCount,
-			ColorTheme: m.row.ColorTheme,
+			ColorTheme: db.ConsoleColorTheme(m.row.Abbreviation), // registry-derived (#1443)
 		}
 	}
 

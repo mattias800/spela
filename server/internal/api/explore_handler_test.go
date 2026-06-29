@@ -2792,9 +2792,10 @@ func TestGetArtworkGallery_Success(t *testing.T) {
 	assert.Equal(t, "Chrono Trigger", resp.Artworks[0].GameTitle)
 	assert.Equal(t, 1920, resp.Artworks[0].Width)
 	assert.Equal(t, 1080, resp.Artworks[0].Height)
-	// Console name is registry-derived now (#1443) — assert the exact value.
+	// Console name + colour are registry-derived now (#1443) — assert exact.
 	assert.Equal(t, "Super Nintendo", resp.Artworks[0].ConsoleName)
 	assert.Equal(t, "snes", resp.Artworks[0].ConsoleAbbr)
+	assert.Equal(t, "#7b7db5", resp.Artworks[0].ConsoleColor)
 	// Verify local image path
 	assert.Contains(t, resp.Artworks[0].URL, "/api/images/")
 	assert.Contains(t, resp.Artworks[0].URL, "artwork_abc123")
@@ -2802,7 +2803,7 @@ func TestGetArtworkGallery_Success(t *testing.T) {
 	assert.Equal(t, "Super Mario Bros", resp.Artworks[1].GameTitle)
 	assert.Equal(t, "Nintendo Entertainment System", resp.Artworks[1].ConsoleName)
 	assert.Equal(t, "nes", resp.Artworks[1].ConsoleAbbr)
-	assert.NotEmpty(t, resp.Artworks[1].ConsoleColor)
+	assert.Equal(t, "#e60012", resp.Artworks[1].ConsoleColor)
 }
 
 func TestGetCoverGallery_Success(t *testing.T) {

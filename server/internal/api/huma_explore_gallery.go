@@ -148,16 +148,15 @@ func (h *ExploreHandler) HumaGetScreenshotGallery(_ context.Context, in *GetScre
 	}
 
 	type screenshotRow struct {
-		URL          string
-		GameID       uint
-		GameTitle    string
-		ConsoleAbbr  string
-		ConsoleColor string
+		URL         string
+		GameID      uint
+		GameTitle   string
+		ConsoleAbbr string
 	}
 
 	var rows []screenshotRow
 	if err := baseQuery.
-		Select("game_screenshots.url, games.id as game_id, games.title as game_title, LOWER(consoles.abbreviation) as console_abbr, consoles.color_theme as console_color").
+		Select("game_screenshots.url, games.id as game_id, games.title as game_title, LOWER(consoles.abbreviation) as console_abbr").
 		Order("(game_screenshots.id * 2654435761) % 2147483647").
 		Offset(offset).
 		Limit(limit).
@@ -174,7 +173,7 @@ func (h *ExploreHandler) HumaGetScreenshotGallery(_ context.Context, in *GetScre
 			GameTitle:    r.GameTitle,
 			ConsoleName:  db.ConsoleName(r.ConsoleAbbr), // registry-derived (#1443)
 			ConsoleAbbr:  r.ConsoleAbbr,
-			ConsoleColor: r.ConsoleColor,
+			ConsoleColor: db.ConsoleColorTheme(r.ConsoleAbbr), // registry-derived (#1443)
 		})
 	}
 
@@ -203,20 +202,19 @@ func (h *ExploreHandler) HumaGetArtworkGallery(_ context.Context, in *GetArtwork
 	}
 
 	type artworkRow struct {
-		IGDBImageID  string
-		LocalPath    string
-		Width        int
-		Height       int
-		GameID       uint
-		GameTitle    string
-		ConsoleAbbr  string
-		ConsoleColor string
-		Rating       float64
+		IGDBImageID string
+		LocalPath   string
+		Width       int
+		Height      int
+		GameID      uint
+		GameTitle   string
+		ConsoleAbbr string
+		Rating      float64
 	}
 
 	var rows []artworkRow
 	if err := h.DB.Table("game_artwork_images").
-		Select("game_artwork_images.igdb_image_id, game_artwork_images.local_path, game_artwork_images.width, game_artwork_images.height, games.id as game_id, games.title as game_title, games.rating, LOWER(consoles.abbreviation) as console_abbr, consoles.color_theme as console_color").
+		Select("game_artwork_images.igdb_image_id, game_artwork_images.local_path, game_artwork_images.width, game_artwork_images.height, games.id as game_id, games.title as game_title, games.rating, LOWER(consoles.abbreviation) as console_abbr").
 		Joins("JOIN games ON games.id = game_artwork_images.game_id AND games.deleted_at IS NULL AND games.is_primary = true").
 		Joins("JOIN consoles ON consoles.id = games.console_id AND consoles.deleted_at IS NULL").
 		Order("games.rating DESC").
@@ -240,7 +238,7 @@ func (h *ExploreHandler) HumaGetArtworkGallery(_ context.Context, in *GetArtwork
 			GameTitle:    r.GameTitle,
 			ConsoleName:  db.ConsoleName(r.ConsoleAbbr), // registry-derived (#1443)
 			ConsoleAbbr:  r.ConsoleAbbr,
-			ConsoleColor: r.ConsoleColor,
+			ConsoleColor: db.ConsoleColorTheme(r.ConsoleAbbr), // registry-derived (#1443)
 		})
 	}
 
@@ -278,17 +276,16 @@ func (h *ExploreHandler) HumaGetCoverGallery(_ context.Context, in *GetCoverGall
 	}
 
 	type coverRow struct {
-		CoverURL     string
-		GameID       uint
-		GameTitle    string
-		ConsoleAbbr  string
-		ConsoleColor string
-		Rating       float64
+		CoverURL    string
+		GameID      uint
+		GameTitle   string
+		ConsoleAbbr string
+		Rating      float64
 	}
 
 	var rows []coverRow
 	if err := baseQuery.
-		Select("games.cover_url, games.id as game_id, games.title as game_title, games.rating, LOWER(consoles.abbreviation) as console_abbr, consoles.color_theme as console_color").
+		Select("games.cover_url, games.id as game_id, games.title as game_title, games.rating, LOWER(consoles.abbreviation) as console_abbr").
 		Order("games.rating DESC").
 		Offset(offset).
 		Limit(limit).
@@ -299,16 +296,16 @@ func (h *ExploreHandler) HumaGetCoverGallery(_ context.Context, in *GetCoverGall
 
 	items := make([]CoverItem, 0, len(rows))
 	for _, r := range rows {
+		// console name / colour / cover-aspect are registry-derived (#1443).
 		items = append(items, CoverItem{
 			CoverURL:          resolveImageURL(r.CoverURL),
 			GameID:            strconv.FormatUint(uint64(r.GameID), 10),
 			GameTitle:         r.GameTitle,
-			ConsoleName:       db.ConsoleName(r.ConsoleAbbr), // registry-derived (#1443)
+			ConsoleName:       db.ConsoleName(r.ConsoleAbbr),
 			ConsoleAbbr:       r.ConsoleAbbr,
-			ConsoleColor:      r.ConsoleColor,
+			ConsoleColor:      db.ConsoleColorTheme(r.ConsoleAbbr),
 			IGDBCriticsRating: r.Rating,
-			// cover_aspect is registry-derived (#1443), not a DB column.
-			CoverAspectRatio: parseAspectRatio(db.ConsoleCoverAspect(r.ConsoleAbbr)),
+			CoverAspectRatio:  parseAspectRatio(db.ConsoleCoverAspect(r.ConsoleAbbr)),
 		})
 	}
 
