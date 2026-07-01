@@ -23,6 +23,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.spela.player.presentation.intent.GameListIntent
+import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.components.ScreenLoadingIndicator
 import com.spela.player.presentation.ui.components.SpEmptyStates
 import com.spela.player.presentation.ui.components.SpScreen
@@ -40,6 +41,8 @@ fun PlayLaterScreen(
     onGameSelected: (String) -> Unit,
     onBack: () -> Unit,
 ) {
+    PlatformBackHandler { onBack() }
+
     val state by viewModel.state.collectAsState()
 
     LaunchedEffect(Unit) {
