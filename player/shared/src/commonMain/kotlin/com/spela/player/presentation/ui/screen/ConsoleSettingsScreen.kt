@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
@@ -40,6 +39,7 @@ import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.components.ShaderPreview
 import com.spela.player.presentation.ui.components.ShaderPreviewDialog
 import com.spela.player.presentation.ui.components.SpCard
+import com.spela.player.presentation.ui.components.SpLazyColumn
 import com.spela.player.presentation.ui.components.SpSecondaryButton
 import com.spela.player.presentation.ui.components.SpRadioOption
 import com.spela.player.presentation.ui.components.SpScreen
@@ -116,7 +116,7 @@ fun ConsoleSettingsScreen(
                 )
             }
 
-            LazyColumn(
+            SpLazyColumn(
             modifier = Modifier.fillMaxSize().testTag("console-settings-list"),
             contentPadding = PaddingValues(
                 start = SpSpacing.ScreenHorizontal,

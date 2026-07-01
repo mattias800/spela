@@ -32,6 +32,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import com.spela.player.presentation.ui.gamepad.LazyListCenterInfo
 import com.spela.player.presentation.ui.gamepad.LocalLazyListCenterInfo
+import com.spela.player.presentation.ui.gamepad.RightStickScroll
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -157,6 +158,8 @@ private fun LandscapeLayout(
     val landscapeListState = rememberLazyListState()
     val landscapeCenterInfo = remember(landscapeListState) { LazyListCenterInfo(landscapeListState) }
     CompositionLocalProvider(LocalLazyListCenterInfo provides landscapeCenterInfo) {
+    // Continuous right-stick scrolling in gamepad mode (#1362).
+    RightStickScroll(landscapeListState)
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             state = landscapeListState,
@@ -333,6 +336,8 @@ private fun PortraitLayout(
     val portraitListState = rememberLazyListState()
     val portraitCenterInfo = remember(portraitListState) { LazyListCenterInfo(portraitListState) }
     CompositionLocalProvider(LocalLazyListCenterInfo provides portraitCenterInfo) {
+    // Continuous right-stick scrolling in gamepad mode (#1362).
+    RightStickScroll(portraitListState)
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             state = portraitListState,

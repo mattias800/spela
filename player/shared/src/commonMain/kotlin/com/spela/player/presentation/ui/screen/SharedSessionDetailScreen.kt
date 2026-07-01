@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
@@ -40,6 +39,7 @@ import com.spela.player.presentation.ui.feature.sharedsession.SharedSessionSaveI
 import com.spela.player.presentation.ui.components.InvitePlayerSheet
 import com.spela.player.presentation.ui.components.SpEmptyState
 import com.spela.player.presentation.ui.components.SpIconButton
+import com.spela.player.presentation.ui.components.SpLazyColumn
 import com.spela.player.presentation.ui.components.ScreenLoadingIndicator
 import com.spela.player.presentation.ui.components.rememberLoadingFlashDebounce
 import com.spela.player.presentation.ui.components.SpSectionHeader
@@ -157,7 +157,7 @@ fun SharedSessionDetailScreen(
                     },
                     modifier = Modifier.fillMaxSize(),
                 ) {
-                    LazyColumn(
+                    SpLazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(
                             top = sectionPillClearance() + SpSpacing.Default,

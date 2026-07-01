@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -33,6 +32,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpEmptyState
+import com.spela.player.presentation.ui.components.SpLazyColumn
 import com.spela.player.presentation.ui.components.SpProgressBar
 import com.spela.player.presentation.ui.feature.explore.GameShelf
 import com.spela.player.presentation.ui.feature.explore.GameShelfSkeleton
@@ -150,7 +150,7 @@ fun ExploreWizardScreen(
             // Show current step
             val step = state.currentStepData
             if (step != null) {
-                LazyColumn(
+                SpLazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(
                         horizontal = SpSpacing.ScreenHorizontal,
@@ -241,7 +241,7 @@ fun ExploreWizardScreen(
                     }
                 }
             } else {
-                LazyColumn(
+                SpLazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(
                         bottom = SpSpacing.XLarge,

@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
@@ -62,6 +61,7 @@ import com.spela.player.presentation.ui.components.SpSectionHeader
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
+import com.spela.player.presentation.ui.components.SpLazyColumn
 import com.spela.player.presentation.ui.components.SpScreen
 import com.spela.player.presentation.ui.components.sectionPillClearance
 import com.spela.player.presentation.ui.components.SpTopBar
@@ -179,7 +179,7 @@ fun SessionDetailScreen(
                     },
                     modifier = Modifier.fillMaxSize(),
                 ) {
-                    LazyColumn(
+                    SpLazyColumn(
                         modifier = Modifier
                             .fillMaxSize()
                             .testTag("session_detail_content"),
