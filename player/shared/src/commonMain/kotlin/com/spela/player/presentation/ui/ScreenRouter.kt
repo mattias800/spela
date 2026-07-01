@@ -15,6 +15,7 @@ import com.spela.player.presentation.navigation.SpScreen
 import com.spela.player.presentation.ui.components.gamepad.ControllerDetailScreen
 import com.spela.player.presentation.ui.screen.ActivityScreen
 import com.spela.player.presentation.ui.screen.AllGamesScreen
+import com.spela.player.presentation.ui.screen.ContinuePlayingScreen
 import com.spela.player.presentation.ui.screen.ConnectedServersScreen
 import com.spela.player.presentation.ui.screen.RemoteGameDetailScreen
 import com.spela.player.presentation.ui.screen.ChallengeDetailScreen
@@ -177,6 +178,11 @@ fun ScreenRouter(
                                     onNavigateToPlayLater = {
                                         navigationViewModel.onIntent(
                                             NavigationIntent.NavigateTo(SpScreen.PlayLater)
+                                        )
+                                    },
+                                    onNavigateToContinuePlaying = {
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.ContinuePlaying)
                                         )
                                     },
                                     onNavigateToActivity = {
@@ -971,6 +977,20 @@ fun ScreenRouter(
 
                             is SpScreen.PlayLater -> {
                                 PlayLaterScreen(
+                                    viewModel = gameListViewModel,
+                                    onGameSelected = { gameId ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.GameDetail(gameId))
+                                        )
+                                    },
+                                    onBack = {
+                                        navigationViewModel.onIntent(NavigationIntent.GoBack)
+                                    },
+                                )
+                            }
+
+                            is SpScreen.ContinuePlaying -> {
+                                ContinuePlayingScreen(
                                     viewModel = gameListViewModel,
                                     onGameSelected = { gameId ->
                                         navigationViewModel.onIntent(

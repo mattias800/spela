@@ -107,6 +107,7 @@ fun HomeScreen(
     onNavigateToDownloads: () -> Unit = {},
     onNavigateToFavorites: () -> Unit = {},
     onNavigateToPlayLater: () -> Unit = {},
+    onNavigateToContinuePlaying: () -> Unit = {},
     onNavigateToActivity: () -> Unit = {},
     onNavigateToStats: () -> Unit = {},
     onNavigateToChallenges: () -> Unit = {},
@@ -283,6 +284,14 @@ fun HomeScreen(
                                     icon = Icons.Filled.PlayArrow,
                                     edgeToEdgeContent = true,
                                     modifier = Modifier.rememberFocus("section_continue_playing"),
+                                    titleTrailing = {
+                                        SpSectionLink(
+                                            text = "See all",
+                                            contentDescription = "See all Continue Playing",
+                                            onClick = onNavigateToContinuePlaying,
+                                            modifier = Modifier.focusRestoreItem("home_see_all_continue_playing"),
+                                        )
+                                    },
                                 ) {
                                     ContinuePlayingRow(
                                         games = state.recentGames.take(6),
