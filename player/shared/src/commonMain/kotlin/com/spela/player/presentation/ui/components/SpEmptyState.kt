@@ -177,6 +177,16 @@ object SpEmptyStates {
     }
 
     @Composable
+    fun NoRecentGames(modifier: Modifier = Modifier) {
+        SpEmptyState(
+            icon = Icons.Filled.SportsEsports,
+            title = "No recently played games",
+            message = "Games you play will show up here",
+            modifier = modifier,
+        )
+    }
+
+    @Composable
     fun NoCollections(
         modifier: Modifier = Modifier,
         onCreateCollection: (() -> Unit)? = null,
