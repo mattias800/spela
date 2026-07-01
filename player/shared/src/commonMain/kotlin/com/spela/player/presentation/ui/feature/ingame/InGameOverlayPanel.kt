@@ -9,17 +9,21 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.VolumeOff
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.CloudDone
+import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.FastRewind
@@ -28,36 +32,50 @@ import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.Save
-import androidx.compose.material.icons.filled.Sync
-import androidx.compose.material.icons.filled.Tune
-import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.Stop
-import androidx.compose.material.icons.automirrored.filled.VolumeUp
-import androidx.compose.material.icons.automirrored.filled.VolumeOff
+import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import com.spela.player.presentation.ui.components.SpSlider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.intent.EmulationIntent
-import com.spela.player.presentation.ui.screen.formatSessionDuration
 import com.spela.player.presentation.state.EmulationState
-import com.spela.player.presentation.ui.components.EmulationActionButton
+import com.spela.player.presentation.ui.components.LocalScrollState
 import com.spela.player.presentation.ui.components.SpButton
-import com.spela.player.presentation.ui.components.SpSecondaryButton
+import com.spela.player.presentation.ui.components.SpButtonStyle
+import com.spela.player.presentation.ui.components.SpSlider
 import com.spela.player.presentation.ui.components.challenge.formatDuration
 import com.spela.player.presentation.ui.components.fpsColor
 import com.spela.player.presentation.ui.components.pingColor
+import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
+import com.spela.player.presentation.ui.gamepad.LocalScrollFocusRegistry
+import com.spela.player.presentation.ui.gamepad.ScrollFocusRegistry
+import com.spela.player.presentation.ui.gamepad.focusRestoreItem
+import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
+import com.spela.player.presentation.ui.screen.formatSessionDuration
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -75,305 +93,376 @@ internal fun InGameOverlayPanel(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(SpColor.Scrim)
+            .background(SpColor.ScrimLight.copy(alpha = 0.18f))
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
                 onClick = { viewModel.onIntent(EmulationIntent.ToggleOverlay) },
             )
             .semantics { contentDescription = "Game overlay, tap to dismiss" },
-        contentAlignment = Alignment.Center,
+        contentAlignment = Alignment.CenterStart,
     ) {
-        BoxWithConstraints {
+        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             val isLandscape = maxWidth > maxHeight
-            val panelWidth = if (isLandscape) 0.65f else 0.85f
+            val drawerWidth = if (isLandscape) 0.36f else 0.84f
+            val drawerShape = RoundedCornerShape(
+                topStart = 0.dp,
+                topEnd = SpSpacing.RadiusXLarge,
+                bottomEnd = SpSpacing.RadiusXLarge,
+                bottomStart = 0.dp,
+            )
+            val scrollState = rememberScrollState()
+            val scrollFocusRegistry = remember { ScrollFocusRegistry() }
+            val focusMemory = rememberFocusMemoryState()
+            val focusManager = LocalFocusManager.current
 
-            Column(
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth(panelWidth)
-                    .clip(RoundedCornerShape(SpSpacing.RadiusXLarge))
-                    .background(SpColor.SurfaceElevated)
-                    .padding(SpSpacing.XLarge)
+                    .fillMaxHeight()
+                    .fillMaxWidth(drawerWidth)
+                    .clip(drawerShape)
+                    .background(SpColor.SurfaceElevated.copy(alpha = 0.96f))
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
-                        onClick = {}, // Prevent click-through
+                        onClick = {}, // Prevent click-through to the scrim.
                     )
-                    // Group all panel controls so d-pad focus traversal stays
-                    // inside the menu and can reach every action, instead of
-                    // wandering into focusables behind the scrim (#1410).
-                    .focusGroup(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                // Game title
-                Text(
-                    text = state.gameTitle,
-                    style = SpTypography.HeadlineMedium,
-                    color = SpColor.OnBackground,
-                    modifier = Modifier.semantics { heading() },
-                )
-
-                Spacer(Modifier.height(SpSpacing.Small))
-
-                // Performance stats / Netplay session info
-                if (state.isNetplayMode) {
-                    // Netplay: show ping and session duration
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Default),
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.semantics {
-                            contentDescription = "Ping: ${state.netplayPeerLatencyMs} milliseconds, session: ${formatSessionDuration(state.sessionElapsedSeconds)}"
-                        },
-                    ) {
-                        PerformanceBadge(
-                            label = "Ping",
-                            value = "${state.netplayPeerLatencyMs}ms",
-                            color = pingColor(state.netplayPeerLatencyMs),
-                        )
-                        PerformanceBadge(
-                            label = "Session",
-                            value = formatSessionDuration(state.sessionElapsedSeconds),
-                            color = SpColor.OnBackgroundSecondary,
-                        )
-                    }
-                } else if (state.isRunning) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Default),
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.semantics {
-                            contentDescription = "Performance: %.0f FPS, %.1f ms frame time".format(
-                                state.fps, state.frameTime
-                            )
-                        },
-                    ) {
-                        PerformanceBadge(
-                            label = "FPS",
-                            value = "%.0f".format(state.fps),
-                            color = fpsColor(state.fps),
-                        )
-                        PerformanceBadge(
-                            label = "Frame",
-                            value = "%.1fms".format(state.frameTime),
-                            color = SpColor.OnBackgroundSecondary,
-                        )
-                    }
-                }
-
-                Spacer(Modifier.height(if (isLandscape) SpSpacing.Medium else SpSpacing.XLarge))
-
-                // Action buttons - different for netplay vs normal mode
-                if (state.isNetplayMode) {
-                    // Netplay mode: only Controls action
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center,
-                    ) {
-                        OverlayAction(
-                            label = "Controls",
-                            icon = Icons.Filled.SportsEsports,
-                            onClick = { viewModel.onIntent(EmulationIntent.ShowKeyMapping) },
-                        )
-                    }
-
-                    Spacer(Modifier.height(if (isLandscape) SpSpacing.Medium else SpSpacing.XLarge))
-
-                    // Leave Session / Resume buttons
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
-                    ) {
-                        SpSecondaryButton(
-                            text = "Leave Session",
-                            onClick = {
-                                viewModel.onIntent(EmulationIntent.ShowNetplayLeaveConfirm)
-                            },
-                            modifier = Modifier.weight(1f),
-                        )
-                        SpButton(
-                            text = "Resume",
-                            onClick = {
-                                viewModel.onIntent(EmulationIntent.ToggleOverlay)
-                            },
-                            modifier = Modifier.weight(1f).focusRequester(continueFocusRequester),
-                        )
-                    }
-                } else if (state.isChallengeMode) {
-                    // Challenge mode: restricted actions
-                    // Timer display
-                    Text(
-                        text = formatDuration(state.challengeElapsedMs),
-                        style = SpTypography.DisplaySmall,
-                        color = SpColor.Primary,
-                        modifier = Modifier.semantics {
-                            contentDescription = "Challenge timer: ${formatDuration(state.challengeElapsedMs)}"
-                        },
-                    )
-                    if (state.challengeObjective.isNotBlank()) {
-                        Spacer(Modifier.height(SpSpacing.XSmall))
-                        Text(
-                            text = state.challengeObjective,
-                            style = SpTypography.LabelMedium,
-                            color = SpColor.OnBackgroundSecondary,
-                        )
-                    }
-
-                    Spacer(Modifier.height(if (isLandscape) SpSpacing.Medium else SpSpacing.XLarge))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                    ) {
-                        OverlayAction(
-                            label = "Mark Complete",
-                            icon = Icons.Filled.CheckCircle,
-                            onClick = { viewModel.onIntent(EmulationIntent.CompleteChallenge) },
-                        )
-                        OverlayAction(
-                            label = "Restart",
-                            icon = Icons.Filled.Replay,
-                            onClick = { viewModel.onIntent(EmulationIntent.RestartChallenge) },
-                        )
-                        OverlayAction(
-                            label = "Give Up",
-                            icon = Icons.Filled.Stop,
-                            onClick = { viewModel.onIntent(EmulationIntent.ShowGiveUpConfirm) },
-                        )
-                        OverlayAction(
-                            label = "Controls",
-                            icon = Icons.Filled.SportsEsports,
-                            onClick = { viewModel.onIntent(EmulationIntent.ShowKeyMapping) },
-                        )
-                    }
-
-                    Spacer(Modifier.height(if (isLandscape) SpSpacing.Medium else SpSpacing.XLarge))
-
-                    SpButton(
-                        text = "Resume",
-                        onClick = {
-                            viewModel.onIntent(EmulationIntent.ToggleOverlay)
-                            viewModel.onIntent(EmulationIntent.ResumeGame)
-                        },
-                        modifier = Modifier.fillMaxWidth().focusRequester(continueFocusRequester),
-                    )
-                } else {
-                    // Normal mode: all action buttons
-                    // Slot indicator
-                    if (state.supportsSaveStates) {
-                        Text(
-                            text = "Slot ${state.activeSlot}",
-                            style = SpTypography.LabelMedium,
-                            color = SpColor.OnBackgroundSecondary,
-                            modifier = Modifier.semantics {
-                                contentDescription = "Active quick-save slot: ${state.activeSlot}"
-                            },
-                        )
-                        Spacer(Modifier.height(SpSpacing.Small))
-                    }
-
-                    // Action buttons (shared between landscape/portrait)
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                        verticalAlignment = if (isLandscape) Alignment.CenterVertically else Alignment.Top,
-                    ) {
-                        OverlayActionButtons(
-                            isFastForward = state.isFastForward,
-                            supportsSaveStates = state.supportsSaveStates,
-                            saveStatesOptedOut = state.saveStatesOptedOut,
-                            rewindEnabled = state.rewindEnabled,
-                            hasCheats = state.hasCheats,
-                            isSaveInProgress = state.isSaveInProgress,
-                            saveStateError = state.saveStateError,
-                            saveStateJustSucceeded = state.saveStateJustSucceeded,
-                            hasPendingUploads = state.hasPendingUploads,
-                            onSave = { viewModel.onIntent(EmulationIntent.SaveState) },
-                            onLoad = { viewModel.onIntent(EmulationIntent.LoadState) },
-                            onScreenshot = { viewModel.onIntent(EmulationIntent.TakeScreenshot) },
-                            onToggleFastForward = { viewModel.onIntent(EmulationIntent.ToggleFastForward) },
-                            onRewind = { viewModel.onIntent(EmulationIntent.RewindStep) },
-                            onChallenge = { viewModel.onIntent(EmulationIntent.CreateChallenge) },
-                            onCheats = { viewModel.onIntent(EmulationIntent.ShowCheatBrowser) },
-                            onControls = {
-                            viewModel.onIntent(
-                                if (useGamepadConfig) EmulationIntent.ShowGamepadConfig else EmulationIntent.ShowKeyMapping
-                            )
-                        },
-                            showButtonRemap = showButtonRemap,
-                            onConfigureButtons = onConfigureButtons,
-                        )
-                    }
-
-                    // Stuck-uploads banner (#804 phase 6 slice 4).
-                    // Surfaces only when at least one queued save has
-                    // failed STUCK_RETRY_THRESHOLD times so the user
-                    // can tell stuck-on-error apart from
-                    // in-flight-and-slow without digging into logs.
-                    if (state.stuckUploadCount > 0) {
-                        Spacer(Modifier.height(SpSpacing.Small))
-                        val msg = if (state.stuckUploadCount == 1) {
-                            "Sync paused — 1 save waiting"
-                        } else {
-                            "Sync paused — ${state.stuckUploadCount} saves waiting"
+                    .focusGroup()
+                    .onPreviewKeyEvent { event ->
+                        if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                        when (event.key) {
+                            Key.DirectionUp -> {
+                                if (scrollFocusRegistry.redirectIfFocusedOffscreen()) return@onPreviewKeyEvent true
+                                focusManager.moveFocus(FocusDirection.Up)
+                                true
+                            }
+                            Key.DirectionDown -> {
+                                if (scrollFocusRegistry.redirectIfFocusedOffscreen()) return@onPreviewKeyEvent true
+                                focusManager.moveFocus(FocusDirection.Down)
+                                true
+                            }
+                            Key.DirectionLeft, Key.DirectionRight -> {
+                                scrollFocusRegistry.redirectIfFocusedOffscreen()
+                                true
+                            }
+                            else -> false
                         }
-                        Text(
-                            text = msg,
-                            style = SpTypography.LabelSmall,
-                            color = SpColor.OnBackgroundSecondary,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .semantics { contentDescription = msg },
-                        )
-                    }
-
-                    Spacer(Modifier.height(if (isLandscape) SpSpacing.Medium else SpSpacing.Large))
-
-                    // Volume slider
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+                    },
+            ) {
+                CompositionLocalProvider(
+                    LocalScrollState provides scrollState,
+                    LocalScrollFocusRegistry provides scrollFocusRegistry,
+                    LocalFocusMemory provides focusMemory,
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .onGloballyPositioned {
+                                scrollFocusRegistry.viewportTopInRoot = it.positionInRoot().y
+                                scrollFocusRegistry.viewportHeight = it.size.height.toFloat()
+                            }
+                            .verticalScroll(scrollState)
+                            .padding(SpSpacing.XLarge),
+                        verticalArrangement = Arrangement.spacedBy(
+                            if (isLandscape) SpSpacing.Medium else SpSpacing.Large,
+                        ),
                     ) {
-                        Icon(
-                            imageVector = if (state.volume < 0.01f) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
-                            contentDescription = "Volume",
-                            tint = SpColor.OnBackgroundSecondary,
-                        )
-                        SpSlider(
-                            value = state.volume,
-                            onValueChange = { viewModel.onIntent(EmulationIntent.SetVolume(it)) },
-                            modifier = Modifier.weight(1f),
-                        )
-                        Text(
-                            text = "${(state.volume * 100).toInt()}%",
-                            style = SpTypography.LabelSmall,
-                            color = SpColor.OnBackgroundSecondary,
-                        )
-                    }
+                        OverlayDrawerHeader(state = state)
 
-                    Spacer(Modifier.height(if (isLandscape) SpSpacing.Medium else SpSpacing.Large))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
-                    ) {
-                        SpSecondaryButton(
-                            text = "Exit Game",
-                            onClick = {
-                                viewModel.onIntent(EmulationIntent.ShowExitConfirm)
-                            },
-                            modifier = Modifier.weight(1f),
-                        )
-                        SpButton(
-                            text = "Continue",
-                            onClick = {
-                                viewModel.onIntent(EmulationIntent.ToggleOverlay)
-                            },
-                            modifier = Modifier.weight(1f).focusRequester(continueFocusRequester),
-                        )
+                        when {
+                            state.isNetplayMode -> NetplayOverlayActions(
+                                viewModel = viewModel,
+                                continueFocusRequester = continueFocusRequester,
+                            )
+                            state.isChallengeMode -> ChallengeOverlayActions(
+                                state = state,
+                                viewModel = viewModel,
+                                continueFocusRequester = continueFocusRequester,
+                            )
+                            else -> NormalOverlayActions(
+                                state = state,
+                                viewModel = viewModel,
+                                continueFocusRequester = continueFocusRequester,
+                                useGamepadConfig = useGamepadConfig,
+                                showButtonRemap = showButtonRemap,
+                                onConfigureButtons = onConfigureButtons,
+                            )
+                        }
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun OverlayDrawerHeader(state: EmulationState) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+    ) {
+        Text(
+            text = state.gameTitle,
+            style = SpTypography.HeadlineMedium,
+            color = SpColor.OnBackground,
+            modifier = Modifier.semantics { heading() },
+        )
+
+        if (state.isNetplayMode) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(SpSpacing.Default),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.semantics {
+                    contentDescription = "Ping: ${state.netplayPeerLatencyMs} milliseconds, session: ${formatSessionDuration(state.sessionElapsedSeconds)}"
+                },
+            ) {
+                PerformanceBadge(
+                    label = "Ping",
+                    value = "${state.netplayPeerLatencyMs}ms",
+                    color = pingColor(state.netplayPeerLatencyMs),
+                )
+                PerformanceBadge(
+                    label = "Session",
+                    value = formatSessionDuration(state.sessionElapsedSeconds),
+                    color = SpColor.OnBackgroundSecondary,
+                )
+            }
+        } else if (state.isRunning) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(SpSpacing.Default),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.semantics {
+                    contentDescription = "Performance: %.0f FPS, %.1f ms frame time".format(
+                        state.fps,
+                        state.frameTime,
+                    )
+                },
+            ) {
+                PerformanceBadge(
+                    label = "FPS",
+                    value = "%.0f".format(state.fps),
+                    color = fpsColor(state.fps),
+                )
+                PerformanceBadge(
+                    label = "Frame",
+                    value = "%.1fms".format(state.frameTime),
+                    color = SpColor.OnBackgroundSecondary,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun NetplayOverlayActions(
+    viewModel: EmulationViewModel,
+    continueFocusRequester: FocusRequester,
+) {
+    OverlayAction(
+        label = "Controls",
+        icon = Icons.Filled.SportsEsports,
+        onClick = { viewModel.onIntent(EmulationIntent.ShowKeyMapping) },
+    )
+    OverlayAction(
+        label = "Leave Session",
+        icon = Icons.Filled.Stop,
+        onClick = { viewModel.onIntent(EmulationIntent.ShowNetplayLeaveConfirm) },
+    )
+    SpButton(
+        text = "Resume",
+        onClick = { viewModel.onIntent(EmulationIntent.ToggleOverlay) },
+        modifier = Modifier
+            .fillMaxWidth()
+            .focusRestoreItem(
+                key = "overlay_resume",
+                isDefault = true,
+                requester = continueFocusRequester,
+            ),
+    )
+}
+
+@Composable
+private fun ChallengeOverlayActions(
+    state: EmulationState,
+    viewModel: EmulationViewModel,
+    continueFocusRequester: FocusRequester,
+) {
+    Text(
+        text = formatDuration(state.challengeElapsedMs),
+        style = SpTypography.DisplaySmall,
+        color = SpColor.Primary,
+        modifier = Modifier.semantics {
+            contentDescription = "Challenge timer: ${formatDuration(state.challengeElapsedMs)}"
+        },
+    )
+    if (state.challengeObjective.isNotBlank()) {
+        Text(
+            text = state.challengeObjective,
+            style = SpTypography.LabelMedium,
+            color = SpColor.OnBackgroundSecondary,
+        )
+    }
+
+    OverlayAction(
+        label = "Mark Complete",
+        icon = Icons.Filled.CheckCircle,
+        onClick = { viewModel.onIntent(EmulationIntent.CompleteChallenge) },
+    )
+    OverlayAction(
+        label = "Restart",
+        icon = Icons.Filled.Replay,
+        onClick = { viewModel.onIntent(EmulationIntent.RestartChallenge) },
+    )
+    OverlayAction(
+        label = "Give Up",
+        icon = Icons.Filled.Stop,
+        onClick = { viewModel.onIntent(EmulationIntent.ShowGiveUpConfirm) },
+    )
+    OverlayAction(
+        label = "Controls",
+        icon = Icons.Filled.SportsEsports,
+        onClick = { viewModel.onIntent(EmulationIntent.ShowKeyMapping) },
+    )
+
+    SpButton(
+        text = "Resume",
+        onClick = {
+            viewModel.onIntent(EmulationIntent.ToggleOverlay)
+            viewModel.onIntent(EmulationIntent.ResumeGame)
+        },
+        modifier = Modifier
+            .fillMaxWidth()
+            .focusRestoreItem(
+                key = "overlay_resume",
+                isDefault = true,
+                requester = continueFocusRequester,
+            ),
+    )
+}
+
+@Composable
+private fun NormalOverlayActions(
+    state: EmulationState,
+    viewModel: EmulationViewModel,
+    continueFocusRequester: FocusRequester,
+    useGamepadConfig: Boolean,
+    showButtonRemap: Boolean,
+    onConfigureButtons: () -> Unit,
+) {
+    if (state.supportsSaveStates) {
+        Text(
+            text = "Slot ${state.activeSlot}",
+            style = SpTypography.LabelMedium,
+            color = SpColor.OnBackgroundSecondary,
+            modifier = Modifier.semantics {
+                contentDescription = "Active quick-save slot: ${state.activeSlot}"
+            },
+        )
+    }
+
+    OverlayActionButtons(
+        isFastForward = state.isFastForward,
+        supportsSaveStates = state.supportsSaveStates,
+        saveStatesOptedOut = state.saveStatesOptedOut,
+        rewindEnabled = state.rewindEnabled,
+        hasCheats = state.hasCheats,
+        isSaveInProgress = state.isSaveInProgress,
+        saveStateError = state.saveStateError,
+        saveStateJustSucceeded = state.saveStateJustSucceeded,
+        hasPendingUploads = state.hasPendingUploads,
+        onSave = { viewModel.onIntent(EmulationIntent.SaveState) },
+        onLoad = { viewModel.onIntent(EmulationIntent.LoadState) },
+        onScreenshot = { viewModel.onIntent(EmulationIntent.TakeScreenshot) },
+        onToggleFastForward = { viewModel.onIntent(EmulationIntent.ToggleFastForward) },
+        onRewind = { viewModel.onIntent(EmulationIntent.RewindStep) },
+        onChallenge = { viewModel.onIntent(EmulationIntent.CreateChallenge) },
+        onCheats = { viewModel.onIntent(EmulationIntent.ShowCheatBrowser) },
+        onControls = {
+            viewModel.onIntent(
+                if (useGamepadConfig) {
+                    EmulationIntent.ShowGamepadConfig
+                } else {
+                    EmulationIntent.ShowKeyMapping
+                },
+            )
+        },
+        showButtonRemap = showButtonRemap,
+        onConfigureButtons = onConfigureButtons,
+    )
+
+    if (state.stuckUploadCount > 0) {
+        val msg = if (state.stuckUploadCount == 1) {
+            "Sync paused — 1 save waiting"
+        } else {
+            "Sync paused — ${state.stuckUploadCount} saves waiting"
+        }
+        Text(
+            text = msg,
+            style = SpTypography.LabelSmall,
+            color = SpColor.OnBackgroundSecondary,
+            modifier = Modifier
+                .fillMaxWidth()
+                .semantics { contentDescription = msg },
+        )
+    }
+
+    OverlayVolumeRow(
+        volume = state.volume,
+        onVolumeChange = { viewModel.onIntent(EmulationIntent.SetVolume(it)) },
+    )
+
+    OverlayAction(
+        label = "Exit Game",
+        icon = Icons.Filled.Stop,
+        onClick = { viewModel.onIntent(EmulationIntent.ShowExitConfirm) },
+    )
+    SpButton(
+        text = "Continue",
+        onClick = { viewModel.onIntent(EmulationIntent.ToggleOverlay) },
+        modifier = Modifier
+            .fillMaxWidth()
+            .focusRestoreItem(
+                key = "overlay_continue",
+                isDefault = true,
+                requester = continueFocusRequester,
+            ),
+    )
+}
+
+@Composable
+private fun OverlayVolumeRow(
+    volume: Float,
+    onVolumeChange: (Float) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(SpSpacing.RadiusMedium))
+            .background(SpColor.SurfaceBright.copy(alpha = 0.45f))
+            .padding(horizontal = SpSpacing.Medium, vertical = SpSpacing.XSmall),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+    ) {
+        Icon(
+            imageVector = if (volume < 0.01f) {
+                Icons.AutoMirrored.Filled.VolumeOff
+            } else {
+                Icons.AutoMirrored.Filled.VolumeUp
+            },
+            contentDescription = "Volume",
+            tint = SpColor.OnBackgroundSecondary,
+            modifier = Modifier.size(SpSpacing.IconDefault),
+        )
+        SpSlider(
+            value = volume,
+            onValueChange = onVolumeChange,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            text = "${(volume * 100).toInt()}%",
+            style = SpTypography.LabelSmall,
+            color = SpColor.OnBackgroundSecondary,
+        )
     }
 }
 
@@ -410,7 +499,7 @@ internal fun shouldShowSaveStateActions(
 ): Boolean = supportsSaveStates && !saveStatesOptedOut
 
 @Composable
-fun RowScope.OverlayActionButtons(
+fun OverlayActionButtons(
     isFastForward: Boolean,
     supportsSaveStates: Boolean,
     saveStatesOptedOut: Boolean = false,
@@ -431,20 +520,11 @@ fun RowScope.OverlayActionButtons(
     showButtonRemap: Boolean = false,
     onConfigureButtons: () -> Unit = {},
 ) {
-    // Save / Load / Challenge are all gated on the user's per-console
-    // opt-out. The toggle is read-only at the overlay level on purpose
-    // — flipping mid-session creates ambiguity about in-flight uploads
-    // (#804 phase 4 spec point d). Discovery comes from the Settings
-    // page (separate slice).
     val saveStatesAvailable = shouldShowSaveStateActions(
         supportsSaveStates = supportsSaveStates,
         saveStatesOptedOut = saveStatesOptedOut,
     )
     if (saveStatesAvailable) {
-        // State-aware Save action: idle / in-progress / just-succeeded /
-        // failed (#803). Success briefly flashes a checkmark before
-        // returning to idle, so the user catches the confirmation even
-        // if they dismiss the overlay before the toast renders.
         val saveLabel: String
         val saveIcon: ImageVector
         when {
@@ -453,19 +533,10 @@ fun RowScope.OverlayActionButtons(
                 saveIcon = Icons.Filled.Sync
             }
             hasPendingUploads -> {
-                // The bytes are on disk + queued; the upload runs in
-                // the background. Phase 6 of #804 — the user isn't
-                // blocked on the network round-trip. The label flips
-                // to "Synced" via saveStateJustSucceeded once the
-                // queue empties.
                 saveLabel = "Saved locally · syncing"
                 saveIcon = Icons.Filled.Sync
             }
             saveStateJustSucceeded -> {
-                // "Synced" rather than just "Saved" — communicates that
-                // the bytes reached the server, not just local. SaveManager
-                // only flips this flag after the upload drain settles,
-                // so the label is accurate. (#803)
                 saveLabel = "Synced"
                 saveIcon = Icons.Filled.CloudDone
             }
@@ -498,9 +569,6 @@ fun RowScope.OverlayActionButtons(
         OverlayAction(label = "Cheats", icon = Icons.Filled.Code, onClick = onCheats)
     }
     OverlayAction(label = "Controls", icon = Icons.Filled.SportsEsports, onClick = onControls)
-    // Positional button remap for the current console — same editor as Settings
-    // (#1340). "Remap" (vs the adjacent "Controls" = controller list) to keep the
-    // two gamepad actions distinct.
     if (showButtonRemap) {
         OverlayAction(label = "Remap", icon = Icons.Filled.Tune, onClick = onConfigureButtons)
     }
@@ -513,11 +581,25 @@ internal fun OverlayAction(
     onClick: () -> Unit,
     isActive: Boolean = false,
 ) {
-    EmulationActionButton(
-        icon = icon,
-        label = label,
+    SpButton(
+        text = label,
         onClick = onClick,
-        isActive = isActive,
+        style = if (isActive) SpButtonStyle.Secondary else SpButtonStyle.Ghost,
+        leadingIcon = {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = if (isActive) SpColor.Primary else SpColor.OnBackgroundSecondary,
+                modifier = Modifier.size(SpSpacing.IconDefault),
+            )
+        },
+        shape = RoundedCornerShape(SpSpacing.RadiusMedium),
+        modifier = Modifier
+            .fillMaxWidth()
+            .focusRestoreItem(key = "overlay_action_$label")
+            .semantics(mergeDescendants = true) {
+                contentDescription = label
+                role = Role.Button
+            },
     )
 }
-

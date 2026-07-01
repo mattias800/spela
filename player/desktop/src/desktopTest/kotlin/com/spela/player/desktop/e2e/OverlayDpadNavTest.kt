@@ -1,5 +1,6 @@
 package com.spela.player.desktop.e2e
 
+import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.*
@@ -11,6 +12,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 /**
  * Regression test for #1410: the in-game overlay menu must anchor d-pad focus
@@ -37,9 +39,7 @@ class OverlayDpadNavTest {
                 ?: node.config.getOrNull(SemanticsProperties.Text)?.joinToString { it.text }
         }
 
-    @Test
-    fun overlayAnchorsFocusOnOpen() = runComposeUiTest {
-        val harness = SpelaTestHarness(StandardTestDispatcher())
+    private fun ComposeUiTest.startGameWithOverlayOpen(harness: SpelaTestHarness) {
         harness.downloadRepo.preCacheGame("1")
         harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.Home))
         harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.GameDetail("1")))
@@ -53,6 +53,17 @@ class OverlayDpadNavTest {
         onNodeWithText("Continue").assertExists()
         harness.gamepadPortManager.setInputMode(InputMode.GAMEPAD)
         advanceQuick(harness)
+    }
+
+    private fun ComposeUiTest.pressOverlayKey(key: Key, harness: SpelaTestHarness) {
+        onRoot().performKeyInput { pressKey(key) }
+        advanceQuick(harness)
+    }
+
+    @Test
+    fun overlayAnchorsFocusOnOpen() = runComposeUiTest {
+        val harness = SpelaTestHarness(StandardTestDispatcher())
+        startGameWithOverlayOpen(harness)
 
         // The menu anchors focus on Continue when it opens. On the unfixed
         // code this was <none> (the focus request never landed), so the first
@@ -61,6 +72,52 @@ class OverlayDpadNavTest {
             listOf("Continue"),
             focusedLabels(),
             "overlay must anchor focus on its Continue button when it opens",
+        )
+    }
+
+    @Test
+    fun overlayDpadMovesVerticallyStaysContainedAndEscapeCloses() = runComposeUiTest {
+        val harness = SpelaTestHarness(StandardTestDispatcher())
+        startGameWithOverlayOpen(harness)
+
+        pressOverlayKey(Key.DirectionUp, harness)
+        assertEquals(listOf("Exit Game"), focusedLabels())
+
+        pressOverlayKey(Key.DirectionUp, harness)
+        assertEquals(listOf("Remap"), focusedLabels())
+
+        pressOverlayKey(Key.DirectionRight, harness)
+        assertEquals(listOf("Remap"), focusedLabels(), "right should not escape the drawer")
+
+        pressOverlayKey(Key.DirectionLeft, harness)
+        assertEquals(listOf("Remap"), focusedLabels(), "left should not escape the drawer")
+
+        pressOverlayKey(Key.DirectionDown, harness)
+        assertEquals(listOf("Exit Game"), focusedLabels())
+
+        pressOverlayKey(Key.DirectionDown, harness)
+        assertEquals(listOf("Continue"), focusedLabels())
+
+        pressOverlayKey(Key.Escape, harness)
+
+        assertEquals(false, harness.emulationViewModel.state.value.showOverlay)
+        onNodeWithText("Exit Game").assertDoesNotExist()
+    }
+
+    @Test
+    fun overlayConfirmActivatesFocusedDrawerAction() = runComposeUiTest {
+        val harness = SpelaTestHarness(StandardTestDispatcher())
+        startGameWithOverlayOpen(harness)
+
+        pressOverlayKey(Key.DirectionUp, harness)
+        assertEquals(listOf("Exit Game"), focusedLabels())
+
+        pressOverlayKey(Key.Enter, harness)
+
+        assertEquals(false, harness.libretroController.isRunning)
+        assertTrue(
+            harness.libretroController.stopCallCount > 0,
+            "Enter on focused Exit Game should stop emulation",
         )
     }
 }

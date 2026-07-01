@@ -3,8 +3,8 @@ package com.spela.player.presentation.ui.screen
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -91,8 +91,8 @@ fun InGameOverlay(
 
     AnimatedVisibility(
         visible = state.showOverlay,
-        enter = fadeIn() + slideInVertically(),
-        exit = fadeOut() + slideOutVertically(),
+        enter = fadeIn() + slideInHorizontally(initialOffsetX = { -it }),
+        exit = fadeOut() + slideOutHorizontally(targetOffsetX = { -it }),
     ) {
         // Anchor d-pad focus on the panel when it opens, so the overlay has a
         // focus target and gamepad navigation can reach every action (#1410).
