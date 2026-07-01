@@ -44,8 +44,8 @@ import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpScreen
-import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.components.SpTopBar
+import com.spela.player.presentation.ui.components.sectionPillClearance
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
 import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
@@ -83,9 +83,7 @@ fun ExploreMoodScreen(
             modifier = Modifier
                 .fillMaxSize(),
         ) {
-            if (isGamepad) {
-                SpScreenTopSpacer()
-            } else {
+            if (!isGamepad) {
                 SpTopBar(
                     title = moodName,
                     showBack = true,
@@ -116,7 +114,10 @@ fun ExploreMoodScreen(
                 state.games.isNotEmpty() -> {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(bottom = SpSpacing.XXLarge),
+                        contentPadding = PaddingValues(
+                            top = sectionPillClearance(),
+                            bottom = SpSpacing.XXLarge,
+                        ),
                     ) {
                         // Mood banner with gradient
                         state.mood?.let { mood ->

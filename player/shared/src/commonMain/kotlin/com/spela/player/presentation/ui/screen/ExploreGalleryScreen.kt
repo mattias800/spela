@@ -45,8 +45,8 @@ import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpScreen
-import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.components.SpTopBar
+import com.spela.player.presentation.ui.components.sectionPillClearance
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
 import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
@@ -83,9 +83,7 @@ fun ExploreGalleryScreen(
             modifier = Modifier
                 .fillMaxSize(),
         ) {
-            if (isGamepad) {
-                SpScreenTopSpacer()
-            } else {
+            if (!isGamepad) {
                 SpTopBar(
                     title = "Screenshot Gallery",
                     showBack = true,
@@ -101,7 +99,12 @@ fun ExploreGalleryScreen(
                         modifier = Modifier
                             .fillMaxSize()
                             .testTag("gallery_loading"),
-                        contentPadding = PaddingValues(SpSpacing.ScreenHorizontal),
+                        contentPadding = PaddingValues(
+                            start = SpSpacing.ScreenHorizontal,
+                            end = SpSpacing.ScreenHorizontal,
+                            top = sectionPillClearance() + SpSpacing.ScreenHorizontal,
+                            bottom = SpSpacing.ScreenHorizontal,
+                        ),
                         horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
                         verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
                     ) {
@@ -138,7 +141,12 @@ fun ExploreGalleryScreen(
                         modifier = Modifier
                             .fillMaxSize()
                             .testTag("gallery_grid"),
-                        contentPadding = PaddingValues(SpSpacing.ScreenHorizontal),
+                        contentPadding = PaddingValues(
+                            start = SpSpacing.ScreenHorizontal,
+                            end = SpSpacing.ScreenHorizontal,
+                            top = sectionPillClearance() + SpSpacing.ScreenHorizontal,
+                            bottom = SpSpacing.ScreenHorizontal,
+                        ),
                         horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
                         verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
                     ) {

@@ -30,8 +30,8 @@ import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpScreen
-import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.components.SpTopBar
+import com.spela.player.presentation.ui.components.sectionPillClearance
 import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
@@ -64,9 +64,7 @@ fun StatsScreen(
             modifier = Modifier
                 .fillMaxSize(),
         ) {
-            if (isGamepad) {
-                SpScreenTopSpacer()
-            } else {
+            if (!isGamepad) {
                 SpTopBar(
                     title = "Stats",
                     showBack = true,
@@ -106,7 +104,10 @@ fun StatsScreen(
                         CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(vertical = SpSpacing.Default),
+                            contentPadding = PaddingValues(
+                                top = sectionPillClearance() + SpSpacing.Default,
+                                bottom = SpSpacing.Default,
+                            ),
                         ) {
                             // Personal Stats section
                             if (state.personalStats != null) {

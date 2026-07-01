@@ -47,7 +47,7 @@ import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpScreen
-import com.spela.player.presentation.ui.components.SpScreenTopSpacer
+import com.spela.player.presentation.ui.components.sectionPillClearance
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.components.PlatformBackHandler
 import androidx.compose.runtime.CompositionLocalProvider
@@ -96,9 +96,7 @@ fun SharedSessionDetailScreen(
             modifier = Modifier
                 .fillMaxSize(),
         ) {
-            if (isGamepad) {
-                SpScreenTopSpacer()
-            } else {
+            if (!isGamepad) {
                 SpTopBar(
                     title = state.sharedSession?.name ?: "Shared Session",
                     showBack = true,
@@ -161,7 +159,10 @@ fun SharedSessionDetailScreen(
                 ) {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(vertical = SpSpacing.Default),
+                        contentPadding = PaddingValues(
+                            top = sectionPillClearance() + SpSpacing.Default,
+                            bottom = SpSpacing.Default,
+                        ),
                     ) {
                         // Game info header
                         item {
