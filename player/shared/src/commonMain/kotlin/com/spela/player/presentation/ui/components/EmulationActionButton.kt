@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.shape.CircleShape
@@ -84,7 +85,9 @@ fun EmulationActionButton(
                 indication = null,
                 onClick = onClick,
             )
-            .then(if (useFocusRing) Modifier.gamepadFocusable(shape = RoundedCornerShape(16.dp), interactionSource = interactionSource, addFocusable = false) else Modifier)
+            // Inset the icon+label inside the focus ring so the outline doesn't
+            // sit flush against the label text (#1526).
+            .then(if (useFocusRing) Modifier.gamepadFocusable(shape = RoundedCornerShape(16.dp), interactionSource = interactionSource, addFocusable = false).padding(SpSpacing.XSmall) else Modifier)
             .semantics {
                 contentDescription = label
                 role = Role.Button
