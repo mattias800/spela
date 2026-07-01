@@ -21,8 +21,8 @@ import com.spela.player.presentation.intent.ChallengeIntent
 import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.components.SpEmptyStates
 import com.spela.player.presentation.ui.components.SpScreen
-import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.components.SpTopBar
+import com.spela.player.presentation.ui.components.sectionPillClearance
 import com.spela.player.presentation.ui.components.challenge.SpChallengeCard
 import com.spela.player.presentation.ui.components.challenge.SpChallengeCardSkeleton
 import com.spela.player.presentation.ui.gamepad.InputMode
@@ -58,9 +58,7 @@ fun ChallengeListScreen(
             modifier = Modifier
                 .fillMaxSize(),
         ) {
-            if (isGamepad) {
-                SpScreenTopSpacer()
-            } else {
+            if (!isGamepad) {
                 SpTopBar(
                     title = gameTitle,
                     showBack = true,
@@ -75,7 +73,12 @@ fun ChallengeListScreen(
             SpLazyVerticalGrid(
                 columns = GridCells.Adaptive(minSize = SpSpacing.ChallengeCellMinWidth),
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(SpSpacing.ScreenHorizontal),
+                contentPadding = PaddingValues(
+                    start = SpSpacing.ScreenHorizontal,
+                    end = SpSpacing.ScreenHorizontal,
+                    top = sectionPillClearance() + SpSpacing.ScreenHorizontal,
+                    bottom = SpSpacing.ScreenHorizontal,
+                ),
                 verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
                 horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
             ) {
@@ -98,7 +101,12 @@ fun ChallengeListScreen(
                     SpLazyVerticalGrid(
                         columns = GridCells.Adaptive(minSize = SpSpacing.ChallengeCellMinWidth),
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(SpSpacing.ScreenHorizontal),
+                        contentPadding = PaddingValues(
+                            start = SpSpacing.ScreenHorizontal,
+                            end = SpSpacing.ScreenHorizontal,
+                            top = sectionPillClearance() + SpSpacing.ScreenHorizontal,
+                            bottom = SpSpacing.ScreenHorizontal,
+                        ),
                         verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
                         horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
                     ) {

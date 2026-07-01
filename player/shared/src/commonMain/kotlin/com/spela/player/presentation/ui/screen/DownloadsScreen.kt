@@ -43,8 +43,8 @@ import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpDownloadProgressBar
 import com.spela.player.presentation.ui.components.SpEmptyStates
 import com.spela.player.presentation.ui.components.SpScreen
-import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.components.SpTopBar
+import com.spela.player.presentation.ui.components.sectionPillClearance
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
 import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
@@ -82,9 +82,7 @@ fun DownloadsScreen(
             modifier = Modifier
                 .fillMaxSize(),
         ) {
-            if (isGamepad) {
-                SpScreenTopSpacer()
-            } else {
+            if (!isGamepad) {
                 SpTopBar(title = "Downloads", showBack = true, onBack = onBack)
             }
 
@@ -92,8 +90,10 @@ fun DownloadsScreen(
             LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
-                horizontal = SpSpacing.ScreenHorizontal,
-                vertical = SpSpacing.Default,
+                start = SpSpacing.ScreenHorizontal,
+                end = SpSpacing.ScreenHorizontal,
+                top = sectionPillClearance() + SpSpacing.Default,
+                bottom = SpSpacing.Default,
             ),
             verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
         ) {

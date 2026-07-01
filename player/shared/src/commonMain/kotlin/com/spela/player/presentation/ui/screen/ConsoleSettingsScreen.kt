@@ -43,8 +43,8 @@ import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpSecondaryButton
 import com.spela.player.presentation.ui.components.SpRadioOption
 import com.spela.player.presentation.ui.components.SpScreen
-import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.components.SpTopBar
+import com.spela.player.presentation.ui.components.sectionPillClearance
 import com.spela.player.presentation.ui.components.gamepad.GamepadMappingDialog
 import com.spela.player.presentation.ui.components.keymapping.KeyMappingScreen
 import com.spela.player.presentation.ui.components.keymapping.platformKeyName
@@ -108,9 +108,7 @@ fun ConsoleSettingsScreen(
             modifier = Modifier
                 .fillMaxSize(),
         ) {
-            if (isGamepad) {
-                SpScreenTopSpacer()
-            } else {
+            if (!isGamepad) {
                 SpTopBar(
                     title = "$consoleName Settings",
                     showBack = true,
@@ -121,8 +119,10 @@ fun ConsoleSettingsScreen(
             LazyColumn(
             modifier = Modifier.fillMaxSize().testTag("console-settings-list"),
             contentPadding = PaddingValues(
-                horizontal = SpSpacing.ScreenHorizontal,
-                vertical = SpSpacing.Default,
+                start = SpSpacing.ScreenHorizontal,
+                end = SpSpacing.ScreenHorizontal,
+                top = sectionPillClearance() + SpSpacing.Default,
+                bottom = SpSpacing.Default,
             ),
             verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
         ) {

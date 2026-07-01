@@ -42,8 +42,8 @@ import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpScreen
-import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.components.SpTopBar
+import com.spela.player.presentation.ui.components.sectionPillClearance
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
 import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
@@ -81,9 +81,7 @@ fun ExploreThemeScreen(
             modifier = Modifier
                 .fillMaxSize(),
         ) {
-            if (isGamepad) {
-                SpScreenTopSpacer()
-            } else {
+            if (!isGamepad) {
                 SpTopBar(
                     title = themeName,
                     showBack = true,
@@ -98,7 +96,12 @@ fun ExploreThemeScreen(
                         modifier = Modifier
                             .fillMaxSize()
                             .testTag("theme_games_loading"),
-                        contentPadding = PaddingValues(SpSpacing.ScreenHorizontal),
+                        contentPadding = PaddingValues(
+                            start = SpSpacing.ScreenHorizontal,
+                            end = SpSpacing.ScreenHorizontal,
+                            top = sectionPillClearance() + SpSpacing.ScreenHorizontal,
+                            bottom = SpSpacing.ScreenHorizontal,
+                        ),
                         horizontalArrangement = Arrangement.spacedBy(SpSpacing.GridSpacing),
                         verticalArrangement = Arrangement.spacedBy(SpSpacing.GridSpacing),
                     ) {
@@ -128,7 +131,12 @@ fun ExploreThemeScreen(
                         modifier = Modifier
                             .fillMaxSize()
                             .testTag("theme_games_grid"),
-                        contentPadding = PaddingValues(SpSpacing.ScreenHorizontal),
+                        contentPadding = PaddingValues(
+                            start = SpSpacing.ScreenHorizontal,
+                            end = SpSpacing.ScreenHorizontal,
+                            top = sectionPillClearance() + SpSpacing.ScreenHorizontal,
+                            bottom = SpSpacing.ScreenHorizontal,
+                        ),
                         horizontalArrangement = Arrangement.spacedBy(SpSpacing.GridSpacing),
                         verticalArrangement = Arrangement.spacedBy(SpSpacing.GridSpacing),
                     ) {

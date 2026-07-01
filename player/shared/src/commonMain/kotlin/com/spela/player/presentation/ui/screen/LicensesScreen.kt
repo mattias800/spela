@@ -20,8 +20,8 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpScreen
-import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.components.SpTopBar
+import com.spela.player.presentation.ui.components.sectionPillClearance
 import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
@@ -124,9 +124,7 @@ fun LicensesScreen(
             modifier = Modifier
                 .fillMaxSize(),
         ) {
-            if (isGamepad) {
-                SpScreenTopSpacer()
-            } else {
+            if (!isGamepad) {
                 SpTopBar(title = "Credits & Licenses", showBack = true, onBack = onBack)
             }
 
@@ -135,8 +133,10 @@ fun LicensesScreen(
             LazyColumn(
             modifier = Modifier.fillMaxSize().testTag("licenses_list"),
             contentPadding = PaddingValues(
-                horizontal = SpSpacing.ScreenHorizontal,
-                vertical = SpSpacing.Default,
+                start = SpSpacing.ScreenHorizontal,
+                end = SpSpacing.ScreenHorizontal,
+                top = sectionPillClearance() + SpSpacing.Default,
+                bottom = SpSpacing.Default,
             ),
             verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
         ) {
