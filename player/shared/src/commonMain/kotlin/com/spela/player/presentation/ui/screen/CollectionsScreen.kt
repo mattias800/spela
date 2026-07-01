@@ -15,7 +15,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.CompositionLocalProvider
+import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
+import com.spela.player.presentation.ui.gamepad.LocalInputMode
 import com.spela.player.presentation.ui.gamepad.focusRestoreItem
 import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
 import androidx.compose.material.icons.Icons
@@ -65,6 +67,7 @@ fun CollectionsScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val titleBarInset = LocalTitleBarInset.current
+    val isGamepad = LocalInputMode.current == InputMode.GAMEPAD
     val focusMemory = rememberFocusMemoryState()
 
     LaunchedEffect(Unit) {
@@ -143,7 +146,9 @@ fun CollectionsScreen(
                             contentPadding = PaddingValues(
                                 start = SpSpacing.ScreenHorizontal,
                                 end = SpSpacing.ScreenHorizontal,
-                                top = titleBarInset + SpSpacing.Default,
+                                // Reserve the gamepad section-pill clearance so the
+                                // list isn't hidden behind it (#1529), matching Settings.
+                                top = titleBarInset + (if (isGamepad) SpSpacing.SectionIndicatorClearance else 0.dp) + SpSpacing.Default,
                                 bottom = SpSpacing.Default,
                             ),
                             verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
