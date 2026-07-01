@@ -41,6 +41,27 @@ Adds space for the section indicator pill in gamepad mode.
 Renders nothing in touch mode. Use on screens that don't have
 edge-to-edge content (hero banners) at the top.
 
+**Do NOT place `SpScreenTopSpacer` as a fixed sibling directly above a lazy
+scroller** (`LazyColumn` / `LazyVerticalGrid` / `SpLazyVerticalGrid`). A fixed
+spacer sits outside the scroll region, so content clips at an opaque seam below
+the pill instead of scrolling under it — use `sectionPillClearance()` instead.
+`SpScreenTopSpacer` is correct when placed *inside* a scrolling container
+(`SpScrollableContent` / a `LazyColumn` item) or above a fixed header (search
+field, filter row) that itself sits between the pill and the scroller.
+
+### `sectionPillClearance()` — Pill clearance for lazy scrollers
+Returns the pill-clearance `Dp` for gamepad mode (`0.dp` in touch). Add it to a
+lazy scroller's `contentPadding` top so content scrolls *under* the floating pill:
+
+```kotlin
+SpLazyVerticalGrid(
+    contentPadding = PaddingValues(
+        top = sectionPillClearance() + SpSpacing.Default,
+        bottom = SpSpacing.Default,
+    ),
+) { ... }
+```
+
 ### `SpMainContentPadding` — Content insets
 Adds horizontal padding (`SpSpacing.ScreenHorizontal` = 20dp on each side)
 and a small top gap (`SpSpacing.Large` = 20dp). Use to wrap the main
@@ -135,6 +156,7 @@ SpScreen(gradientColors = gradientColors) {
 4. **No custom vertical spacing between sections** — use `SpSectionList`.
 5. **Edge-to-edge content** (banners, hero images) goes as a direct child of `SpScrollableContent`, before `SpMainContentPadding`.
 6. **Overlays** (snackbars, FABs) go as siblings of `SpScrollableContent` inside `SpScreen` (BoxScope).
+7. **Pill clearance for lazy scrollers** — when a `LazyColumn`/`LazyVerticalGrid`/`SpLazyVerticalGrid` is the screen's main scroller with no fixed header above it, put the pill clearance in its `contentPadding.top` via `sectionPillClearance()`, not a fixed `SpScreenTopSpacer` sibling (which clips content at a seam below the pill).
 
 ## File locations
 
@@ -144,6 +166,7 @@ SpScreen(gradientColors = gradientColors) {
 | `SpScrollableContent` | `components/SpScreen.kt` |
 | `SpMainContentPadding` | `components/SpScreen.kt` |
 | `SpScreenTopSpacer` | `components/SpScreenTopSpacer.kt` |
+| `sectionPillClearance` | `components/SpScreenTopSpacer.kt` |
 | `SpSectionList` | `components/SpSectionList.kt` |
 | `SpCarousel` | `components/SpCarousel.kt` |
 | `SpTitledSection` | `components/SpTitledSection.kt` |
