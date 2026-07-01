@@ -22,12 +22,12 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.intent.GameListIntent
 import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.components.ScreenLoadingIndicator
 import com.spela.player.presentation.ui.components.SpEmptyStates
 import com.spela.player.presentation.ui.components.SpScreen
-import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.components.rememberLoadingFlashDebounce
 import com.spela.player.presentation.ui.feature.library.GameGridItem
@@ -55,12 +55,10 @@ fun ContinuePlayingScreen(
     CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
         SpScreen {
             Column(modifier = Modifier.fillMaxSize()) {
-                // Standard screen header: gamepad mode clears the floating section
-                // pill; touch mode gets a titled top bar with back. Matches the
-                // rest of the app's screens (#1525).
-                if (isGamepad) {
-                    SpScreenTopSpacer()
-                } else {
+                // Touch mode gets a titled top bar with back. Gamepad mode has no
+                // bar — the pill clearance lives in the grid's contentPadding below
+                // so cards scroll *under* the floating pill (#1525).
+                if (!isGamepad) {
                     SpTopBar(title = "Continue Playing", showBack = true, onBack = onBack)
                 }
 
@@ -89,8 +87,13 @@ fun ContinuePlayingScreen(
                                 columns = GridCells.Adaptive(SpSpacing.GridCellMinWidth),
                                 modifier = Modifier.fillMaxSize(),
                                 contentPadding = PaddingValues(
-                                    horizontal = SpSpacing.ScreenHorizontal,
-                                    vertical = SpSpacing.Default,
+                                    start = SpSpacing.ScreenHorizontal,
+                                    end = SpSpacing.ScreenHorizontal,
+                                    // Reserve the gamepad pill clearance in the scroll
+                                    // padding (not a fixed spacer) so cards scroll under
+                                    // the floating pill, matching Collections/Activity.
+                                    top = (if (isGamepad) SpSpacing.SectionIndicatorClearance else 0.dp) + SpSpacing.Default,
+                                    bottom = SpSpacing.Default,
                                 ),
                                 horizontalArrangement = Arrangement.spacedBy(SpSpacing.GridSpacing),
                                 verticalArrangement = Arrangement.spacedBy(SpSpacing.GridSpacing),
