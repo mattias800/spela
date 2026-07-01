@@ -41,6 +41,7 @@ import com.spela.player.presentation.ui.feature.library.GameGridItem
 import com.spela.player.presentation.ui.feature.library.GameLibraryControls
 import com.spela.player.presentation.ui.feature.library.GameListRowItem
 import com.spela.player.presentation.ui.components.SpScreen
+import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.viewmodel.GameListViewModel
@@ -63,6 +64,9 @@ fun AllGamesScreen(
 
     SpScreen {
     Column(modifier = Modifier.fillMaxSize()) {
+        // Clear the gamepad section-indicator pill so it doesn't overlap the
+        // search field (#1529); no-op in touch mode.
+        SpScreenTopSpacer()
         SpSearchField(
             value = searchQuery,
             onValueChange = { query ->

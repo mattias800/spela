@@ -18,7 +18,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.CompositionLocalProvider
+import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
+import com.spela.player.presentation.ui.gamepad.LocalInputMode
 import com.spela.player.presentation.ui.gamepad.focusRestoreItem
 import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
 import androidx.compose.foundation.shape.CircleShape
@@ -83,6 +85,7 @@ fun ActivityScreen(
     }
 
     val titleBarInset = LocalTitleBarInset.current
+    val isGamepad = LocalInputMode.current == InputMode.GAMEPAD
     val gradientColors = listOf(
         SpColor.Accent.darken(0.80f),
         SpColor.SecondaryDark.darken(0.78f),
@@ -142,7 +145,9 @@ fun ActivityScreen(
                         state = listState,
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(
-                            top = titleBarInset + SpSpacing.Default,
+                            // Reserve the gamepad section-pill clearance so the feed
+                            // isn't hidden behind it (#1529), matching Settings.
+                            top = titleBarInset + (if (isGamepad) SpSpacing.SectionIndicatorClearance else 0.dp) + SpSpacing.Default,
                             bottom = SpSpacing.Default,
                         ),
                         verticalArrangement = Arrangement.spacedBy(SpSpacing.XXSmall),
