@@ -963,6 +963,9 @@ fun ScreenRouter(
                                             NavigationIntent.NavigateTo(SpScreen.GameDetail(gameId))
                                         )
                                     },
+                                    onBack = {
+                                        navigationViewModel.onIntent(NavigationIntent.GoBack)
+                                    },
                                 )
                             }
 
@@ -973,6 +976,9 @@ fun ScreenRouter(
                                         navigationViewModel.onIntent(
                                             NavigationIntent.NavigateTo(SpScreen.GameDetail(gameId))
                                         )
+                                    },
+                                    onBack = {
+                                        navigationViewModel.onIntent(NavigationIntent.GoBack)
                                     },
                                 )
                             }
