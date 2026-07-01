@@ -225,6 +225,20 @@ func (h *UserHandler) HumaAddFavorite(ctx context.Context, in *AddFavoriteInput)
 		return nil, huma.Error404NotFound("game not found")
 	}
 
+	// A prior unfavorite soft-deletes the row, but the unique index
+	// (user_id, game_id) still holds it — a plain Create would 409. Restore the
+	// soft-deleted row instead; only a genuinely-active favorite is a conflict (#1541).
+	var existing db.Favorite
+	if err := h.DB.Unscoped().Where("user_id = ? AND game_id = ?", uid, game.ID).First(&existing).Error; err == nil {
+		if !existing.DeletedAt.Valid {
+			return nil, huma.Error409Conflict("already favorited")
+		}
+		existing.DeletedAt = gorm.DeletedAt{}
+		h.DB.Unscoped().Save(&existing)
+		CreateActivityEvent(h.DB, h.Hub, uid, "favorited_game", game.ID, nil)
+		return &AddFavoriteOutput{Body: MessageResponse{Message: "favorite added"}}, nil
+	}
+
 	fav := db.Favorite{
 		UserID: uid,
 		GameID: game.ID,
@@ -243,7 +257,9 @@ func (h *UserHandler) HumaAddFavorite(ctx context.Context, in *AddFavoriteInput)
 func (h *UserHandler) HumaRemoveFavorite(ctx context.Context, in *RemoveFavoriteInput) (*RemoveFavoriteOutput, error) {
 	uid := UserIDFromContext(ctx)
 
-	result := h.DB.Where("user_id = ? AND game_id = ?", uid, in.GameID).Delete(&db.Favorite{})
+	// Hard delete so the row does not linger in the unique index (user_id, game_id)
+	// and block a later re-favorite (#1541).
+	result := h.DB.Unscoped().Where("user_id = ? AND game_id = ?", uid, in.GameID).Delete(&db.Favorite{})
 	if result.RowsAffected == 0 {
 		return nil, huma.Error404NotFound("favorite not found")
 	}
