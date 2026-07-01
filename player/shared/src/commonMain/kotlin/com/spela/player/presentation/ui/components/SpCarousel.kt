@@ -3,13 +3,20 @@ package com.spela.player.presentation.ui.components
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.MutatePriority
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.lazy.LazyListLayoutInfo
+import androidx.compose.foundation.lazy.LazyListPrefetchScope
+import androidx.compose.foundation.lazy.LazyListPrefetchStrategy
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.layout.NestedPrefetchScope
+import androidx.compose.foundation.lazy.layout.PrefetchRequest
+import androidx.compose.foundation.lazy.layout.PrefetchScheduler
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -31,12 +38,44 @@ import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
 import com.spela.player.presentation.ui.gamepad.focusRestoreItem
 import com.spela.player.presentation.ui.theme.SpSpacing
 
+// #1241: Compose's default LazyLayout prefetch scheduler on Android is created
+// lazily via Choreographer.getInstance(), which requires a Looper on the
+// thread that constructs it. Under instrumentation the carousel's LazyRow can
+// be composed on a thread without a Looper, so that constructor throws
+// ("The current thread must have a looper!") and kills the app process,
+// aborting E2E runs once Continue Playing grows enough to trigger prefetch.
+// Supplying a non-null (no-op) PrefetchScheduler makes Compose use it instead
+// of ever constructing the default Android one. Prefetch is only a minor
+// smoothness nicety on this short horizontal card carousel, so disabling it is
+// imperceptible in normal use. Stateless, so a single shared instance is safe.
+//
+// PrefetchScheduler customization is @Deprecated in CMP 1.10.1 but still honored:
+// LazyLayout resolves `prefetchState.prefetchScheduler ?: rememberDefaultPrefetch-
+// Scheduler()`, so a non-null scheduler here suppresses the crashing Android
+// default. Revisit if a Compose upgrade removes the customization path (the crash
+// could silently return). `internal` (not private) so a test can guard the
+// non-null-scheduler invariant that this fix hinges on.
+@OptIn(ExperimentalFoundationApi::class)
+@Suppress("DEPRECATION")
+internal val CarouselNoPrefetchStrategy = object : LazyListPrefetchStrategy {
+    override val prefetchScheduler: PrefetchScheduler = object : PrefetchScheduler {
+        override fun schedulePrefetch(prefetchRequest: PrefetchRequest) {}
+    }
+
+    override fun LazyListPrefetchScope.onScroll(delta: Float, layoutInfo: LazyListLayoutInfo) {}
+
+    override fun LazyListPrefetchScope.onVisibleItemsUpdated(layoutInfo: LazyListLayoutInfo) {}
+
+    override fun NestedPrefetchScope.onNestedPrefetch(firstVisibleItemIndex: Int) {}
+}
+
 /**
  * Horizontal carousel with explicit per-item focus management and
  * horizontal centering.
  *
- * Built on `LazyRow` — at first paint only the visible window + a small
- * prefetch buffer are composed, even if [itemCount] is large. This is
+ * Built on `LazyRow` — at first paint only the visible window is
+ * composed, even if [itemCount] is large (prefetch is disabled for the
+ * carousel; see [CarouselNoPrefetchStrategy] / #1241). This is
  * the load-shaping pivot from #1168: the screen-level outer column is
  * still eager (which the user prefers — no vertical scroll freeze), but
  * each shelf's horizontal axis is lazy, so a cold-paint of a 19-section
@@ -67,6 +106,7 @@ import com.spela.player.presentation.ui.theme.SpSpacing
  *   Apply to the *first* meaningful carousel on a screen — never more
  *   than one per screen.
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun SpCarousel(
     itemCount: Int,
@@ -76,7 +116,7 @@ fun SpCarousel(
     isDefaultFocusGroup: Boolean = false,
     content: @Composable (index: Int, focusRequester: FocusRequester) -> Unit,
 ) {
-    val listState = rememberLazyListState()
+    val listState = rememberLazyListState(prefetchStrategy = CarouselNoPrefetchStrategy)
     // FocusRequesters live in a list keyed by index. Only the requester
     // for a *currently composed* item is bound to a layout node — the
     // rest are unbound and a no-op until the LazyRow composes their
@@ -113,9 +153,9 @@ fun SpCarousel(
     // Sequence:
     //   1. requestFocus on the target's requester. For the common
     //      adjacent-step case (d-pad right/left from a visible item)
-    //      the target sits in LazyRow's prefetch window, so its
-    //      requester is bound to a layout node and this works
-    //      synchronously — the focus ring snaps before any scroll
+    //      the target is usually itself within the composed visible
+    //      window, so its requester is bound to a layout node and this
+    //      works synchronously — the focus ring snaps before any scroll
     //      animation starts.
     //   2. animateScrollBy enough to bring the focused item's centre
     //      to the centre of the viewport. We read the item's offset
@@ -222,10 +262,11 @@ fun SpCarousel(
                         }
                     }
                 } else {
-                    // Target not in prefetch window — we can't compute a
-                    // centring delta yet. Fall back to animating toward
-                    // the item, which composes it; once on-screen the
-                    // user's next press will pick up the centring path.
+                    // Target not currently visible (off-screen) — we
+                    // can't compute a centring delta yet. Fall back to
+                    // animating toward the item, which composes it; once
+                    // on-screen the user's next press will pick up the
+                    // centring path.
                     // Plain animateScrollToItem can't run inside this
                     // scroll block (it would re-acquire the mutex), so
                     // we approximate by scrolling by a viewport-sized
