@@ -61,6 +61,7 @@ import com.spela.player.presentation.ui.components.SpMainContentPadding
 import com.spela.player.presentation.ui.components.SpScreen
 import com.spela.player.presentation.ui.components.SpScrollableContent
 import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
+import com.spela.player.presentation.ui.gamepad.focusRestoreItem
 import com.spela.player.presentation.ui.gamepad.rememberFocus
 import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
 import androidx.compose.runtime.CompositionLocalProvider
@@ -303,6 +304,8 @@ fun HomeScreen(
                                             text = "See all",
                                             contentDescription = "See all Play Later",
                                             onClick = onNavigateToPlayLater,
+                                            // Restore focus to this link on back-nav (#1522).
+                                            modifier = Modifier.focusRestoreItem("home_see_all_play_later"),
                                         )
                                     },
                                 ) {
@@ -326,6 +329,9 @@ fun HomeScreen(
                                             text = "See all",
                                             contentDescription = "See all Favorites",
                                             onClick = onNavigateToFavorites,
+                                            // Restore focus to this link on back-nav, not the
+                                            // first game in the carousel (#1522).
+                                            modifier = Modifier.focusRestoreItem("home_see_all_favorites"),
                                         )
                                     },
                                 ) {
