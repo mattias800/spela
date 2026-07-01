@@ -16,6 +16,7 @@ import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.ui.gamepad.LazyGridCenterInfo
 import com.spela.player.presentation.ui.gamepad.LocalLazyGridCenterInfo
+import com.spela.player.presentation.ui.gamepad.RightStickScroll
 
 /**
  * Drop-in replacement for [LazyVerticalGrid] that provides
@@ -39,6 +40,10 @@ fun SpLazyVerticalGrid(
 ) {
     val centerInfo = remember(state) { LazyGridCenterInfo(state) }
     CompositionLocalProvider(LocalLazyGridCenterInfo provides centerInfo) {
+        // Continuous right-stick scrolling in gamepad mode (#1362) — wired here so
+        // every game grid scrolls from the stick, not just SpScreen's column-scroll.
+        // No-op in touch mode / without a gamepad source.
+        RightStickScroll(state)
         LazyVerticalGrid(
             columns = columns,
             modifier = modifier.onGloballyPositioned { coordinates ->
