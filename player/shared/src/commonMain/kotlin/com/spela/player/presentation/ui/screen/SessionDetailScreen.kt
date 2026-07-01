@@ -61,7 +61,7 @@ import com.spela.player.presentation.ui.components.SpSectionHeader
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
-import com.spela.player.presentation.ui.components.SpLazyColumn
+import com.spela.player.presentation.ui.components.SpScreenContentList
 import com.spela.player.presentation.ui.components.SpScreen
 import com.spela.player.presentation.ui.components.sectionPillClearance
 import com.spela.player.presentation.ui.components.SpTopBar
@@ -179,7 +179,7 @@ fun SessionDetailScreen(
                     },
                     modifier = Modifier.fillMaxSize(),
                 ) {
-                    SpLazyColumn(
+                    SpScreenContentList(
                         modifier = Modifier
                             .fillMaxSize()
                             .testTag("session_detail_content"),

@@ -33,7 +33,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.CompositionLocalProvider
-import com.spela.player.presentation.ui.components.SpLazyColumn
+import com.spela.player.presentation.ui.components.SpScreenContentList
 import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
 import com.spela.player.presentation.ui.gamepad.focusRestoreItem
 import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
@@ -59,7 +59,7 @@ fun SettingsCategoryList(
 ) {
     val focusMemory = rememberFocusMemoryState()
     CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
-    SpLazyColumn(
+    SpScreenContentList(
         modifier = modifier.fillMaxSize().focusGroup(),
         contentPadding = PaddingValues(
             start = SpSpacing.Medium,

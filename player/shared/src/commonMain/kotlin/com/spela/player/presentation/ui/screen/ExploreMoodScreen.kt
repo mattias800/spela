@@ -39,7 +39,7 @@ import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpEmptyState
 import com.spela.player.presentation.ui.components.SpGameCardSkeleton
-import com.spela.player.presentation.ui.components.SpLazyColumn
+import com.spela.player.presentation.ui.components.SpScreenContentList
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
@@ -112,7 +112,7 @@ fun ExploreMoodScreen(
                 }
 
                 state.games.isNotEmpty() -> {
-                    SpLazyColumn(
+                    SpScreenContentList(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(
                             top = sectionPillClearance(),

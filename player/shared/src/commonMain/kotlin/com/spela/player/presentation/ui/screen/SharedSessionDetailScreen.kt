@@ -39,7 +39,7 @@ import com.spela.player.presentation.ui.feature.sharedsession.SharedSessionSaveI
 import com.spela.player.presentation.ui.components.InvitePlayerSheet
 import com.spela.player.presentation.ui.components.SpEmptyState
 import com.spela.player.presentation.ui.components.SpIconButton
-import com.spela.player.presentation.ui.components.SpLazyColumn
+import com.spela.player.presentation.ui.components.SpScreenContentList
 import com.spela.player.presentation.ui.components.ScreenLoadingIndicator
 import com.spela.player.presentation.ui.components.rememberLoadingFlashDebounce
 import com.spela.player.presentation.ui.components.SpSectionHeader
@@ -157,7 +157,7 @@ fun SharedSessionDetailScreen(
                     },
                     modifier = Modifier.fillMaxSize(),
                 ) {
-                    SpLazyColumn(
+                    SpScreenContentList(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(
                             top = sectionPillClearance() + SpSpacing.Default,

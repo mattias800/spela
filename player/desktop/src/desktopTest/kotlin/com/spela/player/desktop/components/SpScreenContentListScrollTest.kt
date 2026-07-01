@@ -9,7 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.runComposeUiTest
 import androidx.compose.ui.unit.dp
-import com.spela.player.presentation.ui.components.SpLazyColumn
+import com.spela.player.presentation.ui.components.SpScreenContentList
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
 import com.spela.player.presentation.ui.gamepad.LocalRightStickScroll
@@ -20,12 +20,12 @@ import kotlin.test.assertTrue
 
 /**
  * Right-stick continuous scrolling (#1362) must work on list screens, not just
- * grids. SpLazyColumn is the shared LazyColumn used by Stats, Downloads,
+ * grids. SpScreenContentList is the shared LazyColumn used by Stats, Downloads,
  * Netplay, Explore, etc.; wiring RightStickScroll into it makes the behavior
  * global for lists too (the reported gap was list screens not scrolling).
  */
 @OptIn(ExperimentalTestApi::class)
-class SpLazyColumnScrollTest {
+class SpScreenContentListScrollTest {
 
     @Test
     fun rightStickDeflectionScrollsTheColumn() = runComposeUiTest {
@@ -38,7 +38,7 @@ class SpLazyColumnScrollTest {
                 LocalInputMode provides InputMode.GAMEPAD,
                 LocalRightStickScroll provides stick,
             ) {
-                SpLazyColumn(
+                SpScreenContentList(
                     state = listState,
                     modifier = Modifier.size(240.dp),
                 ) {

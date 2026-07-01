@@ -41,7 +41,7 @@ import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpDownloadProgressBar
 import com.spela.player.presentation.ui.components.SpEmptyStates
-import com.spela.player.presentation.ui.components.SpLazyColumn
+import com.spela.player.presentation.ui.components.SpScreenContentList
 import com.spela.player.presentation.ui.components.SpScreen
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.components.sectionPillClearance
@@ -87,7 +87,7 @@ fun DownloadsScreen(
             }
 
             CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
-            SpLazyColumn(
+            SpScreenContentList(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
                 start = SpSpacing.ScreenHorizontal,

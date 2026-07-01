@@ -45,7 +45,7 @@ import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpEmptyState
-import com.spela.player.presentation.ui.components.SpLazyColumn
+import com.spela.player.presentation.ui.components.SpScreenContentList
 import com.spela.player.presentation.ui.components.ScreenLoadingIndicator
 import com.spela.player.presentation.ui.components.rememberLoadingFlashDebounce
 import com.spela.player.presentation.ui.components.SpSnackbar
@@ -186,7 +186,7 @@ fun TopListsScreen(
                     } else {
                         when (state.selectedTab) {
                             TopListTab.TOP_RATED -> {
-                                SpLazyColumn(
+                                SpScreenContentList(
                                     modifier = Modifier.fillMaxSize().testTag("top_lists_content"),
                                     contentPadding = PaddingValues(vertical = SpSpacing.Default),
                                 ) {
@@ -208,7 +208,7 @@ fun TopListsScreen(
                                 }
                             }
                             TopListTab.LONGEST -> {
-                                SpLazyColumn(
+                                SpScreenContentList(
                                     modifier = Modifier.fillMaxSize().testTag("longest_games_content"),
                                     contentPadding = PaddingValues(vertical = SpSpacing.Default),
                                 ) {

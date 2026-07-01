@@ -42,7 +42,7 @@ import com.spela.player.domain.model.GameCollection
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpFab
-import com.spela.player.presentation.ui.components.SpLazyColumn
+import com.spela.player.presentation.ui.components.SpScreenContentList
 import com.spela.player.presentation.ui.components.SpEmptyStates
 import com.spela.player.presentation.ui.components.SpScreen
 import com.spela.player.presentation.ui.components.ScreenLoadingIndicator
@@ -141,7 +141,7 @@ fun CollectionsScreen(
                             )
                         }
                     } else {
-                        SpLazyColumn(
+                        SpScreenContentList(
                             modifier = Modifier.fillMaxSize().testTag(TestTags.COLLECTIONS_LIST),
                             contentPadding = PaddingValues(
                                 start = SpSpacing.ScreenHorizontal,

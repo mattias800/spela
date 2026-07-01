@@ -29,7 +29,7 @@ import com.spela.player.presentation.ui.gamepad.RightStickScroll
  * No-op in touch mode / without a gamepad source.
  */
 @Composable
-fun SpLazyColumn(
+fun SpScreenContentList(
     modifier: Modifier = Modifier,
     state: LazyListState = rememberLazyListState(),
     contentPadding: PaddingValues = PaddingValues(0.dp),

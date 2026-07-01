@@ -39,7 +39,7 @@ import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.components.ShaderPreview
 import com.spela.player.presentation.ui.components.ShaderPreviewDialog
 import com.spela.player.presentation.ui.components.SpCard
-import com.spela.player.presentation.ui.components.SpLazyColumn
+import com.spela.player.presentation.ui.components.SpScreenContentList
 import com.spela.player.presentation.ui.components.SpSecondaryButton
 import com.spela.player.presentation.ui.components.SpRadioOption
 import com.spela.player.presentation.ui.components.SpScreen
@@ -116,7 +116,7 @@ fun ConsoleSettingsScreen(
                 )
             }
 
-            SpLazyColumn(
+            SpScreenContentList(
             modifier = Modifier.fillMaxSize().testTag("console-settings-list"),
             contentPadding = PaddingValues(
                 start = SpSpacing.ScreenHorizontal,

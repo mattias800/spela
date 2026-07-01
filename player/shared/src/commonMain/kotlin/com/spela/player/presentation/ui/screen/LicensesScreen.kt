@@ -18,7 +18,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import com.spela.player.presentation.ui.components.SpCard
-import com.spela.player.presentation.ui.components.SpLazyColumn
+import com.spela.player.presentation.ui.components.SpScreenContentList
 import com.spela.player.presentation.ui.components.SpScreen
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.components.sectionPillClearance
@@ -130,7 +130,7 @@ fun LicensesScreen(
 
             val focusMemory = rememberFocusMemoryState()
             CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
-            SpLazyColumn(
+            SpScreenContentList(
             modifier = Modifier.fillMaxSize().testTag("licenses_list"),
             contentPadding = PaddingValues(
                 start = SpSpacing.ScreenHorizontal,

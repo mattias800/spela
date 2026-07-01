@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import com.spela.player.presentation.ui.components.SpLazyColumn
+import com.spela.player.presentation.ui.components.SpScreenContentList
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -102,7 +102,7 @@ fun StatsScreen(
                     } else {
                         val focusMemory = rememberFocusMemoryState()
                         CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
-                        SpLazyColumn(
+                        SpScreenContentList(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(
                                 top = sectionPillClearance() + SpSpacing.Default,
