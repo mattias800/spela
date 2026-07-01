@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
+import com.spela.player.presentation.ui.components.SpScreenContentList
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -93,7 +93,7 @@ fun SettingsCategoryContent(
     // into a console's settings and pressing B restores focus to that console row.
     val contentFocusMemory = rememberFocusMemoryState()
     CompositionLocalProvider(LocalFocusMemory provides contentFocusMemory) {
-    LazyColumn(
+    SpScreenContentList(
         state = listState,
         modifier = modifier.fillMaxSize().testTag("settings_category_content_list"),
         contentPadding = PaddingValues(

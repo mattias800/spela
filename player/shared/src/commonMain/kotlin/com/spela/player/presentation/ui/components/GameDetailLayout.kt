@@ -17,21 +17,14 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInRoot
-import com.spela.player.presentation.ui.gamepad.LazyListCenterInfo
-import com.spela.player.presentation.ui.gamepad.LocalLazyListCenterInfo
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -155,17 +148,12 @@ private fun LandscapeLayout(
     // at the viewport's vertical centre. Without this provider the
     // centerOnFocus branch no-ops on this screen.
     val landscapeListState = rememberLazyListState()
-    val landscapeCenterInfo = remember(landscapeListState) { LazyListCenterInfo(landscapeListState) }
-    CompositionLocalProvider(LocalLazyListCenterInfo provides landscapeCenterInfo) {
     Box(modifier = Modifier.fillMaxSize()) {
-        LazyColumn(
+        SpScreenContentList(
             state = landscapeListState,
             modifier = Modifier
                 .fillMaxSize()
-                .testTag("game_detail_content")
-                .onGloballyPositioned { coordinates ->
-                    landscapeCenterInfo.containerTopInRoot = coordinates.positionInRoot().y
-                },
+                .testTag("game_detail_content"),
             contentPadding = PaddingValues(bottom = verticalPad),
         ) {
             // Hero banner — full-width with hero art
@@ -313,7 +301,6 @@ private fun LandscapeLayout(
         // Floating top bar overlaid on content
         topBar()
     }
-    }
 }
 
 @Composable
@@ -331,17 +318,12 @@ private fun PortraitLayout(
     // Banner height is dynamic — wraps content (cover art + info box)
 
     val portraitListState = rememberLazyListState()
-    val portraitCenterInfo = remember(portraitListState) { LazyListCenterInfo(portraitListState) }
-    CompositionLocalProvider(LocalLazyListCenterInfo provides portraitCenterInfo) {
     Box(modifier = Modifier.fillMaxSize()) {
-        LazyColumn(
+        SpScreenContentList(
             state = portraitListState,
             modifier = Modifier
                 .fillMaxSize()
-                .testTag("game_detail_content")
-                .onGloballyPositioned { coordinates ->
-                    portraitCenterInfo.containerTopInRoot = coordinates.positionInRoot().y
-                },
+                .testTag("game_detail_content"),
         ) {
             // Hero banner item
             item {
@@ -453,6 +435,5 @@ private fun PortraitLayout(
 
         // Floating top bar overlaid on content
         topBar()
-    }
     }
 }

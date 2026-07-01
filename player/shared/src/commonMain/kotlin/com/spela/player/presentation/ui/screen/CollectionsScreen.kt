@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.CompositionLocalProvider
 import com.spela.player.presentation.ui.gamepad.InputMode
@@ -43,6 +42,7 @@ import com.spela.player.domain.model.GameCollection
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpFab
+import com.spela.player.presentation.ui.components.SpScreenContentList
 import com.spela.player.presentation.ui.components.SpEmptyStates
 import com.spela.player.presentation.ui.components.SpScreen
 import com.spela.player.presentation.ui.components.ScreenLoadingIndicator
@@ -141,7 +141,7 @@ fun CollectionsScreen(
                             )
                         }
                     } else {
-                        LazyColumn(
+                        SpScreenContentList(
                             modifier = Modifier.fillMaxSize().testTag(TestTags.COLLECTIONS_LIST),
                             contentPadding = PaddingValues(
                                 start = SpSpacing.ScreenHorizontal,

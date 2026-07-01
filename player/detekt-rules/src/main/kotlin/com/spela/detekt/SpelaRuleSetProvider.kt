@@ -9,6 +9,6 @@ class SpelaRuleSetProvider : RuleSetProvider {
 
     override fun instance(): RuleSet = RuleSet(
         ruleSetId,
-        listOf(::ComponentOuterSpacingRule),
+        listOf(::ComponentOuterSpacingRule, ::NoRawScreenScrollerRule),
     )
 }

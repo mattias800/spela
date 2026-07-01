@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
@@ -46,6 +45,7 @@ import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpTextField
+import com.spela.player.presentation.ui.components.SpScreenContentList
 import com.spela.player.presentation.ui.components.SpScreen
 import com.spela.player.presentation.ui.components.sectionPillClearance
 import com.spela.player.presentation.ui.components.SpTopBar
@@ -115,7 +115,7 @@ fun NetplayListScreen(
                 ) {
                     val focusMemory = rememberFocusMemoryState()
                     CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
-                    LazyColumn(
+                    SpScreenContentList(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(
                             top = sectionPillClearance() + SpSpacing.Default,

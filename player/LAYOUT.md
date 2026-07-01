@@ -152,7 +152,7 @@ SpScreen(gradientColors = gradientColors) {
 
 1. **No custom `Box(Modifier.fillMaxSize().spScreenBackground())`** — use `SpScreen`.
 2. **No custom `Modifier.padding(horizontal = SpSpacing.ScreenHorizontal)`** on screens — use `SpMainContentPadding`.
-3. **No `LazyColumn` for screen-level scroll** — use `SpScrollableContent`.
+3. **No raw `LazyColumn`/`LazyVerticalGrid` in a screen** — use the shared scrollers: `SpScreenContentList` (lazy list), `SpLazyVerticalGrid` (grid), or `SpScrollableContent` (non-lazy). They wire right-stick scrolling + focus-centering internally, so screens get that behavior automatically and can't silently miss it. **Enforced** by the `NoRawScreenScrollerRule` detekt rule (see `detekt-rules/`).
 4. **No custom vertical spacing between sections** — use `SpSectionList`.
 5. **Edge-to-edge content** (banners, hero images) goes as a direct child of `SpScrollableContent`, before `SpMainContentPadding`.
 6. **Overlays** (snackbars, FABs) go as siblings of `SpScrollableContent` inside `SpScreen` (BoxScope).
@@ -170,3 +170,5 @@ SpScreen(gradientColors = gradientColors) {
 | `SpSectionList` | `components/SpSectionList.kt` |
 | `SpCarousel` | `components/SpCarousel.kt` |
 | `SpTitledSection` | `components/SpTitledSection.kt` |
+| `SpScreenContentList` | `components/SpScreenContentList.kt` |
+| `SpLazyVerticalGrid` | `components/SpLazyVerticalGrid.kt` |

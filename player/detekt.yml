@@ -33,3 +33,10 @@ spela:
       # break the edge-to-edge elements.
       - '**/feature/explore/ForYouSection.kt'
       - '**/feature/explore/DeveloperDetailComponents.kt'
+  NoRawScreenScrollerRule:
+    active: true
+    # Only screens are held to this — the shared wrapper components
+    # (SpScreenContentList, SpLazyVerticalGrid, SpLazySectionList) legitimately
+    # wrap the raw primitives, and other components/features may use them too.
+    includes:
+      - '**/presentation/ui/screen/**'

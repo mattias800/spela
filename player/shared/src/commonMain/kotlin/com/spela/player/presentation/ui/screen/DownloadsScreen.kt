@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -42,6 +41,7 @@ import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpDownloadProgressBar
 import com.spela.player.presentation.ui.components.SpEmptyStates
+import com.spela.player.presentation.ui.components.SpScreenContentList
 import com.spela.player.presentation.ui.components.SpScreen
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.components.sectionPillClearance
@@ -87,7 +87,7 @@ fun DownloadsScreen(
             }
 
             CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
-            LazyColumn(
+            SpScreenContentList(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
                 start = SpSpacing.ScreenHorizontal,

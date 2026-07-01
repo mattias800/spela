@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.SyncAlt
@@ -41,6 +40,7 @@ import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpEmptyState
+import com.spela.player.presentation.ui.components.SpScreenContentList
 import com.spela.player.presentation.ui.components.SpSectionHeader
 import com.spela.player.presentation.ui.components.ScreenLoadingIndicator
 import com.spela.player.presentation.ui.components.SpSnackbar
@@ -121,7 +121,7 @@ fun SharedSessionsScreen(
                     } else {
                         val focusMemory = rememberFocusMemoryState()
                         CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
-                        LazyColumn(
+                        SpScreenContentList(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(
                                 top = sectionPillClearance() + SpSpacing.Default,
