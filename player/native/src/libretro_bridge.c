@@ -387,6 +387,14 @@ static bool environment_callback(unsigned cmd, void *data) {
                     if (is_dolphin) {
                         LOGI("Dolphin core detected, disabling dual-core CPU thread");
                         core_variables_set("dolphin_main_cpu_thread", "disabled");
+                        /* Enable the Wii system widescreen setting so widescreen-
+                           aware Wii games render 16:9 instead of 4:3 (#1523).
+                           This only affects Wii; GameCube is unchanged. Keep the
+                           output aspect on Auto so each title's real aspect (16:9
+                           widescreen Wii, 4:3 GameCube) is respected rather than
+                           force-stretched. */
+                        core_variables_set("dolphin_widescreen", "enabled");
+                        core_variables_set("dolphin_aspect_ratio", "Auto");
                     }
                 }
 
