@@ -15,6 +15,7 @@ sealed class SpScreen(val route: String) {
     data object AllGames : SpScreen("all_games")
     data object Favorites : SpScreen("favorites")
     data object PlayLater : SpScreen("play_later")
+    data object ContinuePlaying : SpScreen("continue_playing")
     data object Collections : SpScreen("collections")
     data class CollectionDetail(val collectionId: String) : SpScreen("collection/$collectionId")
     data object Stats : SpScreen("stats")
