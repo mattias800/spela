@@ -147,7 +147,8 @@ class EmulationViewModelGameLifecycleTest {
     @Test
     fun startGameDoesNotSetIrVariablesForGameCube() = runTest {
         builder.gameRepository = StubGameRepository(
-            consoleId = "gc",
+            // "gamecube" is the production console code (see server console registry).
+            consoleId = "gamecube",
             consoleName = "Nintendo GameCube",
         )
         builder.coreRepository.recommendedCore = LibretroCore(

@@ -30,7 +30,8 @@ class WiiIrPointerTest {
 
     @Test
     fun gamecubeHasNoIrPointer() {
-        assertTrue(wiiIrPointerCoreVariables("gc", "/cores/dolphin_libretro.so").isEmpty())
+        // "gamecube" is the production console code (see server console registry).
+        assertTrue(wiiIrPointerCoreVariables("gamecube", "/cores/dolphin_libretro.so").isEmpty())
     }
 
     @Test
