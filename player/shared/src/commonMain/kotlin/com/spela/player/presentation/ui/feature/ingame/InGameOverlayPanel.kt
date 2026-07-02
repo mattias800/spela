@@ -2,6 +2,7 @@ package com.spela.player.presentation.ui.feature.ingame
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -37,17 +39,22 @@ import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
@@ -60,11 +67,13 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.intent.EmulationIntent
 import com.spela.player.presentation.state.EmulationState
 import com.spela.player.presentation.ui.components.LocalScrollState
 import com.spela.player.presentation.ui.components.SpDrawerButton
+import com.spela.player.presentation.ui.components.SpDrawerIconButton
 import com.spela.player.presentation.ui.components.SpSlider
 import com.spela.player.presentation.ui.components.challenge.formatDuration
 import com.spela.player.presentation.ui.components.fpsColor
@@ -78,6 +87,7 @@ import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.presentation.viewmodel.EmulationViewModel
+import kotlin.math.roundToInt
 
 @Composable
 internal fun InGameOverlayPanel(
@@ -157,6 +167,10 @@ internal fun InGameOverlayPanel(
                     ),
                 ) {
                     OverlayDrawerHeader(state = state)
+                    OverlayShortcutRow(
+                        volume = state.volume,
+                        onVolumeChange = { viewModel.onIntent(EmulationIntent.SetVolume(it)) },
+                    )
 
                     when {
                         state.isNetplayMode -> NetplayOverlayActions(
@@ -350,11 +364,6 @@ private fun NormalOverlayActions(
         )
     }
 
-    OverlayVolumeRow(
-        volume = state.volume,
-        onVolumeChange = { viewModel.onIntent(EmulationIntent.SetVolume(it)) },
-    )
-
     SpDrawerButton(
         text = "Continue",
         icon = Icons.Filled.PlayArrow,
@@ -371,16 +380,96 @@ private fun NormalOverlayActions(
 }
 
 @Composable
-private fun OverlayVolumeRow(
+private fun OverlayShortcutRow(
     volume: Float,
     onVolumeChange: (Float) -> Unit,
 ) {
+    var showVolumePopover by remember { mutableStateOf(false) }
+    val volumePopoverFocusRequester = remember { FocusRequester() }
+    val volumePercentText = formatVolumePercent(volume)
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+    ) {
+        Box {
+            SpDrawerIconButton(
+                icon = if (volume < 0.01f) {
+                    Icons.AutoMirrored.Filled.VolumeOff
+                } else {
+                    Icons.AutoMirrored.Filled.VolumeUp
+                },
+                contentDescription = "Volume",
+                tooltip = "Volume",
+                stateDescription = volumePercentText,
+                selected = showVolumePopover,
+                onClick = { showVolumePopover = true },
+                modifier = Modifier.focusRestoreItem(key = "overlay_shortcut_volume"),
+            )
+            DropdownMenu(
+                expanded = showVolumePopover,
+                onDismissRequest = { showVolumePopover = false },
+                modifier = Modifier.background(SpColor.DrawerSurface),
+            ) {
+                OverlayVolumePopoverContent(
+                    volume = volume,
+                    onVolumeChange = onVolumeChange,
+                    onDismiss = { showVolumePopover = false },
+                    focusRequester = volumePopoverFocusRequester,
+                )
+            }
+        }
+        Text(
+            text = volumePercentText,
+            style = SpTypography.LabelMedium,
+            color = SpColor.OnDrawerSecondary,
+        )
+    }
+}
+
+@Composable
+private fun OverlayVolumePopoverContent(
+    volume: Float,
+    onVolumeChange: (Float) -> Unit,
+    onDismiss: () -> Unit,
+    focusRequester: FocusRequester,
+) {
+    val volumePercentText = formatVolumePercent(volume)
+
+    LaunchedEffect(Unit) {
+        try { focusRequester.requestFocus() } catch (_: Exception) {}
+    }
+
     Row(
         modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(SpSpacing.RadiusMedium))
-            .background(SpColor.DrawerControl)
-            .padding(horizontal = SpSpacing.Medium, vertical = SpSpacing.XSmall),
+            .width(SpSpacing.DrawerPopoverWidth)
+            .background(SpColor.DrawerSurface)
+            .padding(horizontal = SpSpacing.Default, vertical = SpSpacing.Small)
+            .focusRequester(focusRequester)
+            .focusable()
+            .onPreviewKeyEvent { event ->
+                if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                when (event.key) {
+                    Key.DirectionLeft, Key.DirectionDown -> {
+                        onVolumeChange((volume - VolumeStep).coerceIn(0f, 1f))
+                        true
+                    }
+                    Key.DirectionRight, Key.DirectionUp -> {
+                        onVolumeChange((volume + VolumeStep).coerceIn(0f, 1f))
+                        true
+                    }
+                    Key.Escape -> {
+                        onDismiss()
+                        true
+                    }
+                    else -> false
+                }
+            }
+            .semantics {
+                contentDescription = "Volume slider"
+                stateDescription = volumePercentText
+            },
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
     ) {
@@ -390,7 +479,7 @@ private fun OverlayVolumeRow(
             } else {
                 Icons.AutoMirrored.Filled.VolumeUp
             },
-            contentDescription = "Volume",
+            contentDescription = null,
             tint = SpColor.OnDrawerSecondary,
             modifier = Modifier.size(SpSpacing.IconDefault),
         )
@@ -403,12 +492,17 @@ private fun OverlayVolumeRow(
             thumbColor = SpColor.OnDrawer,
         )
         Text(
-            text = "${(volume * 100).toInt()}%",
+            text = volumePercentText,
             style = SpTypography.LabelSmall,
             color = SpColor.OnDrawerSecondary,
         )
     }
 }
+
+private const val VolumeStep = 0.05f
+
+private fun formatVolumePercent(volume: Float): String =
+    "${(volume.coerceIn(0f, 1f) * 100).roundToInt()}%"
 
 @Composable
 private fun OverlayPerformanceFooter(state: EmulationState) {

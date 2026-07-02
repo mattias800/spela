@@ -14,6 +14,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.semantics.progressBarRangeInfo
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.ui.theme.SpColor
@@ -45,6 +48,13 @@ fun SpSlider(
     Canvas(
         modifier = modifier
             .height(44.dp) // Large touch target for accessibility
+            .semantics {
+                progressBarRangeInfo = ProgressBarRangeInfo(
+                    current = value.coerceIn(0f, 1f),
+                    range = 0f..1f,
+                    steps = 0,
+                )
+            }
             .pointerInput(Unit) {
                 detectTapGestures { offset ->
                     val fraction = (offset.x / size.width).coerceIn(0f, 1f)

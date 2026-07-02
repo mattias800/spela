@@ -69,7 +69,7 @@ class OverlayDpadNavTest {
     }
 
     private fun ComposeUiTest.pressOverlayKey(key: Key, harness: SpelaTestHarness) {
-        onRoot().performKeyInput { pressKey(key) }
+        onAllNodes(isRoot()).onFirst().performKeyInput { pressKey(key) }
         advanceQuick(harness)
     }
 
@@ -145,6 +145,54 @@ class OverlayDpadNavTest {
 
         pressOverlayKey(Key.DirectionDown, harness)
         assertEquals(listOf("Load"), focusedLabels(), "d-pad should work after reopening")
+    }
+
+    @Test
+    fun overlayVolumeShortcutIsKeyboardOperable() = runComposeUiTest {
+        val harness = SpelaTestHarness(StandardTestDispatcher())
+        startGameWithOverlayOpen(harness)
+
+        pressOverlayKey(Key.DirectionUp, harness)
+        assertEquals(listOf("Volume"), focusedLabels())
+        onNodeWithText("Volume").assertIsDisplayed()
+
+        pressOverlayKey(Key.Enter, harness)
+        onNodeWithContentDescription("Volume slider", useUnmergedTree = true).assertIsDisplayed()
+
+        val initialVolume = harness.emulationViewModel.state.value.volume
+        pressOverlayKey(Key.DirectionDown, harness)
+        val loweredByDown = harness.emulationViewModel.state.value.volume
+        assertTrue(
+            loweredByDown < initialVolume,
+            "down should lower volume. before=$initialVolume after=$loweredByDown",
+        )
+
+        pressOverlayKey(Key.DirectionUp, harness)
+        val raisedByUp = harness.emulationViewModel.state.value.volume
+        assertTrue(
+            raisedByUp > loweredByDown,
+            "up should raise volume. before=$loweredByDown after=$raisedByUp",
+        )
+
+        pressOverlayKey(Key.DirectionLeft, harness)
+        val loweredByLeft = harness.emulationViewModel.state.value.volume
+        assertTrue(
+            loweredByLeft < raisedByUp,
+            "left should lower volume. before=$raisedByUp after=$loweredByLeft",
+        )
+
+        pressOverlayKey(Key.DirectionRight, harness)
+        val raisedByRight = harness.emulationViewModel.state.value.volume
+        assertTrue(
+            raisedByRight > loweredByLeft,
+            "right should raise volume. before=$loweredByLeft after=$raisedByRight",
+        )
+
+        pressOverlayKey(Key.Escape, harness)
+        onNodeWithContentDescription("Volume slider", useUnmergedTree = true).assertDoesNotExist()
+
+        pressOverlayKey(Key.DirectionDown, harness)
+        assertEquals(listOf("Save"), focusedLabels(), "d-pad should remain inside the drawer after closing volume")
     }
 
     @Test
