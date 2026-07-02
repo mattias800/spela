@@ -992,6 +992,7 @@ func (h *AdminHandler) HumaHardDeleteUser(ctx context.Context, in *HardDeleteUse
 		uid := user.ID
 
 		tx.Unscoped().Where("user_id = ?", uid).Delete(&db.ConsoleShaderPreference{})
+		tx.Unscoped().Where("user_id = ?", uid).Delete(&db.ConsoleRenderScalePreference{})
 		tx.Unscoped().Where("user_id = ?", uid).Delete(&db.ConsoleSaveStatePolicy{})
 		tx.Unscoped().Where("user_id = ?", uid).Delete(&db.GameSaveStatePolicy{})
 		tx.Unscoped().Where("user_id = ?", uid).Delete(&db.ConsoleKeyMappingPreference{})

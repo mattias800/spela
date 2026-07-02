@@ -29,6 +29,7 @@ import kotlinx.serialization.encoding.*
  * @param autoSaveEnabled 
  * @param autoUpdateCoresEnabled 
  * @param consoleKeyMappings 
+ * @param consoleRenderScales
  * @param consoleSaveStatePolicies 
  * @param consoleShaders 
  * @param customKeyMapping 
@@ -55,6 +56,8 @@ data class UpdatePreferencesRequest (
 
     @SerialName(value = "consoleKeyMappings") val consoleKeyMappings: kotlin.collections.Map<kotlin.String, ConsoleKeyMappingDTO>? = null,
 
+    @SerialName(value = "consoleRenderScales") val consoleRenderScales: kotlin.collections.Map<kotlin.String, kotlin.String>? = null,
+
     @SerialName(value = "consoleSaveStatePolicies") val consoleSaveStatePolicies: kotlin.collections.Map<kotlin.String, kotlin.String>? = null,
 
     @SerialName(value = "consoleShaders") val consoleShaders: kotlin.collections.Map<kotlin.String, kotlin.String>? = null,
@@ -79,4 +82,3 @@ data class UpdatePreferencesRequest (
 
 
 }
-

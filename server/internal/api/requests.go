@@ -26,31 +26,37 @@ type UpdateProfileRequest struct {
 // field is optional — nil fields are left untouched, matching the partial-update
 // semantics of the raw gin handler.
 type UpdatePreferencesRequest struct {
-	ShowPerformanceOverlay  *bool                           `json:"showPerformanceOverlay,omitempty"`
-	AutoSaveEnabled         *bool                           `json:"autoSaveEnabled,omitempty"`
-	AutoLoadSaveEnabled     *bool                           `json:"autoLoadSaveEnabled,omitempty"`
-	AutoUpdateCoresEnabled  *bool                           `json:"autoUpdateCoresEnabled,omitempty"`
-	SelectedShader          *string                         `json:"selectedShader,omitempty" maxLength:"128"`
-	SelectedTheme           *string                         `json:"selectedTheme,omitempty" maxLength:"128"`
-	DefaultSecondScreenPage *string                         `json:"defaultSecondScreenPage,omitempty" maxLength:"128"`
-	ConsoleShaders          map[string]string               `json:"consoleShaders,omitempty"`
+	ShowPerformanceOverlay  *bool             `json:"showPerformanceOverlay,omitempty"`
+	AutoSaveEnabled         *bool             `json:"autoSaveEnabled,omitempty"`
+	AutoLoadSaveEnabled     *bool             `json:"autoLoadSaveEnabled,omitempty"`
+	AutoUpdateCoresEnabled  *bool             `json:"autoUpdateCoresEnabled,omitempty"`
+	SelectedShader          *string           `json:"selectedShader,omitempty" maxLength:"128"`
+	SelectedTheme           *string           `json:"selectedTheme,omitempty" maxLength:"128"`
+	DefaultSecondScreenPage *string           `json:"defaultSecondScreenPage,omitempty" maxLength:"128"`
+	ConsoleShaders          map[string]string `json:"consoleShaders,omitempty"`
+	// Per-console internal render-scale upserts. Keys are console
+	// abbreviations (case-insensitive on the server). Allowed values
+	// are "2x", "3x", "4x". Sending "", "native", or "1x" clears
+	// the row so the console uses the native/core default. Unknown
+	// values are ignored to preserve existing overrides.
+	ConsoleRenderScales map[string]string `json:"consoleRenderScales,omitempty"`
 	// Per-console save-state opt-out upserts. Keys are console
 	// abbreviations (case-insensitive on the server). Allowed values
 	// are "enabled", "disabled", "ask-once". Sending "" clears the
 	// row so the console reverts to its tier-driven default. Unknown
 	// abbreviations are silently skipped, matching ConsoleShaders.
 	// See #804 phase 4.
-	ConsoleSaveStatePolicies map[string]string              `json:"consoleSaveStatePolicies,omitempty"`
+	ConsoleSaveStatePolicies map[string]string `json:"consoleSaveStatePolicies,omitempty"`
 	// Per-game save-state opt-out upserts keyed by game ID string.
 	// Same sanitiser semantics as ConsoleSaveStatePolicies — empty
 	// string clears the row, unknown values are silently dropped.
 	// Unknown game IDs are skipped (no row written). See #804
 	// phase 4b spec point (c).
-	GameSaveStatePolicies    map[string]string              `json:"gameSaveStatePolicies,omitempty"`
-	SelectedKeyMapping      *string                         `json:"selectedKeyMapping,omitempty" maxLength:"128"`
-	CustomKeyMapping        map[string]string               `json:"customKeyMapping,omitempty"`
-	ConsoleKeyMappings      map[string]ConsoleKeyMappingDTO `json:"consoleKeyMappings,omitempty"`
-	PreferredRegions        *[]string                       `json:"preferredRegions,omitempty"`
+	GameSaveStatePolicies map[string]string               `json:"gameSaveStatePolicies,omitempty"`
+	SelectedKeyMapping    *string                         `json:"selectedKeyMapping,omitempty" maxLength:"128"`
+	CustomKeyMapping      map[string]string               `json:"customKeyMapping,omitempty"`
+	ConsoleKeyMappings    map[string]ConsoleKeyMappingDTO `json:"consoleKeyMappings,omitempty"`
+	PreferredRegions      *[]string                       `json:"preferredRegions,omitempty"`
 }
 
 // UpdateGameKeyMappingRequest is the body for PUT /api/user/games/:gameId/keymapping.

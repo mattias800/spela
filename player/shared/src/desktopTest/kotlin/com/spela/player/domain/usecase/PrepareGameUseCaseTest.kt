@@ -718,6 +718,7 @@ private class StubPreferencesRepository : PreferencesRepository {
         selectedShader: String?,
         selectedTheme: String?,
         consoleShaders: Map<String, String>?,
+        consoleRenderScales: Map<String, String>?,
         consoleSaveStatePolicies: Map<String, String>?,
         gameSaveStatePolicies: Map<String, String>?,
         defaultSecondScreenPage: String?,

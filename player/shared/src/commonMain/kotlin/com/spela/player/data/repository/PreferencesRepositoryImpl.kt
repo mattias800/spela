@@ -10,8 +10,10 @@ import com.spela.client.models.UpdatePreferencesRequest
 import com.spela.client.models.UserPreferencesResponse
 import com.spela.player.data.remote.dto.toDomain
 import com.spela.player.domain.model.DEFAULT_CONSOLE_ID
+import com.spela.player.domain.model.RenderScale
 import com.spela.player.domain.model.WidescreenMode
 import com.spela.player.domain.model.ShaderPreset
+import com.spela.player.domain.model.supportsRenderScale
 import com.spela.player.libretro.GamepadMappingMigration
 import com.spela.player.util.currentPlatform
 import com.spela.player.domain.model.UserPreferences
@@ -38,6 +40,7 @@ class PreferencesRepositoryImpl(
         /** Device-local flag marking the one-time legacy gamepad keycode → positional migration done. */
         const val GAMEPAD_MIGRATION_FLAG = "gamepad_positional_migration_v1"
         const val GAME_WIDESCREEN_MODE_PREFIX = "game_widescreen_mode:"
+        const val CONSOLE_RENDER_SCALE_PREFIX = "console_render_scale:"
     }
 
     override suspend fun getPreferences(): Result<UserPreferences> {
@@ -74,6 +77,7 @@ class PreferencesRepositoryImpl(
         selectedShader: String?,
         selectedTheme: String?,
         consoleShaders: Map<String, String>?,
+        consoleRenderScales: Map<String, String>?,
         consoleSaveStatePolicies: Map<String, String>?,
         gameSaveStatePolicies: Map<String, String>?,
         defaultSecondScreenPage: String?,
@@ -87,6 +91,7 @@ class PreferencesRepositoryImpl(
                 selectedShader = selectedShader,
                 selectedTheme = selectedTheme,
                 consoleShaders = consoleShaders,
+                consoleRenderScales = consoleRenderScales,
                 consoleSaveStatePolicies = consoleSaveStatePolicies,
                 gameSaveStatePolicies = gameSaveStatePolicies,
                 defaultSecondScreenPage = defaultSecondScreenPage,
@@ -176,6 +181,29 @@ class PreferencesRepositoryImpl(
             database.spelaDatabaseQueries.deleteDeviceSetting(key)
         } else {
             database.spelaDatabaseQueries.insertDeviceSetting(key, mode.storageId)
+        }
+    }
+
+    override fun resolveRenderScale(consoleId: String, preferences: UserPreferences?): RenderScale {
+        val normalizedConsoleId = consoleId.trim().lowercase()
+        if (normalizedConsoleId.isBlank() || !supportsRenderScale(normalizedConsoleId)) {
+            return RenderScale.NATIVE
+        }
+        val stored = database.spelaDatabaseQueries.getDeviceSetting(CONSOLE_RENDER_SCALE_PREFIX + normalizedConsoleId)
+            .executeAsOneOrNull()
+        return RenderScale.fromStorageId(stored)
+            ?: preferences?.consoleRenderScales?.get(normalizedConsoleId)
+            ?: RenderScale.NATIVE
+    }
+
+    override fun setRenderScale(consoleId: String, scale: RenderScale) {
+        val normalizedConsoleId = consoleId.trim().lowercase()
+        if (normalizedConsoleId.isBlank()) return
+        val key = CONSOLE_RENDER_SCALE_PREFIX + normalizedConsoleId
+        if (scale == RenderScale.NATIVE || !supportsRenderScale(normalizedConsoleId)) {
+            database.spelaDatabaseQueries.deleteDeviceSetting(key)
+        } else {
+            database.spelaDatabaseQueries.insertDeviceSetting(key, scale.storageId)
         }
     }
 

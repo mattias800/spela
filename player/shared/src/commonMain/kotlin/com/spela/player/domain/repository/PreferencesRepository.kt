@@ -1,6 +1,7 @@
 package com.spela.player.domain.repository
 
 import com.spela.player.domain.model.ShaderPreset
+import com.spela.player.domain.model.RenderScale
 import com.spela.player.domain.model.UserPreferences
 import com.spela.player.domain.model.WidescreenMode
 import com.spela.player.domain.model.defaultWidescreenMode
@@ -15,6 +16,13 @@ interface PreferencesRepository {
         selectedShader: String? = null,
         selectedTheme: String? = null,
         consoleShaders: Map<String, String>? = null,
+        /**
+         * Per-console internal render-scale upserts. Keys are console
+         * abbreviations; values are RenderScale apiIds ("2x" | "3x"
+         * | "4x") or "native"/"1x"/empty string to clear server state.
+         * See #1546.
+         */
+        consoleRenderScales: Map<String, String>? = null,
         /**
          * Per-console save-state opt-out upserts. Keys are console
          * abbreviations; values are SaveStateChoice apiIds ("enabled"
@@ -40,6 +48,8 @@ interface PreferencesRepository {
     fun resolveWidescreenMode(gameId: String, consoleId: String): WidescreenMode =
         defaultWidescreenMode(consoleId)
     fun setWidescreenMode(gameId: String, consoleId: String, mode: WidescreenMode) {}
+    fun resolveRenderScale(consoleId: String, preferences: UserPreferences? = null): RenderScale = RenderScale.NATIVE
+    fun setRenderScale(consoleId: String, scale: RenderScale) {}
     suspend fun pushDeviceShaderOverridesToServer()
     suspend fun syncKeyMappingsFromServer()
     suspend fun pushKeyMappingsToServer()

@@ -55,21 +55,21 @@ type MakerDetailResponse struct {
 // ConsoleResponse is the API response for a console, with extensions as an array
 // and coverAspectRatio as a number.
 type ConsoleResponse struct {
-	ID               string                 `json:"id"`
-	Code             string                 `json:"code"`
-	CreatedAt        time.Time              `json:"createdAt"`
-	UpdatedAt        time.Time              `json:"updatedAt"`
-	Name             string                 `json:"name"`
-	Abbreviation     string                 `json:"abbreviation"`
-	Maker            HardwareMakerResponse  `json:"maker"`
-	MediaType        MediaTypeResponse      `json:"mediaType"`
-	ReleaseYear      *int                   `json:"releaseYear"`
-	UnitsSold        *int64                 `json:"unitsSold"`
-	Summary          *string                `json:"summary"`
-	Extensions       []string               `json:"extensions"`
-	DefaultCore      string                 `json:"defaultCore"`
-	EmulatorJSCore   string                 `json:"emulatorJsCore"`
-	CoverAspectRatio float64                `json:"coverAspectRatio"`
+	ID               string                `json:"id"`
+	Code             string                `json:"code"`
+	CreatedAt        time.Time             `json:"createdAt"`
+	UpdatedAt        time.Time             `json:"updatedAt"`
+	Name             string                `json:"name"`
+	Abbreviation     string                `json:"abbreviation"`
+	Maker            HardwareMakerResponse `json:"maker"`
+	MediaType        MediaTypeResponse     `json:"mediaType"`
+	ReleaseYear      *int                  `json:"releaseYear"`
+	UnitsSold        *int64                `json:"unitsSold"`
+	Summary          *string               `json:"summary"`
+	Extensions       []string              `json:"extensions"`
+	DefaultCore      string                `json:"defaultCore"`
+	EmulatorJSCore   string                `json:"emulatorJsCore"`
+	CoverAspectRatio float64               `json:"coverAspectRatio"`
 	// LogoAspectRatio is the intrinsic width/height of the console's
 	// logo SVG, computed once at seed time from the asset's viewBox.
 	// The player app feeds this into SpAreaSizedImage so the console-
@@ -77,26 +77,26 @@ type ConsoleResponse struct {
 	// (without it the container falls back to a square guess and
 	// re-layouts once the image decodes, producing a visible jump —
 	// see #1166). Nil for consoles whose SVG has no parseable viewBox.
-	LogoAspectRatio  *float64               `json:"logoAspectRatio"`
-	ColorTheme       string                 `json:"colorTheme"`
-	Generation       int                    `json:"generation"`
-	IconURL          string                 `json:"iconUrl"`
-	LogoURL          string                 `json:"logoUrl"`
-	LogoPngURL       string                 `json:"logoPngUrl"`
+	LogoAspectRatio *float64 `json:"logoAspectRatio"`
+	ColorTheme      string   `json:"colorTheme"`
+	Generation      int      `json:"generation"`
+	IconURL         string   `json:"iconUrl"`
+	LogoURL         string   `json:"logoUrl"`
+	LogoPngURL      string   `json:"logoPngUrl"`
 	// PhotoURL is the hardware photo endpoint, null for consoles we don't have
 	// a bundled photo for (the UI falls back to the logo/watermark). See #1441.
 	PhotoURL *string `json:"photoUrl"`
 	// Tag is an optional short card qualifier (e.g. "Demos" for the demoscene
 	// platforms that share a parent logo). Null for most consoles.
-	Tag              *string                `json:"tag"`
-	GameCount        int                    `json:"gameCount"`
-	SaveStateSupport bool                   `json:"saveStateSupport"`
+	Tag              *string `json:"tag"`
+	GameCount        int     `json:"gameCount"`
+	SaveStateSupport bool    `json:"saveStateSupport"`
 	// Size tier of save states for this console — drives retention,
 	// slot count, and UX affordances on the player. Always one of
 	// "small" | "medium" | "large". See #804 phase 3.
-	SaveStatePolicy  string                 `json:"saveStatePolicy"`
-	BrowserPlayable  bool                   `json:"browserPlayable"`
-	Playable         bool                   `json:"playable"`
+	SaveStatePolicy string `json:"saveStatePolicy"`
+	BrowserPlayable bool   `json:"browserPlayable"`
+	Playable        bool   `json:"playable"`
 }
 
 // DiscResponse is the API response for a single disc in a multi-disc game.
@@ -108,60 +108,60 @@ type DiscResponse struct {
 
 // GameResponse is the enriched API response for a game.
 type GameResponse struct {
-	ID               string         `json:"id"`
-	CreatedAt        time.Time      `json:"createdAt"`
-	UpdatedAt        time.Time      `json:"updatedAt"`
-	ConsoleID        string         `json:"consoleId"`
-	ConsoleName      string         `json:"consoleName"`
+	ID          string    `json:"id"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
+	ConsoleID   string    `json:"consoleId"`
+	ConsoleName string    `json:"consoleName"`
 	// Save-state size tier of the game's console — drives the in-game
 	// overlay's first-launch prompt and slot/quota UX. One of "small"
 	// | "medium" | "large". Inherited from Console.SaveStatePolicy
 	// (see #804 phase 3) so the player doesn't need a second
 	// round-trip to render the prompt at game-launch time.
-	ConsoleSaveStatePolicy string  `json:"consoleSaveStatePolicy"`
-	CoverAspectRatio float64        `json:"coverAspectRatio"`
-	Title            string         `json:"title"`
-	FileName       string         `json:"fileName"`
-	FileSize       int64          `json:"fileSize"`
-	DiscCount      int            `json:"discCount"`
-	Discs          []DiscResponse `json:"discs"`
-	Description    string         `json:"description"`
-	CoverURL       string         `json:"coverUrl"`
-	ScreenshotURLs []string       `json:"screenshotUrls"`
-	Developer      string         `json:"developer"`
-	Publisher      string         `json:"publisher"`
-	ReleaseDate    string         `json:"releaseDate"`
-	Genre          string                `json:"genre"`
-	GameModes            string                      `json:"gameModes"`
-	Storyline            string                      `json:"storyline"`
-	TotalRating          float64                     `json:"totalRating"`
-	TotalRatingCount     int                         `json:"totalRatingCount"`
-	IGDBUserRating       float64                     `json:"igdbUserRating"`
-	IGDBUserRatingCount  int                         `json:"igdbUserRatingCount"`
-	TimeToBeatHastily    int                         `json:"timeToBeatHastily"`
-	TimeToBeatNormally   int                         `json:"timeToBeatNormally"`
-	TimeToBeatCompletely int                         `json:"timeToBeatCompletely"`
-	Players              int                         `json:"players"`
-	IGDBCriticsRating    float64                     `json:"igdbCriticsRating"`
-	ReleaseDates         []ReleaseDateResponse       `json:"releaseDates"`
-	Videos               []VideoResponse             `json:"videos"`
-	LanguageSupports     []LanguageSupportResponse   `json:"languageSupports"`
-	AgeRatings           []AgeRatingResponse         `json:"ageRatings"`
-	PartyInfo           string         `json:"partyInfo"`
-	Playable            bool           `json:"playable"`
-	CoreOverride        string         `json:"coreOverride"`
-	ScraperID           string         `json:"scraperId"`
-	ScrapeAttempts      int            `json:"scrapeAttempts"`
-	AchievementsWarning string         `json:"achievementsWarning"`
-	VerificationStatus  string         `json:"verificationStatus"`
-	VerificationTag     string         `json:"verificationTag"`
-	Region              string         `json:"region"`
-	Revision       string         `json:"revision"`
-	Tags           string         `json:"tags"`
-	IsPreRelease   bool           `json:"isPreRelease"`
-	VariantCount   int            `json:"variantCount"`
-	GroupKey       string         `json:"groupKey"`
-	Variants       []VariantResponse `json:"variants"`
+	ConsoleSaveStatePolicy string                    `json:"consoleSaveStatePolicy"`
+	CoverAspectRatio       float64                   `json:"coverAspectRatio"`
+	Title                  string                    `json:"title"`
+	FileName               string                    `json:"fileName"`
+	FileSize               int64                     `json:"fileSize"`
+	DiscCount              int                       `json:"discCount"`
+	Discs                  []DiscResponse            `json:"discs"`
+	Description            string                    `json:"description"`
+	CoverURL               string                    `json:"coverUrl"`
+	ScreenshotURLs         []string                  `json:"screenshotUrls"`
+	Developer              string                    `json:"developer"`
+	Publisher              string                    `json:"publisher"`
+	ReleaseDate            string                    `json:"releaseDate"`
+	Genre                  string                    `json:"genre"`
+	GameModes              string                    `json:"gameModes"`
+	Storyline              string                    `json:"storyline"`
+	TotalRating            float64                   `json:"totalRating"`
+	TotalRatingCount       int                       `json:"totalRatingCount"`
+	IGDBUserRating         float64                   `json:"igdbUserRating"`
+	IGDBUserRatingCount    int                       `json:"igdbUserRatingCount"`
+	TimeToBeatHastily      int                       `json:"timeToBeatHastily"`
+	TimeToBeatNormally     int                       `json:"timeToBeatNormally"`
+	TimeToBeatCompletely   int                       `json:"timeToBeatCompletely"`
+	Players                int                       `json:"players"`
+	IGDBCriticsRating      float64                   `json:"igdbCriticsRating"`
+	ReleaseDates           []ReleaseDateResponse     `json:"releaseDates"`
+	Videos                 []VideoResponse           `json:"videos"`
+	LanguageSupports       []LanguageSupportResponse `json:"languageSupports"`
+	AgeRatings             []AgeRatingResponse       `json:"ageRatings"`
+	PartyInfo              string                    `json:"partyInfo"`
+	Playable               bool                      `json:"playable"`
+	CoreOverride           string                    `json:"coreOverride"`
+	ScraperID              string                    `json:"scraperId"`
+	ScrapeAttempts         int                       `json:"scrapeAttempts"`
+	AchievementsWarning    string                    `json:"achievementsWarning"`
+	VerificationStatus     string                    `json:"verificationStatus"`
+	VerificationTag        string                    `json:"verificationTag"`
+	Region                 string                    `json:"region"`
+	Revision               string                    `json:"revision"`
+	Tags                   string                    `json:"tags"`
+	IsPreRelease           bool                      `json:"isPreRelease"`
+	VariantCount           int                       `json:"variantCount"`
+	GroupKey               string                    `json:"groupKey"`
+	Variants               []VariantResponse         `json:"variants"`
 	// `omitempty` is required because Huma 2.37 panics on `nullable:"true"`
 	// for `$ref` fields; without it Huma marks `parentGame` as a required
 	// non-null `ParentGameResponse`, but the server emits JSON `null` for
@@ -173,18 +173,18 @@ type GameResponse struct {
 	// on `$ref` fields without panicking. Track upstream at
 	// https://github.com/danielgtaylor/huma — file a discussion if no
 	// existing issue covers this. Re-audit on every Huma upgrade.
-	ParentGame     *ParentGameResponse  `json:"parentGame,omitempty"`
-	RomHacks       []RomHackGameResponse `json:"romHacks"`
-	HeroURL        string         `json:"heroUrl"`
-	LogoURL        string         `json:"logoUrl"`
-	BiosStatus     string         `json:"biosStatus"`
-	IsFavorite     bool           `json:"isFavorite"`
-	IsInPlayLater  bool           `json:"isInPlayLater"`
-	LastPlayedAt   *time.Time     `json:"lastPlayedAt"`
-	TotalPlayTime  int64          `json:"totalPlayTime"`
-	AverageRating  float64        `json:"averageRating"`
-	RatingCount    int64          `json:"ratingCount"`
-	UserRating     *int           `json:"userRating"`
+	ParentGame    *ParentGameResponse   `json:"parentGame,omitempty"`
+	RomHacks      []RomHackGameResponse `json:"romHacks"`
+	HeroURL       string                `json:"heroUrl"`
+	LogoURL       string                `json:"logoUrl"`
+	BiosStatus    string                `json:"biosStatus"`
+	IsFavorite    bool                  `json:"isFavorite"`
+	IsInPlayLater bool                  `json:"isInPlayLater"`
+	LastPlayedAt  *time.Time            `json:"lastPlayedAt"`
+	TotalPlayTime int64                 `json:"totalPlayTime"`
+	AverageRating float64               `json:"averageRating"`
+	RatingCount   int64                 `json:"ratingCount"`
+	UserRating    *int                  `json:"userRating"`
 }
 
 // ReleaseDateResponse represents a regional release date in the API response.
@@ -347,7 +347,7 @@ type userGameData struct {
 	favorites   map[uint]bool
 	playLater   map[uint]bool
 	playHistory map[uint]*db.PlayHistory
-	userRatings map[uint]int            // gameID -> user's rating (1-5)
+	userRatings map[uint]int             // gameID -> user's rating (1-5)
 	ratingAggs  map[uint]ratingAggregate // gameID -> aggregate rating data
 	artworks    map[uint]*db.GameArtwork // gameID -> artwork (hero, logo, etc.)
 }
@@ -479,55 +479,55 @@ func toGameResponseWithData(g db.Game, data *userGameData) GameResponse {
 	}
 
 	resp := GameResponse{
-		ID:               strconv.FormatUint(uint64(g.ID), 10),
-		CreatedAt:        g.CreatedAt,
-		UpdatedAt:        g.UpdatedAt,
-		ConsoleID:        consoleAbbr,
-		ConsoleName:      consoleName,
+		ID:                     strconv.FormatUint(uint64(g.ID), 10),
+		CreatedAt:              g.CreatedAt,
+		UpdatedAt:              g.UpdatedAt,
+		ConsoleID:              consoleAbbr,
+		ConsoleName:            consoleName,
 		ConsoleSaveStatePolicy: consoleSaveStatePolicy,
-		CoverAspectRatio: coverAspectRatio,
-		Title:            g.Title,
-		FileName:       g.FileName,
-		FileSize:       g.FileSize,
-		DiscCount:      g.DiscCount,
-		Discs:          discs,
-		Description:    g.Description,
-		CoverURL:       coverURL,
-		ScreenshotURLs: screenshots,
-		Developer:      g.Developer,
-		Publisher:       g.Publisher,
-		ReleaseDate:    g.ReleaseDate,
-		Genre:          g.Genre,
-		GameModes:            g.GameModes,
-		Storyline:            g.Storyline,
-		TotalRating:          g.TotalRating,
-		TotalRatingCount:     g.TotalRatingCount,
-		IGDBUserRating:       g.IGDBUserRating,
-		IGDBUserRatingCount:  g.IGDBUserRatingCount,
-		TimeToBeatHastily:    g.TimeToBeatHastily,
-		TimeToBeatNormally:   g.TimeToBeatNormally,
-		TimeToBeatCompletely: g.TimeToBeatCompletely,
-		Players:              g.Players,
-		IGDBCriticsRating:    g.IGDBCriticsRating,
-		PartyInfo:           g.PartyInfo,
-		Playable:            g.Console.Playable,
-		CoreOverride:        g.CoreOverride,
-		ScraperID:           g.ScraperID,
-		ScrapeAttempts:      g.ScrapeAttempts,
-		AchievementsWarning: g.AchievementsWarning,
-		VerificationStatus:  g.VerificationStatus,
-		VerificationTag:     g.VerificationTag,
-		Region:              g.Region,
-		Revision:            g.Revision,
-		Tags:                g.Tags,
-		IsPreRelease:        g.IsPreRelease,
-		GroupKey:            g.GroupKey,
-		ReleaseDates:        []ReleaseDateResponse{},
-		Videos:              []VideoResponse{},
-		LanguageSupports:    []LanguageSupportResponse{},
-		AgeRatings:          []AgeRatingResponse{},
-		Variants:            []VariantResponse{},
-		RomHacks:            []RomHackGameResponse{},
+		CoverAspectRatio:       coverAspectRatio,
+		Title:                  g.Title,
+		FileName:               g.FileName,
+		FileSize:               g.FileSize,
+		DiscCount:              g.DiscCount,
+		Discs:                  discs,
+		Description:            g.Description,
+		CoverURL:               coverURL,
+		ScreenshotURLs:         screenshots,
+		Developer:              g.Developer,
+		Publisher:              g.Publisher,
+		ReleaseDate:            g.ReleaseDate,
+		Genre:                  g.Genre,
+		GameModes:              g.GameModes,
+		Storyline:              g.Storyline,
+		TotalRating:            g.TotalRating,
+		TotalRatingCount:       g.TotalRatingCount,
+		IGDBUserRating:         g.IGDBUserRating,
+		IGDBUserRatingCount:    g.IGDBUserRatingCount,
+		TimeToBeatHastily:      g.TimeToBeatHastily,
+		TimeToBeatNormally:     g.TimeToBeatNormally,
+		TimeToBeatCompletely:   g.TimeToBeatCompletely,
+		Players:                g.Players,
+		IGDBCriticsRating:      g.IGDBCriticsRating,
+		PartyInfo:              g.PartyInfo,
+		Playable:               g.Console.Playable,
+		CoreOverride:           g.CoreOverride,
+		ScraperID:              g.ScraperID,
+		ScrapeAttempts:         g.ScrapeAttempts,
+		AchievementsWarning:    g.AchievementsWarning,
+		VerificationStatus:     g.VerificationStatus,
+		VerificationTag:        g.VerificationTag,
+		Region:                 g.Region,
+		Revision:               g.Revision,
+		Tags:                   g.Tags,
+		IsPreRelease:           g.IsPreRelease,
+		GroupKey:               g.GroupKey,
+		ReleaseDates:           []ReleaseDateResponse{},
+		Videos:                 []VideoResponse{},
+		LanguageSupports:       []LanguageSupportResponse{},
+		AgeRatings:             []AgeRatingResponse{},
+		Variants:               []VariantResponse{},
+		RomHacks:               []RomHackGameResponse{},
 	}
 
 	// Map release dates
@@ -677,12 +677,12 @@ type UserResponse struct {
 	Username        string      `json:"username"`
 	Email           string      `json:"email"`
 	Role            db.UserRole `json:"role"`
-	AvatarURL       string    `json:"avatarUrl"`
-	Disabled        bool      `json:"disabled"`
-	PendingApproval bool      `json:"pendingApproval"`
-	CanImportGames  bool      `json:"canImportGames"`
-	CreatedAt       time.Time `json:"createdAt"`
-	UpdatedAt       time.Time `json:"updatedAt"`
+	AvatarURL       string      `json:"avatarUrl"`
+	Disabled        bool        `json:"disabled"`
+	PendingApproval bool        `json:"pendingApproval"`
+	CanImportGames  bool        `json:"canImportGames"`
+	CreatedAt       time.Time   `json:"createdAt"`
+	UpdatedAt       time.Time   `json:"updatedAt"`
 }
 
 // ToUserResponse converts a db.User to its API response.
@@ -703,13 +703,13 @@ func ToUserResponse(u db.User) UserResponse {
 
 // DeletedUserResponse is the API response for a soft-deleted user.
 type DeletedUserResponse struct {
-	ID              string      `json:"id"`
-	Username        string      `json:"username"`
-	Email           string      `json:"email"`
-	Role            db.UserRole `json:"role"`
-	Disabled        bool        `json:"disabled"`
-	CreatedAt       time.Time `json:"createdAt"`
-	DeletedAt       time.Time `json:"deletedAt"`
+	ID        string      `json:"id"`
+	Username  string      `json:"username"`
+	Email     string      `json:"email"`
+	Role      db.UserRole `json:"role"`
+	Disabled  bool        `json:"disabled"`
+	CreatedAt time.Time   `json:"createdAt"`
+	DeletedAt time.Time   `json:"deletedAt"`
 }
 
 // ToDeletedUserResponse converts a soft-deleted db.User to its API response.
@@ -738,9 +738,9 @@ type UserSearchResult struct {
 
 // OnlineUserResponse is the API response for an online user.
 type OnlineUserResponse struct {
-	ID          string                  `json:"id"`
-	Username    string                  `json:"username"`
-	AvatarURL   string                  `json:"avatarUrl"`
+	ID        string `json:"id"`
+	Username  string `json:"username"`
+	AvatarURL string `json:"avatarUrl"`
 	// `omitempty` for the same reason as `GameResponse.parentGame`:
 	// Huma 2.37 can't emit nullable `$ref` and the field is genuinely
 	// absent when the user isn't currently playing.
@@ -758,11 +758,11 @@ type OnlineUserGameResponse struct {
 
 // PublicProfileResponse is the API response for a user's public profile.
 type PublicProfileResponse struct {
-	ID            string                  `json:"id"`
-	Username      string                  `json:"username"`
-	AvatarURL     string                  `json:"avatarUrl"`
-	MemberSince   time.Time               `json:"memberSince"`
-	IsOnline      bool                    `json:"isOnline"`
+	ID          string    `json:"id"`
+	Username    string    `json:"username"`
+	AvatarURL   string    `json:"avatarUrl"`
+	MemberSince time.Time `json:"memberSince"`
+	IsOnline    bool      `json:"isOnline"`
 	// TODO(#969): re-audit on every Huma upgrade — same `$ref` panic
 	// workaround as GameResponse.parentGame.
 	CurrentGame   *OnlineUserGameResponse `json:"currentGame,omitempty"`
@@ -784,17 +784,17 @@ type PublicProfileGame struct {
 
 // ActivityEventResponse is the API response for an activity feed event.
 type ActivityEventResponse struct {
-	ID          string    `json:"id"`
-	EventType   string    `json:"eventType"`
-	CreatedAt   time.Time `json:"createdAt"`
-	UserID      string    `json:"userId"`
-	Username    string    `json:"username"`
-	AvatarURL   string    `json:"avatarUrl"`
-	GameID      string    `json:"gameId"`
-	GameTitle   string    `json:"gameTitle"`
-	GameCoverURL string  `json:"gameCoverUrl"`
-	ConsoleName string    `json:"consoleName"`
-	Metadata    map[string]interface{} `json:"metadata"`
+	ID           string                 `json:"id"`
+	EventType    string                 `json:"eventType"`
+	CreatedAt    time.Time              `json:"createdAt"`
+	UserID       string                 `json:"userId"`
+	Username     string                 `json:"username"`
+	AvatarURL    string                 `json:"avatarUrl"`
+	GameID       string                 `json:"gameId"`
+	GameTitle    string                 `json:"gameTitle"`
+	GameCoverURL string                 `json:"gameCoverUrl"`
+	ConsoleName  string                 `json:"consoleName"`
+	Metadata     map[string]interface{} `json:"metadata"`
 }
 
 // GameRatingResponse is the API response for a single game rating.
@@ -1008,12 +1008,12 @@ type ChallengeAttemptResponse struct {
 
 // ChallengeLeaderboardEntry is the API response for a leaderboard entry.
 type ChallengeLeaderboardEntry struct {
-	Rank       int        `json:"rank"`
-	UserID     string     `json:"userId"`
-	Username   string     `json:"username"`
-	AvatarURL  string     `json:"avatarUrl"`
-	DurationMs int64      `json:"durationMs"`
-	AttemptID  string     `json:"attemptId"`
+	Rank        int       `json:"rank"`
+	UserID      string    `json:"userId"`
+	Username    string    `json:"username"`
+	AvatarURL   string    `json:"avatarUrl"`
+	DurationMs  int64     `json:"durationMs"`
+	AttemptID   string    `json:"attemptId"`
 	CompletedAt time.Time `json:"completedAt"`
 }
 
@@ -1043,55 +1043,55 @@ type GameSessionResponse struct {
 	// UI. Drives the lock chip on the session detail header and
 	// short-circuits the pre-play decision sheet on subsequent
 	// launches. See #672.
-	UserLockedCoreVersion bool      `json:"userLockedCoreVersion"`
+	UserLockedCoreVersion bool `json:"userLockedCoreVersion"`
 	// AutoLoadSuppressed is true when the next launch of this session
 	// should skip automatic save-state load. Cleared on the first
 	// successful manual save written against this session. See #672.
-	AutoLoadSuppressed    bool      `json:"autoLoadSuppressed"`
+	AutoLoadSuppressed bool `json:"autoLoadSuppressed"`
 	// RehearsalCrashPending is set by the player around the
 	// "try with my save" rehearsal mode; a true value surviving an
 	// app relaunch signals that the previous rehearsal ended in a
 	// crash so the UI can route the user to sheet D. See #672.
 	RehearsalCrashPending bool      `json:"rehearsalCrashPending"`
-	CheatsEnabled        bool       `json:"cheatsEnabled"`
-	SaveCount            int        `json:"saveCount"`
-	IsSharedSession      bool       `json:"isSharedSession"`
-	SharedSessionID      *string    `json:"sharedSessionId"`
-	MemberCount          int        `json:"memberCount"`
-	MemberUsernames      []string   `json:"memberUsernames"`
-	MemberAvatars        []string   `json:"memberAvatars"`
-	CreatedAt            time.Time  `json:"createdAt"`
-	UpdatedAt            time.Time  `json:"updatedAt"`
+	CheatsEnabled         bool      `json:"cheatsEnabled"`
+	SaveCount             int       `json:"saveCount"`
+	IsSharedSession       bool      `json:"isSharedSession"`
+	SharedSessionID       *string   `json:"sharedSessionId"`
+	MemberCount           int       `json:"memberCount"`
+	MemberUsernames       []string  `json:"memberUsernames"`
+	MemberAvatars         []string  `json:"memberAvatars"`
+	CreatedAt             time.Time `json:"createdAt"`
+	UpdatedAt             time.Time `json:"updatedAt"`
 }
 
 // SessionSaveResponse is the API response for a session save state.
 type SessionSaveResponse struct {
-	ID            string    `json:"id"`
-	SessionID     string    `json:"sessionId"`
-	UserID        string    `json:"userId"`
-	Username      string    `json:"username"`
-	Name          string    `json:"name"`
-	FileSize      int64     `json:"fileSize"`
-	ScreenshotURL string    `json:"screenshotUrl"`
-	IsAuto        bool      `json:"isAuto"`
-	IsCurrent     bool      `json:"isCurrent"`
-	CoreName      string    `json:"coreName"`
+	ID            string `json:"id"`
+	SessionID     string `json:"sessionId"`
+	UserID        string `json:"userId"`
+	Username      string `json:"username"`
+	Name          string `json:"name"`
+	FileSize      int64  `json:"fileSize"`
+	ScreenshotURL string `json:"screenshotUrl"`
+	IsAuto        bool   `json:"isAuto"`
+	IsCurrent     bool   `json:"isCurrent"`
+	CoreName      string `json:"coreName"`
 	// Hex sha256 of the core binary that produced this save state.
 	// Empty when the player didn't supply one. Used for diagnostics
 	// (matching a failing load to the exact core binary that wrote
 	// the save) and future rollback UX. See #555 Phase 3.
-	CoreSha256    string    `json:"coreSha256"`
-	CoreMatch     *bool     `json:"coreMatch"`
-	CurrentCore   string    `json:"currentCore"`
-	Notes         string    `json:"notes"`
-	Slot          *int      `json:"slot"`
+	CoreSha256  string `json:"coreSha256"`
+	CoreMatch   *bool  `json:"coreMatch"`
+	CurrentCore string `json:"currentCore"`
+	Notes       string `json:"notes"`
+	Slot        *int   `json:"slot"`
 	// Compression algorithm applied to the saved bytes. Empty string =
 	// uncompressed (all pre-#804 saves). Known values: "" | "gzip".
 	// Players use this on download to decide whether to gunzip the
 	// stream before passing it to the libretro core. See #804 phase 2.
-	Compression   string    `json:"compression"`
-	CreatedAt     time.Time `json:"createdAt"`
-	UpdatedAt     time.Time `json:"updatedAt"`
+	Compression string    `json:"compression"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
 }
 
 // resolveImageURL prefixes relative image paths with /api/images/.
@@ -1130,34 +1130,38 @@ type AuthLoginResponse struct {
 
 // UserPreferencesResponse is the JSON shape for the user preferences endpoints.
 type UserPreferencesResponse struct {
-	ShowPerformanceOverlay  bool                            `json:"showPerformanceOverlay"`
-	AutoSaveEnabled         bool                            `json:"autoSaveEnabled"`
-	AutoLoadSaveEnabled     bool                            `json:"autoLoadSaveEnabled"`
-	AutoUpdateCoresEnabled  bool                            `json:"autoUpdateCoresEnabled"`
-	SelectedShader          string                          `json:"selectedShader"`
-	SelectedTheme           string                          `json:"selectedTheme"`
-	DefaultSecondScreenPage string                          `json:"defaultSecondScreenPage"`
-	ConsoleShaders          map[string]string               `json:"consoleShaders"`
+	ShowPerformanceOverlay  bool              `json:"showPerformanceOverlay"`
+	AutoSaveEnabled         bool              `json:"autoSaveEnabled"`
+	AutoLoadSaveEnabled     bool              `json:"autoLoadSaveEnabled"`
+	AutoUpdateCoresEnabled  bool              `json:"autoUpdateCoresEnabled"`
+	SelectedShader          string            `json:"selectedShader"`
+	SelectedTheme           string            `json:"selectedTheme"`
+	DefaultSecondScreenPage string            `json:"defaultSecondScreenPage"`
+	ConsoleShaders          map[string]string `json:"consoleShaders"`
+	// Per-console internal render-scale overrides keyed by console
+	// abbreviation. Values are one of "2x", "3x", "4x"; absence
+	// means native/core default.
+	ConsoleRenderScales map[string]string `json:"consoleRenderScales,omitempty"`
 	// Per-console save-state opt-out choices, keyed by console
 	// abbreviation (lowercase). Values are one of "enabled",
 	// "disabled", "ask-once". The map only contains consoles where
 	// the user has made a deliberate choice; the absence of a key
 	// means "use the tier-driven default" (small/medium → enabled,
 	// large → ask-once). See #804 phase 4.
-	ConsoleSaveStatePolicies map[string]string              `json:"consoleSaveStatePolicies"`
+	ConsoleSaveStatePolicies map[string]string `json:"consoleSaveStatePolicies"`
 	// Per-game save-state opt-out overrides keyed by game ID
 	// string. Layered on top of consoleSaveStatePolicies — a per-
 	// game choice wins over the console-level one. Only contains
 	// games where the user has made a deliberate per-game choice.
 	// See #804 phase 4b spec point (c).
-	GameSaveStatePolicies    map[string]string              `json:"gameSaveStatePolicies"`
-	SelectedKeyMapping      string                          `json:"selectedKeyMapping"`
-	CustomKeyMapping        map[string]string               `json:"customKeyMapping"`
-	ConsoleKeyMappings      map[string]ConsoleKeyMappingDTO `json:"consoleKeyMappings"`
-	PreferredRegions        []string                        `json:"preferredRegions"`
-	RALinked                bool                            `json:"raLinked"`
-	RAUsername              string                          `json:"raUsername"`
-	RAHardcoreEnabled       bool                            `json:"raHardcoreEnabled"`
+	GameSaveStatePolicies map[string]string               `json:"gameSaveStatePolicies"`
+	SelectedKeyMapping    string                          `json:"selectedKeyMapping"`
+	CustomKeyMapping      map[string]string               `json:"customKeyMapping"`
+	ConsoleKeyMappings    map[string]ConsoleKeyMappingDTO `json:"consoleKeyMappings"`
+	PreferredRegions      []string                        `json:"preferredRegions"`
+	RALinked              bool                            `json:"raLinked"`
+	RAUsername            string                          `json:"raUsername"`
+	RAHardcoreEnabled     bool                            `json:"raHardcoreEnabled"`
 }
 
 // ConsoleKeyMappingDTO is a per-console key mapping entry in the preferences payload.
@@ -1172,10 +1176,10 @@ type ConsoleKeyMappingDTO struct {
 
 // UserStatsResponse is the response for GET /api/user/stats.
 type UserStatsResponse struct {
-	TotalPlayTime      int64         `json:"totalPlayTime"`
-	GamesPlayed        int64         `json:"gamesPlayed"`
-	CurrentStreak      int           `json:"currentStreak"`
-	LongestStreak      int           `json:"longestStreak"`
+	TotalPlayTime int64 `json:"totalPlayTime"`
+	GamesPlayed   int64 `json:"gamesPlayed"`
+	CurrentStreak int   `json:"currentStreak"`
+	LongestStreak int   `json:"longestStreak"`
 	// `omitempty` here is the same Huma 2.37 `$ref + nullable:true`
 	// panic workaround used on `GameResponse.parentGame` and
 	// `OnlineUserResponse.currentGame`. Without it, removing the

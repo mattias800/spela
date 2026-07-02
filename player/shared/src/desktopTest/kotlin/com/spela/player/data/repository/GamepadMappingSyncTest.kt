@@ -90,6 +90,7 @@ class GamepadMappingSyncTest {
                         positionMappings = mapOf("SOUTH" to 8L, "WEST" to 0L),
                     ),
                 ),
+                consoleRenderScales = emptyMap(),
                 consoleSaveStatePolicies = emptyMap(),
                 consoleShaders = emptyMap(),
                 customKeyMapping = emptyMap(),

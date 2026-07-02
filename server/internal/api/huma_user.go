@@ -77,6 +77,7 @@ func (h *UserHandler) HumaGetPreferences(ctx context.Context, _ *GetPreferencesI
 	}
 
 	consoleShaders := h.buildConsoleShaderMap(uid)
+	consoleRenderScales := h.buildConsoleRenderScaleMap(uid)
 	consoleSaveStatePolicies := h.buildConsoleSaveStatePolicyMap(uid)
 	gameSaveStatePolicies := h.buildGameSaveStatePolicyMap(uid)
 	consoleKeyMappings := h.buildConsoleKeyMappingMap(uid)
@@ -104,23 +105,24 @@ func (h *UserHandler) HumaGetPreferences(ctx context.Context, _ *GetPreferencesI
 
 	return &GetPreferencesOutput{
 		Body: UserPreferencesResponse{
-			ShowPerformanceOverlay:  user.ShowPerfOverlay,
-			AutoSaveEnabled:         user.AutoSaveEnabled,
-			AutoLoadSaveEnabled:     user.AutoLoadSaveEnabled,
-			AutoUpdateCoresEnabled:  user.AutoUpdateCoresEnabled,
-			SelectedShader:          user.SelectedShader,
-			SelectedTheme:           selectedTheme,
-			DefaultSecondScreenPage: defaultSecondScreenPage,
+			ShowPerformanceOverlay:   user.ShowPerfOverlay,
+			AutoSaveEnabled:          user.AutoSaveEnabled,
+			AutoLoadSaveEnabled:      user.AutoLoadSaveEnabled,
+			AutoUpdateCoresEnabled:   user.AutoUpdateCoresEnabled,
+			SelectedShader:           user.SelectedShader,
+			SelectedTheme:            selectedTheme,
+			DefaultSecondScreenPage:  defaultSecondScreenPage,
 			ConsoleShaders:           consoleShaders,
+			ConsoleRenderScales:      consoleRenderScales,
 			ConsoleSaveStatePolicies: consoleSaveStatePolicies,
 			GameSaveStatePolicies:    gameSaveStatePolicies,
 			SelectedKeyMapping:       selectedKeyMapping,
-			CustomKeyMapping:        customKeyMapping,
-			ConsoleKeyMappings:      consoleKeyMappings,
-			PreferredRegions:        preferredRegions,
-			RALinked:                raLinked,
-			RAUsername:              raCred.RAUsername,
-			RAHardcoreEnabled:       raCred.HardcoreEnabled,
+			CustomKeyMapping:         customKeyMapping,
+			ConsoleKeyMappings:       consoleKeyMappings,
+			PreferredRegions:         preferredRegions,
+			RALinked:                 raLinked,
+			RAUsername:               raCred.RAUsername,
+			RAHardcoreEnabled:        raCred.HardcoreEnabled,
 		},
 	}, nil
 }

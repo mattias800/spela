@@ -426,6 +426,10 @@ class AndroidLibretroController(
         jni.nativeSetCoreVariable(key, value)
     }
 
+    override fun clearCoreVariables() {
+        jni.nativeClearCoreVariables()
+    }
+
     /* GPU Renderer methods */
 
     // Re-apply the split-readback mode after (re)creating the renderer: the
