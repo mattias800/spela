@@ -5,6 +5,8 @@ import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.*
+import com.spela.player.domain.model.Console
+import com.spela.player.domain.model.WidescreenMode
 import com.spela.player.presentation.intent.EmulationIntent
 import com.spela.player.presentation.navigation.NavigationIntent
 import com.spela.player.presentation.navigation.SpScreen
@@ -50,6 +52,26 @@ class OverlayDpadNavTest {
         advance(harness)
 
         openOverlay(harness)
+    }
+
+    private fun configureGameOneAsWii(harness: SpelaTestHarness) {
+        harness.gameRepo.consoles = harness.gameRepo.consoles + Console(
+            id = "wii",
+            name = "Nintendo Wii",
+            abbreviation = "Wii",
+            gameCount = 1,
+        )
+        harness.gameRepo.games = harness.gameRepo.games.map { game ->
+            if (game.id == "1") {
+                game.copy(
+                    consoleId = "wii",
+                    consoleName = "Nintendo Wii",
+                    fileName = "castlevania.wbfs",
+                )
+            } else {
+                game
+            }
+        }
     }
 
     private fun ComposeUiTest.openOverlay(harness: SpelaTestHarness) {
@@ -193,6 +215,38 @@ class OverlayDpadNavTest {
 
         pressOverlayKey(Key.DirectionDown, harness)
         assertEquals(listOf("Save"), focusedLabels(), "d-pad should remain inside the drawer after closing volume")
+    }
+
+    @Test
+    fun overlayWidescreenShortcutIsKeyboardOperableForSupportedConsole() = runComposeUiTest {
+        val harness = SpelaTestHarness(StandardTestDispatcher())
+        configureGameOneAsWii(harness)
+        startGameWithOverlayOpen(harness)
+
+        pressOverlayKey(Key.DirectionUp, harness)
+        assertEquals(listOf("Widescreen"), focusedLabels())
+
+        pressOverlayKey(Key.DirectionLeft, harness)
+        assertEquals(listOf("Volume"), focusedLabels(), "left should move from Widescreen to Volume")
+
+        pressOverlayKey(Key.DirectionRight, harness)
+        assertEquals(listOf("Widescreen"), focusedLabels(), "right should move from Volume to Widescreen")
+        onNodeWithText("Widescreen").assertIsDisplayed()
+        assertEquals(WidescreenMode.STRETCH, harness.emulationViewModel.state.value.widescreenMode)
+
+        pressOverlayKey(Key.Enter, harness)
+        onNodeWithText("Stretch (Full)", useUnmergedTree = true).assertIsDisplayed()
+        assertTrue("Stretch (Full)" in focusedLabels())
+
+        pressOverlayKey(Key.DirectionDown, harness)
+        assertTrue("Zoom" in focusedLabels())
+
+        pressOverlayKey(Key.Enter, harness)
+        assertEquals(WidescreenMode.ZOOM, harness.emulationViewModel.state.value.widescreenMode)
+        onNodeWithText("Stretch (Full)", useUnmergedTree = true).assertDoesNotExist()
+
+        pressOverlayKey(Key.DirectionDown, harness)
+        assertEquals(listOf("Save"), focusedLabels(), "d-pad should remain inside the drawer after closing widescreen")
     }
 
     @Test

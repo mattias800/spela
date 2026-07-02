@@ -80,6 +80,7 @@ class LibretroJni {
     external fun nativeGpuInit(surface: Any): Boolean
     external fun nativeGpuRender()
     external fun nativeGpuSetShader(shaderId: Int)
+    external fun nativeGpuSetWidescreenMode(modeId: Int)
     external fun nativeGpuResize(width: Int, height: Int)
     external fun nativeGpuDeinit()
     external fun nativeGpuSuspend()

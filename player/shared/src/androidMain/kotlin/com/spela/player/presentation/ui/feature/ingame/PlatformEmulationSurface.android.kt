@@ -6,6 +6,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import com.spela.player.domain.model.WidescreenMode
 import com.spela.player.domain.model.ShaderPreset
 import com.spela.player.libretro.AndroidLibretroController
 import com.spela.player.libretro.EmulationSurface
@@ -18,6 +19,7 @@ import org.koin.compose.koinInject
 actual fun PlatformEmulationSurface(
     controller: LibretroController,
     selectedShader: ShaderPreset,
+    widescreenMode: WidescreenMode,
     modifier: Modifier,
     onEscapePressed: (() -> Unit)?,
     // Unused on Android — the overlay is navigated via the platform back gesture
@@ -70,6 +72,7 @@ actual fun PlatformEmulationSurface(
     VulkanEmulationSurface(
         controller = androidController,
         selectedShader = selectedShader,
+        widescreenMode = widescreenMode,
         isHwRenderEnabled = hwRenderEnabled,
         modifier = modifier,
     )
@@ -84,6 +87,7 @@ actual fun PlatformEmulationSurface(
         EmulationSurface(
             controller = androidController,
             selectedShader = selectedShader,
+            widescreenMode = widescreenMode,
             isDualScreenSplit = isDualScreenSplit,
             splitY = if (isDualScreenSplit) emulationState.dualScreenSplitY else 0,
             modifier = modifier,

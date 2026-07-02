@@ -2,6 +2,7 @@ package com.spela.player.presentation.ui.feature.ingame
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import com.spela.player.domain.model.WidescreenMode
 import com.spela.player.domain.model.ShaderPreset
 import com.spela.player.presentation.viewmodel.LibretroController
 
@@ -11,6 +12,8 @@ import com.spela.player.presentation.viewmodel.LibretroController
  * On Desktop, this will use a different rendering approach.
  *
  * [selectedShader] controls the video filter applied to the rendered frame.
+ * [widescreenMode] controls final presentation scaling without changing core
+ * options.
  * [onEscapePressed] is invoked on Desktop when the user presses the Escape key.
  * On Android this parameter is unused (back is handled by PlatformBackHandler).
  * [overlayVisible] is true while the in-game pause overlay is shown; on Desktop
@@ -21,6 +24,7 @@ import com.spela.player.presentation.viewmodel.LibretroController
 expect fun PlatformEmulationSurface(
     controller: LibretroController,
     selectedShader: ShaderPreset = ShaderPreset.NONE,
+    widescreenMode: WidescreenMode = WidescreenMode.NATIVE,
     modifier: Modifier = Modifier,
     onEscapePressed: (() -> Unit)? = null,
     overlayVisible: Boolean = false,

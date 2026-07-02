@@ -33,6 +33,7 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.platform.LocalDensity
@@ -52,6 +53,7 @@ fun SpDrawerButton(
     selected: Boolean = false,
     enabled: Boolean = true,
     contentDescription: String = text,
+    stateDescription: String? = null,
     shape: Shape = RoundedCornerShape(SpSpacing.RadiusMedium),
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -101,6 +103,8 @@ fun SpDrawerButton(
             .background(containerColor, shape)
             .semantics(mergeDescendants = true) {
                 this.contentDescription = contentDescription
+                stateDescription?.let { this.stateDescription = it }
+                if (selected) this.selected = true
                 role = Role.Button
             }
             .clickable(

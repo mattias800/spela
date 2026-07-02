@@ -420,6 +420,8 @@ class AndroidLibretroController(
         jni.nativeGpuInit(surface).also { if (it) jni.nativeGpuSetSplitReadback(dualScreenSplitActive) }
     fun gpuRender() = jni.nativeGpuRender()
     fun gpuSetShader(shaderId: Int) = jni.nativeGpuSetShader(shaderId)
+    fun gpuSetWidescreenMode(mode: com.spela.player.domain.model.WidescreenMode) =
+        jni.nativeGpuSetWidescreenMode(mode.nativeId)
     fun gpuResize(width: Int, height: Int) = jni.nativeGpuResize(width, height)
     fun gpuDeinit() = jni.nativeGpuDeinit()
     fun gpuSuspend() = jni.nativeGpuSuspend()

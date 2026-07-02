@@ -24,6 +24,7 @@ import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.VolumeOff
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.AspectRatio
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.Code
@@ -69,6 +70,8 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
+import com.spela.player.domain.model.WidescreenMode
+import com.spela.player.domain.model.supportsWidescreenMode
 import com.spela.player.presentation.intent.EmulationIntent
 import com.spela.player.presentation.state.EmulationState
 import com.spela.player.presentation.ui.components.LocalScrollState
@@ -142,6 +145,13 @@ internal fun InGameOverlayPanel(
                         }
                         Key.DirectionLeft, Key.DirectionRight -> {
                             scrollFocusRegistry.redirectIfFocusedOffscreen()
+                            focusManager.moveFocus(
+                                if (event.key == Key.DirectionLeft) {
+                                    FocusDirection.Left
+                                } else {
+                                    FocusDirection.Right
+                                },
+                            )
                             true
                         }
                         else -> false
@@ -169,7 +179,10 @@ internal fun InGameOverlayPanel(
                     OverlayDrawerHeader(state = state)
                     OverlayShortcutRow(
                         volume = state.volume,
+                        widescreenMode = state.widescreenMode,
+                        consoleId = state.consoleId,
                         onVolumeChange = { viewModel.onIntent(EmulationIntent.SetVolume(it)) },
+                        onWidescreenModeChange = { viewModel.onIntent(EmulationIntent.SetWidescreenMode(it)) },
                     )
 
                     when {
@@ -382,11 +395,17 @@ private fun NormalOverlayActions(
 @Composable
 private fun OverlayShortcutRow(
     volume: Float,
+    widescreenMode: WidescreenMode,
+    consoleId: String,
     onVolumeChange: (Float) -> Unit,
+    onWidescreenModeChange: (WidescreenMode) -> Unit,
 ) {
     var showVolumePopover by remember { mutableStateOf(false) }
+    var showWidescreenModePopover by remember { mutableStateOf(false) }
     val volumePopoverFocusRequester = remember { FocusRequester() }
+    val widescreenModePopoverFocusRequester = remember { FocusRequester() }
     val volumePercentText = formatVolumePercent(volume)
+    val showWidescreenMode = supportsWidescreenMode(consoleId)
 
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -425,6 +444,87 @@ private fun OverlayShortcutRow(
             style = SpTypography.LabelMedium,
             color = SpColor.OnDrawerSecondary,
         )
+        if (showWidescreenMode) {
+            Box {
+                SpDrawerIconButton(
+                    icon = Icons.Filled.AspectRatio,
+                    contentDescription = "Widescreen",
+                    tooltip = "Widescreen",
+                    stateDescription = widescreenMode.optionLabel,
+                    selected = showWidescreenModePopover,
+                    onClick = { showWidescreenModePopover = true },
+                    modifier = Modifier.focusRestoreItem(key = "overlay_shortcut_widescreen_mode"),
+                )
+                DropdownMenu(
+                    expanded = showWidescreenModePopover,
+                    onDismissRequest = { showWidescreenModePopover = false },
+                    modifier = Modifier.background(SpColor.DrawerSurface),
+                ) {
+                    OverlayWidescreenModePopoverContent(
+                        widescreenMode = widescreenMode,
+                        onWidescreenModeChange = onWidescreenModeChange,
+                        onDismiss = { showWidescreenModePopover = false },
+                        focusRequester = widescreenModePopoverFocusRequester,
+                    )
+                }
+            }
+            Text(
+                text = widescreenMode.label,
+                style = SpTypography.LabelMedium,
+                color = SpColor.OnDrawerSecondary,
+            )
+        }
+    }
+}
+
+@Composable
+private fun OverlayWidescreenModePopoverContent(
+    widescreenMode: WidescreenMode,
+    onWidescreenModeChange: (WidescreenMode) -> Unit,
+    onDismiss: () -> Unit,
+    focusRequester: FocusRequester,
+) {
+    val focusedMode = if (widescreenMode in WidescreenMode.selectableModes) {
+        widescreenMode
+    } else {
+        WidescreenMode.selectableModes.first()
+    }
+
+    LaunchedEffect(Unit) {
+        try { focusRequester.requestFocus() } catch (_: Exception) {}
+    }
+
+    Column(
+        modifier = Modifier
+            .width(SpSpacing.DrawerPopoverWidth)
+            .background(SpColor.DrawerSurface)
+            .padding(horizontal = SpSpacing.Small, vertical = SpSpacing.Small)
+            .semantics {
+                contentDescription = "Widescreen"
+                stateDescription = widescreenMode.optionLabel
+            },
+        verticalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
+    ) {
+        WidescreenMode.selectableModes.forEach { mode ->
+            SpDrawerButton(
+                text = mode.optionLabel,
+                icon = if (mode == widescreenMode) Icons.Filled.CheckCircle else null,
+                selected = mode == widescreenMode,
+                contentDescription = mode.optionLabel,
+                stateDescription = if (mode == widescreenMode) {
+                    "Selected. ${mode.description}"
+                } else {
+                    mode.description
+                },
+                onClick = {
+                    onWidescreenModeChange(mode)
+                    onDismiss()
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .then(if (mode == focusedMode) Modifier.focusRequester(focusRequester) else Modifier),
+            )
+        }
     }
 }
 

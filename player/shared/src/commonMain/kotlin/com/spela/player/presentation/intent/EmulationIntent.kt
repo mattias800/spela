@@ -1,5 +1,7 @@
 package com.spela.player.presentation.intent
 
+import com.spela.player.domain.model.WidescreenMode
+
 sealed interface EmulationIntent {
     data class StartGame(
         val gameId: String,
@@ -41,6 +43,7 @@ sealed interface EmulationIntent {
     data object ToggleOverlay : EmulationIntent
     data object ToggleFastForward : EmulationIntent
     data class SetVolume(val volume: Float) : EmulationIntent
+    data class SetWidescreenMode(val mode: WidescreenMode) : EmulationIntent
     data object TakeScreenshot : EmulationIntent
 
     data object ShowExitConfirm : EmulationIntent

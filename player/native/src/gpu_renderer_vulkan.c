@@ -144,6 +144,7 @@ struct gpu_renderer {
     VkPipelineLayout pipeline_layout;
     VkPipeline pipelines[NUM_SHADERS];
     int current_shader;
+    int widescreen_mode;
 
     /* Descriptor set for texture sampling */
     VkDescriptorSetLayout descriptor_set_layout;
@@ -298,6 +299,63 @@ static VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL wrapped_vkGetDeviceProcAddr(
     VkDevice device, const char *pName);
 static void cleanup_offscreen(gpu_renderer_t *r);
 void gpu_renderer_check_hw_interface(gpu_renderer_t *r, const char *phase);
+
+typedef struct {
+    float x;
+    float y;
+    float width;
+    float height;
+} present_viewport_t;
+
+static present_viewport_t compute_present_viewport(
+    gpu_renderer_t *r,
+    float src_w,
+    float src_h,
+    float dst_w,
+    float dst_h
+) {
+    if (src_w <= 0.0f || src_h <= 0.0f || dst_w <= 0.0f || dst_h <= 0.0f) {
+        present_viewport_t fallback = { 0.0f, 0.0f, dst_w, dst_h };
+        return fallback;
+    }
+
+    float display_w = src_w;
+    float display_h = src_h;
+    bool fill = false;
+    switch (r ? r->widescreen_mode : GPU_WIDESCREEN_MODE_NATIVE) {
+        case GPU_WIDESCREEN_MODE_4_3:
+            display_w = src_h * (4.0f / 3.0f);
+            display_h = src_h;
+            break;
+        case GPU_WIDESCREEN_MODE_STRETCH:
+            display_w = src_h * (16.0f / 9.0f);
+            display_h = src_h;
+            break;
+        case GPU_WIDESCREEN_MODE_ZOOM:
+            display_w = src_h * (4.0f / 3.0f);
+            display_h = src_h;
+            fill = true;
+            break;
+        case GPU_WIDESCREEN_MODE_NATIVE:
+        default:
+            break;
+    }
+
+    float scale_x = dst_w / display_w;
+    float scale_y = dst_h / display_h;
+    float scale = fill
+        ? (scale_x > scale_y ? scale_x : scale_y)
+        : (scale_x < scale_y ? scale_x : scale_y);
+    float vp_w = display_w * scale;
+    float vp_h = display_h * scale;
+    present_viewport_t viewport = {
+        .x = (dst_w - vp_w) / 2.0f,
+        .y = (dst_h - vp_h) / 2.0f,
+        .width = vp_w,
+        .height = vp_h,
+    };
+    return viewport;
+}
 
 /* ===== Public API ===== */
 
@@ -717,6 +775,14 @@ void gpu_renderer_set_shader(gpu_renderer_t *r, int shader_id) {
     }
 }
 
+void gpu_renderer_set_widescreen_mode(gpu_renderer_t *r, int widescreen_mode) {
+    if (!r) return;
+    if (widescreen_mode < GPU_WIDESCREEN_MODE_NATIVE || widescreen_mode > GPU_WIDESCREEN_MODE_ZOOM) {
+        widescreen_mode = GPU_WIDESCREEN_MODE_NATIVE;
+    }
+    r->widescreen_mode = widescreen_mode;
+}
+
 void gpu_renderer_render(gpu_renderer_t *r) {
     if (!r || !r->active || !r->frame_uploaded) return;
 
@@ -794,24 +860,18 @@ void gpu_renderer_render(gpu_renderer_t *r) {
     float src_h = r->source_rect_set ? (float)r->source_h : (float)r->frame_height;
     float dst_w = r->surface_width  ? (float)r->surface_width  : (float)r->swapchain_extent.width;
     float dst_h = r->surface_height ? (float)r->surface_height : (float)r->swapchain_extent.height;
-    float scale_x = dst_w / src_w;
-    float scale_y = dst_h / src_h;
-    float scale = scale_x < scale_y ? scale_x : scale_y;
-    float vp_w = src_w * scale;
-    float vp_h = src_h * scale;
-    float vp_x = (dst_w - vp_w) / 2.0f;
-    float vp_y = (dst_h - vp_h) / 2.0f;
+    present_viewport_t vp = compute_present_viewport(r, src_w, src_h, dst_w, dst_h);
 
     VkViewport viewport = {
-        .x = vp_x, .y = vp_y,
-        .width = vp_w, .height = vp_h,
+        .x = vp.x, .y = vp.y,
+        .width = vp.width, .height = vp.height,
         .minDepth = 0.0f, .maxDepth = 1.0f,
     };
     vkCmdSetViewport(cmd, 0, 1, &viewport);
 
     VkRect2D scissor = {
-        .offset = { (int32_t)vp_x, (int32_t)vp_y },
-        .extent = { (uint32_t)vp_w, (uint32_t)vp_h },
+        .offset = { 0, 0 },
+        .extent = r->swapchain_extent,
     };
     vkCmdSetScissor(cmd, 0, 1, &scissor);
 
@@ -1580,24 +1640,18 @@ void gpu_renderer_hw_render_frame(gpu_renderer_t *r, unsigned width, unsigned he
     float src_h = r->source_rect_set ? (float)r->source_h : (float)height;
     float dst_w = r->surface_width  ? (float)r->surface_width  : (float)r->swapchain_extent.width;
     float dst_h = r->surface_height ? (float)r->surface_height : (float)r->swapchain_extent.height;
-    float scale_x = dst_w / src_w;
-    float scale_y = dst_h / src_h;
-    float scale = scale_x < scale_y ? scale_x : scale_y;
-    float vp_w = src_w * scale;
-    float vp_h = src_h * scale;
-    float vp_x = (dst_w - vp_w) / 2.0f;
-    float vp_y = (dst_h - vp_h) / 2.0f;
+    present_viewport_t vp = compute_present_viewport(r, src_w, src_h, dst_w, dst_h);
 
     VkViewport viewport = {
-        .x = vp_x, .y = vp_y,
-        .width = vp_w, .height = vp_h,
+        .x = vp.x, .y = vp.y,
+        .width = vp.width, .height = vp.height,
         .minDepth = 0.0f, .maxDepth = 1.0f,
     };
     vkCmdSetViewport(cmd, 0, 1, &viewport);
 
     VkRect2D scissor = {
-        .offset = { (int32_t)vp_x, (int32_t)vp_y },
-        .extent = { (uint32_t)vp_w, (uint32_t)vp_h },
+        .offset = { 0, 0 },
+        .extent = r->swapchain_extent,
     };
     vkCmdSetScissor(cmd, 0, 1, &scissor);
 

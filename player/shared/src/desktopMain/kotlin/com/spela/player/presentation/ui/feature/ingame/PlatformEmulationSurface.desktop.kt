@@ -8,6 +8,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import com.spela.player.domain.model.WidescreenMode
 import com.spela.player.domain.model.ShaderPreset
 import com.spela.player.presentation.ui.feature.shader.gpuShaderId
 import com.spela.player.domain.repository.KeyMappingRepository
@@ -24,6 +25,7 @@ import org.koin.compose.koinInject
 actual fun PlatformEmulationSurface(
     controller: LibretroController,
     selectedShader: ShaderPreset,
+    widescreenMode: WidescreenMode,
     modifier: Modifier,
     onEscapePressed: (() -> Unit)?,
     overlayVisible: Boolean,
@@ -96,6 +98,7 @@ actual fun PlatformEmulationSurface(
         MetalOffscreenSurface(
             controller = desktopController,
             selectedShader = selectedShader,
+            widescreenMode = widescreenMode,
             modifier = modifier,
             onEscapePressed = onEscapePressed,
             keyMapping = keyMapping,
@@ -107,6 +110,7 @@ actual fun PlatformEmulationSurface(
         DesktopEmulationSurface(
             controller = desktopController,
             selectedShader = selectedShader,
+            widescreenMode = widescreenMode,
             modifier = modifier,
             onEscapePressed = onEscapePressed,
             keyMapping = keyMapping,

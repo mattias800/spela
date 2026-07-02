@@ -1,7 +1,13 @@
 package com.spela.player.libretro
 
+import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
+
+enum class FrameScaleMode {
+    FIT,
+    FILL,
+}
 
 /**
  * Result of computing how an emulation frame should be scaled and positioned
@@ -30,6 +36,7 @@ fun computeScaledFrame(
     canvasWidth: Float,
     canvasHeight: Float,
     displayAspectRatio: Float = 0f,
+    scaleMode: FrameScaleMode = FrameScaleMode.FIT,
 ): ScaledFrame {
     val displayWidth: Float
     val displayHeight: Float
@@ -41,7 +48,10 @@ fun computeScaledFrame(
         displayHeight = srcHeight.toFloat()
     }
 
-    val scale = min(canvasWidth / displayWidth, canvasHeight / displayHeight)
+    val scale = when (scaleMode) {
+        FrameScaleMode.FIT -> min(canvasWidth / displayWidth, canvasHeight / displayHeight)
+        FrameScaleMode.FILL -> max(canvasWidth / displayWidth, canvasHeight / displayHeight)
+    }
     val scaledWidth = (displayWidth * scale).roundToInt()
     val scaledHeight = (displayHeight * scale).roundToInt()
     val offsetX = ((canvasWidth - scaledWidth) / 2f).roundToInt()

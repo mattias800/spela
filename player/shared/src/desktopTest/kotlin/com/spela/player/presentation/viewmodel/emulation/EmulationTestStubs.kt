@@ -40,6 +40,8 @@ import com.spela.player.domain.model.SimilarGame
 import com.spela.player.domain.model.DeveloperGame
 import com.spela.player.domain.model.PaginatedResult
 import com.spela.player.domain.model.UserPreferences
+import com.spela.player.domain.model.WidescreenMode
+import com.spela.player.domain.model.defaultWidescreenMode
 import com.spela.player.domain.repository.AchievementsRepository
 import com.spela.player.domain.repository.ChallengeRepository
 import com.spela.player.domain.repository.CoreRepository
@@ -291,6 +293,17 @@ class StubSaveDataRepository : SaveDataRepository {
 class StubPreferencesRepository : PreferencesRepository {
     var preferencesResult: Result<UserPreferences> = Result.success(UserPreferences())
     var resolveShaderResult: ShaderPreset = ShaderPreset.NONE
+    var resolveWidescreenModeResult: WidescreenMode? = null
+    var lastResolvedWidescreenModeGameId: String? = null
+        private set
+    var lastResolvedWidescreenModeConsoleId: String? = null
+        private set
+    var lastSetWidescreenModeGameId: String? = null
+        private set
+    var lastSetWidescreenModeConsoleId: String? = null
+        private set
+    var lastSetWidescreenMode: WidescreenMode? = null
+        private set
 
     override suspend fun getPreferences() = preferencesResult
     /** Records the consoleSaveStatePolicies map passed on the most
@@ -332,6 +345,16 @@ class StubPreferencesRepository : PreferencesRepository {
     override fun getAllDeviceShaderOverrides() = emptyMap<String, ShaderPreset>()
     override suspend fun syncDeviceShaderOverrides() {}
     override suspend fun resolveShader(consoleId: String) = resolveShaderResult
+    override fun resolveWidescreenMode(gameId: String, consoleId: String): WidescreenMode {
+        lastResolvedWidescreenModeGameId = gameId
+        lastResolvedWidescreenModeConsoleId = consoleId
+        return resolveWidescreenModeResult ?: defaultWidescreenMode(consoleId)
+    }
+    override fun setWidescreenMode(gameId: String, consoleId: String, mode: WidescreenMode) {
+        lastSetWidescreenModeGameId = gameId
+        lastSetWidescreenModeConsoleId = consoleId
+        lastSetWidescreenMode = mode
+    }
     override suspend fun pushDeviceShaderOverridesToServer() {}
     override suspend fun syncKeyMappingsFromServer() {}
     override suspend fun pushKeyMappingsToServer() {}

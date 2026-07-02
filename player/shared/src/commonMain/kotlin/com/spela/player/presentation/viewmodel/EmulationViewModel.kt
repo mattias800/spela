@@ -4,6 +4,7 @@ import com.spela.player.data.remote.PresenceService
 import com.spela.player.data.repository.BiosRepository
 import com.spela.player.domain.controller.AchievementsController
 import com.spela.player.domain.model.AchievementEventType
+import com.spela.player.domain.model.WidescreenMode
 import com.spela.player.domain.model.UserPreferences
 import com.spela.player.domain.repository.AchievementsRepository
 import com.spela.player.domain.repository.GameStatsRepository
@@ -251,6 +252,7 @@ class EmulationViewModel(
                 libretroController.setVolume(vol)
                 _state.update { it.copy(volume = vol) }
             }
+            is EmulationIntent.SetWidescreenMode -> setWidescreenMode(intent.mode)
             EmulationIntent.TakeScreenshot -> { /* Platform-specific capture */ }
 
             EmulationIntent.ShowExitConfirm -> {
@@ -889,6 +891,10 @@ class EmulationViewModel(
                             gameGenre = detail.game.genre,
                             gameRating = detail.game.igdbCriticsRating,
                             gamePlayers = detail.game.players,
+                            widescreenMode = preferencesRepository.resolveWidescreenMode(
+                                gameId = gameId,
+                                consoleId = detail.game.consoleId,
+                            ),
                             saveStatesOptedOut = optedOut,
                             showSaveStatePrompt = askOnce,
                             saveStatePromptConsoleAbbr = if (askOnce) detail.game.consoleId else "",
@@ -1738,6 +1744,16 @@ class EmulationViewModel(
         val newState = !_state.value.isFastForward
         libretroController.setFastForward(newState)
         _state.update { it.copy(isFastForward = newState) }
+    }
+
+    private fun setWidescreenMode(mode: WidescreenMode) {
+        val snapshot = _state.value
+        _state.update { it.copy(widescreenMode = mode) }
+        preferencesRepository.setWidescreenMode(
+            gameId = snapshot.gameId,
+            consoleId = snapshot.consoleId,
+            mode = mode,
+        )
     }
 
     // Quick-save/load — uses the currently active slot

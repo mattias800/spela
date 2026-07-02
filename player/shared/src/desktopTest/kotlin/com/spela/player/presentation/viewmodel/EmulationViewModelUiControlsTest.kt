@@ -1,6 +1,8 @@
 package com.spela.player.presentation.viewmodel
 
+import com.spela.player.domain.model.WidescreenMode
 import com.spela.player.presentation.viewmodel.emulation.EmulationViewModelTestBuilder
+import com.spela.player.presentation.viewmodel.emulation.StubGameRepository
 import com.spela.player.presentation.intent.EmulationIntent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -100,6 +102,37 @@ class EmulationViewModelUiControlsTest {
         vm.onIntent(EmulationIntent.ToggleFastForward)
         assertFalse(vm.state.value.isFastForward)
         assertEquals(0, builder.libretroController.setFastForwardCallCount)
+    }
+
+    // ── Widescreen mode ────────────────────────────────────────────────────
+
+    @Test
+    fun startGameResolvesWidescreenModeForCurrentGame() = runTest {
+        builder.gameRepository = StubGameRepository(consoleId = "wii")
+        builder.preferencesRepository.resolveWidescreenModeResult = WidescreenMode.ZOOM
+        val vm = builder.build()
+
+        vm.onIntent(EmulationIntent.StartGame("game1"))
+        builder.advanceTimeBy(100)
+
+        assertEquals(WidescreenMode.ZOOM, vm.state.value.widescreenMode)
+        assertEquals("game1", builder.preferencesRepository.lastResolvedWidescreenModeGameId)
+        assertEquals("wii", builder.preferencesRepository.lastResolvedWidescreenModeConsoleId)
+    }
+
+    @Test
+    fun setWidescreenModeUpdatesStateAndPersistsForCurrentGame() = runTest {
+        builder.gameRepository = StubGameRepository(consoleId = "wii")
+        val vm = builder.build()
+
+        vm.onIntent(EmulationIntent.StartGame("game1"))
+        builder.advanceTimeBy(100)
+        vm.onIntent(EmulationIntent.SetWidescreenMode(WidescreenMode.FOUR_THREE))
+
+        assertEquals(WidescreenMode.FOUR_THREE, vm.state.value.widescreenMode)
+        assertEquals("game1", builder.preferencesRepository.lastSetWidescreenModeGameId)
+        assertEquals("wii", builder.preferencesRepository.lastSetWidescreenModeConsoleId)
+        assertEquals(WidescreenMode.FOUR_THREE, builder.preferencesRepository.lastSetWidescreenMode)
     }
 
     // ── Exit confirm ────────────────────────────────────────────────────────

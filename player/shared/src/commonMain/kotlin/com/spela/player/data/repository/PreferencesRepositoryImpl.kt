@@ -10,10 +10,12 @@ import com.spela.client.models.UpdatePreferencesRequest
 import com.spela.client.models.UserPreferencesResponse
 import com.spela.player.data.remote.dto.toDomain
 import com.spela.player.domain.model.DEFAULT_CONSOLE_ID
+import com.spela.player.domain.model.WidescreenMode
 import com.spela.player.domain.model.ShaderPreset
 import com.spela.player.libretro.GamepadMappingMigration
 import com.spela.player.util.currentPlatform
 import com.spela.player.domain.model.UserPreferences
+import com.spela.player.domain.model.defaultWidescreenMode
 import com.spela.player.domain.repository.ConfirmButtonConvention
 import com.spela.player.domain.repository.KeyMappingRepository
 import com.spela.player.domain.repository.PreferencesRepository
@@ -35,6 +37,7 @@ class PreferencesRepositoryImpl(
     private companion object {
         /** Device-local flag marking the one-time legacy gamepad keycode → positional migration done. */
         const val GAMEPAD_MIGRATION_FLAG = "gamepad_positional_migration_v1"
+        const val GAME_WIDESCREEN_MODE_PREFIX = "game_widescreen_mode:"
     }
 
     override suspend fun getPreferences(): Result<UserPreferences> {
@@ -154,6 +157,26 @@ class PreferencesRepositoryImpl(
 
         // 4. Final fallback
         return ShaderPreset.NONE
+    }
+
+    override fun resolveWidescreenMode(gameId: String, consoleId: String): WidescreenMode {
+        val stored = if (gameId.isNotBlank()) {
+            database.spelaDatabaseQueries.getDeviceSetting(GAME_WIDESCREEN_MODE_PREFIX + gameId)
+                .executeAsOneOrNull()
+        } else {
+            null
+        }
+        return WidescreenMode.fromStorageId(stored) ?: defaultWidescreenMode(consoleId)
+    }
+
+    override fun setWidescreenMode(gameId: String, consoleId: String, mode: WidescreenMode) {
+        if (gameId.isBlank()) return
+        val key = GAME_WIDESCREEN_MODE_PREFIX + gameId
+        if (mode == defaultWidescreenMode(consoleId) || mode == WidescreenMode.NATIVE) {
+            database.spelaDatabaseQueries.deleteDeviceSetting(key)
+        } else {
+            database.spelaDatabaseQueries.insertDeviceSetting(key, mode.storageId)
+        }
     }
 
     @OptIn(ExperimentalUuidApi::class)
