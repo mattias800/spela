@@ -2,9 +2,39 @@ package com.spela.player.domain.model
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-class WiiIrPointerTest {
+class WiiDolphinInputTest {
+
+    // ---- wiiControllerPortDevice (#1534) ----
+
+    @Test
+    fun wiiWithDolphinAttachesNunchuk() {
+        assertEquals(
+            RETRO_DEVICE_WIIMOTE_NC,
+            wiiControllerPortDevice("wii", "/cores/dolphin_libretro.so"),
+        )
+    }
+
+    @Test
+    fun nunchukDeviceMatchesDolphinSubclassEncoding() {
+        // (3 << 8) | RETRO_DEVICE_JOYPAD — see DolphinLibretro/Input.cpp.
+        assertEquals(0x301, RETRO_DEVICE_WIIMOTE_NC)
+    }
+
+    @Test
+    fun gamecubeGetsNoWiimoteDevice() {
+        // "gamecube" is the production console code (see server console registry).
+        assertNull(wiiControllerPortDevice("gamecube", "/cores/dolphin_libretro.so"))
+    }
+
+    @Test
+    fun nonDolphinCoreOnWiiGetsNoWiimoteDevice() {
+        assertNull(wiiControllerPortDevice("wii", "/cores/other_libretro.so"))
+    }
+
+    // ---- wiiIrPointerCoreVariables (#1524) ----
 
     @Test
     fun wiiWithDolphinCentersIrRestPosition() {

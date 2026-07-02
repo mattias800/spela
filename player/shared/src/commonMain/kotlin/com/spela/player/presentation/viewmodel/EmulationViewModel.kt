@@ -9,6 +9,7 @@ import com.spela.player.domain.model.DisplayProfileResolver
 import com.spela.player.domain.model.UserPreferences
 import com.spela.player.domain.model.WidescreenMode
 import com.spela.player.domain.model.renderScaleCoreVariables
+import com.spela.player.domain.model.wiiControllerPortDevice
 import com.spela.player.domain.model.wiiIrPointerCoreVariables
 import com.spela.player.domain.repository.AchievementsRepository
 import com.spela.player.domain.repository.GameStatsRepository
@@ -1255,6 +1256,17 @@ class EmulationViewModel(
                         println("[Emulation] Loading game: path=$gamePath core=$corePath")
                         libretroController.loadGame(gamePath)
                         println("[Emulation] loadGame returned")
+
+                        // Wii: attach the Nunchuk to every Wiimote port (#1534).
+                        // Must come AFTER loadGame — the native bridge defaults
+                        // ports 0-3 to plain JOYPAD (bare Wiimote) inside the
+                        // load path, and the core ignores port-device calls
+                        // before a core is loaded.
+                        wiiControllerPortDevice(consoleId, corePath)?.let { device ->
+                            for (port in 0..3) {
+                                libretroController.setControllerPortDevice(port, device)
+                            }
+                        }
 
                         // Set HW render state early so Compose creates the
                         // VulkanEmulationSurface before emulation starts.
