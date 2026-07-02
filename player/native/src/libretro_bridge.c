@@ -2016,6 +2016,12 @@ JNI_FUNC(void, nativeGpuSetShader)(JNIEnv *env, jobject thiz, jint shaderId) {
     }
 }
 
+JNI_FUNC(void, nativeGpuSetWidescreenMode)(JNIEnv *env, jobject thiz, jint modeId) {
+    if (g_gpu_renderer) {
+        gpu_renderer_set_widescreen_mode(g_gpu_renderer, (int)modeId);
+    }
+}
+
 JNI_FUNC(void, nativeGpuResize)(JNIEnv *env, jobject thiz, jint width, jint height) {
     if (g_gpu_renderer) {
         gpu_renderer_resize(g_gpu_renderer, (int)width, (int)height);

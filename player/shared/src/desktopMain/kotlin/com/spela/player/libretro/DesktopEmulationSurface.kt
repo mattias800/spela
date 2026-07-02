@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.spela.player.domain.model.WidescreenMode
 import com.spela.player.domain.model.ShaderPreset
 import com.spela.player.presentation.ui.feature.shader.filterQuality
 import com.spela.player.presentation.viewmodel.LibretroAnalog
@@ -66,6 +67,7 @@ import org.jetbrains.skia.ImageInfo
 fun DesktopEmulationSurface(
     controller: DesktopLibretroController,
     selectedShader: ShaderPreset = ShaderPreset.NONE,
+    widescreenMode: WidescreenMode = WidescreenMode.NATIVE,
     modifier: Modifier = Modifier,
     onEscapePressed: (() -> Unit)? = null,
     keyMapping: Map<Int, Int>? = null,
@@ -215,7 +217,7 @@ fun DesktopEmulationSurface(
                 },
         ) {
             val bitmap = currentBitmap ?: return@Canvas
-            drawScaledBitmap(bitmap, selectedShader)
+            drawScaledBitmap(bitmap, selectedShader, widescreenMode)
         }
 
         // "Press Esc to pause" hint that fades after a few seconds
@@ -237,24 +239,22 @@ fun DesktopEmulationSurface(
     }
 }
 
-private fun DrawScope.drawScaledBitmap(bitmap: ImageBitmap, shader: ShaderPreset) {
-    val canvasWidth = size.width
-    val canvasHeight = size.height
-    val imgWidth = bitmap.width.toFloat()
-    val imgHeight = bitmap.height.toFloat()
+private fun DrawScope.drawScaledBitmap(
+    bitmap: ImageBitmap,
+    shader: ShaderPreset,
+    widescreenMode: WidescreenMode,
+) {
+    val scaled = computeScaledFrame(
+        srcWidth = bitmap.width,
+        srcHeight = bitmap.height,
+        canvasWidth = size.width,
+        canvasHeight = size.height,
+        displayAspectRatio = widescreenMode.displayAspectRatio,
+        scaleMode = if (widescreenMode.fillsCanvas) FrameScaleMode.FILL else FrameScaleMode.FIT,
+    )
 
-    // Scale to fit while maintaining aspect ratio
-    val scaleX = canvasWidth / imgWidth
-    val scaleY = canvasHeight / imgHeight
-    val scale = minOf(scaleX, scaleY)
-
-    val dstWidth = (imgWidth * scale).toInt()
-    val dstHeight = (imgHeight * scale).toInt()
-    val offsetX = ((canvasWidth - dstWidth) / 2).toInt()
-    val offsetY = ((canvasHeight - dstHeight) / 2).toInt()
-
-    val dstOffset = IntOffset(offsetX, offsetY)
-    val dstSize = IntSize(dstWidth, dstHeight)
+    val dstOffset = IntOffset(scaled.offsetX, scaled.offsetY)
+    val dstSize = IntSize(scaled.width, scaled.height)
     val srcSize = IntSize(bitmap.width, bitmap.height)
 
     // CRT / scanlines / LCD render as a single GPU fragment pass (#1209) instead

@@ -11,6 +11,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import com.spela.player.domain.model.WidescreenMode
 import androidx.compose.ui.viewinterop.AndroidView
 import com.spela.player.domain.model.ShaderPreset
 import com.spela.player.presentation.ui.feature.shader.gpuShaderId
@@ -35,6 +36,7 @@ import com.spela.player.presentation.ui.feature.shader.gpuShaderId
 fun VulkanEmulationSurface(
     controller: AndroidLibretroController,
     selectedShader: ShaderPreset,
+    widescreenMode: WidescreenMode,
     isHwRenderEnabled: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
@@ -102,6 +104,7 @@ fun VulkanEmulationSurface(
         val resumed = controller.gpuResume(holder.surface)
         if (resumed) {
             controller.gpuSetShader(selectedShader.gpuShaderId)
+            controller.gpuSetWidescreenMode(widescreenMode)
             Log.i(TAG, "Vulkan GPU renderer resumed")
             return@LaunchedEffect
         }
@@ -110,6 +113,7 @@ fun VulkanEmulationSurface(
         val success = controller.gpuInit(holder.surface)
         if (success) {
             controller.gpuSetShader(selectedShader.gpuShaderId)
+            controller.gpuSetWidescreenMode(widescreenMode)
             Log.i(TAG, "Vulkan GPU renderer initialized with HW render")
         } else {
             Log.w(TAG, "Vulkan GPU init failed")
@@ -117,9 +121,10 @@ fun VulkanEmulationSurface(
     }
 
     // Update shader when it changes
-    DisposableEffect(selectedShader) {
+    DisposableEffect(selectedShader, widescreenMode) {
         if (controller.gpuIsActive()) {
             controller.gpuSetShader(selectedShader.gpuShaderId)
+            controller.gpuSetWidescreenMode(widescreenMode)
         }
         onDispose { }
     }

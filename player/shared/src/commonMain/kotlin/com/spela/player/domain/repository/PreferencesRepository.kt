@@ -2,6 +2,8 @@ package com.spela.player.domain.repository
 
 import com.spela.player.domain.model.ShaderPreset
 import com.spela.player.domain.model.UserPreferences
+import com.spela.player.domain.model.WidescreenMode
+import com.spela.player.domain.model.defaultWidescreenMode
 
 interface PreferencesRepository {
     suspend fun getPreferences(): Result<UserPreferences>
@@ -35,6 +37,9 @@ interface PreferencesRepository {
     fun getAllDeviceShaderOverrides(): Map<String, ShaderPreset>
     suspend fun syncDeviceShaderOverrides()
     suspend fun resolveShader(consoleId: String): ShaderPreset
+    fun resolveWidescreenMode(gameId: String, consoleId: String): WidescreenMode =
+        defaultWidescreenMode(consoleId)
+    fun setWidescreenMode(gameId: String, consoleId: String, mode: WidescreenMode) {}
     suspend fun pushDeviceShaderOverridesToServer()
     suspend fun syncKeyMappingsFromServer()
     suspend fun pushKeyMappingsToServer()

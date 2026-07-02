@@ -423,6 +423,7 @@ fun SpelaApp(deps: SpelaAppDependencies) = with(deps) {
                         PlatformEmulationSurface(
                             controller = libretroController,
                             selectedShader = emulationState.selectedShader,
+                            widescreenMode = emulationState.widescreenMode,
                             onEscapePressed = {
                                 emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
                             },

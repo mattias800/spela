@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.spela.player.domain.model.WidescreenMode
 import com.spela.player.domain.model.ShaderPreset
 import com.spela.player.presentation.viewmodel.LibretroAnalog
 import com.spela.player.presentation.viewmodel.LibretroButtons
@@ -60,6 +61,7 @@ import org.jetbrains.skia.ImageInfo
 fun MetalOffscreenSurface(
     controller: DesktopLibretroController,
     selectedShader: ShaderPreset = ShaderPreset.NONE,
+    widescreenMode: WidescreenMode = WidescreenMode.NATIVE,
     modifier: Modifier = Modifier,
     onEscapePressed: (() -> Unit)? = null,
     keyMapping: Map<Int, Int>? = null,
@@ -214,33 +216,22 @@ fun MetalOffscreenSurface(
             frameBuffers.bitmap.installPixels(frameBuffers.imageInfo, frame.data, frame.width * 4)
             val bitmap = frameBuffers.bitmap.asComposeImageBitmap()
 
-            val canvasWidth = size.width
-            val canvasHeight = size.height
-
             // Use the core-reported display aspect ratio (DAR) if available.
             // This handles cases like N64 Angrylion outputting 640x240 pixels
             // that should be displayed at 4:3 (pixels aren't square).
-            val dar = frame.aspectRatio
-            val displayWidth: Float
-            val displayHeight: Float
-            if (dar > 0f) {
-                // DAR-based: compute virtual display dimensions that match
-                // the aspect ratio while keeping one dimension from the bitmap
-                displayWidth = bitmap.height.toFloat() * dar
-                displayHeight = bitmap.height.toFloat()
+            val dar = if (widescreenMode == WidescreenMode.NATIVE) {
+                frame.aspectRatio
             } else {
-                displayWidth = bitmap.width.toFloat()
-                displayHeight = bitmap.height.toFloat()
+                widescreenMode.displayAspectRatio
             }
-
-            val scaleX = canvasWidth / displayWidth
-            val scaleY = canvasHeight / displayHeight
-            val scale = minOf(scaleX, scaleY)
-
-            val dstWidth = (displayWidth * scale).toInt()
-            val dstHeight = (displayHeight * scale).toInt()
-            val offsetX = ((canvasWidth - dstWidth) / 2).toInt()
-            val offsetY = ((canvasHeight - dstHeight) / 2).toInt()
+            val scaled = computeScaledFrame(
+                srcWidth = bitmap.width,
+                srcHeight = bitmap.height,
+                canvasWidth = size.width,
+                canvasHeight = size.height,
+                displayAspectRatio = dar,
+                scaleMode = if (widescreenMode.fillsCanvas) FrameScaleMode.FILL else FrameScaleMode.FIT,
+            )
 
             // Nearest-neighbor when no shader (pixel-perfect), bilinear otherwise
             // (shader already applied filtering in the GPU pass)
@@ -249,8 +240,8 @@ fun MetalOffscreenSurface(
                 image = bitmap,
                 srcOffset = IntOffset.Zero,
                 srcSize = IntSize(bitmap.width, bitmap.height),
-                dstOffset = IntOffset(offsetX, offsetY),
-                dstSize = IntSize(dstWidth, dstHeight),
+                dstOffset = IntOffset(scaled.offsetX, scaled.offsetY),
+                dstSize = IntSize(scaled.width, scaled.height),
                 filterQuality = quality,
             )
         }

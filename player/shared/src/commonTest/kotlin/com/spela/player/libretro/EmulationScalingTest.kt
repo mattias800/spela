@@ -123,6 +123,23 @@ class EmulationScalingTest {
     }
 
     @Test
+    fun `fill mode zooms 4 to 3 into widescreen canvas by cropping vertically`() {
+        val result = computeScaledFrame(
+            srcWidth = 640,
+            srcHeight = 480,
+            canvasWidth = 1920f,
+            canvasHeight = 1080f,
+            displayAspectRatio = 4f / 3f,
+            scaleMode = FrameScaleMode.FILL,
+        )
+
+        assertEquals(1920, result.width)
+        assertEquals(1440, result.height)
+        assertEquals(0, result.offsetX)
+        assertEquals(-180, result.offsetY)
+    }
+
+    @Test
     fun `output is always centered`() {
         val result = computeScaledFrame(
             srcWidth = 100, srcHeight = 100,

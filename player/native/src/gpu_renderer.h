@@ -29,6 +29,12 @@ extern "C" {
 #define GPU_SHADER_SCANLINES       4
 #define GPU_SHADER_LCD_GRID        5
 
+/* Widescreen presentation modes matching WidescreenMode.nativeId. */
+#define GPU_WIDESCREEN_MODE_NATIVE    0
+#define GPU_WIDESCREEN_MODE_4_3       1
+#define GPU_WIDESCREEN_MODE_STRETCH   2
+#define GPU_WIDESCREEN_MODE_ZOOM      3
+
 typedef struct gpu_renderer gpu_renderer_t;
 
 /* Lifecycle */
@@ -50,6 +56,7 @@ bool gpu_renderer_resume_surface(gpu_renderer_t *r, void *native_surface);
 void gpu_renderer_upload_frame(gpu_renderer_t *r, const void *data,
     unsigned width, unsigned height, size_t pitch, unsigned pixel_format);
 void gpu_renderer_set_shader(gpu_renderer_t *r, int shader_id);
+void gpu_renderer_set_widescreen_mode(gpu_renderer_t *r, int widescreen_mode);
 void gpu_renderer_render(gpu_renderer_t *r);
 /* Offscreen rendering: render with shader to an internal texture and copy to out_data (BGRA8).
  * Returns the number of bytes written, or 0 on failure.

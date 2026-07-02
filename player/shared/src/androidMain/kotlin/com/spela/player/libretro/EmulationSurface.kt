@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
+import com.spela.player.domain.model.WidescreenMode
 import com.spela.player.domain.model.ShaderPreset
 import com.spela.player.presentation.ui.feature.shader.drawShaderOverlay
 import com.spela.player.presentation.ui.feature.shader.filterQuality
@@ -32,6 +33,7 @@ import com.spela.player.presentation.ui.feature.shader.filterQuality
 fun EmulationSurface(
     controller: AndroidLibretroController,
     selectedShader: ShaderPreset = ShaderPreset.NONE,
+    widescreenMode: WidescreenMode = WidescreenMode.NATIVE,
     isDualScreenSplit: Boolean = false,
     splitY: Int = 0,
     modifier: Modifier = Modifier,
@@ -48,7 +50,14 @@ fun EmulationSurface(
             bitmap?.let { bmp ->
                 if (!bmp.isRecycled) {
                     val dar = controller.getAspectRatio()
-                    drawScaledBitmap(bmp, shader = selectedShader, isDualScreenSplit = isDualScreenSplit, splitY = splitY, displayAspectRatio = dar)
+                    drawScaledBitmap(
+                        bitmap = bmp,
+                        shader = selectedShader,
+                        widescreenMode = widescreenMode,
+                        isDualScreenSplit = isDualScreenSplit,
+                        splitY = splitY,
+                        displayAspectRatio = dar,
+                    )
                 }
             }
         }
@@ -65,6 +74,7 @@ fun EmulationSurface(
 private fun DrawScope.drawScaledBitmap(
     bitmap: Bitmap,
     shader: ShaderPreset,
+    widescreenMode: WidescreenMode,
     isDualScreenSplit: Boolean = false,
     splitY: Int = 0,
     displayAspectRatio: Float = 0f,
@@ -83,10 +93,15 @@ private fun DrawScope.drawScaledBitmap(
     // horizontally squashed / vertically stretched. Compensate by
     // scaling the DAR up by the inverse of the crop ratio so the
     // arithmetic lands on the cropped source's true aspect. See #887.
-    val effectiveDar = if (isDualScreenSplit && splitY > 0 && displayAspectRatio > 0f) {
+    val croppedDar = if (isDualScreenSplit && splitY > 0 && displayAspectRatio > 0f) {
         displayAspectRatio * (bitmap.height.toFloat() / splitY)
     } else {
         displayAspectRatio
+    }
+    val effectiveDar = if (widescreenMode == WidescreenMode.NATIVE) {
+        croppedDar
+    } else {
+        widescreenMode.displayAspectRatio
     }
 
     val scaled = computeScaledFrame(
@@ -95,6 +110,7 @@ private fun DrawScope.drawScaledBitmap(
         canvasWidth = size.width,
         canvasHeight = size.height,
         displayAspectRatio = effectiveDar,
+        scaleMode = if (widescreenMode.fillsCanvas) FrameScaleMode.FILL else FrameScaleMode.FIT,
     )
 
     val dstOffset = IntOffset(scaled.offsetX, scaled.offsetY)

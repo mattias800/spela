@@ -4,6 +4,7 @@ import com.spela.player.domain.model.AchievementEvent
 import com.spela.player.domain.model.AchievementProgress
 import com.spela.player.domain.model.BiosMissingFile
 import com.spela.player.domain.model.GameAchievement
+import com.spela.player.domain.model.WidescreenMode
 import com.spela.player.domain.model.SaveStatePolicyTier
 import com.spela.player.domain.model.ShaderPreset
 
@@ -214,6 +215,7 @@ data class EmulationState(
     val frameTime: Float = 0f,
     val isFastForward: Boolean = false,
     val volume: Float = 1f,
+    val widescreenMode: WidescreenMode = WidescreenMode.NATIVE,
     val showKeyMapping: Boolean = false,
     val showGamepadConfig: Boolean = false,
     val error: String? = null,
