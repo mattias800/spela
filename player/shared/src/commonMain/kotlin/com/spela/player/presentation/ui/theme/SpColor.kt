@@ -38,6 +38,18 @@ object SpColor {
     val Card = Color(0xFF161618)
     val CardHovered = Color(0xFF1E1E22)
 
+    // Drawer surfaces - inverted controls that sit on top of gameplay.
+    val DrawerSurface = Color(0xFFF4F5F8)
+    val DrawerControl = Color(0xFFE5E8EF)
+    val DrawerControlPressed = Color(0xFFD8DCE6)
+    val DrawerControlSelected = Color(0xFFE4DFFF)
+    val OnDrawer = Color(0xFF17181D)
+    val OnDrawerSecondary = Color(0xFF555B66)
+    val OnDrawerTertiary = Color(0xFF7D8491)
+    val DrawerSuccess = Color(0xFF006D32)
+    val DrawerWarning = Color(0xFF6B5200)
+    val DrawerError = Color(0xFFB00020)
+
     // Text - greyscale only, no color tint
     val OnBackground = Color(0xFFF0F0F0)
     val OnBackgroundSecondary = Color(0xFFCCCCCC)

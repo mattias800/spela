@@ -1,5 +1,6 @@
 package com.spela.player.desktop.e2e
 
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
@@ -24,7 +25,7 @@ import kotlin.test.assertTrue
  * game-detail screen behind it (rating stars, metadata, that screen's
  * buttons), leaving the overlay's own actions unreachable.
  *
- * This asserts the anchor (focus lands on Continue on open) — the reliably
+ * This asserts the anchor (focus lands on the first drawer action on open) — the reliably
  * testable half; it is `<none>` on the unfixed code. The full d-pad sweep
  * across every action is verified on hardware (the focus-ring/centre-on-focus
  * animations make repeated in-test d-pad traversal flaky — see the QA issue),
@@ -48,10 +49,22 @@ class OverlayDpadNavTest {
         onNodeWithTag("game_detail_play_button").performClick()
         advance(harness)
 
+        openOverlay(harness)
+    }
+
+    private fun ComposeUiTest.openOverlay(harness: SpelaTestHarness) {
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
         advanceQuick(harness)
-        onNodeWithText("Continue").assertExists()
+        onNodeWithContentDescription("Save").assertExists()
         harness.gamepadPortManager.setInputMode(InputMode.GAMEPAD)
+        advanceQuick(harness)
+    }
+
+    private fun ComposeUiTest.tapScrimOutsideDrawer(harness: SpelaTestHarness) {
+        val rootBounds = onRoot().fetchSemanticsNode().boundsInRoot
+        onRoot().performTouchInput {
+            click(Offset(rootBounds.width - 24f, rootBounds.height / 2f))
+        }
         advanceQuick(harness)
     }
 
@@ -65,13 +78,13 @@ class OverlayDpadNavTest {
         val harness = SpelaTestHarness(StandardTestDispatcher())
         startGameWithOverlayOpen(harness)
 
-        // The menu anchors focus on Continue when it opens. On the unfixed
+        // The menu anchors focus on the first action when it opens. On the unfixed
         // code this was <none> (the focus request never landed), so the first
         // d-pad press escaped into the screen behind the scrim.
         assertEquals(
-            listOf("Continue"),
+            listOf("Save"),
             focusedLabels(),
-            "overlay must anchor focus on its Continue button when it opens",
+            "overlay must anchor focus on its first drawer action when it opens",
         )
     }
 
@@ -80,23 +93,20 @@ class OverlayDpadNavTest {
         val harness = SpelaTestHarness(StandardTestDispatcher())
         startGameWithOverlayOpen(harness)
 
-        pressOverlayKey(Key.DirectionUp, harness)
-        assertEquals(listOf("Exit Game"), focusedLabels())
-
-        pressOverlayKey(Key.DirectionUp, harness)
-        assertEquals(listOf("Remap"), focusedLabels())
+        pressOverlayKey(Key.DirectionDown, harness)
+        assertEquals(listOf("Load"), focusedLabels())
 
         pressOverlayKey(Key.DirectionRight, harness)
-        assertEquals(listOf("Remap"), focusedLabels(), "right should not escape the drawer")
+        assertEquals(listOf("Load"), focusedLabels(), "right should not escape the drawer")
 
         pressOverlayKey(Key.DirectionLeft, harness)
-        assertEquals(listOf("Remap"), focusedLabels(), "left should not escape the drawer")
+        assertEquals(listOf("Load"), focusedLabels(), "left should not escape the drawer")
 
         pressOverlayKey(Key.DirectionDown, harness)
-        assertEquals(listOf("Exit Game"), focusedLabels())
+        assertEquals(listOf("Screenshot"), focusedLabels())
 
-        pressOverlayKey(Key.DirectionDown, harness)
-        assertEquals(listOf("Continue"), focusedLabels())
+        pressOverlayKey(Key.DirectionUp, harness)
+        assertEquals(listOf("Load"), focusedLabels())
 
         pressOverlayKey(Key.Escape, harness)
 
@@ -105,11 +115,46 @@ class OverlayDpadNavTest {
     }
 
     @Test
+    fun overlayReanchorsFocusAfterMixedCloseAndReopen() = runComposeUiTest {
+        val harness = SpelaTestHarness(StandardTestDispatcher())
+        startGameWithOverlayOpen(harness)
+        assertEquals(listOf("Save"), focusedLabels())
+
+        pressOverlayKey(Key.DirectionDown, harness)
+        assertEquals(listOf("Load"), focusedLabels())
+
+        pressOverlayKey(Key.Escape, harness)
+        assertEquals(false, harness.emulationViewModel.state.value.showOverlay)
+
+        openOverlay(harness)
+        assertEquals(
+            listOf("Save"),
+            focusedLabels(),
+            "overlay should reset focus to the first action after keyboard dismissal",
+        )
+
+        tapScrimOutsideDrawer(harness)
+        assertEquals(false, harness.emulationViewModel.state.value.showOverlay)
+
+        openOverlay(harness)
+        assertEquals(
+            listOf("Save"),
+            focusedLabels(),
+            "overlay should reset focus to the first action after touch dismissal",
+        )
+
+        pressOverlayKey(Key.DirectionDown, harness)
+        assertEquals(listOf("Load"), focusedLabels(), "d-pad should work after reopening")
+    }
+
+    @Test
     fun overlayConfirmActivatesFocusedDrawerAction() = runComposeUiTest {
         val harness = SpelaTestHarness(StandardTestDispatcher())
         startGameWithOverlayOpen(harness)
 
-        pressOverlayKey(Key.DirectionUp, harness)
+        repeat(8) {
+            pressOverlayKey(Key.DirectionDown, harness)
+        }
         assertEquals(listOf("Exit Game"), focusedLabels())
 
         pressOverlayKey(Key.Enter, harness)

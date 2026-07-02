@@ -5,12 +5,17 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -20,6 +25,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.delay
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import com.spela.player.domain.model.DefaultKeyMappings
 import com.spela.player.presentation.intent.EmulationIntent
 import com.spela.player.presentation.ui.feature.ingame.ChallengeCompletedDialog
@@ -27,6 +34,7 @@ import com.spela.player.presentation.ui.feature.ingame.CheatsDialog
 import com.spela.player.presentation.ui.feature.ingame.CoreMismatchDialog
 import com.spela.player.presentation.ui.feature.ingame.CoreMismatchSaveDialog
 import com.spela.player.presentation.ui.feature.ingame.ChallengeTimerHud
+import com.spela.player.presentation.ui.gamepad.ComposeFocusBridge
 import com.spela.player.presentation.ui.feature.ingame.FpsHud
 import com.spela.player.presentation.ui.feature.ingame.InGameOverlayPanel
 import com.spela.player.presentation.ui.feature.ingame.NetplayPauseOverlay
@@ -60,12 +68,19 @@ fun InGameOverlay(
     onExit: () -> Unit,
 ) {
     val state by viewModel.state.collectAsState()
-    val continueFocusRequester = remember { FocusRequester() }
+    val drawerInitialFocusRequester = remember { FocusRequester() }
+    var drawerOpenGeneration by remember { mutableStateOf(0) }
     val hasGamepadConfig = gamepadConfigViewModel != null
     // Positional button-mapping editor (#1340): the same per-console hold-to-bind
     // dialog used in Settings, opened from the overlay menu. Dismissing it returns
     // to the overlay menu (it's a modal dialog rendered over the panel).
     var showButtonMapping by remember { mutableStateOf(false) }
+
+    LaunchedEffect(state.showOverlay) {
+        if (state.showOverlay) {
+            drawerOpenGeneration += 1
+        }
+    }
 
     // #1087: top-anchored achievement banner on the primary in-game
     // surface. Reads `state.achievementEvent`, which the VM pumps from
@@ -91,6 +106,24 @@ fun InGameOverlay(
 
     AnimatedVisibility(
         visible = state.showOverlay,
+        enter = fadeIn(),
+        exit = fadeOut(),
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(SpColor.ScrimLight.copy(alpha = 0.18f))
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = { viewModel.onIntent(EmulationIntent.ToggleOverlay) },
+                )
+                .semantics { contentDescription = "Game overlay, tap to dismiss" },
+        )
+    }
+
+    AnimatedVisibility(
+        visible = state.showOverlay,
         enter = fadeIn() + slideInHorizontally(initialOffsetX = { -it }),
         exit = fadeOut() + slideOutHorizontally(targetOffsetX = { -it }),
     ) {
@@ -99,18 +132,21 @@ fun InGameOverlay(
         // A short settle lets the panel place (and finish sliding in) before we
         // request — requestFocus from a LaunchedEffect during an
         // AnimatedVisibility enter is otherwise unreliable.
-        LaunchedEffect(Unit) {
+        LaunchedEffect(drawerOpenGeneration) {
             delay(150)
-            try { continueFocusRequester.requestFocus() } catch (_: Exception) {}
+            ComposeFocusBridge.requestKeyboardMode?.invoke()
+            try { drawerInitialFocusRequester.requestFocus() } catch (_: Exception) {}
         }
-        InGameOverlayPanel(
-            state = state,
-            viewModel = viewModel,
-            continueFocusRequester = continueFocusRequester,
-            useGamepadConfig = hasGamepadConfig,
-            showButtonRemap = hasGamepadConfig && gamepadMappingViewModel != null,
-            onConfigureButtons = { showButtonMapping = true },
-        )
+        key(drawerOpenGeneration) {
+            InGameOverlayPanel(
+                state = state,
+                viewModel = viewModel,
+                drawerInitialFocusRequester = drawerInitialFocusRequester,
+                useGamepadConfig = hasGamepadConfig,
+                showButtonRemap = hasGamepadConfig && gamepadMappingViewModel != null,
+                onConfigureButtons = { showButtonMapping = true },
+            )
+        }
     }
 
     // Performance HUD — opt-in via Settings (showPerformanceOverlay).

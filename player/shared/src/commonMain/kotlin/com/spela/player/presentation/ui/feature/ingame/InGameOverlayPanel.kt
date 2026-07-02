@@ -18,6 +18,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.VolumeOff
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.CameraAlt
@@ -40,6 +41,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,17 +57,14 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.intent.EmulationIntent
 import com.spela.player.presentation.state.EmulationState
 import com.spela.player.presentation.ui.components.LocalScrollState
-import com.spela.player.presentation.ui.components.SpButton
-import com.spela.player.presentation.ui.components.SpButtonStyle
+import com.spela.player.presentation.ui.components.SpDrawerButton
 import com.spela.player.presentation.ui.components.SpSlider
 import com.spela.player.presentation.ui.components.challenge.formatDuration
 import com.spela.player.presentation.ui.components.fpsColor
@@ -74,7 +73,6 @@ import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
 import com.spela.player.presentation.ui.gamepad.LocalScrollFocusRegistry
 import com.spela.player.presentation.ui.gamepad.ScrollFocusRegistry
 import com.spela.player.presentation.ui.gamepad.focusRestoreItem
-import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
 import com.spela.player.presentation.ui.screen.formatSessionDuration
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -85,110 +83,102 @@ import com.spela.player.presentation.viewmodel.EmulationViewModel
 internal fun InGameOverlayPanel(
     state: EmulationState,
     viewModel: EmulationViewModel,
-    continueFocusRequester: FocusRequester,
+    drawerInitialFocusRequester: FocusRequester,
     useGamepadConfig: Boolean = false,
     showButtonRemap: Boolean = false,
     onConfigureButtons: () -> Unit = {},
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(SpColor.ScrimLight.copy(alpha = 0.18f))
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = { viewModel.onIntent(EmulationIntent.ToggleOverlay) },
-            )
-            .semantics { contentDescription = "Game overlay, tap to dismiss" },
+    BoxWithConstraints(
+        modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.CenterStart,
     ) {
-        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-            val isLandscape = maxWidth > maxHeight
-            val drawerWidth = if (isLandscape) 0.36f else 0.84f
-            val drawerShape = RoundedCornerShape(
-                topStart = 0.dp,
-                topEnd = SpSpacing.RadiusXLarge,
-                bottomEnd = SpSpacing.RadiusXLarge,
-                bottomStart = 0.dp,
-            )
-            val scrollState = rememberScrollState()
-            val scrollFocusRegistry = remember { ScrollFocusRegistry() }
-            val focusMemory = rememberFocusMemoryState()
-            val focusManager = LocalFocusManager.current
+        val isLandscape = maxWidth > maxHeight
+        val drawerWidth = if (isLandscape) 0.36f else 0.84f
+        val drawerShape = RoundedCornerShape(
+            topStart = 0.dp,
+            topEnd = SpSpacing.RadiusXLarge,
+            bottomEnd = SpSpacing.RadiusXLarge,
+            bottomStart = 0.dp,
+        )
+        val scrollState = rememberScrollState()
+        val scrollFocusRegistry = remember { ScrollFocusRegistry() }
+        val focusMemory = remember { mutableStateOf("") }
+        val focusManager = LocalFocusManager.current
 
-            Box(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .fillMaxWidth(drawerWidth)
-                    .clip(drawerShape)
-                    .background(SpColor.SurfaceElevated.copy(alpha = 0.96f))
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = {}, // Prevent click-through to the scrim.
-                    )
-                    .focusGroup()
-                    .onPreviewKeyEvent { event ->
-                        if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
-                        when (event.key) {
-                            Key.DirectionUp -> {
-                                if (scrollFocusRegistry.redirectIfFocusedOffscreen()) return@onPreviewKeyEvent true
-                                focusManager.moveFocus(FocusDirection.Up)
-                                true
-                            }
-                            Key.DirectionDown -> {
-                                if (scrollFocusRegistry.redirectIfFocusedOffscreen()) return@onPreviewKeyEvent true
-                                focusManager.moveFocus(FocusDirection.Down)
-                                true
-                            }
-                            Key.DirectionLeft, Key.DirectionRight -> {
-                                scrollFocusRegistry.redirectIfFocusedOffscreen()
-                                true
-                            }
-                            else -> false
+        Box(
+            modifier = Modifier
+                .fillMaxHeight()
+                .fillMaxWidth(drawerWidth)
+                .clip(drawerShape)
+                .background(SpColor.DrawerSurface.copy(alpha = 0.97f))
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = {}, // Prevent click-through to the scrim.
+                )
+                .focusGroup()
+                .onPreviewKeyEvent { event ->
+                    if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                    when (event.key) {
+                        Key.DirectionUp -> {
+                            if (scrollFocusRegistry.redirectIfFocusedOffscreen()) return@onPreviewKeyEvent true
+                            focusManager.moveFocus(FocusDirection.Up)
+                            true
                         }
-                    },
-            ) {
-                CompositionLocalProvider(
-                    LocalScrollState provides scrollState,
-                    LocalScrollFocusRegistry provides scrollFocusRegistry,
-                    LocalFocusMemory provides focusMemory,
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .onGloballyPositioned {
-                                scrollFocusRegistry.viewportTopInRoot = it.positionInRoot().y
-                                scrollFocusRegistry.viewportHeight = it.size.height.toFloat()
-                            }
-                            .verticalScroll(scrollState)
-                            .padding(SpSpacing.XLarge),
-                        verticalArrangement = Arrangement.spacedBy(
-                            if (isLandscape) SpSpacing.Medium else SpSpacing.Large,
-                        ),
-                    ) {
-                        OverlayDrawerHeader(state = state)
-
-                        when {
-                            state.isNetplayMode -> NetplayOverlayActions(
-                                viewModel = viewModel,
-                                continueFocusRequester = continueFocusRequester,
-                            )
-                            state.isChallengeMode -> ChallengeOverlayActions(
-                                state = state,
-                                viewModel = viewModel,
-                                continueFocusRequester = continueFocusRequester,
-                            )
-                            else -> NormalOverlayActions(
-                                state = state,
-                                viewModel = viewModel,
-                                continueFocusRequester = continueFocusRequester,
-                                useGamepadConfig = useGamepadConfig,
-                                showButtonRemap = showButtonRemap,
-                                onConfigureButtons = onConfigureButtons,
-                            )
+                        Key.DirectionDown -> {
+                            if (scrollFocusRegistry.redirectIfFocusedOffscreen()) return@onPreviewKeyEvent true
+                            focusManager.moveFocus(FocusDirection.Down)
+                            true
                         }
+                        Key.DirectionLeft, Key.DirectionRight -> {
+                            scrollFocusRegistry.redirectIfFocusedOffscreen()
+                            true
+                        }
+                        else -> false
                     }
+                },
+        ) {
+            CompositionLocalProvider(
+                LocalScrollState provides scrollState,
+                LocalScrollFocusRegistry provides scrollFocusRegistry,
+                LocalFocusMemory provides focusMemory,
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .onGloballyPositioned {
+                            scrollFocusRegistry.viewportTopInRoot = it.positionInRoot().y
+                            scrollFocusRegistry.viewportHeight = it.size.height.toFloat()
+                        }
+                        .verticalScroll(scrollState)
+                        .padding(SpSpacing.XLarge),
+                    verticalArrangement = Arrangement.spacedBy(
+                        if (isLandscape) SpSpacing.Small else SpSpacing.Medium,
+                    ),
+                ) {
+                    OverlayDrawerHeader(state = state)
+
+                    when {
+                        state.isNetplayMode -> NetplayOverlayActions(
+                            viewModel = viewModel,
+                            drawerInitialFocusRequester = drawerInitialFocusRequester,
+                        )
+                        state.isChallengeMode -> ChallengeOverlayActions(
+                            state = state,
+                            viewModel = viewModel,
+                            drawerInitialFocusRequester = drawerInitialFocusRequester,
+                        )
+                        else -> NormalOverlayActions(
+                            state = state,
+                            viewModel = viewModel,
+                            drawerInitialFocusRequester = drawerInitialFocusRequester,
+                            useGamepadConfig = useGamepadConfig,
+                            showButtonRemap = showButtonRemap,
+                            onConfigureButtons = onConfigureButtons,
+                        )
+                    }
+
+                    OverlayPerformanceFooter(state = state)
                 }
             }
         }
@@ -204,63 +194,22 @@ private fun OverlayDrawerHeader(state: EmulationState) {
         Text(
             text = state.gameTitle,
             style = SpTypography.HeadlineMedium,
-            color = SpColor.OnBackground,
+            color = SpColor.OnDrawer,
             modifier = Modifier.semantics { heading() },
         )
-
-        if (state.isNetplayMode) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(SpSpacing.Default),
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.semantics {
-                    contentDescription = "Ping: ${state.netplayPeerLatencyMs} milliseconds, session: ${formatSessionDuration(state.sessionElapsedSeconds)}"
-                },
-            ) {
-                PerformanceBadge(
-                    label = "Ping",
-                    value = "${state.netplayPeerLatencyMs}ms",
-                    color = pingColor(state.netplayPeerLatencyMs),
-                )
-                PerformanceBadge(
-                    label = "Session",
-                    value = formatSessionDuration(state.sessionElapsedSeconds),
-                    color = SpColor.OnBackgroundSecondary,
-                )
-            }
-        } else if (state.isRunning) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(SpSpacing.Default),
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.semantics {
-                    contentDescription = "Performance: %.0f FPS, %.1f ms frame time".format(
-                        state.fps,
-                        state.frameTime,
-                    )
-                },
-            ) {
-                PerformanceBadge(
-                    label = "FPS",
-                    value = "%.0f".format(state.fps),
-                    color = fpsColor(state.fps),
-                )
-                PerformanceBadge(
-                    label = "Frame",
-                    value = "%.1fms".format(state.frameTime),
-                    color = SpColor.OnBackgroundSecondary,
-                )
-            }
-        }
     }
 }
 
 @Composable
 private fun NetplayOverlayActions(
     viewModel: EmulationViewModel,
-    continueFocusRequester: FocusRequester,
+    drawerInitialFocusRequester: FocusRequester,
 ) {
     OverlayAction(
         label = "Controls",
         icon = Icons.Filled.SportsEsports,
+        isDefaultFocus = true,
+        focusRequester = drawerInitialFocusRequester,
         onClick = { viewModel.onIntent(EmulationIntent.ShowKeyMapping) },
     )
     OverlayAction(
@@ -268,16 +217,12 @@ private fun NetplayOverlayActions(
         icon = Icons.Filled.Stop,
         onClick = { viewModel.onIntent(EmulationIntent.ShowNetplayLeaveConfirm) },
     )
-    SpButton(
+    SpDrawerButton(
         text = "Resume",
         onClick = { viewModel.onIntent(EmulationIntent.ToggleOverlay) },
         modifier = Modifier
             .fillMaxWidth()
-            .focusRestoreItem(
-                key = "overlay_resume",
-                isDefault = true,
-                requester = continueFocusRequester,
-            ),
+            .focusRestoreItem(key = "overlay_resume"),
     )
 }
 
@@ -285,12 +230,12 @@ private fun NetplayOverlayActions(
 private fun ChallengeOverlayActions(
     state: EmulationState,
     viewModel: EmulationViewModel,
-    continueFocusRequester: FocusRequester,
+    drawerInitialFocusRequester: FocusRequester,
 ) {
     Text(
         text = formatDuration(state.challengeElapsedMs),
         style = SpTypography.DisplaySmall,
-        color = SpColor.Primary,
+        color = SpColor.PrimaryDark,
         modifier = Modifier.semantics {
             contentDescription = "Challenge timer: ${formatDuration(state.challengeElapsedMs)}"
         },
@@ -299,13 +244,15 @@ private fun ChallengeOverlayActions(
         Text(
             text = state.challengeObjective,
             style = SpTypography.LabelMedium,
-            color = SpColor.OnBackgroundSecondary,
+            color = SpColor.OnDrawerSecondary,
         )
     }
 
     OverlayAction(
         label = "Mark Complete",
         icon = Icons.Filled.CheckCircle,
+        isDefaultFocus = true,
+        focusRequester = drawerInitialFocusRequester,
         onClick = { viewModel.onIntent(EmulationIntent.CompleteChallenge) },
     )
     OverlayAction(
@@ -324,7 +271,7 @@ private fun ChallengeOverlayActions(
         onClick = { viewModel.onIntent(EmulationIntent.ShowKeyMapping) },
     )
 
-    SpButton(
+    SpDrawerButton(
         text = "Resume",
         onClick = {
             viewModel.onIntent(EmulationIntent.ToggleOverlay)
@@ -332,11 +279,7 @@ private fun ChallengeOverlayActions(
         },
         modifier = Modifier
             .fillMaxWidth()
-            .focusRestoreItem(
-                key = "overlay_resume",
-                isDefault = true,
-                requester = continueFocusRequester,
-            ),
+            .focusRestoreItem(key = "overlay_resume"),
     )
 }
 
@@ -344,7 +287,7 @@ private fun ChallengeOverlayActions(
 private fun NormalOverlayActions(
     state: EmulationState,
     viewModel: EmulationViewModel,
-    continueFocusRequester: FocusRequester,
+    drawerInitialFocusRequester: FocusRequester,
     useGamepadConfig: Boolean,
     showButtonRemap: Boolean,
     onConfigureButtons: () -> Unit,
@@ -353,7 +296,7 @@ private fun NormalOverlayActions(
         Text(
             text = "Slot ${state.activeSlot}",
             style = SpTypography.LabelMedium,
-            color = SpColor.OnBackgroundSecondary,
+            color = SpColor.OnDrawerSecondary,
             modifier = Modifier.semantics {
                 contentDescription = "Active quick-save slot: ${state.activeSlot}"
             },
@@ -386,6 +329,7 @@ private fun NormalOverlayActions(
                 },
             )
         },
+        drawerInitialFocusRequester = drawerInitialFocusRequester,
         showButtonRemap = showButtonRemap,
         onConfigureButtons = onConfigureButtons,
     )
@@ -399,7 +343,7 @@ private fun NormalOverlayActions(
         Text(
             text = msg,
             style = SpTypography.LabelSmall,
-            color = SpColor.OnBackgroundSecondary,
+            color = SpColor.OnDrawerSecondary,
             modifier = Modifier
                 .fillMaxWidth()
                 .semantics { contentDescription = msg },
@@ -411,21 +355,18 @@ private fun NormalOverlayActions(
         onVolumeChange = { viewModel.onIntent(EmulationIntent.SetVolume(it)) },
     )
 
-    OverlayAction(
-        label = "Exit Game",
-        icon = Icons.Filled.Stop,
-        onClick = { viewModel.onIntent(EmulationIntent.ShowExitConfirm) },
-    )
-    SpButton(
+    SpDrawerButton(
         text = "Continue",
+        icon = Icons.Filled.PlayArrow,
         onClick = { viewModel.onIntent(EmulationIntent.ToggleOverlay) },
         modifier = Modifier
             .fillMaxWidth()
-            .focusRestoreItem(
-                key = "overlay_continue",
-                isDefault = true,
-                requester = continueFocusRequester,
-            ),
+            .focusRestoreItem(key = "overlay_continue"),
+    )
+    OverlayAction(
+        label = "Exit Game",
+        icon = Icons.AutoMirrored.Filled.ExitToApp,
+        onClick = { viewModel.onIntent(EmulationIntent.ShowExitConfirm) },
     )
 }
 
@@ -438,7 +379,7 @@ private fun OverlayVolumeRow(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(SpSpacing.RadiusMedium))
-            .background(SpColor.SurfaceBright.copy(alpha = 0.45f))
+            .background(SpColor.DrawerControl)
             .padding(horizontal = SpSpacing.Medium, vertical = SpSpacing.XSmall),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
@@ -450,21 +391,81 @@ private fun OverlayVolumeRow(
                 Icons.AutoMirrored.Filled.VolumeUp
             },
             contentDescription = "Volume",
-            tint = SpColor.OnBackgroundSecondary,
+            tint = SpColor.OnDrawerSecondary,
             modifier = Modifier.size(SpSpacing.IconDefault),
         )
         SpSlider(
             value = volume,
             onValueChange = onVolumeChange,
             modifier = Modifier.weight(1f),
+            activeColor = SpColor.PrimaryDark,
+            inactiveColor = SpColor.OnDrawerTertiary.copy(alpha = 0.35f),
+            thumbColor = SpColor.OnDrawer,
         )
         Text(
             text = "${(volume * 100).toInt()}%",
             style = SpTypography.LabelSmall,
-            color = SpColor.OnBackgroundSecondary,
+            color = SpColor.OnDrawerSecondary,
         )
     }
 }
+
+@Composable
+private fun OverlayPerformanceFooter(state: EmulationState) {
+    when {
+        state.isNetplayMode -> {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(SpSpacing.Default),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.semantics {
+                    contentDescription = "Ping: ${state.netplayPeerLatencyMs} milliseconds, session: ${formatSessionDuration(state.sessionElapsedSeconds)}"
+                },
+            ) {
+                PerformanceBadge(
+                    label = "Ping",
+                    value = "${state.netplayPeerLatencyMs}ms",
+                    color = drawerStatusColor(pingColor(state.netplayPeerLatencyMs)),
+                )
+                PerformanceBadge(
+                    label = "Session",
+                    value = formatSessionDuration(state.sessionElapsedSeconds),
+                    color = SpColor.OnDrawerSecondary,
+                )
+            }
+        }
+        state.isRunning -> {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(SpSpacing.Default),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.semantics {
+                    contentDescription = "Performance: %.0f FPS, %.1f ms frame time".format(
+                        state.fps,
+                        state.frameTime,
+                    )
+                },
+            ) {
+                PerformanceBadge(
+                    label = "FPS",
+                    value = "%.0f".format(state.fps),
+                    color = drawerStatusColor(fpsColor(state.fps)),
+                )
+                PerformanceBadge(
+                    label = "Frame",
+                    value = "%.1fms".format(state.frameTime),
+                    color = SpColor.OnDrawerSecondary,
+                )
+            }
+        }
+    }
+}
+
+private fun drawerStatusColor(color: androidx.compose.ui.graphics.Color): androidx.compose.ui.graphics.Color =
+    when (color) {
+        SpColor.Success -> SpColor.DrawerSuccess
+        SpColor.Warning -> SpColor.DrawerWarning
+        SpColor.Error -> SpColor.DrawerError
+        else -> SpColor.OnDrawer
+    }
 
 @Composable
 internal fun PerformanceBadge(
@@ -481,7 +482,7 @@ internal fun PerformanceBadge(
         Text(
             text = label,
             style = SpTypography.LabelSmall,
-            color = SpColor.OnBackgroundTertiary,
+            color = SpColor.OnDrawerSecondary,
         )
     }
 }
@@ -517,6 +518,7 @@ fun OverlayActionButtons(
     onChallenge: () -> Unit,
     onCheats: () -> Unit = {},
     onControls: () -> Unit,
+    drawerInitialFocusRequester: FocusRequester? = null,
     showButtonRemap: Boolean = false,
     onConfigureButtons: () -> Unit = {},
 ) {
@@ -524,6 +526,32 @@ fun OverlayActionButtons(
         supportsSaveStates = supportsSaveStates,
         saveStatesOptedOut = saveStatesOptedOut,
     )
+    val defaultFocusKey = when {
+        saveStatesAvailable -> "overlay_action_save"
+        rewindEnabled -> "overlay_action_rewind"
+        else -> "overlay_action_screenshot"
+    }
+
+    @Composable
+    fun DrawerAction(
+        label: String,
+        icon: ImageVector,
+        focusKey: String,
+        onClick: () -> Unit,
+        isActive: Boolean = false,
+    ) {
+        val isDefaultFocus = drawerInitialFocusRequester != null && focusKey == defaultFocusKey
+        OverlayAction(
+            label = label,
+            icon = icon,
+            focusKey = focusKey,
+            onClick = onClick,
+            isActive = isActive,
+            isDefaultFocus = isDefaultFocus,
+            focusRequester = if (isDefaultFocus) drawerInitialFocusRequester else null,
+        )
+    }
+
     if (saveStatesAvailable) {
         val saveLabel: String
         val saveIcon: ImageVector
@@ -549,28 +577,69 @@ fun OverlayActionButtons(
                 saveIcon = Icons.Filled.Save
             }
         }
-        OverlayAction(label = saveLabel, icon = saveIcon, onClick = onSave)
-        OverlayAction(label = "Load", icon = Icons.Filled.FolderOpen, onClick = onLoad)
+        DrawerAction(
+            label = saveLabel,
+            icon = saveIcon,
+            focusKey = "overlay_action_save",
+            onClick = onSave,
+        )
+        DrawerAction(
+            label = "Load",
+            icon = Icons.Filled.FolderOpen,
+            focusKey = "overlay_action_load",
+            onClick = onLoad,
+        )
     }
     if (rewindEnabled) {
-        OverlayAction(label = "Rewind", icon = Icons.Filled.FastRewind, onClick = onRewind)
+        DrawerAction(
+            label = "Rewind",
+            icon = Icons.Filled.FastRewind,
+            focusKey = "overlay_action_rewind",
+            onClick = onRewind,
+        )
     }
-    OverlayAction(label = "Screenshot", icon = Icons.Filled.CameraAlt, onClick = onScreenshot)
-    OverlayAction(
+    DrawerAction(
+        label = "Screenshot",
+        icon = Icons.Filled.CameraAlt,
+        focusKey = "overlay_action_screenshot",
+        onClick = onScreenshot,
+    )
+    DrawerAction(
         label = if (isFastForward) "Normal" else "Fast",
         icon = if (isFastForward) Icons.Filled.PlayArrow else Icons.Filled.FastForward,
+        focusKey = "overlay_action_fast_forward",
         onClick = onToggleFastForward,
         isActive = isFastForward,
     )
     if (saveStatesAvailable) {
-        OverlayAction(label = "Challenge", icon = Icons.Filled.Flag, onClick = onChallenge)
+        DrawerAction(
+            label = "Challenge",
+            icon = Icons.Filled.Flag,
+            focusKey = "overlay_action_challenge",
+            onClick = onChallenge,
+        )
     }
     if (hasCheats) {
-        OverlayAction(label = "Cheats", icon = Icons.Filled.Code, onClick = onCheats)
+        DrawerAction(
+            label = "Cheats",
+            icon = Icons.Filled.Code,
+            focusKey = "overlay_action_cheats",
+            onClick = onCheats,
+        )
     }
-    OverlayAction(label = "Controls", icon = Icons.Filled.SportsEsports, onClick = onControls)
+    DrawerAction(
+        label = "Controls",
+        icon = Icons.Filled.SportsEsports,
+        focusKey = "overlay_action_controls",
+        onClick = onControls,
+    )
     if (showButtonRemap) {
-        OverlayAction(label = "Remap", icon = Icons.Filled.Tune, onClick = onConfigureButtons)
+        DrawerAction(
+            label = "Remap",
+            icon = Icons.Filled.Tune,
+            focusKey = "overlay_action_remap",
+            onClick = onConfigureButtons,
+        )
     }
 }
 
@@ -580,26 +649,22 @@ internal fun OverlayAction(
     icon: ImageVector,
     onClick: () -> Unit,
     isActive: Boolean = false,
+    focusKey: String = "overlay_action_$label",
+    isDefaultFocus: Boolean = false,
+    focusRequester: FocusRequester? = null,
 ) {
-    SpButton(
+    SpDrawerButton(
         text = label,
         onClick = onClick,
-        style = if (isActive) SpButtonStyle.Secondary else SpButtonStyle.Ghost,
-        leadingIcon = {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = if (isActive) SpColor.Primary else SpColor.OnBackgroundSecondary,
-                modifier = Modifier.size(SpSpacing.IconDefault),
-            )
-        },
+        icon = icon,
+        selected = isActive,
         shape = RoundedCornerShape(SpSpacing.RadiusMedium),
         modifier = Modifier
             .fillMaxWidth()
-            .focusRestoreItem(key = "overlay_action_$label")
-            .semantics(mergeDescendants = true) {
-                contentDescription = label
-                role = Role.Button
-            },
+            .focusRestoreItem(
+                key = focusKey,
+                isDefault = isDefaultFocus,
+                requester = focusRequester,
+            ),
     )
 }

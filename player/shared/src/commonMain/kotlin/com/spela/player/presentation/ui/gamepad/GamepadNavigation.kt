@@ -237,12 +237,18 @@ fun Modifier.gamepadFocusable(
     shape: Shape = RoundedCornerShape(12.dp),
     scaleOnFocus: Boolean = false,
     interactionSource: MutableInteractionSource? = null,
+    focusRingColor: Color = Color.White.copy(alpha = 0.85f),
     addFocusable: Boolean = true,
 ): Modifier = composed {
     val source = interactionSource ?: remember { MutableInteractionSource() }
     this
         .centerOnFocus(interactionSource = source)
-        .spFocusRing(shape = shape, scaleOnFocus = scaleOnFocus, interactionSource = source)
+        .spFocusRing(
+            shape = shape,
+            scaleOnFocus = scaleOnFocus,
+            interactionSource = source,
+            focusRingColor = focusRingColor,
+        )
         .let { if (addFocusable) it.focusable(interactionSource = source) else it }
 }
 
@@ -261,6 +267,7 @@ fun Modifier.spFocusRing(
     shape: Shape = RoundedCornerShape(12.dp),
     scaleOnFocus: Boolean = false,
     interactionSource: MutableInteractionSource? = null,
+    focusRingColor: Color = Color.White.copy(alpha = 0.85f),
 ): Modifier = composed {
     var fallbackFocused by remember { mutableStateOf(false) }
     val isFocused = if (interactionSource != null) {
@@ -294,7 +301,7 @@ fun Modifier.spFocusRing(
                 translate(left = halfStroke, top = halfStroke) {
                     drawOutline(
                         outline = outline,
-                        color = Color.White.copy(alpha = 0.85f),
+                        color = focusRingColor,
                         style = Stroke(width = strokeWidth),
                     )
                 }

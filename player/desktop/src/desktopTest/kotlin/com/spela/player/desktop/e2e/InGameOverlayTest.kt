@@ -3,6 +3,7 @@ package com.spela.player.desktop.e2e
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.platform.testTag
@@ -89,14 +90,17 @@ class InGameOverlayTest {
             ?.boundsInRoot
             ?: error("Expected content-description node '$description'")
 
-    private fun ComposeUiTest.assertTextInsideBounds(text: String, bounds: Rect) {
-        val matchingTextBounds = onAllNodesWithText(text, useUnmergedTree = true)
+    private fun ComposeUiTest.textBoundsInsideBounds(text: String, bounds: Rect): Rect? =
+        onAllNodesWithText(text, useUnmergedTree = true)
             .fetchSemanticsNodes()
             .map { it.boundsInRoot }
             .firstOrNull { textBounds ->
                 textBounds.center.x in bounds.left..bounds.right &&
                     textBounds.center.y in bounds.top..bounds.bottom
             }
+
+    private fun ComposeUiTest.assertTextInsideBounds(text: String, bounds: Rect) {
+        val matchingTextBounds = textBoundsInsideBounds(text, bounds)
 
         assertTrue(
             matchingTextBounds != null,
@@ -146,12 +150,30 @@ class InGameOverlayTest {
         val actionBounds = drawerActionLabels.map { label ->
             label to boundsForContentDescription(label)
         }
+        val actionTextBounds = actionBounds.map { (label, bounds) ->
+            label to (
+                textBoundsInsideBounds(label, bounds)
+                    ?: error("Expected text '$label' inside overlay row bounds=$bounds")
+                )
+        }
         actionBounds.forEach { (label, bounds) ->
             assertInsideLeftDrawer(label, bounds, rootBounds)
             assertTextInsideBounds(label, bounds)
+            assertTrue(
+                bounds.height < 48f,
+                "$label drawer row should be compact. bounds=$bounds",
+            )
         }
         assertInsideLeftDrawer("Exit Game", boundsForText("Exit Game"), rootBounds)
         assertInsideLeftDrawer("Continue", boundsForText("Continue"), rootBounds)
+
+        val firstTextLeft = actionTextBounds.first().second.left
+        actionTextBounds.drop(1).forEach { (label, textBounds) ->
+            assertTrue(
+                abs(textBounds.left - firstTextLeft) <= 2f,
+                "$label text should align to the fixed drawer icon column. first=$firstTextLeft current=${textBounds.left}",
+            )
+        }
 
         actionBounds.zipWithNext().forEach { (above, below) ->
             assertTrue(
@@ -171,6 +193,20 @@ class InGameOverlayTest {
             "volume should be a compact row with icon and value aligned. icon=$volumeIconBounds value=$volumeValueBounds",
         )
 
+        val continueBounds = boundsForText("Continue")
+        val exitBounds = boundsForText("Exit Game")
+        assertTrue(
+            exitBounds.top > continueBounds.bottom,
+            "Exit Game should be the final drawer action below Continue. exit=$exitBounds continue=$continueBounds",
+        )
+
+        val fpsLabelBounds = boundsForText("FPS")
+        assertInsideLeftDrawer("FPS", fpsLabelBounds, rootBounds)
+        assertTrue(
+            fpsLabelBounds.top > exitBounds.bottom,
+            "performance metrics should sit at the bottom of the drawer after primary actions. fps=$fpsLabelBounds exit=$exitBounds",
+        )
+
         onNodeWithText("Continue", useUnmergedTree = true).performClick()
         advanceQuick(harness)
 
@@ -181,8 +217,10 @@ class InGameOverlayTest {
         advanceQuick(harness)
         onNodeWithText("Exit Game", useUnmergedTree = true).assertIsDisplayed()
 
-        onNodeWithContentDescription("Game overlay, tap to dismiss", useUnmergedTree = true)
-            .performClick()
+        onNodeWithTag("overlay_drawer_test_root", useUnmergedTree = true)
+            .performTouchInput {
+                click(Offset(rootBounds.width - 24f, rootBounds.height / 2f))
+            }
         advanceQuick(harness)
 
         assertFalse(harness.emulationViewModel.state.value.showOverlay, "Backdrop should close the drawer")
