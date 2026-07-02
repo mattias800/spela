@@ -120,6 +120,52 @@ class EmulationViewModelGameLifecycleTest {
     }
 
     @Test
+    fun startGameCentersWiiIrPointerBeforeLoadCore() = runTest {
+        builder.gameRepository = StubGameRepository(
+            consoleId = "wii",
+            consoleName = "Nintendo Wii",
+        )
+        builder.coreRepository.recommendedCore = LibretroCore(
+            id = 2,
+            name = "dolphin",
+            displayName = "Dolphin",
+        )
+        builder.coreRepository.localCorePath = "/path/to/dolphin_libretro.so"
+
+        val vm = builder.build()
+        vm.onIntent(EmulationIntent.StartGame("game1"))
+        builder.advanceTimeBy(100)
+
+        assertEquals("10", builder.libretroController.coreVariables["dolphin_ir_offset"])
+        assertEquals("20", builder.libretroController.coreVariables["dolphin_ir_pitch"])
+        assertTrue(
+            builder.libretroController.calls.indexOf("setCoreVariable:dolphin_ir_offset=10") in
+                0 until builder.libretroController.calls.indexOf("loadCore"),
+        )
+    }
+
+    @Test
+    fun startGameDoesNotSetIrVariablesForGameCube() = runTest {
+        builder.gameRepository = StubGameRepository(
+            consoleId = "gc",
+            consoleName = "Nintendo GameCube",
+        )
+        builder.coreRepository.recommendedCore = LibretroCore(
+            id = 2,
+            name = "dolphin",
+            displayName = "Dolphin",
+        )
+        builder.coreRepository.localCorePath = "/path/to/dolphin_libretro.so"
+
+        val vm = builder.build()
+        vm.onIntent(EmulationIntent.StartGame("game1"))
+        builder.advanceTimeBy(100)
+
+        assertFalse(builder.libretroController.coreVariables.containsKey("dolphin_ir_offset"))
+        assertFalse(builder.libretroController.coreVariables.containsKey("dolphin_ir_pitch"))
+    }
+
+    @Test
     fun startGameDoesNotApplyRenderScaleVariablesForNativeScale() = runTest {
         builder.gameRepository = StubGameRepository(consoleId = "gc")
         builder.coreRepository.recommendedCore = LibretroCore(

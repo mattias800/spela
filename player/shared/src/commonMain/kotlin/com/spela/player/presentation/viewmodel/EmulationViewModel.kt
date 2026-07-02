@@ -7,6 +7,7 @@ import com.spela.player.domain.model.AchievementEventType
 import com.spela.player.domain.model.UserPreferences
 import com.spela.player.domain.model.WidescreenMode
 import com.spela.player.domain.model.renderScaleCoreVariables
+import com.spela.player.domain.model.wiiIrPointerCoreVariables
 import com.spela.player.domain.repository.AchievementsRepository
 import com.spela.player.domain.repository.GameStatsRepository
 import com.spela.player.domain.repository.PreferencesRepository
@@ -1189,6 +1190,10 @@ class EmulationViewModel(
                         }
                         val renderScale = preferencesRepository.resolveRenderScale(consoleId, currentPreferences)
                         for (override in renderScaleCoreVariables(consoleId, corePath, renderScale)) {
+                            libretroController.setCoreVariable(override.key, override.value)
+                        }
+                        // Center the Wiimote IR pointer's rest position (#1524).
+                        for (override in wiiIrPointerCoreVariables(consoleId, corePath)) {
                             libretroController.setCoreVariable(override.key, override.value)
                         }
 
