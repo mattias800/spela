@@ -1,5 +1,6 @@
 package com.spela.player.libretro
 
+import com.spela.player.domain.model.WidescreenMode
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -7,7 +8,10 @@ import kotlin.math.roundToInt
 enum class FrameScaleMode {
     FIT,
     FILL,
+    ZOOM,
 }
+
+private const val ZOOM_FILL_FRACTION = 0.5f
 
 /**
  * Result of computing how an emulation frame should be scaled and positioned
@@ -48,9 +52,12 @@ fun computeScaledFrame(
         displayHeight = srcHeight.toFloat()
     }
 
+    val fitScale = min(canvasWidth / displayWidth, canvasHeight / displayHeight)
+    val fillScale = max(canvasWidth / displayWidth, canvasHeight / displayHeight)
     val scale = when (scaleMode) {
-        FrameScaleMode.FIT -> min(canvasWidth / displayWidth, canvasHeight / displayHeight)
-        FrameScaleMode.FILL -> max(canvasWidth / displayWidth, canvasHeight / displayHeight)
+        FrameScaleMode.FIT -> fitScale
+        FrameScaleMode.FILL -> fillScale
+        FrameScaleMode.ZOOM -> fitScale + ((fillScale - fitScale) * ZOOM_FILL_FRACTION)
     }
     val scaledWidth = (displayWidth * scale).roundToInt()
     val scaledHeight = (displayHeight * scale).roundToInt()
@@ -64,3 +71,9 @@ fun computeScaledFrame(
         offsetY = offsetY,
     )
 }
+
+fun WidescreenMode.frameScaleMode(): FrameScaleMode =
+    when (this) {
+        WidescreenMode.ZOOM -> FrameScaleMode.ZOOM
+        else -> FrameScaleMode.FIT
+    }

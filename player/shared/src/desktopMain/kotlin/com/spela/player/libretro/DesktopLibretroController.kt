@@ -248,6 +248,17 @@ class DesktopLibretroController(
         audioPlayer?.volume = volume.coerceIn(0f, 1f)
     }
 
+    override fun refreshPausedVideo() {
+        if (!running || !paused || netplayTransport != null) return
+        runOnEmulationThread(timeoutSeconds = 1) {
+            jni.nativeRun()
+            if (jni.nativeGpuIsActive()) {
+                renderGpuFrameToBgra()
+            }
+            discardAudio()
+        }
+    }
+
     override fun performanceStats(): Flow<Pair<Float, Float>> = flow {
         while (running) {
             emit(currentFps to currentFrameTime)
@@ -266,6 +277,10 @@ class DesktopLibretroController(
      *  returns the interleaved-stereo short count. Drains the core buffer.
      *  Used by [DesktopAudioPlayer] for dynamic-rate-control output (#1288). */
     fun resampleAudio(out: ShortArray, ratio: Double): Int = jni.nativeResampleAudio(out, ratio)
+
+    private fun discardAudio() {
+        jni.nativeGetAudioBuffer()
+    }
 
     fun setButton(port: Int, buttonId: Int, pressed: Boolean) {
         jni.nativeSetInputButton(port, buttonId, pressed)

@@ -230,7 +230,7 @@ fun MetalOffscreenSurface(
                 canvasWidth = size.width,
                 canvasHeight = size.height,
                 displayAspectRatio = dar,
-                scaleMode = if (widescreenMode.fillsCanvas) FrameScaleMode.FILL else FrameScaleMode.FIT,
+                scaleMode = widescreenMode.frameScaleMode(),
             )
 
             // Nearest-neighbor when no shader (pixel-perfect), bilinear otherwise

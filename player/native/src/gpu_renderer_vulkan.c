@@ -307,6 +307,8 @@ typedef struct {
     float height;
 } present_viewport_t;
 
+static const float GPU_ZOOM_FILL_FRACTION = 0.5f;
+
 static present_viewport_t compute_present_viewport(
     gpu_renderer_t *r,
     float src_w,
@@ -321,7 +323,7 @@ static present_viewport_t compute_present_viewport(
 
     float display_w = src_w;
     float display_h = src_h;
-    bool fill = false;
+    bool partial_fill = false;
     switch (r ? r->widescreen_mode : GPU_WIDESCREEN_MODE_NATIVE) {
         case GPU_WIDESCREEN_MODE_4_3:
             display_w = src_h * (4.0f / 3.0f);
@@ -334,7 +336,7 @@ static present_viewport_t compute_present_viewport(
         case GPU_WIDESCREEN_MODE_ZOOM:
             display_w = src_h * (4.0f / 3.0f);
             display_h = src_h;
-            fill = true;
+            partial_fill = true;
             break;
         case GPU_WIDESCREEN_MODE_NATIVE:
         default:
@@ -343,9 +345,11 @@ static present_viewport_t compute_present_viewport(
 
     float scale_x = dst_w / display_w;
     float scale_y = dst_h / display_h;
-    float scale = fill
-        ? (scale_x > scale_y ? scale_x : scale_y)
-        : (scale_x < scale_y ? scale_x : scale_y);
+    float fit_scale = scale_x < scale_y ? scale_x : scale_y;
+    float fill_scale = scale_x > scale_y ? scale_x : scale_y;
+    float scale = partial_fill
+        ? fit_scale + ((fill_scale - fit_scale) * GPU_ZOOM_FILL_FRACTION)
+        : fit_scale;
     float vp_w = display_w * scale;
     float vp_h = display_h * scale;
     present_viewport_t viewport = {
