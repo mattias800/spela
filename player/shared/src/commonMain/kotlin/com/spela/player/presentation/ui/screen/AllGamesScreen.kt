@@ -41,6 +41,7 @@ import com.spela.player.presentation.ui.feature.library.GameGridItem
 import com.spela.player.presentation.ui.feature.library.GameLibraryControls
 import com.spela.player.presentation.ui.feature.library.GameListRowItem
 import com.spela.player.presentation.ui.components.SpScreen
+import com.spela.player.presentation.ui.components.SpScreenHeading
 import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -67,6 +68,15 @@ fun AllGamesScreen(
         // Clear the gamepad section-indicator pill so it doesn't overlap the
         // search field (#1529); no-op in touch mode.
         SpScreenTopSpacer()
+        // Gamepad-mode screen heading (#1529), fixed above the search field
+        // like the rest of this header block; renders nothing in touch mode.
+        SpScreenHeading(
+            title = "All Games",
+            modifier = Modifier.padding(
+                horizontal = SpSpacing.ScreenHorizontal,
+                vertical = SpSpacing.Small,
+            ),
+        )
         SpSearchField(
             value = searchQuery,
             onValueChange = { query ->

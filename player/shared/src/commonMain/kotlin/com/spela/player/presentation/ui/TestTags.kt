@@ -99,4 +99,9 @@ object TestTags {
     // Collection detail — owner-only edit / delete buttons in the top bar.
     const val COLLECTION_DETAIL_EDIT = "collection_detail_edit"
     const val COLLECTION_DETAIL_DELETE = "collection_detail_delete"
+
+    // Standardised gamepad-mode screen heading (SpScreenHeading, #1529).
+    // Touch mode shows SpTopBar with the same title, so tests distinguish
+    // the gamepad heading by tag rather than text.
+    const val SCREEN_HEADING = "screen_heading"
 }

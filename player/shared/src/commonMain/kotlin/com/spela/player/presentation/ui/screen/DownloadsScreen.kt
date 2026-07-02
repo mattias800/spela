@@ -43,6 +43,7 @@ import com.spela.player.presentation.ui.components.SpDownloadProgressBar
 import com.spela.player.presentation.ui.components.SpEmptyStates
 import com.spela.player.presentation.ui.components.SpScreenContentList
 import com.spela.player.presentation.ui.components.SpScreen
+import com.spela.player.presentation.ui.components.SpScreenHeading
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.components.sectionPillClearance
 import com.spela.player.presentation.ui.gamepad.InputMode
@@ -97,6 +98,14 @@ fun DownloadsScreen(
             ),
             verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
         ) {
+            // Gamepad-mode screen heading (#1529) — scrolls away with the list
+            // so content still passes under the floating pill. Guarded so touch
+            // mode (which has the SpTopBar title) gets no empty list row.
+            if (isGamepad) {
+                item(key = "screen_heading") {
+                    SpScreenHeading(title = "Downloads")
+                }
+            }
             // Cache info card
             item {
                 SpCard {

@@ -45,6 +45,7 @@ import com.spela.player.presentation.ui.components.SpFab
 import com.spela.player.presentation.ui.components.SpScreenContentList
 import com.spela.player.presentation.ui.components.SpEmptyStates
 import com.spela.player.presentation.ui.components.SpScreen
+import com.spela.player.presentation.ui.components.SpScreenHeading
 import com.spela.player.presentation.ui.components.ScreenLoadingIndicator
 import com.spela.player.presentation.ui.components.rememberLoadingFlashDebounce
 import com.spela.player.presentation.ui.components.SpSnackbar
@@ -153,6 +154,15 @@ fun CollectionsScreen(
                             ),
                             verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
                         ) {
+                            // Gamepad-mode screen heading (#1529) — scrolls away
+                            // with the list so content still passes under the
+                            // floating pill. Guarded so touch mode gets no empty
+                            // list row from the spacedBy arrangement.
+                            if (isGamepad) {
+                                item(key = "screen_heading") {
+                                    SpScreenHeading(title = "Collections")
+                                }
+                            }
                             if (state.myCollections.isNotEmpty()) {
                                 item {
                                     Text(
