@@ -140,6 +140,91 @@ class EmulationScalingTest {
     }
 
     @Test
+    fun `zoom mode enlarges 4 to 3 less aggressively than full fill`() {
+        val result = computeScaledFrame(
+            srcWidth = 640,
+            srcHeight = 480,
+            canvasWidth = 1920f,
+            canvasHeight = 1080f,
+            displayAspectRatio = 4f / 3f,
+            scaleMode = FrameScaleMode.ZOOM,
+        )
+
+        assertEquals(1680, result.width)
+        assertEquals(1260, result.height)
+        assertEquals(120, result.offsetX)
+        assertEquals(-90, result.offsetY)
+    }
+
+    @Test
+    fun `zoom mode keeps 4 to 3 exact on 4 to 3 canvas`() {
+        val result = computeScaledFrame(
+            srcWidth = 640,
+            srcHeight = 480,
+            canvasWidth = 1600f,
+            canvasHeight = 1200f,
+            displayAspectRatio = 4f / 3f,
+            scaleMode = FrameScaleMode.ZOOM,
+        )
+
+        assertEquals(1600, result.width)
+        assertEquals(1200, result.height)
+        assertEquals(0, result.offsetX)
+        assertEquals(0, result.offsetY)
+    }
+
+    @Test
+    fun `zoom mode scales predictably on 16 to 10 tablet canvas`() {
+        val result = computeScaledFrame(
+            srcWidth = 640,
+            srcHeight = 480,
+            canvasWidth = 2560f,
+            canvasHeight = 1600f,
+            displayAspectRatio = 4f / 3f,
+            scaleMode = FrameScaleMode.ZOOM,
+        )
+
+        assertEquals(2347, result.width)
+        assertEquals(1760, result.height)
+        assertEquals(107, result.offsetX)
+        assertEquals(-80, result.offsetY)
+    }
+
+    @Test
+    fun `zoom mode scales predictably on ultrawide desktop canvas`() {
+        val result = computeScaledFrame(
+            srcWidth = 640,
+            srcHeight = 480,
+            canvasWidth = 3440f,
+            canvasHeight = 1440f,
+            displayAspectRatio = 4f / 3f,
+            scaleMode = FrameScaleMode.ZOOM,
+        )
+
+        assertEquals(2680, result.width)
+        assertEquals(2010, result.height)
+        assertEquals(380, result.offsetX)
+        assertEquals(-285, result.offsetY)
+    }
+
+    @Test
+    fun `zoom mode scales predictably on tall foldable canvas`() {
+        val result = computeScaledFrame(
+            srcWidth = 640,
+            srcHeight = 480,
+            canvasWidth = 1840f,
+            canvasHeight = 2208f,
+            displayAspectRatio = 4f / 3f,
+            scaleMode = FrameScaleMode.ZOOM,
+        )
+
+        assertEquals(2392, result.width)
+        assertEquals(1794, result.height)
+        assertEquals(-276, result.offsetX)
+        assertEquals(207, result.offsetY)
+    }
+
+    @Test
     fun `output is always centered`() {
         val result = computeScaledFrame(
             srcWidth = 100, srcHeight = 100,

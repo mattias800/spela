@@ -107,13 +107,16 @@ open class StubLibretroController : LibretroController {
     var serializeCallCount = 0; private set
     var unserializeCallCount = 0; private set
     var setFastForwardCallCount = 0; private set
+    var refreshPausedVideoCallCount = 0; private set
     var getSRAMCallCount = 0; private set
     var setSRAMCallCount = 0; private set
     var clearNetplayModeCallCount = 0; private set
+    val presentationEvents = mutableListOf<String>()
 
     var lastLoadCorePath: String? = null; private set
     var lastLoadGamePath: String? = null; private set
     var lastFastForwardEnabled: Boolean? = null; private set
+    var lastWidescreenMode: WidescreenMode? = null; private set
     var lastUnserializeData: ByteArray? = null; private set
     var lastSetSRAMData: ByteArray? = null; private set
 
@@ -152,6 +155,14 @@ open class StubLibretroController : LibretroController {
     }
     override fun unserialize(data: ByteArray): Boolean { unserializeCallCount++; lastUnserializeData = data; return unserializeResult }
     override fun setFastForward(enabled: Boolean) { setFastForwardCallCount++; lastFastForwardEnabled = enabled }
+    override fun setWidescreenMode(mode: WidescreenMode) {
+        lastWidescreenMode = mode
+        presentationEvents += "setWidescreenMode:${mode.storageId}"
+    }
+    override fun refreshPausedVideo() {
+        refreshPausedVideoCallCount++
+        presentationEvents += "refreshPausedVideo"
+    }
     override fun performanceStats(): Flow<Pair<Float, Float>> = emptyFlow()
     override fun isHwRenderEnabled(): Boolean = isHwRenderEnabledResult
     override fun getSRAM(): ByteArray? { getSRAMCallCount++; return getSRAMResult }

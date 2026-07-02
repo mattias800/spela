@@ -32,7 +32,7 @@ enum class WidescreenMode(
         storageId = "zoom",
         label = "Zoom",
         optionLabel = "Zoom",
-        description = "Fill widescreen displays by cropping top and bottom",
+        description = "Larger 4:3 with slight crop and reduced bars",
         nativeId = 3,
     );
 
@@ -42,8 +42,6 @@ enum class WidescreenMode(
             FOUR_THREE, ZOOM -> 4f / 3f
             STRETCH -> 16f / 9f
         }
-
-    val fillsCanvas: Boolean get() = this == ZOOM
 
     companion object {
         val selectableModes: List<WidescreenMode> = listOf(FOUR_THREE, STRETCH, ZOOM)

@@ -250,7 +250,7 @@ private fun DrawScope.drawScaledBitmap(
         canvasWidth = size.width,
         canvasHeight = size.height,
         displayAspectRatio = widescreenMode.displayAspectRatio,
-        scaleMode = if (widescreenMode.fillsCanvas) FrameScaleMode.FILL else FrameScaleMode.FIT,
+        scaleMode = widescreenMode.frameScaleMode(),
     )
 
     val dstOffset = IntOffset(scaled.offsetX, scaled.offsetY)

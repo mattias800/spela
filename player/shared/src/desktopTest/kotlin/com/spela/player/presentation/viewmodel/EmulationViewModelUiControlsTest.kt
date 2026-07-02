@@ -133,6 +133,29 @@ class EmulationViewModelUiControlsTest {
         assertEquals("game1", builder.preferencesRepository.lastSetWidescreenModeGameId)
         assertEquals("wii", builder.preferencesRepository.lastSetWidescreenModeConsoleId)
         assertEquals(WidescreenMode.FOUR_THREE, builder.preferencesRepository.lastSetWidescreenMode)
+        assertEquals(WidescreenMode.FOUR_THREE, builder.libretroController.lastWidescreenMode)
+        assertEquals(0, builder.libretroController.refreshPausedVideoCallCount)
+    }
+
+    @Test
+    fun setWidescreenModeRefreshesPausedVideoForImmediateOverlayPreview() = runTest {
+        builder.gameRepository = StubGameRepository(consoleId = "gc")
+        val vm = builder.build()
+
+        vm.onIntent(EmulationIntent.StartGame("game1"))
+        builder.advanceTimeBy(100)
+        vm.onIntent(EmulationIntent.ToggleOverlay)
+        assertTrue(vm.state.value.isPaused)
+
+        vm.onIntent(EmulationIntent.SetWidescreenMode(WidescreenMode.ZOOM))
+
+        assertEquals(WidescreenMode.ZOOM, vm.state.value.widescreenMode)
+        assertEquals(WidescreenMode.ZOOM, builder.libretroController.lastWidescreenMode)
+        assertEquals(1, builder.libretroController.refreshPausedVideoCallCount)
+        assertEquals(
+            listOf("setWidescreenMode:zoom", "refreshPausedVideo"),
+            builder.libretroController.presentationEvents,
+        )
     }
 
     // ── Exit confirm ────────────────────────────────────────────────────────

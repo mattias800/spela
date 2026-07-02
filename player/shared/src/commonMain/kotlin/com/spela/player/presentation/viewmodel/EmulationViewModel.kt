@@ -1754,6 +1754,14 @@ class EmulationViewModel(
             consoleId = snapshot.consoleId,
             mode = mode,
         )
+        libretroController.setWidescreenMode(mode)
+        val shouldRefreshPausedVideo = snapshot.isRunning &&
+            snapshot.isPaused &&
+            !snapshot.isNetplayMode &&
+            !snapshot.isChallengeMode
+        if (shouldRefreshPausedVideo) {
+            libretroController.refreshPausedVideo()
+        }
     }
 
     // Quick-save/load — uses the currently active slot
@@ -2081,6 +2089,16 @@ interface LibretroController {
 
     /** Set audio volume (0.0 = mute, 1.0 = full). */
     fun setVolume(volume: Float) {}
+
+    /** Applies presentation-only widescreen scaling to platform renderers. */
+    fun setWidescreenMode(mode: WidescreenMode) {}
+
+    /**
+     * Refreshes the currently visible video while the emulation loop is paused.
+     * Presentation-only changes such as widescreen mode updates otherwise wait
+     * for the next resumed frame before becoming visible.
+     */
+    fun refreshPausedVideo() {}
 
     /** Set a core option variable (e.g. DeSmuME screen layout). */
     fun setCoreVariable(key: String, value: String) {}

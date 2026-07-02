@@ -5,6 +5,7 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.view.SurfaceView
+import com.spela.player.domain.model.WidescreenMode
 import com.spela.player.netplay.InputState
 import com.spela.player.netplay.NetplayInputBuffer
 import com.spela.player.netplay.NetplayTransport
@@ -354,6 +355,20 @@ class AndroidLibretroController(
         fastForward = enabled
     }
 
+    override fun refreshPausedVideo() {
+        if (!running || !paused || netplayTransport != null) return
+        runOnEmulationThread(timeoutSeconds = 1) {
+            jni.nativeRun()
+            if (jni.nativeGpuIsActive() && !dualScreenSplitActive) {
+                jni.nativeGpuRender()
+            }
+            if (dualScreenSplitActive || !jni.nativeGpuIsActive()) {
+                updateVideoFrame()
+            }
+            pushAudioDiscard()
+        }
+    }
+
     override fun performanceStats(): Flow<Pair<Float, Float>> = flow {
         while (running) {
             emit(currentFps to currentFrameTime)
@@ -420,8 +435,8 @@ class AndroidLibretroController(
         jni.nativeGpuInit(surface).also { if (it) jni.nativeGpuSetSplitReadback(dualScreenSplitActive) }
     fun gpuRender() = jni.nativeGpuRender()
     fun gpuSetShader(shaderId: Int) = jni.nativeGpuSetShader(shaderId)
-    fun gpuSetWidescreenMode(mode: com.spela.player.domain.model.WidescreenMode) =
-        jni.nativeGpuSetWidescreenMode(mode.nativeId)
+    fun gpuSetWidescreenMode(mode: WidescreenMode) =
+        setWidescreenMode(mode)
     fun gpuResize(width: Int, height: Int) = jni.nativeGpuResize(width, height)
     fun gpuDeinit() = jni.nativeGpuDeinit()
     fun gpuSuspend() = jni.nativeGpuSuspend()
@@ -429,6 +444,9 @@ class AndroidLibretroController(
         jni.nativeGpuResume(surface).also { if (it) jni.nativeGpuSetSplitReadback(dualScreenSplitActive) }
     fun gpuIsActive(): Boolean = jni.nativeGpuIsActive()
     fun gpuSetSourceRect(x: Int, y: Int, w: Int, h: Int) = jni.nativeGpuSetSourceRect(x, y, w, h)
+    override fun setWidescreenMode(mode: WidescreenMode) {
+        jni.nativeGpuSetWidescreenMode(mode.nativeId)
+    }
     override fun isHwRenderEnabled(): Boolean = jni.nativeIsHwRenderEnabled()
 
     override fun isVulkanHwRender(): Boolean = jni.nativeIsVulkanHwRender()
