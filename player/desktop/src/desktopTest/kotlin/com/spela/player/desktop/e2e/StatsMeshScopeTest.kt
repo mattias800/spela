@@ -33,7 +33,11 @@ class StatsMeshScopeTest {
         text: String,
         useUnmergedTree: Boolean = false,
     ) {
-        repeat(3) {
+        // 6 rounds to match awaitMostPlayedMeshState below. 3 rounds still
+        // flaked once under full-suite load after the #1547 UI-thread drain
+        // fix (which removed the permanent composition freeze — the remaining
+        // variance is plain settling latency, so a larger budget is the fix).
+        repeat(6) {
             advanceQuick(harness)
             if (onAllNodesWithText(text, useUnmergedTree = useUnmergedTree)
                     .fetchSemanticsNodes()
