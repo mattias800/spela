@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -33,6 +36,7 @@ import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.FastRewind
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.HighQuality
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.Save
@@ -69,8 +73,9 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.spela.player.domain.model.WidescreenMode
+import com.spela.player.domain.model.DisplayAspectChoice
 import com.spela.player.domain.model.supportsWidescreenMode
 import com.spela.player.presentation.intent.EmulationIntent
 import com.spela.player.presentation.state.EmulationState
@@ -179,10 +184,16 @@ internal fun InGameOverlayPanel(
                     OverlayDrawerHeader(state = state)
                     OverlayShortcutRow(
                         volume = state.volume,
-                        widescreenMode = state.widescreenMode,
+                        displayAspectChoice = state.displayAspectChoice,
+                        displayAspectLabel = state.displayAspectLabel,
+                        displayAspectStateDescription = state.displayAspectStateDescription,
+                        renderScaleLabel = state.renderScaleLabel,
+                        renderScaleStateDescription = state.renderScaleStateDescription,
                         consoleId = state.consoleId,
                         onVolumeChange = { viewModel.onIntent(EmulationIntent.SetVolume(it)) },
-                        onWidescreenModeChange = { viewModel.onIntent(EmulationIntent.SetWidescreenMode(it)) },
+                        onDisplayAspectChoiceChange = {
+                            viewModel.onIntent(EmulationIntent.SetDisplayAspectChoice(it))
+                        },
                     )
 
                     when {
@@ -392,103 +403,149 @@ private fun NormalOverlayActions(
     )
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun OverlayShortcutRow(
     volume: Float,
-    widescreenMode: WidescreenMode,
+    displayAspectChoice: DisplayAspectChoice,
+    displayAspectLabel: String,
+    displayAspectStateDescription: String,
+    renderScaleLabel: String,
+    renderScaleStateDescription: String,
     consoleId: String,
     onVolumeChange: (Float) -> Unit,
-    onWidescreenModeChange: (WidescreenMode) -> Unit,
+    onDisplayAspectChoiceChange: (DisplayAspectChoice) -> Unit,
 ) {
     var showVolumePopover by remember { mutableStateOf(false) }
-    var showWidescreenModePopover by remember { mutableStateOf(false) }
+    var showDisplayAspectPopover by remember { mutableStateOf(false) }
+    var showRenderScalePopover by remember { mutableStateOf(false) }
     val volumePopoverFocusRequester = remember { FocusRequester() }
-    val widescreenModePopoverFocusRequester = remember { FocusRequester() }
+    val displayAspectPopoverFocusRequester = remember { FocusRequester() }
+    val renderScalePopoverFocusRequester = remember { FocusRequester() }
     val volumePercentText = formatVolumePercent(volume)
     val showWidescreenMode = supportsWidescreenMode(consoleId)
 
-    Row(
+    FlowRow(
         modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+        verticalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
     ) {
-        Box {
-            SpDrawerIconButton(
-                icon = if (volume < 0.01f) {
-                    Icons.AutoMirrored.Filled.VolumeOff
-                } else {
-                    Icons.AutoMirrored.Filled.VolumeUp
-                },
-                contentDescription = "Volume",
-                tooltip = "Volume",
-                stateDescription = volumePercentText,
-                selected = showVolumePopover,
-                onClick = { showVolumePopover = true },
-                modifier = Modifier.focusRestoreItem(key = "overlay_shortcut_volume"),
-            )
-            DropdownMenu(
-                expanded = showVolumePopover,
-                onDismissRequest = { showVolumePopover = false },
-                modifier = Modifier.background(SpColor.DrawerSurface),
-            ) {
-                OverlayVolumePopoverContent(
-                    volume = volume,
-                    onVolumeChange = onVolumeChange,
-                    onDismiss = { showVolumePopover = false },
-                    focusRequester = volumePopoverFocusRequester,
-                )
-            }
-        }
-        Text(
-            text = volumePercentText,
-            style = SpTypography.LabelMedium,
-            color = SpColor.OnDrawerSecondary,
-        )
-        if (showWidescreenMode) {
+        OverlayShortcutItem(label = volumePercentText) {
             Box {
                 SpDrawerIconButton(
-                    icon = Icons.Filled.AspectRatio,
-                    contentDescription = "Widescreen",
-                    tooltip = "Widescreen",
-                    stateDescription = widescreenMode.optionLabel,
-                    selected = showWidescreenModePopover,
-                    onClick = { showWidescreenModePopover = true },
-                    modifier = Modifier.focusRestoreItem(key = "overlay_shortcut_widescreen_mode"),
+                    icon = if (volume < 0.01f) {
+                        Icons.AutoMirrored.Filled.VolumeOff
+                    } else {
+                        Icons.AutoMirrored.Filled.VolumeUp
+                    },
+                    contentDescription = "Volume",
+                    tooltip = "Volume",
+                    stateDescription = volumePercentText,
+                    selected = showVolumePopover,
+                    onClick = { showVolumePopover = true },
+                    modifier = Modifier.focusRestoreItem(key = "overlay_shortcut_volume"),
                 )
                 DropdownMenu(
-                    expanded = showWidescreenModePopover,
-                    onDismissRequest = { showWidescreenModePopover = false },
+                    expanded = showVolumePopover,
+                    onDismissRequest = { showVolumePopover = false },
                     modifier = Modifier.background(SpColor.DrawerSurface),
                 ) {
-                    OverlayWidescreenModePopoverContent(
-                        widescreenMode = widescreenMode,
-                        onWidescreenModeChange = onWidescreenModeChange,
-                        onDismiss = { showWidescreenModePopover = false },
-                        focusRequester = widescreenModePopoverFocusRequester,
+                    OverlayVolumePopoverContent(
+                        volume = volume,
+                        onVolumeChange = onVolumeChange,
+                        onDismiss = { showVolumePopover = false },
+                        focusRequester = volumePopoverFocusRequester,
                     )
                 }
             }
-            Text(
-                text = widescreenMode.label,
-                style = SpTypography.LabelMedium,
-                color = SpColor.OnDrawerSecondary,
-            )
+        }
+        if (showWidescreenMode) {
+            OverlayShortcutItem(label = displayAspectLabel) {
+                Box {
+                    SpDrawerIconButton(
+                        icon = Icons.Filled.AspectRatio,
+                        contentDescription = "Aspect ratio",
+                        tooltip = "Aspect ratio",
+                        stateDescription = displayAspectStateDescription,
+                        selected = showDisplayAspectPopover,
+                        onClick = { showDisplayAspectPopover = true },
+                        modifier = Modifier.focusRestoreItem(key = "overlay_shortcut_display_aspect"),
+                    )
+                    DropdownMenu(
+                        expanded = showDisplayAspectPopover,
+                        onDismissRequest = { showDisplayAspectPopover = false },
+                        modifier = Modifier.background(SpColor.DrawerSurface),
+                    ) {
+                        OverlayDisplayAspectPopoverContent(
+                            displayAspectChoice = displayAspectChoice,
+                            displayAspectStateDescription = displayAspectStateDescription,
+                            onDisplayAspectChoiceChange = onDisplayAspectChoiceChange,
+                            onDismiss = { showDisplayAspectPopover = false },
+                            focusRequester = displayAspectPopoverFocusRequester,
+                        )
+                    }
+                }
+            }
+        }
+        OverlayShortcutItem(label = renderScaleLabel) {
+            Box {
+                SpDrawerIconButton(
+                    icon = Icons.Filled.HighQuality,
+                    contentDescription = "Resolution",
+                    tooltip = "Resolution",
+                    stateDescription = renderScaleStateDescription,
+                    selected = showRenderScalePopover,
+                    onClick = { showRenderScalePopover = true },
+                    modifier = Modifier.focusRestoreItem(key = "overlay_shortcut_render_scale"),
+                )
+                DropdownMenu(
+                    expanded = showRenderScalePopover,
+                    onDismissRequest = { showRenderScalePopover = false },
+                    modifier = Modifier.background(SpColor.DrawerSurface),
+                ) {
+                    OverlayRenderScalePopoverContent(
+                        renderScaleLabel = renderScaleLabel,
+                        renderScaleStateDescription = renderScaleStateDescription,
+                        onDismiss = { showRenderScalePopover = false },
+                        focusRequester = renderScalePopoverFocusRequester,
+                    )
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun OverlayWidescreenModePopoverContent(
-    widescreenMode: WidescreenMode,
-    onWidescreenModeChange: (WidescreenMode) -> Unit,
+private fun OverlayShortcutItem(
+    label: String,
+    control: @Composable () -> Unit,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
+        modifier = Modifier.widthIn(max = 144.dp),
+    ) {
+        control()
+        Text(
+            text = label,
+            style = SpTypography.LabelMedium,
+            color = SpColor.OnDrawerSecondary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.widthIn(max = 96.dp),
+        )
+    }
+}
+
+@Composable
+private fun OverlayDisplayAspectPopoverContent(
+    displayAspectChoice: DisplayAspectChoice,
+    displayAspectStateDescription: String,
+    onDisplayAspectChoiceChange: (DisplayAspectChoice) -> Unit,
     onDismiss: () -> Unit,
     focusRequester: FocusRequester,
 ) {
-    val focusedMode = if (widescreenMode in WidescreenMode.selectableModes) {
-        widescreenMode
-    } else {
-        WidescreenMode.selectableModes.first()
-    }
+    val focusedChoice = displayAspectChoice
 
     LaunchedEffect(Unit) {
         try { focusRequester.requestFocus() } catch (_: Exception) {}
@@ -500,31 +557,81 @@ private fun OverlayWidescreenModePopoverContent(
             .background(SpColor.DrawerSurface)
             .padding(horizontal = SpSpacing.Small, vertical = SpSpacing.Small)
             .semantics {
-                contentDescription = "Widescreen"
-                stateDescription = widescreenMode.optionLabel
+                contentDescription = "Aspect ratio"
+                stateDescription = displayAspectStateDescription
             },
         verticalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
     ) {
-        WidescreenMode.selectableModes.forEach { mode ->
+        DisplayAspectChoice.selectableChoices.forEach { choice ->
             SpDrawerButton(
-                text = mode.optionLabel,
-                icon = if (mode == widescreenMode) Icons.Filled.CheckCircle else null,
-                selected = mode == widescreenMode,
-                contentDescription = mode.optionLabel,
-                stateDescription = if (mode == widescreenMode) {
-                    "Selected. ${mode.description}"
+                text = choice.optionLabel,
+                icon = if (choice == displayAspectChoice) Icons.Filled.CheckCircle else null,
+                selected = choice == displayAspectChoice,
+                contentDescription = choice.optionLabel,
+                stateDescription = if (choice == displayAspectChoice) {
+                    "Selected. ${choice.description}"
                 } else {
-                    mode.description
+                    choice.description
                 },
                 onClick = {
-                    onWidescreenModeChange(mode)
+                    onDisplayAspectChoiceChange(choice)
                     onDismiss()
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .then(if (mode == focusedMode) Modifier.focusRequester(focusRequester) else Modifier),
+                    .then(if (choice == focusedChoice) Modifier.focusRequester(focusRequester) else Modifier),
             )
         }
+    }
+}
+
+@Composable
+private fun OverlayRenderScalePopoverContent(
+    renderScaleLabel: String,
+    renderScaleStateDescription: String,
+    onDismiss: () -> Unit,
+    focusRequester: FocusRequester,
+) {
+    LaunchedEffect(Unit) {
+        try { focusRequester.requestFocus() } catch (_: Exception) {}
+    }
+
+    Column(
+        modifier = Modifier
+            .width(SpSpacing.DrawerPopoverWidth)
+            .background(SpColor.DrawerSurface)
+            .padding(horizontal = SpSpacing.Default, vertical = SpSpacing.Small)
+            .focusRequester(focusRequester)
+            .focusable()
+            .onPreviewKeyEvent { event ->
+                if (event.type == KeyEventType.KeyDown && event.key == Key.Escape) {
+                    onDismiss()
+                    true
+                } else {
+                    false
+                }
+            }
+            .semantics {
+                contentDescription = "Resolution"
+                stateDescription = renderScaleStateDescription
+            },
+        verticalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
+    ) {
+        Text(
+            text = "Resolution",
+            style = SpTypography.LabelMedium,
+            color = SpColor.OnDrawerSecondary,
+        )
+        Text(
+            text = renderScaleLabel,
+            style = SpTypography.LabelLarge,
+            color = SpColor.OnDrawer,
+        )
+        Text(
+            text = "Changes apply when a game starts",
+            style = SpTypography.LabelMedium,
+            color = SpColor.OnDrawerTertiary,
+        )
     }
 }
 

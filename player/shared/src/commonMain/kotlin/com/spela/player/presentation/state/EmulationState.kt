@@ -3,10 +3,13 @@ package com.spela.player.presentation.state
 import com.spela.player.domain.model.AchievementEvent
 import com.spela.player.domain.model.AchievementProgress
 import com.spela.player.domain.model.BiosMissingFile
+import com.spela.player.domain.model.DisplayAspectChoice
 import com.spela.player.domain.model.GameAchievement
-import com.spela.player.domain.model.WidescreenMode
+import com.spela.player.domain.model.RenderScale
+import com.spela.player.domain.model.RenderScaleChoice
 import com.spela.player.domain.model.SaveStatePolicyTier
 import com.spela.player.domain.model.ShaderPreset
+import com.spela.player.domain.model.WidescreenMode
 
 /**
  * Mode of the in-game slot-picker modal that the slot-primary UX
@@ -215,7 +218,14 @@ data class EmulationState(
     val frameTime: Float = 0f,
     val isFastForward: Boolean = false,
     val volume: Float = 1f,
+    val displayAspectChoice: DisplayAspectChoice = DisplayAspectChoice.AUTO,
     val widescreenMode: WidescreenMode = WidescreenMode.NATIVE,
+    val displayAspectLabel: String = "Auto",
+    val displayAspectStateDescription: String = "Auto",
+    val renderScaleChoice: RenderScaleChoice = RenderScaleChoice.AUTO,
+    val renderScale: RenderScale = RenderScale.NATIVE,
+    val renderScaleLabel: String = "Auto",
+    val renderScaleStateDescription: String = "Auto",
     val showKeyMapping: Boolean = false,
     val showGamepadConfig: Boolean = false,
     val error: String? = null,

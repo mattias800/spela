@@ -1,5 +1,6 @@
 package com.spela.player.presentation.viewmodel
 
+import com.spela.player.domain.model.DisplayAspectChoice
 import com.spela.player.domain.model.WidescreenMode
 import com.spela.player.presentation.viewmodel.emulation.EmulationViewModelTestBuilder
 import com.spela.player.presentation.viewmodel.emulation.StubGameRepository
@@ -107,38 +108,42 @@ class EmulationViewModelUiControlsTest {
     // ── Widescreen mode ────────────────────────────────────────────────────
 
     @Test
-    fun startGameResolvesWidescreenModeForCurrentGame() = runTest {
+    fun startGameResolvesDisplayAspectChoiceForCurrentGame() = runTest {
         builder.gameRepository = StubGameRepository(consoleId = "wii")
-        builder.preferencesRepository.resolveWidescreenModeResult = WidescreenMode.ZOOM
+        builder.preferencesRepository.resolveDisplayAspectChoiceResult = DisplayAspectChoice.ZOOM
         val vm = builder.build()
 
         vm.onIntent(EmulationIntent.StartGame("game1"))
         builder.advanceTimeBy(100)
 
         assertEquals(WidescreenMode.ZOOM, vm.state.value.widescreenMode)
-        assertEquals("game1", builder.preferencesRepository.lastResolvedWidescreenModeGameId)
-        assertEquals("wii", builder.preferencesRepository.lastResolvedWidescreenModeConsoleId)
+        assertEquals(DisplayAspectChoice.ZOOM, vm.state.value.displayAspectChoice)
+        assertEquals("Zoom", vm.state.value.displayAspectLabel)
+        assertEquals("game1", builder.preferencesRepository.lastResolvedDisplayAspectChoiceGameId)
+        assertEquals("wii", builder.preferencesRepository.lastResolvedDisplayAspectChoiceConsoleId)
     }
 
     @Test
-    fun setWidescreenModeUpdatesStateAndPersistsForCurrentGame() = runTest {
+    fun setDisplayAspectChoiceUpdatesStateAndPersistsForCurrentGame() = runTest {
         builder.gameRepository = StubGameRepository(consoleId = "wii")
         val vm = builder.build()
 
         vm.onIntent(EmulationIntent.StartGame("game1"))
         builder.advanceTimeBy(100)
-        vm.onIntent(EmulationIntent.SetWidescreenMode(WidescreenMode.FOUR_THREE))
+        vm.onIntent(EmulationIntent.SetDisplayAspectChoice(DisplayAspectChoice.ORIGINAL))
 
         assertEquals(WidescreenMode.FOUR_THREE, vm.state.value.widescreenMode)
-        assertEquals("game1", builder.preferencesRepository.lastSetWidescreenModeGameId)
-        assertEquals("wii", builder.preferencesRepository.lastSetWidescreenModeConsoleId)
-        assertEquals(WidescreenMode.FOUR_THREE, builder.preferencesRepository.lastSetWidescreenMode)
+        assertEquals(DisplayAspectChoice.ORIGINAL, vm.state.value.displayAspectChoice)
+        assertEquals("Original", vm.state.value.displayAspectLabel)
+        assertEquals("game1", builder.preferencesRepository.lastSetDisplayAspectChoiceGameId)
+        assertEquals("wii", builder.preferencesRepository.lastSetDisplayAspectChoiceConsoleId)
+        assertEquals(DisplayAspectChoice.ORIGINAL, builder.preferencesRepository.lastSetDisplayAspectChoice)
         assertEquals(WidescreenMode.FOUR_THREE, builder.libretroController.lastWidescreenMode)
         assertEquals(0, builder.libretroController.refreshPausedVideoCallCount)
     }
 
     @Test
-    fun setWidescreenModeRefreshesPausedVideoForImmediateOverlayPreview() = runTest {
+    fun setDisplayAspectChoiceRefreshesPausedVideoForImmediateOverlayPreview() = runTest {
         builder.gameRepository = StubGameRepository(consoleId = "gc")
         val vm = builder.build()
 
@@ -147,13 +152,14 @@ class EmulationViewModelUiControlsTest {
         vm.onIntent(EmulationIntent.ToggleOverlay)
         assertTrue(vm.state.value.isPaused)
 
-        vm.onIntent(EmulationIntent.SetWidescreenMode(WidescreenMode.ZOOM))
+        vm.onIntent(EmulationIntent.SetDisplayAspectChoice(DisplayAspectChoice.ZOOM))
 
         assertEquals(WidescreenMode.ZOOM, vm.state.value.widescreenMode)
+        assertEquals(DisplayAspectChoice.ZOOM, vm.state.value.displayAspectChoice)
         assertEquals(WidescreenMode.ZOOM, builder.libretroController.lastWidescreenMode)
         assertEquals(1, builder.libretroController.refreshPausedVideoCallCount)
         assertEquals(
-            listOf("setWidescreenMode:zoom", "refreshPausedVideo"),
+            listOf("setWidescreenMode:4_3", "setWidescreenMode:zoom", "refreshPausedVideo"),
             builder.libretroController.presentationEvents,
         )
     }

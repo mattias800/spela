@@ -10,7 +10,9 @@ import com.spela.client.models.UpdatePreferencesRequest
 import com.spela.client.models.UserPreferencesResponse
 import com.spela.player.data.remote.dto.toDomain
 import com.spela.player.domain.model.DEFAULT_CONSOLE_ID
+import com.spela.player.domain.model.DisplayAspectChoice
 import com.spela.player.domain.model.RenderScale
+import com.spela.player.domain.model.RenderScaleChoice
 import com.spela.player.domain.model.WidescreenMode
 import com.spela.player.domain.model.ShaderPreset
 import com.spela.player.domain.model.supportsRenderScale
@@ -164,47 +166,74 @@ class PreferencesRepositoryImpl(
         return ShaderPreset.NONE
     }
 
-    override fun resolveWidescreenMode(gameId: String, consoleId: String): WidescreenMode {
+    override fun resolveDisplayAspectChoice(gameId: String, consoleId: String): DisplayAspectChoice {
         val stored = if (gameId.isNotBlank()) {
             database.spelaDatabaseQueries.getDeviceSetting(GAME_WIDESCREEN_MODE_PREFIX + gameId)
                 .executeAsOneOrNull()
         } else {
             null
         }
-        return WidescreenMode.fromStorageId(stored) ?: defaultWidescreenMode(consoleId)
+        return DisplayAspectChoice.fromStorageId(stored) ?: DisplayAspectChoice.AUTO
+    }
+
+    override fun setDisplayAspectChoice(gameId: String, consoleId: String, choice: DisplayAspectChoice) {
+        if (gameId.isBlank()) return
+        val key = GAME_WIDESCREEN_MODE_PREFIX + gameId
+        if (choice == DisplayAspectChoice.AUTO) {
+            database.spelaDatabaseQueries.deleteDeviceSetting(key)
+        } else {
+            database.spelaDatabaseQueries.insertDeviceSetting(key, choice.storageId)
+        }
+    }
+
+    override fun resolveWidescreenMode(gameId: String, consoleId: String): WidescreenMode {
+        return when (resolveDisplayAspectChoice(gameId, consoleId)) {
+            DisplayAspectChoice.AUTO -> defaultWidescreenMode(consoleId)
+            DisplayAspectChoice.ORIGINAL -> defaultWidescreenMode(consoleId)
+            DisplayAspectChoice.SIXTEEN_NINE -> WidescreenMode.STRETCH
+            DisplayAspectChoice.ZOOM -> WidescreenMode.ZOOM
+        }
     }
 
     override fun setWidescreenMode(gameId: String, consoleId: String, mode: WidescreenMode) {
-        if (gameId.isBlank()) return
-        val key = GAME_WIDESCREEN_MODE_PREFIX + gameId
-        if (mode == defaultWidescreenMode(consoleId) || mode == WidescreenMode.NATIVE) {
+        val choice = when (mode) {
+            WidescreenMode.NATIVE -> DisplayAspectChoice.AUTO
+            WidescreenMode.FOUR_THREE -> DisplayAspectChoice.ORIGINAL
+            WidescreenMode.STRETCH -> DisplayAspectChoice.SIXTEEN_NINE
+            WidescreenMode.ZOOM -> DisplayAspectChoice.ZOOM
+        }
+        setDisplayAspectChoice(gameId, consoleId, choice)
+    }
+
+    override fun resolveRenderScaleChoice(consoleId: String, preferences: UserPreferences?): RenderScaleChoice {
+        val normalizedConsoleId = consoleId.trim().lowercase()
+        if (normalizedConsoleId.isBlank() || !supportsRenderScale(normalizedConsoleId)) {
+            return RenderScaleChoice.AUTO
+        }
+        val stored = database.spelaDatabaseQueries.getDeviceSetting(CONSOLE_RENDER_SCALE_PREFIX + normalizedConsoleId)
+            .executeAsOneOrNull()
+        return RenderScaleChoice.fromStorageId(stored)
+            ?: preferences?.consoleRenderScales?.get(normalizedConsoleId)?.let(RenderScaleChoice::fromRenderScale)
+            ?: RenderScaleChoice.AUTO
+    }
+
+    override fun setRenderScaleChoice(consoleId: String, choice: RenderScaleChoice) {
+        val normalizedConsoleId = consoleId.trim().lowercase()
+        if (normalizedConsoleId.isBlank()) return
+        val key = CONSOLE_RENDER_SCALE_PREFIX + normalizedConsoleId
+        if (choice == RenderScaleChoice.AUTO || !supportsRenderScale(normalizedConsoleId)) {
             database.spelaDatabaseQueries.deleteDeviceSetting(key)
         } else {
-            database.spelaDatabaseQueries.insertDeviceSetting(key, mode.storageId)
+            database.spelaDatabaseQueries.insertDeviceSetting(key, choice.storageId)
         }
     }
 
     override fun resolveRenderScale(consoleId: String, preferences: UserPreferences?): RenderScale {
-        val normalizedConsoleId = consoleId.trim().lowercase()
-        if (normalizedConsoleId.isBlank() || !supportsRenderScale(normalizedConsoleId)) {
-            return RenderScale.NATIVE
-        }
-        val stored = database.spelaDatabaseQueries.getDeviceSetting(CONSOLE_RENDER_SCALE_PREFIX + normalizedConsoleId)
-            .executeAsOneOrNull()
-        return RenderScale.fromStorageId(stored)
-            ?: preferences?.consoleRenderScales?.get(normalizedConsoleId)
-            ?: RenderScale.NATIVE
+        return resolveRenderScaleChoice(consoleId, preferences).scale ?: RenderScale.NATIVE
     }
 
     override fun setRenderScale(consoleId: String, scale: RenderScale) {
-        val normalizedConsoleId = consoleId.trim().lowercase()
-        if (normalizedConsoleId.isBlank()) return
-        val key = CONSOLE_RENDER_SCALE_PREFIX + normalizedConsoleId
-        if (scale == RenderScale.NATIVE || !supportsRenderScale(normalizedConsoleId)) {
-            database.spelaDatabaseQueries.deleteDeviceSetting(key)
-        } else {
-            database.spelaDatabaseQueries.insertDeviceSetting(key, scale.storageId)
-        }
+        setRenderScaleChoice(consoleId, RenderScaleChoice.fromRenderScale(scale))
     }
 
     @OptIn(ExperimentalUuidApi::class)

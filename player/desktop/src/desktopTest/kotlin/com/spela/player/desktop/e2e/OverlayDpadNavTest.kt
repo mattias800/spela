@@ -5,6 +5,7 @@ import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.*
+import com.spela.player.domain.model.DisplayAspectChoice
 import com.spela.player.domain.model.Console
 import com.spela.player.domain.model.WidescreenMode
 import com.spela.player.presentation.intent.EmulationIntent
@@ -95,6 +96,23 @@ class OverlayDpadNavTest {
         advanceQuick(harness)
     }
 
+    private fun ComposeUiTest.focusToolbarShortcut(label: String, harness: SpelaTestHarness) {
+        pressOverlayKey(Key.DirectionUp, harness)
+        if (focusedLabels() == listOf(label)) return
+
+        repeat(4) {
+            pressOverlayKey(Key.DirectionLeft, harness)
+            if (focusedLabels() == listOf(label)) return
+        }
+
+        repeat(6) {
+            pressOverlayKey(Key.DirectionRight, harness)
+            if (focusedLabels() == listOf(label)) return
+        }
+
+        assertEquals(listOf(label), focusedLabels(), "expected d-pad navigation to reach $label")
+    }
+
     @Test
     fun overlayAnchorsFocusOnOpen() = runComposeUiTest {
         val harness = SpelaTestHarness(StandardTestDispatcher())
@@ -175,6 +193,9 @@ class OverlayDpadNavTest {
         startGameWithOverlayOpen(harness)
 
         pressOverlayKey(Key.DirectionUp, harness)
+        assertEquals(listOf("Resolution"), focusedLabels())
+
+        pressOverlayKey(Key.DirectionLeft, harness)
         assertEquals(listOf("Volume"), focusedLabels())
         onNodeWithText("Volume").assertIsDisplayed()
 
@@ -218,35 +239,60 @@ class OverlayDpadNavTest {
     }
 
     @Test
-    fun overlayWidescreenShortcutIsKeyboardOperableForSupportedConsole() = runComposeUiTest {
+    fun overlayAspectShortcutIsKeyboardOperableForSupportedConsole() = runComposeUiTest {
         val harness = SpelaTestHarness(StandardTestDispatcher())
         configureGameOneAsWii(harness)
         startGameWithOverlayOpen(harness)
 
-        pressOverlayKey(Key.DirectionUp, harness)
-        assertEquals(listOf("Widescreen"), focusedLabels())
+        focusToolbarShortcut("Aspect ratio", harness)
+        assertEquals(listOf("Aspect ratio"), focusedLabels())
 
         pressOverlayKey(Key.DirectionLeft, harness)
-        assertEquals(listOf("Volume"), focusedLabels(), "left should move from Widescreen to Volume")
+        assertEquals(listOf("Volume"), focusedLabels(), "left should move from Aspect ratio to Volume")
 
         pressOverlayKey(Key.DirectionRight, harness)
-        assertEquals(listOf("Widescreen"), focusedLabels(), "right should move from Volume to Widescreen")
-        onNodeWithText("Widescreen").assertIsDisplayed()
-        assertEquals(WidescreenMode.STRETCH, harness.emulationViewModel.state.value.widescreenMode)
+        assertEquals(listOf("Aspect ratio"), focusedLabels(), "right should move from Volume to Aspect ratio")
+
+        onNodeWithText("Auto (Original)").assertIsDisplayed()
+        assertEquals(DisplayAspectChoice.AUTO, harness.emulationViewModel.state.value.displayAspectChoice)
+        assertEquals(WidescreenMode.FOUR_THREE, harness.emulationViewModel.state.value.widescreenMode)
 
         pressOverlayKey(Key.Enter, harness)
-        onNodeWithText("Stretch (Full)", useUnmergedTree = true).assertIsDisplayed()
-        assertTrue("Stretch (Full)" in focusedLabels())
+        onNodeWithText("Auto", useUnmergedTree = true).assertIsDisplayed()
+        assertTrue("Auto" in focusedLabels())
+
+        pressOverlayKey(Key.DirectionDown, harness)
+        assertTrue("Original" in focusedLabels())
+
+        pressOverlayKey(Key.DirectionDown, harness)
+        assertTrue("16:9" in focusedLabels())
 
         pressOverlayKey(Key.DirectionDown, harness)
         assertTrue("Zoom" in focusedLabels())
 
         pressOverlayKey(Key.Enter, harness)
         assertEquals(WidescreenMode.ZOOM, harness.emulationViewModel.state.value.widescreenMode)
-        onNodeWithText("Stretch (Full)", useUnmergedTree = true).assertDoesNotExist()
+        onNodeWithText("Auto", useUnmergedTree = true).assertDoesNotExist()
 
         pressOverlayKey(Key.DirectionDown, harness)
-        assertEquals(listOf("Save"), focusedLabels(), "d-pad should remain inside the drawer after closing widescreen")
+        assertEquals(listOf("Save"), focusedLabels(), "d-pad should remain inside the drawer after closing aspect")
+    }
+
+    @Test
+    fun overlayResolutionShortcutShowsResolvedAutoValue() = runComposeUiTest {
+        val harness = SpelaTestHarness(StandardTestDispatcher())
+        configureGameOneAsWii(harness)
+        startGameWithOverlayOpen(harness)
+
+        focusToolbarShortcut("Resolution", harness)
+        assertEquals(listOf("Resolution"), focusedLabels())
+        onNodeWithText(harness.emulationViewModel.state.value.renderScaleLabel).assertIsDisplayed()
+
+        pressOverlayKey(Key.Enter, harness)
+        onNodeWithText("Changes apply when a game starts", useUnmergedTree = true).assertIsDisplayed()
+
+        pressOverlayKey(Key.Escape, harness)
+        onNodeWithText("Changes apply when a game starts", useUnmergedTree = true).assertDoesNotExist()
     }
 
     @Test
