@@ -9,6 +9,7 @@ import com.spela.player.domain.model.DisplayProfileResolver
 import com.spela.player.domain.model.UserPreferences
 import com.spela.player.domain.model.WidescreenMode
 import com.spela.player.domain.model.renderScaleCoreVariables
+import com.spela.player.domain.model.wiiIrPointerCoreVariables
 import com.spela.player.domain.repository.AchievementsRepository
 import com.spela.player.domain.repository.GameStatsRepository
 import com.spela.player.domain.repository.PreferencesRepository
@@ -1219,6 +1220,10 @@ class EmulationViewModel(
                         }
                         libretroController.setWidescreenMode(displayProfile.aspectMode)
                         for (override in renderScaleCoreVariables(consoleId, corePath, displayProfile.renderScale)) {
+                            libretroController.setCoreVariable(override.key, override.value)
+                        }
+                        // Center the Wiimote IR pointer's rest position (#1524).
+                        for (override in wiiIrPointerCoreVariables(consoleId, corePath)) {
                             libretroController.setCoreVariable(override.key, override.value)
                         }
 
