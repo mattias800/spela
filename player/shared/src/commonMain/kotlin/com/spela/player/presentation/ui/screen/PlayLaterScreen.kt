@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.grid.GridCells
 import com.spela.player.presentation.ui.components.SpLazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.runtime.CompositionLocalProvider
 import com.spela.player.presentation.ui.gamepad.InputMode
@@ -27,6 +28,7 @@ import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.components.ScreenLoadingIndicator
 import com.spela.player.presentation.ui.components.SpEmptyStates
 import com.spela.player.presentation.ui.components.SpScreen
+import com.spela.player.presentation.ui.components.SpScreenHeading
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.components.sectionPillClearance
 import com.spela.player.presentation.ui.components.rememberLoadingFlashDebounce
@@ -95,6 +97,15 @@ fun PlayLaterScreen(
                                 horizontalArrangement = Arrangement.spacedBy(SpSpacing.GridSpacing),
                                 verticalArrangement = Arrangement.spacedBy(SpSpacing.GridSpacing),
                             ) {
+                                // Gamepad-mode screen heading (#1529) — scrolls
+                                // away with the grid so cards still pass under
+                                // the floating pill. Guarded so touch mode (which
+                                // has the SpTopBar title) gets no empty grid row.
+                                if (isGamepad) {
+                                    item(key = "screen_heading", span = { GridItemSpan(maxLineSpan) }) {
+                                        SpScreenHeading(title = "Play Later")
+                                    }
+                                }
                                 itemsIndexed(state.playLaterGames, key = { _, g -> g.id }) { index, game ->
                                     GameGridItem(
                                         game = game,
