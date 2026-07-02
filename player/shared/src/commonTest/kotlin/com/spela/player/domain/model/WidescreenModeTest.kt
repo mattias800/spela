@@ -7,12 +7,8 @@ import kotlin.test.assertTrue
 
 class WidescreenModeTest {
     @Test
-    fun `wii defaults to stretch for anamorphic widescreen games`() {
-        assertEquals(WidescreenMode.STRETCH, defaultWidescreenMode("wii"))
-    }
-
-    @Test
-    fun `gamecube and ps2 default to 4 to 3`() {
+    fun `wii gamecube and ps2 default to original 4 to 3 presentation`() {
+        assertEquals(WidescreenMode.FOUR_THREE, defaultWidescreenMode("wii"))
         assertEquals(WidescreenMode.FOUR_THREE, defaultWidescreenMode("gc"))
         assertEquals(WidescreenMode.FOUR_THREE, defaultWidescreenMode("gamecube"))
         assertEquals(WidescreenMode.FOUR_THREE, defaultWidescreenMode("ps2"))

@@ -4,6 +4,8 @@ import com.spela.player.data.remote.PresenceService
 import com.spela.player.data.repository.BiosRepository
 import com.spela.player.domain.controller.AchievementsController
 import com.spela.player.domain.model.AchievementEventType
+import com.spela.player.domain.model.DisplayAspectChoice
+import com.spela.player.domain.model.DisplayProfileResolver
 import com.spela.player.domain.model.UserPreferences
 import com.spela.player.domain.model.WidescreenMode
 import com.spela.player.domain.model.renderScaleCoreVariables
@@ -20,6 +22,7 @@ import com.spela.player.presentation.state.EmulationState
 import com.spela.player.presentation.state.SessionAchievementUnlock
 import com.spela.player.util.DispatcherProvider
 import com.spela.player.presentation.state.GameSyncState
+import com.spela.player.util.currentPlatform
 import kotlin.time.Clock
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -253,7 +256,7 @@ class EmulationViewModel(
                 libretroController.setVolume(vol)
                 _state.update { it.copy(volume = vol) }
             }
-            is EmulationIntent.SetWidescreenMode -> setWidescreenMode(intent.mode)
+            is EmulationIntent.SetDisplayAspectChoice -> setDisplayAspectChoice(intent.choice)
             EmulationIntent.TakeScreenshot -> { /* Platform-specific capture */ }
 
             EmulationIntent.ShowExitConfirm -> {
@@ -878,6 +881,14 @@ class EmulationViewModel(
                     com.spela.player.domain.model.SaveStateChoice.Disabled
                 val askOnce = effectiveChoice ==
                     com.spela.player.domain.model.SaveStateChoice.AskOnce
+                val displayAspectChoice = preferencesRepository.resolveDisplayAspectChoice(
+                    gameId = gameId,
+                    consoleId = detail.game.consoleId,
+                )
+                val renderScaleChoice = preferencesRepository.resolveRenderScaleChoice(
+                    consoleId = detail.game.consoleId,
+                    preferences = currentPreferences,
+                )
                 withContext(dispatchers.main) {
                     _state.update {
                         it.copy(
@@ -892,10 +903,8 @@ class EmulationViewModel(
                             gameGenre = detail.game.genre,
                             gameRating = detail.game.igdbCriticsRating,
                             gamePlayers = detail.game.players,
-                            widescreenMode = preferencesRepository.resolveWidescreenMode(
-                                gameId = gameId,
-                                consoleId = detail.game.consoleId,
-                            ),
+                            displayAspectChoice = displayAspectChoice,
+                            renderScaleChoice = renderScaleChoice,
                             saveStatesOptedOut = optedOut,
                             showSaveStatePrompt = askOnce,
                             saveStatePromptConsoleAbbr = if (askOnce) detail.game.consoleId else "",
@@ -1187,8 +1196,29 @@ class EmulationViewModel(
                             libretroController.setCoreVariable("desmume_pointer_type", "touch")
                             libretroController.setCoreVariable("desmume_pointer_mouse", "enabled")
                         }
-                        val renderScale = preferencesRepository.resolveRenderScale(consoleId, currentPreferences)
-                        for (override in renderScaleCoreVariables(consoleId, corePath, renderScale)) {
+                        val displayProfile = DisplayProfileResolver.resolve(
+                            gameId = gameId,
+                            gameTitle = _state.value.gameTitle,
+                            consoleId = consoleId,
+                            corePath = corePath,
+                            aspectChoice = _state.value.displayAspectChoice,
+                            renderScaleChoice = _state.value.renderScaleChoice,
+                            platform = currentPlatform(),
+                        )
+                        withContext(dispatchers.main) {
+                            _state.update {
+                                it.copy(
+                                    widescreenMode = displayProfile.aspectMode,
+                                    displayAspectLabel = displayProfile.aspectLabel,
+                                    displayAspectStateDescription = displayProfile.aspectStateDescription,
+                                    renderScale = displayProfile.renderScale,
+                                    renderScaleLabel = displayProfile.renderScaleLabel,
+                                    renderScaleStateDescription = displayProfile.renderScaleStateDescription,
+                                )
+                            }
+                        }
+                        libretroController.setWidescreenMode(displayProfile.aspectMode)
+                        for (override in renderScaleCoreVariables(consoleId, corePath, displayProfile.renderScale)) {
                             libretroController.setCoreVariable(override.key, override.value)
                         }
 
@@ -1753,15 +1783,31 @@ class EmulationViewModel(
         _state.update { it.copy(isFastForward = newState) }
     }
 
-    private fun setWidescreenMode(mode: WidescreenMode) {
+    private fun setDisplayAspectChoice(choice: DisplayAspectChoice) {
         val snapshot = _state.value
-        _state.update { it.copy(widescreenMode = mode) }
-        preferencesRepository.setWidescreenMode(
+        val profile = DisplayProfileResolver.resolve(
+            gameId = snapshot.gameId,
+            gameTitle = snapshot.gameTitle,
+            consoleId = snapshot.consoleId,
+            corePath = "",
+            aspectChoice = choice,
+            renderScaleChoice = snapshot.renderScaleChoice,
+            platform = currentPlatform(),
+        )
+        _state.update {
+            it.copy(
+                displayAspectChoice = choice,
+                widescreenMode = profile.aspectMode,
+                displayAspectLabel = profile.aspectLabel,
+                displayAspectStateDescription = profile.aspectStateDescription,
+            )
+        }
+        preferencesRepository.setDisplayAspectChoice(
             gameId = snapshot.gameId,
             consoleId = snapshot.consoleId,
-            mode = mode,
+            choice = choice,
         )
-        libretroController.setWidescreenMode(mode)
+        libretroController.setWidescreenMode(profile.aspectMode)
         val shouldRefreshPausedVideo = snapshot.isRunning &&
             snapshot.isPaused &&
             !snapshot.isNetplayMode &&

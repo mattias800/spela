@@ -135,6 +135,8 @@ class DesktopLibretroController(
     var latestRenderedFrame: RenderedFrame? = null
         private set
 
+    fun getAspectRatio(): Float = jni.nativeGetAspectRatio()
+
     override fun loadCore(corePath: String, saveDir: String?) {
         jni.nativeSetSystemDir(fileStorage.getBiosDir())
         jni.nativeSetSaveDir(saveDir ?: fileStorage.getSavesDir())

@@ -10,6 +10,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.*
 import androidx.compose.ui.unit.dp
+import com.spela.player.domain.model.Console
 import com.spela.player.presentation.intent.EmulationIntent
 import com.spela.player.presentation.navigation.NavigationIntent
 import com.spela.player.presentation.navigation.SpScreen
@@ -62,8 +63,16 @@ class InGameOverlayTest {
     }
 
     private fun ComposeUiTest.startGameInFixedRoot(harness: SpelaTestHarness) {
+        startGameInFixedRoot(harness, width = 1200, height = 800)
+    }
+
+    private fun ComposeUiTest.startGameInFixedRoot(
+        harness: SpelaTestHarness,
+        width: Int,
+        height: Int,
+    ) {
         setContent {
-            Box(Modifier.width(1200.dp).height(800.dp).testTag("overlay_drawer_test_root")) {
+            Box(Modifier.width(width.dp).height(height.dp).testTag("overlay_drawer_test_root")) {
                 harness.App()
             }
         }
@@ -74,6 +83,26 @@ class InGameOverlayTest {
 
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
         advanceQuick(harness)
+    }
+
+    private fun configureGameOneAsWii(harness: SpelaTestHarness) {
+        harness.gameRepo.consoles = harness.gameRepo.consoles + Console(
+            id = "wii",
+            name = "Nintendo Wii",
+            abbreviation = "Wii",
+            gameCount = 1,
+        )
+        harness.gameRepo.games = harness.gameRepo.games.map { game ->
+            if (game.id == "1") {
+                game.copy(
+                    consoleId = "wii",
+                    consoleName = "Nintendo Wii",
+                    fileName = "castlevania.wbfs",
+                )
+            } else {
+                game
+            }
+        }
     }
 
     private fun ComposeUiTest.boundsForText(text: String): Rect =
@@ -117,8 +146,13 @@ class InGameOverlayTest {
             ?.boundsInRoot
             ?: error("Expected overlay heading for Castlevania")
 
-    private fun assertInsideLeftDrawer(label: String, bounds: Rect, rootBounds: Rect) {
-        val drawerLimit = rootBounds.left + rootBounds.width * 0.52f
+    private fun assertInsideLeftDrawer(
+        label: String,
+        bounds: Rect,
+        rootBounds: Rect,
+        drawerWidthFraction: Float = 0.52f,
+    ) {
+        val drawerLimit = rootBounds.left + rootBounds.width * drawerWidthFraction
         assertTrue(
             bounds.right <= drawerLimit,
             "$label should stay inside the left drawer. bounds=$bounds drawerLimit=$drawerLimit",
@@ -225,6 +259,30 @@ class InGameOverlayTest {
 
         assertFalse(harness.emulationViewModel.state.value.showOverlay, "Backdrop should close the drawer")
         onNodeWithText("Exit Game").assertDoesNotExist()
+    }
+
+    @Test
+    fun overlayShortcutsStayInsideNarrowLandscapeDrawer() = runComposeUiTest {
+        val harness = createHarnessWithGameReady()
+        configureGameOneAsWii(harness)
+        startGameInFixedRoot(harness, width = 1024, height = 768)
+
+        val rootBounds = onNodeWithTag("overlay_drawer_test_root", useUnmergedTree = true)
+            .fetchSemanticsNode()
+            .boundsInRoot
+        val renderScaleLabel = harness.emulationViewModel.state.value.renderScaleLabel
+        val shortcutBounds = listOf(
+            "Volume" to boundsForContentDescription("Volume"),
+            "100%" to boundsForText("100%"),
+            "Aspect ratio" to boundsForContentDescription("Aspect ratio"),
+            "Auto (Original)" to boundsForText("Auto (Original)"),
+            "Resolution" to boundsForContentDescription("Resolution"),
+            renderScaleLabel to boundsForText(renderScaleLabel),
+        )
+
+        shortcutBounds.forEach { (label, bounds) ->
+            assertInsideLeftDrawer(label, bounds, rootBounds, drawerWidthFraction = 0.36f)
+        }
     }
 
     @Test
