@@ -275,6 +275,13 @@ data class UserPreferences(
     val selectedShader: ShaderPreset = ShaderPreset.NONE,
     val selectedTheme: String = "default-dark",
     val consoleShaders: Map<String, ShaderPreset> = emptyMap(),
+    /**
+     * Per-console internal render-scale preferences from the server,
+     * keyed by console abbreviation. A missing key means native/core
+     * default; device-local overrides can still layer on top.
+     * See #1546.
+     */
+    val consoleRenderScales: Map<String, RenderScale> = emptyMap(),
     val consoleSaveStatePolicies: Map<String, SaveStateChoice> = emptyMap(),
     /**
      * Per-game save-state opt-out overrides keyed by game ID string.

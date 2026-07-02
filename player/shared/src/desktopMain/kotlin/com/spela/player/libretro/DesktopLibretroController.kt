@@ -319,6 +319,10 @@ class DesktopLibretroController(
         jni.nativeSetCoreVariable(key, value)
     }
 
+    override fun clearCoreVariables() {
+        jni.nativeClearCoreVariables()
+    }
+
     /* GPU Renderer methods */
 
     fun gpuInit(surface: Any): Boolean = jni.nativeGpuInit(surface)

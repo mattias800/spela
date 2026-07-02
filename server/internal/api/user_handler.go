@@ -61,6 +61,47 @@ func (h *UserHandler) buildConsoleShaderMap(userID uint) map[string]string {
 	return m
 }
 
+// buildConsoleRenderScaleMap queries all per-console render-scale rows
+// for the user and returns a map keyed by console abbreviation. A
+// missing key means native/core default.
+func (h *UserHandler) buildConsoleRenderScaleMap(userID uint) map[string]string {
+	var prefs []db.ConsoleRenderScalePreference
+	h.DB.Where("user_id = ?", userID).Find(&prefs)
+
+	consoleIDs := make([]uint, 0, len(prefs))
+	for _, p := range prefs {
+		consoleIDs = append(consoleIDs, p.ConsoleID)
+	}
+	abbrMap := resolveConsoleAbbrs(h.DB, consoleIDs)
+
+	m := make(map[string]string, len(prefs))
+	for _, p := range prefs {
+		if abbr, ok := abbrMap[p.ConsoleID]; ok {
+			m[abbr] = p.Scale
+		}
+	}
+	return m
+}
+
+// normalizeRenderScale clamps the client-supplied internal render scale
+// to the closed set the player understands. Empty, "native", and "1x"
+// clear the row; unknown values are no-ops so a client typo cannot
+// destroy an existing override.
+func normalizeRenderScale(raw string) (scale string, clear bool) {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return "", true
+	}
+	switch strings.ToLower(trimmed) {
+	case "native", "1x":
+		return "", true
+	case "2x", "3x", "4x":
+		return strings.ToLower(trimmed), false
+	default:
+		return "", false
+	}
+}
+
 // buildGameSaveStatePolicyMap queries the per-user, per-game save-
 // state overrides and returns them keyed by game ID string. Layered
 // on top of the per-console policy — a per-game choice wins over the
@@ -182,18 +223,18 @@ func parseJSONIntMap(s string) map[string]int {
 // privateNetworks defines the IP ranges considered internal/private.
 var privateNetworks = func() []*net.IPNet {
 	cidrs := []string{
-		"0.0.0.0/8",       // Current network
-		"10.0.0.0/8",      // Private (RFC 1918)
-		"100.64.0.0/10",   // Carrier-grade NAT (RFC 6598)
-		"127.0.0.0/8",     // Loopback
-		"169.254.0.0/16",  // Link-local
-		"172.16.0.0/12",   // Private (RFC 1918)
-		"192.0.0.0/24",    // IETF protocol assignments
-		"192.168.0.0/16",  // Private (RFC 1918)
-		"198.18.0.0/15",   // Benchmarking (RFC 2544)
-		"::1/128",         // IPv6 loopback
-		"fc00::/7",        // IPv6 unique local
-		"fe80::/10",       // IPv6 link-local
+		"0.0.0.0/8",      // Current network
+		"10.0.0.0/8",     // Private (RFC 1918)
+		"100.64.0.0/10",  // Carrier-grade NAT (RFC 6598)
+		"127.0.0.0/8",    // Loopback
+		"169.254.0.0/16", // Link-local
+		"172.16.0.0/12",  // Private (RFC 1918)
+		"192.0.0.0/24",   // IETF protocol assignments
+		"192.168.0.0/16", // Private (RFC 1918)
+		"198.18.0.0/15",  // Benchmarking (RFC 2544)
+		"::1/128",        // IPv6 loopback
+		"fc00::/7",       // IPv6 unique local
+		"fe80::/10",      // IPv6 link-local
 	}
 	var nets []*net.IPNet
 	for _, cidr := range cidrs {

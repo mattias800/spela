@@ -1838,6 +1838,10 @@ JNI_FUNC(void, nativeSetCoreVariable)(JNIEnv *env, jobject thiz, jstring key, js
     (*env)->ReleaseStringUTFChars(env, value, v);
 }
 
+JNI_FUNC(void, nativeClearCoreVariables)(JNIEnv *env, jobject thiz) {
+    core_variables_clear();
+}
+
 JNI_FUNC(void, nativeSetInputPointer)(JNIEnv *env, jobject thiz,
                                        jint port, jint x, jint y, jboolean pressed) {
     input_set_pointer((unsigned)port, (int16_t)x, (int16_t)y, pressed == JNI_TRUE);

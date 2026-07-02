@@ -4,8 +4,9 @@ import com.spela.player.data.remote.PresenceService
 import com.spela.player.data.repository.BiosRepository
 import com.spela.player.domain.controller.AchievementsController
 import com.spela.player.domain.model.AchievementEventType
-import com.spela.player.domain.model.WidescreenMode
 import com.spela.player.domain.model.UserPreferences
+import com.spela.player.domain.model.WidescreenMode
+import com.spela.player.domain.model.renderScaleCoreVariables
 import com.spela.player.domain.repository.AchievementsRepository
 import com.spela.player.domain.repository.GameStatsRepository
 import com.spela.player.domain.repository.PreferencesRepository
@@ -1176,13 +1177,19 @@ class EmulationViewModel(
                         }
                     }
                     try {
-                        // Set core options BEFORE loadCore so they're already in
-                        // the variable store when SET_VARIABLES runs during init.
+                        // Start each launch from a fresh option table, then set
+                        // core options BEFORE loadCore so they're already in the
+                        // variable store when SET_VARIABLES runs during init.
+                        libretroController.clearCoreVariables()
                         if (isDualScreen) {
                             libretroController.setCoreVariable("desmume_screens_layout", "vertical")
                             libretroController.setCoreVariable("desmume_screens_gap", "0")
                             libretroController.setCoreVariable("desmume_pointer_type", "touch")
                             libretroController.setCoreVariable("desmume_pointer_mouse", "enabled")
+                        }
+                        val renderScale = preferencesRepository.resolveRenderScale(consoleId, currentPreferences)
+                        for (override in renderScaleCoreVariables(consoleId, corePath, renderScale)) {
+                            libretroController.setCoreVariable(override.key, override.value)
                         }
 
                         // Per-session save_dir: cores that write their saves to disk
@@ -2102,6 +2109,9 @@ interface LibretroController {
 
     /** Set a core option variable (e.g. DeSmuME screen layout). */
     fun setCoreVariable(key: String, value: String) {}
+
+    /** Clear core option variables from a previous launch. */
+    fun clearCoreVariables() {}
 
     /** Returns true if the loaded core uses HW rendering (OpenGL/Vulkan). */
     fun isHwRenderEnabled(): Boolean = false

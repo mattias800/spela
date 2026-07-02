@@ -17,7 +17,6 @@ import (
 	"gorm.io/gorm"
 )
 
-
 // UpdateProfileInput is the input for PUT /api/user/profile.
 type UpdateProfileInput struct {
 	Body UpdateProfileRequest
@@ -276,6 +275,37 @@ func (h *UserHandler) HumaUpdatePreferences(ctx context.Context, in *UpdatePrefe
 		}
 	}
 
+	if req.ConsoleRenderScales != nil {
+		for consoleAbbr, raw := range req.ConsoleRenderScales {
+			var console db.Console
+			if err := h.DB.Where("LOWER(abbreviation) = LOWER(?)", consoleAbbr).First(&console).Error; err != nil {
+				continue
+			}
+			scale, clear := normalizeRenderScale(raw)
+			if clear {
+				h.DB.Unscoped().Where("user_id = ? AND console_id = ?", uid, console.ID).
+					Delete(&db.ConsoleRenderScalePreference{})
+				continue
+			}
+			if scale == "" {
+				continue
+			}
+			var existing db.ConsoleRenderScalePreference
+			result := h.DB.Unscoped().Where("user_id = ? AND console_id = ?", uid, console.ID).First(&existing)
+			if result.Error == nil {
+				existing.Scale = scale
+				existing.DeletedAt = gorm.DeletedAt{}
+				h.DB.Unscoped().Save(&existing)
+			} else {
+				h.DB.Create(&db.ConsoleRenderScalePreference{
+					UserID:    uid,
+					ConsoleID: console.ID,
+					Scale:     scale,
+				})
+			}
+		}
+	}
+
 	if req.ConsoleSaveStatePolicies != nil {
 		for consoleAbbr, raw := range req.ConsoleSaveStatePolicies {
 			var console db.Console
@@ -401,6 +431,7 @@ func (h *UserHandler) HumaUpdatePreferences(ctx context.Context, in *UpdatePrefe
 	}
 
 	consoleShaders := h.buildConsoleShaderMap(uid)
+	consoleRenderScales := h.buildConsoleRenderScaleMap(uid)
 	consoleSaveStatePolicies := h.buildConsoleSaveStatePolicyMap(uid)
 	gameSaveStatePolicies := h.buildGameSaveStatePolicyMap(uid)
 	consoleKeyMappings := h.buildConsoleKeyMappingMap(uid)
@@ -428,23 +459,24 @@ func (h *UserHandler) HumaUpdatePreferences(ctx context.Context, in *UpdatePrefe
 
 	return &UpdatePreferencesOutput{
 		Body: UserPreferencesResponse{
-			ShowPerformanceOverlay:  user.ShowPerfOverlay,
-			AutoSaveEnabled:         user.AutoSaveEnabled,
-			AutoLoadSaveEnabled:     user.AutoLoadSaveEnabled,
-			AutoUpdateCoresEnabled:  user.AutoUpdateCoresEnabled,
-			SelectedShader:          user.SelectedShader,
-			SelectedTheme:           selectedTheme,
-			DefaultSecondScreenPage: defaultSecondScreenPage,
+			ShowPerformanceOverlay:   user.ShowPerfOverlay,
+			AutoSaveEnabled:          user.AutoSaveEnabled,
+			AutoLoadSaveEnabled:      user.AutoLoadSaveEnabled,
+			AutoUpdateCoresEnabled:   user.AutoUpdateCoresEnabled,
+			SelectedShader:           user.SelectedShader,
+			SelectedTheme:            selectedTheme,
+			DefaultSecondScreenPage:  defaultSecondScreenPage,
 			ConsoleShaders:           consoleShaders,
+			ConsoleRenderScales:      consoleRenderScales,
 			ConsoleSaveStatePolicies: consoleSaveStatePolicies,
 			GameSaveStatePolicies:    gameSaveStatePolicies,
 			SelectedKeyMapping:       selectedKeyMapping,
-			CustomKeyMapping:        customKeyMapping,
-			ConsoleKeyMappings:      consoleKeyMappings,
-			PreferredRegions:        preferredRegions,
-			RALinked:                raLinked,
-			RAUsername:              raCred.RAUsername,
-			RAHardcoreEnabled:       raCred.HardcoreEnabled,
+			CustomKeyMapping:         customKeyMapping,
+			ConsoleKeyMappings:       consoleKeyMappings,
+			PreferredRegions:         preferredRegions,
+			RALinked:                 raLinked,
+			RAUsername:               raCred.RAUsername,
+			RAHardcoreEnabled:        raCred.HardcoreEnabled,
 		},
 	}, nil
 }

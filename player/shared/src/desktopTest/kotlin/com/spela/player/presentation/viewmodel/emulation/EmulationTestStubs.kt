@@ -39,6 +39,7 @@ import com.spela.player.domain.model.TopRatedGame
 import com.spela.player.domain.model.SimilarGame
 import com.spela.player.domain.model.DeveloperGame
 import com.spela.player.domain.model.PaginatedResult
+import com.spela.player.domain.model.RenderScale
 import com.spela.player.domain.model.UserPreferences
 import com.spela.player.domain.model.WidescreenMode
 import com.spela.player.domain.model.defaultWidescreenMode
@@ -112,6 +113,8 @@ open class StubLibretroController : LibretroController {
     var setSRAMCallCount = 0; private set
     var clearNetplayModeCallCount = 0; private set
     val presentationEvents = mutableListOf<String>()
+    val calls = mutableListOf<String>()
+    val coreVariables = mutableMapOf<String, String>()
 
     var lastLoadCorePath: String? = null; private set
     var lastLoadGamePath: String? = null; private set
@@ -136,11 +139,13 @@ open class StubLibretroController : LibretroController {
         loadCoreShouldThrow?.let { throw it }
         loadCoreCallCount++
         lastLoadCorePath = corePath
+        calls += "loadCore"
     }
 
     override fun loadGame(gamePath: String) {
         loadGameCallCount++
         lastLoadGamePath = gamePath
+        calls += "loadGame"
     }
 
     override fun start() { startCallCount++ }
@@ -158,6 +163,14 @@ open class StubLibretroController : LibretroController {
     override fun setWidescreenMode(mode: WidescreenMode) {
         lastWidescreenMode = mode
         presentationEvents += "setWidescreenMode:${mode.storageId}"
+    }
+    override fun setCoreVariable(key: String, value: String) {
+        coreVariables[key] = value
+        calls += "setCoreVariable:$key=$value"
+    }
+    override fun clearCoreVariables() {
+        coreVariables.clear()
+        calls += "clearCoreVariables"
     }
     override fun refreshPausedVideo() {
         refreshPausedVideoCallCount++
@@ -196,6 +209,7 @@ class StubLibretroControllerWithVariableTracking : LibretroController {
     override fun setFastForward(enabled: Boolean) {}
     override fun performanceStats(): Flow<Pair<Float, Float>> = emptyFlow()
     override fun setCoreVariable(key: String, value: String) { coreVariables[key] = value }
+    override fun clearCoreVariables() { coreVariables.clear() }
 }
 
 // ── Repository stubs ────────────────────────────────────────────────────────
@@ -260,11 +274,13 @@ class StubDownloadRepository : DownloadRepository {
 }
 
 class StubCoreRepository : CoreRepository {
+    var recommendedCore: LibretroCore = LibretroCore(id = 1, name = "nestopia", displayName = "Nestopia")
+    var localCorePath: String = "/path/to/core.so"
     override suspend fun getAvailableCores() = Result.success(emptyList<LibretroCore>())
-    override suspend fun getRecommendedCore(gameId: String) = Result.success(LibretroCore(id = 1, name = "nestopia", displayName = "Nestopia"))
-    override suspend fun downloadCore(coreName: String, customDownloadUrl: String?, onProgress: (bytesDownloaded: Long, totalBytes: Long?) -> Unit) = Result.success("/path/to/core.so")
-    override suspend fun downloadCoreByHash(coreName: String, sha256: String, onProgress: (bytesDownloaded: Long, totalBytes: Long?) -> Unit) = Result.success("/path/to/core.so")
-    override suspend fun getLocalCorePath(coreName: String): String = "/path/to/core.so"
+    override suspend fun getRecommendedCore(gameId: String) = Result.success(recommendedCore)
+    override suspend fun downloadCore(coreName: String, customDownloadUrl: String?, onProgress: (bytesDownloaded: Long, totalBytes: Long?) -> Unit) = Result.success(localCorePath)
+    override suspend fun downloadCoreByHash(coreName: String, sha256: String, onProgress: (bytesDownloaded: Long, totalBytes: Long?) -> Unit) = Result.success(localCorePath)
+    override suspend fun getLocalCorePath(coreName: String): String = localCorePath
     override suspend fun isCoreCached(coreName: String) = true
     override suspend fun isCachedCoreCurrent(coreName: String): Boolean? = null
     override suspend fun getServerCoreSha(coreName: String): String? = null
@@ -305,6 +321,7 @@ class StubPreferencesRepository : PreferencesRepository {
     var preferencesResult: Result<UserPreferences> = Result.success(UserPreferences())
     var resolveShaderResult: ShaderPreset = ShaderPreset.NONE
     var resolveWidescreenModeResult: WidescreenMode? = null
+    var resolveRenderScaleResult: RenderScale = RenderScale.NATIVE
     var lastResolvedWidescreenModeGameId: String? = null
         private set
     var lastResolvedWidescreenModeConsoleId: String? = null
@@ -332,6 +349,7 @@ class StubPreferencesRepository : PreferencesRepository {
         selectedShader: String?,
         selectedTheme: String?,
         consoleShaders: Map<String, String>?,
+        consoleRenderScales: Map<String, String>?,
         consoleSaveStatePolicies: Map<String, String>?,
         gameSaveStatePolicies: Map<String, String>?,
         defaultSecondScreenPage: String?,
@@ -366,6 +384,8 @@ class StubPreferencesRepository : PreferencesRepository {
         lastSetWidescreenModeConsoleId = consoleId
         lastSetWidescreenMode = mode
     }
+    override fun resolveRenderScale(consoleId: String, preferences: UserPreferences?): RenderScale = resolveRenderScaleResult
+    override fun setRenderScale(consoleId: String, scale: RenderScale) {}
     override suspend fun pushDeviceShaderOverridesToServer() {}
     override suspend fun syncKeyMappingsFromServer() {}
     override suspend fun pushKeyMappingsToServer() {}
@@ -820,6 +840,7 @@ class EmulationViewModelTestBuilder {
     }
 
     val libretroController = StubLibretroController()
+    val coreRepository = StubCoreRepository()
     val preferencesRepository = StubPreferencesRepository()
     val saveDataRepository = StubSaveDataRepository()
     val sessionRepository = StubSessionRepository()
@@ -898,13 +919,12 @@ class EmulationViewModelTestBuilder {
             scope = vmScope,
         )
 
-        val emulationStubCoreRepo = StubCoreRepository()
         return EmulationViewModel(
             prepareGameUseCase = PrepareGameUseCase(
                 downloadRepository = StubDownloadRepository(),
-                coreRepository = emulationStubCoreRepo,
+                coreRepository = coreRepository,
                 coreUpdateService = com.spela.player.data.repository.CoreUpdateService(
-                    coreRepository = emulationStubCoreRepo,
+                    coreRepository = coreRepository,
                     preferencesRepository = preferencesRepository,
                     dispatchers = dispatchers,
                     scope = vmScope,

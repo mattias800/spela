@@ -61,6 +61,7 @@ class LibretroJni {
 
     /* Core variables */
     external fun nativeSetCoreVariable(key: String, value: String)
+    external fun nativeClearCoreVariables()
 
     /* Info */
     external fun nativeGetTargetFps(): Double

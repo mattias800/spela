@@ -1026,8 +1026,7 @@
             "type": "string"
           },
           "email": {
-            "description": "New account email (RFC 5321 cap).",
-            "format": "email",
+            "description": "Optional new account email (RFC 5321 cap).",
             "maxLength": 254,
             "type": "string"
           },
@@ -1047,7 +1046,6 @@
         },
         "required": [
           "username",
-          "email",
           "password"
         ],
         "type": "object"
@@ -11049,6 +11047,12 @@
             },
             "type": "object"
           },
+          "consoleRenderScales": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
           "consoleSaveStatePolicies": {
             "additionalProperties": {
               "type": "string"
@@ -11335,6 +11339,12 @@
           "consoleKeyMappings": {
             "additionalProperties": {
               "$ref": "#/components/schemas/ConsoleKeyMappingDTO"
+            },
+            "type": "object"
+          },
+          "consoleRenderScales": {
+            "additionalProperties": {
+              "type": "string"
             },
             "type": "object"
           },

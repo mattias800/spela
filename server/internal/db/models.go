@@ -729,6 +729,19 @@ type ConsoleShaderPreference struct {
 	Shader    string         `gorm:"size:64;not null" json:"shader"`
 }
 
+// ConsoleRenderScalePreference stores a user's per-console internal
+// render-scale override. A missing row means native/core default.
+type ConsoleRenderScalePreference struct {
+	ID        uint           `gorm:"primarykey" json:"id"`
+	CreatedAt time.Time      `json:"createdAt"`
+	UpdatedAt time.Time      `json:"updatedAt"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+	UserID    uint           `gorm:"uniqueIndex:idx_user_console_render_scale;not null" json:"userId"`
+	User      User           `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"-"`
+	ConsoleID uint           `gorm:"uniqueIndex:idx_user_console_render_scale;not null" json:"consoleId"`
+	Scale     string         `gorm:"size:16;not null" json:"scale"`
+}
+
 // ConsoleKeyMappingPreference stores a user's per-console key mapping override.
 type ConsoleKeyMappingPreference struct {
 	ID              uint           `gorm:"primarykey" json:"id"`

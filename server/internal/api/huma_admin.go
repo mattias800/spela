@@ -438,6 +438,7 @@ func (h *AdminHandler) HumaAdminDeleteUser(ctx context.Context, in *AdminDeleteU
 		uid := user.ID
 
 		tx.Where("user_id = ?", uid).Delete(&db.ConsoleShaderPreference{})
+		tx.Where("user_id = ?", uid).Delete(&db.ConsoleRenderScalePreference{})
 		tx.Where("user_id = ?", uid).Delete(&db.ConsoleKeyMappingPreference{})
 		tx.Unscoped().Where("user_id = ?", uid).Delete(&db.GameKeyMappingPreference{})
 

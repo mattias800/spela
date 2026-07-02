@@ -42,6 +42,7 @@ import kotlinx.serialization.encoding.*
  * @param selectedTheme 
  * @param showPerformanceOverlay 
  * @param dollarSchema A URL to the JSON Schema for this object.
+ * @param consoleRenderScales
  */
 @Serializable
 
@@ -82,10 +83,11 @@ data class UserPreferencesResponse (
     @SerialName(value = "showPerformanceOverlay") @Required val showPerformanceOverlay: kotlin.Boolean,
 
     /* A URL to the JSON Schema for this object. */
-    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null
+    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null,
+
+    @SerialName(value = "consoleRenderScales") val consoleRenderScales: kotlin.collections.Map<kotlin.String, kotlin.String>? = null
 
 ) {
 
 
 }
-

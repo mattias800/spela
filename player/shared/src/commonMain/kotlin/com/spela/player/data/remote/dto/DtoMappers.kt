@@ -189,6 +189,11 @@ fun com.spela.client.models.UserPreferencesResponse.toDomain(): UserPreferences 
     selectedShader = ShaderPreset.fromApiId(selectedShader),
     selectedTheme = selectedTheme,
     consoleShaders = consoleShaders.mapValues { ShaderPreset.fromApiId(it.value) },
+    consoleRenderScales = consoleRenderScales.orEmpty().mapNotNull { (k, v) ->
+        RenderScale.fromApiIdOrNull(v)?.takeIf { it != RenderScale.NATIVE }?.let {
+            k.lowercase() to it
+        }
+    }.toMap(),
     consoleSaveStatePolicies = consoleSaveStatePolicies.mapNotNull { (k, v) ->
         // Drop any entry the server sent that doesn't parse to a known
         // value rather than crashing the player on a future codec.

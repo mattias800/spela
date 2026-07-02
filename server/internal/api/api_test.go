@@ -61,6 +61,7 @@ func setupTestEnv(t *testing.T) (*gorm.DB, *Config) {
 		&db.SystemEvent{},
 		&db.ServerSetting{}, &db.Core{}, &db.CorePlatformBinary{},
 		&db.ConsoleShaderPreference{},
+		&db.ConsoleRenderScalePreference{},
 		&db.ConsoleSaveStatePolicy{},
 		&db.GameSaveStatePolicy{},
 		&db.ConsoleKeyMappingPreference{},
