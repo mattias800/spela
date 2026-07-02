@@ -60,13 +60,29 @@ import com.spela.player.presentation.navigation.SpScreen
  * - [advanceQuick]: 2 iterations — for simple click-then-assert patterns
  * - [advance]: 4 iterations — standard default for navigation and data loads
  * - [advanceFully]: 6 iterations — for complex multi-source navigation chains
+ *
+ * THREADING (#1547): the harness scheduler MUST be drained on the compose UI
+ * thread (`runOnUiThread` = the AWT EDT on desktop).  The Compose test
+ * framework runs all composition work — recomposition, render, and the
+ * `collectAsState` collectors — on the EDT, and its composition dispatcher is
+ * an *unconfined* test dispatcher.  If we drain the harness scheduler on the
+ * JUnit thread instead, a `_state.update {}` in a ViewModel coroutine resumes
+ * the screen's `collectAsState` collector inline on the JUnit thread, doing
+ * snapshot/invalidation work concurrently with the EDT.  Under CPU contention
+ * (parallel test forks) that races and the invalidation can be lost, leaving
+ * the composition permanently frozen at the previous state — the semantics
+ * tree never shows the loaded data no matter how much further the clocks are
+ * advanced.  See AbstractMainTestClock's own doc: "Only advance the time or
+ * run current tasks from the scheduler on the UI thread".
  */
 @OptIn(ExperimentalTestApi::class, ExperimentalCoroutinesApi::class)
 private fun ComposeUiTest.advanceN(harness: SpelaTestHarness, iterations: Int) {
     mainClock.autoAdvance = false
     repeat(iterations) {
-        harness.testDispatcher.scheduler.advanceTimeBy(1_000)
-        harness.testDispatcher.scheduler.runCurrent()
+        runOnUiThread {
+            harness.testDispatcher.scheduler.advanceTimeBy(1_000)
+            harness.testDispatcher.scheduler.runCurrent()
+        }
         mainClock.advanceTimeBy(1_000)
         // Compose's recomposer runs on the main clock, and recomposition
         // can spawn fresh coroutines via LaunchedEffect / produceState /
@@ -77,7 +93,9 @@ private fun ComposeUiTest.advanceN(harness: SpelaTestHarness, iterations: Int) {
         // (e.g. validateServer → addServer → form auto-close) are
         // borderline-stable under parallel-fork CPU contention even at 6
         // iterations.
-        harness.testDispatcher.scheduler.runCurrent()
+        runOnUiThread {
+            harness.testDispatcher.scheduler.runCurrent()
+        }
         waitForIdle()
     }
     mainClock.autoAdvance = true

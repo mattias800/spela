@@ -2,6 +2,7 @@ package com.spela.player.presentation.viewmodel
 
 import com.spela.player.domain.model.LibretroCore
 import com.spela.player.domain.model.RenderScale
+import com.spela.player.domain.model.RenderScaleChoice
 import com.spela.player.domain.model.SaveStateChoice
 import com.spela.player.domain.model.SaveStatePolicyTier
 import com.spela.player.domain.model.ShaderPreset
@@ -99,7 +100,7 @@ class EmulationViewModelGameLifecycleTest {
             displayName = "Dolphin",
         )
         builder.coreRepository.localCorePath = "/path/to/dolphin_libretro.so"
-        builder.preferencesRepository.resolveRenderScaleResult = RenderScale.THREE_X
+        builder.preferencesRepository.resolveRenderScaleChoiceResult = RenderScaleChoice.THREE_X
 
         val vm = builder.build()
         vm.onIntent(EmulationIntent.StartGame("game1"))
@@ -167,6 +168,36 @@ class EmulationViewModelGameLifecycleTest {
     }
 
     @Test
+    fun startGameAutoRenderScaleAppliesResolvedDefaultBeforeLoadCore() = runTest {
+        builder.gameRepository = StubGameRepository(
+            consoleId = "gc",
+            consoleName = "Nintendo GameCube",
+        )
+        builder.coreRepository.recommendedCore = LibretroCore(
+            id = 2,
+            name = "dolphin",
+            displayName = "Dolphin",
+        )
+        builder.coreRepository.localCorePath = "/path/to/dolphin_libretro.so"
+        builder.preferencesRepository.resolveRenderScaleChoiceResult = RenderScaleChoice.AUTO
+
+        val vm = builder.build()
+        vm.onIntent(EmulationIntent.StartGame("game1"))
+        builder.advanceTimeBy(100)
+
+        assertEquals(RenderScale.TWO_X, vm.state.value.renderScale)
+        assertEquals("Auto (2x)", vm.state.value.renderScaleLabel)
+        assertEquals(
+            "x2 (1280 x 1056)",
+            builder.libretroController.coreVariables["dolphin_efb_scale"],
+        )
+        assertTrue(
+            builder.libretroController.calls.indexOf("setCoreVariable:dolphin_efb_scale=x2 (1280 x 1056)") in
+                0 until builder.libretroController.calls.indexOf("loadCore"),
+        )
+    }
+
+    @Test
     fun startGameDoesNotApplyRenderScaleVariablesForNativeScale() = runTest {
         builder.gameRepository = StubGameRepository(consoleId = "gc")
         builder.coreRepository.recommendedCore = LibretroCore(
@@ -175,7 +206,7 @@ class EmulationViewModelGameLifecycleTest {
             displayName = "Dolphin",
         )
         builder.coreRepository.localCorePath = "/path/to/dolphin_libretro.so"
-        builder.preferencesRepository.resolveRenderScaleResult = RenderScale.NATIVE
+        builder.preferencesRepository.resolveRenderScaleChoiceResult = RenderScaleChoice.NATIVE
         builder.libretroController.coreVariables["dolphin_efb_scale"] = "x3 (1920 x 1584)"
 
         val vm = builder.build()

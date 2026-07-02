@@ -84,6 +84,7 @@ fun DesktopEmulationSurface(
         gamepadPortManager?.connectDevice(-1, "Keyboard") ?: 0
     }
     var currentBitmap by remember { mutableStateOf<ImageBitmap?>(null) }
+    var currentAspectRatio by remember { mutableStateOf(0f) }
     val focusRequester = remember { FocusRequester() }
 
     // Reusable frame buffers -- only reallocated when dimensions or format change
@@ -99,6 +100,7 @@ fun DesktopEmulationSurface(
             val width = controller.getVideoWidth()
             val height = controller.getVideoHeight()
             if (width <= 0 || height <= 0) continue
+            currentAspectRatio = controller.getAspectRatio()
 
             val pixelFormat = controller.getPixelFormat()
             frameBuffers.ensureCapacity(width, height, pixelFormat)
@@ -217,7 +219,7 @@ fun DesktopEmulationSurface(
                 },
         ) {
             val bitmap = currentBitmap ?: return@Canvas
-            drawScaledBitmap(bitmap, selectedShader, widescreenMode)
+            drawScaledBitmap(bitmap, selectedShader, widescreenMode, currentAspectRatio)
         }
 
         // "Press Esc to pause" hint that fades after a few seconds
@@ -243,13 +245,19 @@ private fun DrawScope.drawScaledBitmap(
     bitmap: ImageBitmap,
     shader: ShaderPreset,
     widescreenMode: WidescreenMode,
+    displayAspectRatio: Float,
 ) {
+    val effectiveDar = if (widescreenMode == WidescreenMode.NATIVE) {
+        displayAspectRatio
+    } else {
+        widescreenMode.displayAspectRatio
+    }
     val scaled = computeScaledFrame(
         srcWidth = bitmap.width,
         srcHeight = bitmap.height,
         canvasWidth = size.width,
         canvasHeight = size.height,
-        displayAspectRatio = widescreenMode.displayAspectRatio,
+        displayAspectRatio = effectiveDar,
         scaleMode = widescreenMode.frameScaleMode(),
     )
 

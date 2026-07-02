@@ -17,6 +17,7 @@ import com.spela.player.domain.model.BiosMissingFile
 import com.spela.player.domain.model.Challenge
 import com.spela.player.domain.model.ChallengeAttempt
 import com.spela.player.domain.model.ChallengeLeaderboardEntry
+import com.spela.player.domain.model.DisplayAspectChoice
 import com.spela.player.domain.model.DownloadProgress
 import com.spela.player.domain.model.DownloadState
 import com.spela.player.domain.model.DownloadedGame
@@ -40,9 +41,9 @@ import com.spela.player.domain.model.SimilarGame
 import com.spela.player.domain.model.DeveloperGame
 import com.spela.player.domain.model.PaginatedResult
 import com.spela.player.domain.model.RenderScale
+import com.spela.player.domain.model.RenderScaleChoice
 import com.spela.player.domain.model.UserPreferences
 import com.spela.player.domain.model.WidescreenMode
-import com.spela.player.domain.model.defaultWidescreenMode
 import com.spela.player.domain.repository.AchievementsRepository
 import com.spela.player.domain.repository.ChallengeRepository
 import com.spela.player.domain.repository.CoreRepository
@@ -320,17 +321,17 @@ class StubSaveDataRepository : SaveDataRepository {
 class StubPreferencesRepository : PreferencesRepository {
     var preferencesResult: Result<UserPreferences> = Result.success(UserPreferences())
     var resolveShaderResult: ShaderPreset = ShaderPreset.NONE
-    var resolveWidescreenModeResult: WidescreenMode? = null
-    var resolveRenderScaleResult: RenderScale = RenderScale.NATIVE
-    var lastResolvedWidescreenModeGameId: String? = null
+    var resolveDisplayAspectChoiceResult: DisplayAspectChoice = DisplayAspectChoice.AUTO
+    var resolveRenderScaleChoiceResult: RenderScaleChoice = RenderScaleChoice.AUTO
+    var lastResolvedDisplayAspectChoiceGameId: String? = null
         private set
-    var lastResolvedWidescreenModeConsoleId: String? = null
+    var lastResolvedDisplayAspectChoiceConsoleId: String? = null
         private set
-    var lastSetWidescreenModeGameId: String? = null
+    var lastSetDisplayAspectChoiceGameId: String? = null
         private set
-    var lastSetWidescreenModeConsoleId: String? = null
+    var lastSetDisplayAspectChoiceConsoleId: String? = null
         private set
-    var lastSetWidescreenMode: WidescreenMode? = null
+    var lastSetDisplayAspectChoice: DisplayAspectChoice? = null
         private set
 
     override suspend fun getPreferences() = preferencesResult
@@ -374,17 +375,20 @@ class StubPreferencesRepository : PreferencesRepository {
     override fun getAllDeviceShaderOverrides() = emptyMap<String, ShaderPreset>()
     override suspend fun syncDeviceShaderOverrides() {}
     override suspend fun resolveShader(consoleId: String) = resolveShaderResult
-    override fun resolveWidescreenMode(gameId: String, consoleId: String): WidescreenMode {
-        lastResolvedWidescreenModeGameId = gameId
-        lastResolvedWidescreenModeConsoleId = consoleId
-        return resolveWidescreenModeResult ?: defaultWidescreenMode(consoleId)
+    override fun resolveDisplayAspectChoice(gameId: String, consoleId: String): DisplayAspectChoice {
+        lastResolvedDisplayAspectChoiceGameId = gameId
+        lastResolvedDisplayAspectChoiceConsoleId = consoleId
+        return resolveDisplayAspectChoiceResult
     }
-    override fun setWidescreenMode(gameId: String, consoleId: String, mode: WidescreenMode) {
-        lastSetWidescreenModeGameId = gameId
-        lastSetWidescreenModeConsoleId = consoleId
-        lastSetWidescreenMode = mode
+    override fun setDisplayAspectChoice(gameId: String, consoleId: String, choice: DisplayAspectChoice) {
+        lastSetDisplayAspectChoiceGameId = gameId
+        lastSetDisplayAspectChoiceConsoleId = consoleId
+        lastSetDisplayAspectChoice = choice
     }
-    override fun resolveRenderScale(consoleId: String, preferences: UserPreferences?): RenderScale = resolveRenderScaleResult
+    override fun resolveRenderScaleChoice(consoleId: String, preferences: UserPreferences?): RenderScaleChoice =
+        resolveRenderScaleChoiceResult
+    override fun resolveRenderScale(consoleId: String, preferences: UserPreferences?): RenderScale =
+        resolveRenderScaleChoiceResult.scale ?: RenderScale.NATIVE
     override fun setRenderScale(consoleId: String, scale: RenderScale) {}
     override suspend fun pushDeviceShaderOverridesToServer() {}
     override suspend fun syncKeyMappingsFromServer() {}

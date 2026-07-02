@@ -1,7 +1,9 @@
 package com.spela.player.domain.repository
 
 import com.spela.player.domain.model.ShaderPreset
+import com.spela.player.domain.model.DisplayAspectChoice
 import com.spela.player.domain.model.RenderScale
+import com.spela.player.domain.model.RenderScaleChoice
 import com.spela.player.domain.model.UserPreferences
 import com.spela.player.domain.model.WidescreenMode
 import com.spela.player.domain.model.defaultWidescreenMode
@@ -45,9 +47,17 @@ interface PreferencesRepository {
     fun getAllDeviceShaderOverrides(): Map<String, ShaderPreset>
     suspend fun syncDeviceShaderOverrides()
     suspend fun resolveShader(consoleId: String): ShaderPreset
+    fun resolveDisplayAspectChoice(gameId: String, consoleId: String): DisplayAspectChoice =
+        DisplayAspectChoice.AUTO
+    fun setDisplayAspectChoice(gameId: String, consoleId: String, choice: DisplayAspectChoice) {}
     fun resolveWidescreenMode(gameId: String, consoleId: String): WidescreenMode =
         defaultWidescreenMode(consoleId)
     fun setWidescreenMode(gameId: String, consoleId: String, mode: WidescreenMode) {}
+    fun resolveRenderScaleChoice(
+        consoleId: String,
+        preferences: UserPreferences? = null,
+    ): RenderScaleChoice = RenderScaleChoice.AUTO
+    fun setRenderScaleChoice(consoleId: String, choice: RenderScaleChoice) {}
     fun resolveRenderScale(consoleId: String, preferences: UserPreferences? = null): RenderScale = RenderScale.NATIVE
     fun setRenderScale(consoleId: String, scale: RenderScale) {}
     suspend fun pushDeviceShaderOverridesToServer()

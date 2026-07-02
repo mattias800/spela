@@ -9,8 +9,8 @@ enum class WidescreenMode(
 ) {
     NATIVE(
         storageId = "native",
-        label = "Auto",
-        optionLabel = "Auto",
+        label = "Original",
+        optionLabel = "Original",
         description = "Use the core's reported display size",
         nativeId = 0,
     ),
@@ -53,8 +53,7 @@ enum class WidescreenMode(
 
 fun defaultWidescreenMode(consoleId: String): WidescreenMode =
     when (consoleId.normalizedWidescreenConsoleId()) {
-        "wii" -> WidescreenMode.STRETCH
-        "gc", "gcn", "gamecube", "ps2" -> WidescreenMode.FOUR_THREE
+        "wii", "gc", "gcn", "gamecube", "ps2" -> WidescreenMode.FOUR_THREE
         else -> WidescreenMode.NATIVE
     }
 
