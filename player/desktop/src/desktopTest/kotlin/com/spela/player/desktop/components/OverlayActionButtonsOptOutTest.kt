@@ -1,6 +1,6 @@
 package com.spela.player.desktop.components
 
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Column
 import androidx.compose.ui.test.*
 import com.spela.player.presentation.ui.feature.ingame.OverlayActionButtons
 import kotlin.test.Test
@@ -18,7 +18,7 @@ class OverlayActionButtonsOptOutTest {
     @Test
     fun showsSaveLoadChallengeWhenSupportedAndNotOptedOut() = runComposeUiTest {
         setContent {
-            Row {
+            Column {
                 OverlayActionButtons(
                     isFastForward = false,
                     supportsSaveStates = true,
@@ -37,7 +37,7 @@ class OverlayActionButtonsOptOutTest {
     @Test
     fun hidesSaveLoadChallengeWhenOptedOut() = runComposeUiTest {
         setContent {
-            Row {
+            Column {
                 OverlayActionButtons(
                     isFastForward = false,
                     supportsSaveStates = true,
@@ -63,7 +63,7 @@ class OverlayActionButtonsOptOutTest {
         // so the new opt-out flag doesn't accidentally re-enable buttons
         // for unsupported cores.
         setContent {
-            Row {
+            Column {
                 OverlayActionButtons(
                     isFastForward = false,
                     supportsSaveStates = false,
@@ -82,7 +82,7 @@ class OverlayActionButtonsOptOutTest {
     fun showsRemapActionWhenEnabledAndInvokesCallback() = runComposeUiTest {
         var configured = false
         setContent {
-            Row {
+            Column {
                 OverlayActionButtons(
                     isFastForward = false,
                     supportsSaveStates = true,
@@ -103,7 +103,7 @@ class OverlayActionButtonsOptOutTest {
     @Test
     fun hidesRemapActionWhenDisabled() = runComposeUiTest {
         setContent {
-            Row {
+            Column {
                 OverlayActionButtons(
                     isFastForward = false,
                     supportsSaveStates = true,
