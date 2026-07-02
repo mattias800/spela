@@ -149,4 +149,13 @@ class ScreenHeadingTest {
         // itself), so no heading is expected.
         onNodeWithTag(TestTags.SCREEN_HEADING).assertDoesNotExist()
     }
+
+    @Test
+    fun downloadsWithNoDownloadsStillShowsHeadingInGamepadMode() = runComposeUiTest {
+        // Unlike Favorites/Play Later, Downloads has no full-screen empty
+        // state — the cache card list always renders, so the heading does too.
+        val harness = createHarness()
+        openInGamepadMode(harness, SpScreen.Downloads)
+        assertHeading("Downloads")
+    }
 }
