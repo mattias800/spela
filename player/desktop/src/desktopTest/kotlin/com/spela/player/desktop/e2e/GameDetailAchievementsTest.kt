@@ -6,10 +6,8 @@ import com.spela.player.domain.model.AchievementProgress
 import com.spela.player.domain.model.AchievementTimelineData
 import com.spela.player.domain.model.AchievementTimelineEntry
 import com.spela.player.domain.model.GameAchievement
-import com.spela.player.presentation.intent.GameDetailIntent
 import com.spela.player.presentation.navigation.NavigationIntent
 import com.spela.player.presentation.navigation.SpScreen
-import com.spela.player.presentation.state.AchievementsViewMode
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlin.test.Test

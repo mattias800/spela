@@ -1,7 +1,6 @@
 package com.spela.player.desktop.e2e
 
 import androidx.compose.ui.test.*
-import com.spela.player.presentation.intent.GameDetailIntent
 import com.spela.player.presentation.navigation.NavigationIntent
 import com.spela.player.presentation.navigation.SpScreen
 import kotlinx.coroutines.ExperimentalCoroutinesApi

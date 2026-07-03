@@ -7,7 +7,6 @@ import com.spela.player.presentation.navigation.SpScreen
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlin.test.Test
-import kotlin.test.assertTrue
 
 /**
  * E2E tests for challenge attempt flow.

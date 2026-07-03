@@ -3,8 +3,6 @@ package com.spela.player.desktop.e2e
 import androidx.compose.ui.test.*
 import com.spela.player.domain.model.AchievementGameItem
 import com.spela.player.domain.model.AlmostDoneGame
-import com.spela.player.domain.model.ExploreChallenge
-import com.spela.player.domain.model.FreshChallengeGame
 import com.spela.player.domain.model.Game
 import com.spela.player.presentation.navigation.NavigationIntent
 import com.spela.player.presentation.navigation.SpScreen

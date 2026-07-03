@@ -3,7 +3,6 @@ package com.spela.player.di
 import android.view.KeyEvent
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
-import com.spela.player.data.local.DatabaseHealthCheck
 import com.spela.player.data.local.DatabaseResetHelper
 import com.spela.player.data.local.ExpectedSchema
 import com.spela.player.data.local.SpelaDatabase

@@ -4,7 +4,6 @@ import androidx.compose.ui.test.*
 import com.spela.player.domain.model.ChallengeDifficulty
 import com.spela.player.domain.model.ChallengeType
 import com.spela.player.domain.model.UserStats
-import com.spela.player.presentation.intent.ChallengeIntent
 import com.spela.player.presentation.navigation.NavigationIntent
 import com.spela.player.presentation.navigation.SpScreen
 import com.spela.player.presentation.state.ChallengeTab

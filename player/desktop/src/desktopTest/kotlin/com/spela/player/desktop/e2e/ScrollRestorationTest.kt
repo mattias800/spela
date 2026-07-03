@@ -10,13 +10,10 @@ import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.Console
 import com.spela.player.presentation.navigation.NavigationIntent
 import com.spela.player.presentation.navigation.SpScreen
-import com.spela.player.presentation.ui.components.BottomNavTab
 import com.spela.player.presentation.ui.gamepad.InputMode
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNotEquals
 
 /**
  * E2E tests for scroll position restoration and focus preservation
