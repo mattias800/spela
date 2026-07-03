@@ -90,7 +90,9 @@ spela-core-host.exe \
   --save   <save dir> \
   --shm    <path to a backing file the parent created at SP_TOTAL_SIZE bytes> \
   [--width N --height N]        # offscreen render size (default 256x224) \
-  [--var key=value ...]         # core options, repeatable
+  [--var key=value ...]         # core options, repeatable \
+  [--loadstate <path> [--loadstate-frame N]] \
+  [--savestate <path> [--savestate-frame N]]
 ```
 
 The parent must create the `--shm` file at `SP_TOTAL_SIZE`
@@ -108,7 +110,52 @@ counter changes and writes `input_buttons`/analog/pointer + `should_stop`.
 This is the minimum that proved out the fix. Notably **not** done yet: a JVM
 client wiring the host into the actual app (the in-process path is the shipping
 path), full software-render pixel-format conversion (Vulkan HW-render readback
-via `render_to_bgra` is the tested path), save states, shaders, fast-forward.
+via `render_to_bgra` is the tested path), shaders, fast-forward.
+
+---
+
+## Save-state replay
+
+`--loadstate` / `--savestate` let you drive libretro save states from the host,
+which is how the poisoned Beyond Good & Evil state behind #1533 was reproduced
+**byte-identically off-device**: download the session's `.state`, replay it
+against the core in a plain native process, and debug the resulting crash under
+a debugger with full symbols.
+
+- `--loadstate <path>` applies the state once the core has run
+  `--loadstate-frame N` frames (default `0` = before the first `retro_run`).
+  Cores that reinitialise on load or boot asynchronously (e.g. dolphin) want a
+  small `--loadstate-frame` so the core is past its boot sequence before
+  `retro_unserialize` — `1` is usually enough.
+- `--savestate <path>` writes the state after `--savestate-frame N` frames
+  (`0` = the boot state before any `retro_run`, symmetric with
+  `--loadstate-frame`; note some cores' `retro_serialize_size` is 0 until they
+  have run a frame, in which case the save is logged as `FAILED`). If
+  `--savestate-frame` is omitted, the state is written once just before the host
+  shuts down (parent sets `should_stop`). Handy for capturing a "good" reference
+  state to diff against a poisoned one.
+
+Both go through `sp_host_save_state` / `sp_host_load_state` in
+`libretro_bridge.c`, which reuse the exact `retro_serialize` / `retro_unserialize`
+machinery (and the same HW-render make-current dance) as the JNI
+`nativeSerializeToFile` / `nativeUnserializeFromFile` paths — so a state that
+loads here loads in the app and vice versa.
+
+Example — capture a reference state, then replay it:
+
+```
+# capture at frame 600 (~10s in)
+spela-core-host --core nestopia_libretro.dylib --game game.nes --shm host.shm \
+  --savestate ref.state --savestate-frame 600
+
+# replay it, applying after the core has booted one frame
+spela-core-host --core nestopia_libretro.dylib --game game.nes --shm host.shm \
+  --loadstate ref.state --loadstate-frame 1
+```
+
+Each save/load logs its result, e.g.
+`savestate ref.state at frame 600: ok (5058 bytes)` /
+`loadstate ref.state at frame 1: ok`.
 
 ---
 
