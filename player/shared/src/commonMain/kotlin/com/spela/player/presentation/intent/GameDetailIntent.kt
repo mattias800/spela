@@ -42,6 +42,11 @@ sealed interface GameDetailIntent {
     ) : GameDetailIntent
     data class RateGame(val rating: Int, val review: String = "") : GameDetailIntent
     data object DeleteRating : GameDetailIntent
+
+    /** Persist the per-game Wii controller scheme (#1559). */
+    data class SelectWiiControlScheme(
+        val scheme: com.spela.player.domain.model.WiiControlScheme,
+    ) : GameDetailIntent
     data object LoadSharedSaves : GameDetailIntent
     /**
      * Upload a session save to the public shared-saves library.

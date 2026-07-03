@@ -450,6 +450,16 @@ fun GameDetailScreen(
                         )
                     }
 
+                    // 8b. Wii controller scheme (#1559) — Wii games only
+                    if (game.consoleId == "wii") {
+                        com.spela.player.presentation.ui.feature.gamedetail.WiiControlSchemeSection(
+                            currentScheme = state.wiiControlScheme,
+                            onSelectScheme = { scheme ->
+                                viewModel.onIntent(GameDetailIntent.SelectWiiControlScheme(scheme))
+                            },
+                        )
+                    }
+
                     // 9. Challenges (hidden for demo consoles)
                     if (!isDemoConsole && onNavigateToChallenges != null) {
                         ChallengesSection(

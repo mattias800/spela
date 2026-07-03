@@ -33,6 +33,9 @@ data class GameDetailState(
     val sharedSaves: List<SharedSaveState> = emptyList(),
     val downloadProgress: DownloadProgress? = null,
     val isGameCached: Boolean = false,
+    /** Per-game Wii controller scheme (#1559); meaningful only for Wii games. */
+    val wiiControlScheme: com.spela.player.domain.model.WiiControlScheme =
+        com.spela.player.domain.model.WiiControlScheme.NUNCHUK,
     val isLoading: Boolean = false,
     val isDownloading: Boolean = false,
     /**

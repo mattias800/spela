@@ -38,6 +38,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class GameDetailViewModel(
     private val getGameDetailUseCase: GetGameDetailUseCase,
@@ -135,6 +136,7 @@ class GameDetailViewModel(
             is GameDetailIntent.SetGameSaveStatePolicy ->
                 setGameSaveStatePolicy(intent.choice)
             is GameDetailIntent.RateGame -> rateGame(intent.rating, intent.review)
+            is GameDetailIntent.SelectWiiControlScheme -> selectWiiControlScheme(intent.scheme)
             GameDetailIntent.DeleteRating -> deleteRating()
             GameDetailIntent.LoadSharedSaves -> loadSharedSaves()
             is GameDetailIntent.ShareSave -> shareSave(intent.sessionId, intent.saveId, intent.name, intent.description)
@@ -289,6 +291,12 @@ class GameDetailViewModel(
 
     private fun loadGame(gameId: String) {
         currentGameId = gameId
+
+        // Per-game Wii controller scheme (#1559) — cheap local read; only
+        // rendered for Wii games but harmless to resolve for all.
+        _state.update {
+            it.copy(wiiControlScheme = preferencesRepository.resolveWiiControlScheme(gameId))
+        }
 
         // Stale-while-revalidate: if we've fetched this game before
         // in this app session, the cache still has the last detail
@@ -967,6 +975,17 @@ class GameDetailViewModel(
                     }
                 },
             )
+        }
+    }
+
+    /** Persist the per-game Wii controller scheme (#1559). */
+    private fun selectWiiControlScheme(scheme: com.spela.player.domain.model.WiiControlScheme) {
+        val gameId = currentGameId ?: return
+        scope.launch(dispatchers.io) {
+            preferencesRepository.setWiiControlScheme(gameId, scheme)
+            withContext(dispatchers.main) {
+                _state.update { it.copy(wiiControlScheme = scheme) }
+            }
         }
     }
 
