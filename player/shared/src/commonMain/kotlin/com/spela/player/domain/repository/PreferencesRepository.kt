@@ -7,6 +7,7 @@ import com.spela.player.domain.model.RenderScaleChoice
 import com.spela.player.domain.model.UserPreferences
 import com.spela.player.domain.model.WidescreenMode
 import com.spela.player.domain.model.WiiControlScheme
+import com.spela.player.domain.model.WiiIrSource
 import com.spela.player.domain.model.defaultWidescreenMode
 
 interface PreferencesRepository {
@@ -62,6 +63,13 @@ interface PreferencesRepository {
      */
     fun resolveWiiControlScheme(gameId: String): WiiControlScheme = WiiControlScheme.NUNCHUK
     fun setWiiControlScheme(gameId: String, scheme: WiiControlScheme) {}
+
+    /**
+     * Per-game Wii IR pointer source (#1560), device-local like the scheme.
+     * Defaults to [WiiIrSource.RIGHT_STICK] when nothing is stored.
+     */
+    fun resolveWiiIrSource(gameId: String): WiiIrSource = WiiIrSource.RIGHT_STICK
+    fun setWiiIrSource(gameId: String, source: WiiIrSource) {}
     fun resolveRenderScaleChoice(
         consoleId: String,
         preferences: UserPreferences? = null,

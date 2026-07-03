@@ -140,9 +140,81 @@ class EmulationViewModelGameLifecycleTest {
 
         assertEquals("10", builder.libretroController.coreVariables["dolphin_ir_offset"])
         assertEquals("20", builder.libretroController.coreVariables["dolphin_ir_pitch"])
+        // Default IR source = right stick → dolphin_ir_mode 1 (#1560).
+        assertEquals("1", builder.libretroController.coreVariables["dolphin_ir_mode"])
         assertTrue(
             builder.libretroController.calls.indexOf("setCoreVariable:dolphin_ir_offset=10") in
                 0 until builder.libretroController.calls.indexOf("loadCore"),
+        )
+        assertTrue(vm.state.value.isWiiIrSourceSelectable)
+        assertEquals(
+            com.spela.player.domain.model.WiiIrSource.RIGHT_STICK,
+            vm.state.value.wiiIrSource,
+        )
+    }
+
+    @Test
+    fun startGameWithTouchIrSourceSelectsIrModeTwoBeforeLoadCore() = runTest {
+        builder.gameRepository = StubGameRepository(
+            consoleId = "wii",
+            consoleName = "Nintendo Wii",
+        )
+        builder.coreRepository.recommendedCore = LibretroCore(
+            id = 2,
+            name = "dolphin",
+            displayName = "Dolphin",
+        )
+        builder.coreRepository.localCorePath = "/path/to/dolphin_libretro.so"
+        builder.preferencesRepository.wiiIrSourceResult =
+            com.spela.player.domain.model.WiiIrSource.TOUCH_POINTER
+
+        val vm = builder.build()
+        vm.onIntent(EmulationIntent.StartGame("game1"))
+        builder.advanceTimeBy(100)
+
+        assertEquals("2", builder.libretroController.coreVariables["dolphin_ir_mode"])
+        assertTrue(
+            builder.libretroController.calls.indexOf("setCoreVariable:dolphin_ir_mode=2") in
+                0 until builder.libretroController.calls.indexOf("loadCore"),
+        )
+        assertEquals(
+            com.spela.player.domain.model.WiiIrSource.TOUCH_POINTER,
+            vm.state.value.wiiIrSource,
+        )
+    }
+
+    @Test
+    fun selectWiiIrSourcePersistsAndUpdatesState() = runTest {
+        builder.gameRepository = StubGameRepository(
+            consoleId = "wii",
+            consoleName = "Nintendo Wii",
+        )
+        builder.coreRepository.recommendedCore = LibretroCore(
+            id = 2,
+            name = "dolphin",
+            displayName = "Dolphin",
+        )
+        builder.coreRepository.localCorePath = "/path/to/dolphin_libretro.so"
+
+        val vm = builder.build()
+        vm.onIntent(EmulationIntent.StartGame("game1"))
+        builder.advanceTimeBy(100)
+
+        vm.onIntent(
+            EmulationIntent.SelectWiiIrSource(
+                com.spela.player.domain.model.WiiIrSource.TOUCH_POINTER,
+            ),
+        )
+        builder.advanceTimeBy(100)
+
+        assertEquals(
+            listOf("game1" to com.spela.player.domain.model.WiiIrSource.TOUCH_POINTER),
+            builder.preferencesRepository.wiiIrSourceWrites,
+        )
+        assertEquals("2", builder.libretroController.coreVariables["dolphin_ir_mode"])
+        assertEquals(
+            com.spela.player.domain.model.WiiIrSource.TOUCH_POINTER,
+            vm.state.value.wiiIrSource,
         )
     }
 

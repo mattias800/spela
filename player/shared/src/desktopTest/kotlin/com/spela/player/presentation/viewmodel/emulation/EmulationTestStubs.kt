@@ -401,6 +401,16 @@ class StubPreferencesRepository : PreferencesRepository {
         wiiControlSchemeWrites += gameId to scheme
         wiiControlSchemeResult = scheme
     }
+
+    var wiiIrSourceResult: com.spela.player.domain.model.WiiIrSource =
+        com.spela.player.domain.model.WiiIrSource.RIGHT_STICK
+    val wiiIrSourceWrites = mutableListOf<Pair<String, com.spela.player.domain.model.WiiIrSource>>()
+    override fun resolveWiiIrSource(gameId: String): com.spela.player.domain.model.WiiIrSource =
+        wiiIrSourceResult
+    override fun setWiiIrSource(gameId: String, source: com.spela.player.domain.model.WiiIrSource) {
+        wiiIrSourceWrites += gameId to source
+        wiiIrSourceResult = source
+    }
     override fun resolveRenderScaleChoice(consoleId: String, preferences: UserPreferences?): RenderScaleChoice =
         resolveRenderScaleChoiceResult
     override fun resolveRenderScale(consoleId: String, preferences: UserPreferences?): RenderScale =
