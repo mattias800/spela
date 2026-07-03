@@ -27,6 +27,7 @@ class PresenceService(
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
     private val scrapeService: ScrapeService? = null,
+    private val playTimeSyncManager: PlayTimeSyncManager? = null,
 ) {
     // Cross-dispatcher: startHeartbeat/stopHeartbeat run on the main
     // dispatcher while the heartbeat loop body reads currentGameId from
@@ -38,6 +39,8 @@ class PresenceService(
     private var heartbeatJob: Job? = null
     @Volatile
     private var currentGameId: String? = null
+    @Volatile
+    private var currentGameTitle: String = ""
 
     // Drains the milliseconds of *active* play (frames advanced) since the
     // last call from the emulation controller. Play time is reported from
@@ -120,21 +123,23 @@ class PresenceService(
      * nothing is lost or invented. Time while paused/backgrounded/stalled
      * drains as ~0, so it isn't counted (#1282).
      */
-    fun startHeartbeat(gameId: String, drainMillis: () -> Long) {
+    fun startHeartbeat(gameId: String, gameTitle: String = "", drainMillis: () -> Long) {
         stopHeartbeat()
         paused = false
         currentGameId = gameId
+        currentGameTitle = gameTitle
         drainPlayMillis = drainMillis
         println("[PlayTime] start game=$gameId")
 
         // Initial 0-second ping marks the user as playing this game
         // immediately (server sets current-game presence on any report).
         scope.launch(dispatchers.io) {
-            try {
-                apiClient.updatePlayTime(gameId, 0)
-            } catch (_: Exception) {
-                // Best effort
-            }
+            sendPlayTime(
+                gameId = gameId,
+                gameTitle = gameTitle,
+                seconds = 0L,
+                trigger = "start",
+            )
         }
 
         heartbeatJob = scope.launch(dispatchers.io) {
@@ -155,12 +160,12 @@ class PresenceService(
                 pendingMillis = remainder
                 if (seconds > 0L) {
                     println("[PlayTime] report game=$gid +${seconds}s (carry ${remainder}ms)")
-                    try {
-                        apiClient.updatePlayTime(gid, seconds)
-                    } catch (_: Exception) {
-                        // Best effort; the un-drained remainder is already
-                        // carried in pendingMillis, so nothing is lost.
-                    }
+                    sendPlayTime(
+                        gameId = gid,
+                        gameTitle = currentGameTitle,
+                        seconds = seconds,
+                        trigger = "heartbeat",
+                    )
                 }
             }
         }
@@ -173,10 +178,12 @@ class PresenceService(
      */
     fun stopHeartbeat() {
         val gameId = currentGameId
+        val gameTitle = currentGameTitle
         val drain = drainPlayMillis
         heartbeatJob?.cancel()
         heartbeatJob = null
         currentGameId = null
+        currentGameTitle = ""
         drainPlayMillis = null
 
         if (gameId != null) {
@@ -184,7 +191,14 @@ class PresenceService(
                 try {
                     val (seconds, _) = splitForFlush(drain?.invoke() ?: 0L)
                     println("[PlayTime] stop game=$gameId final +${seconds}s")
-                    if (seconds > 0L) apiClient.updatePlayTime(gameId, seconds)
+                    if (seconds > 0L) {
+                        sendPlayTime(
+                            gameId = gameId,
+                            gameTitle = gameTitle,
+                            seconds = seconds,
+                            trigger = "stop",
+                        )
+                    }
                 } catch (_: Exception) {
                     // Best effort
                 }
@@ -195,6 +209,33 @@ class PresenceService(
                     // Best effort — the server will time out stale entries anyway
                 }
             }
+        }
+    }
+
+    private suspend fun sendPlayTime(
+        gameId: String,
+        gameTitle: String,
+        seconds: Long,
+        trigger: String,
+    ) {
+        val playedAtMillis = kotlin.time.Clock.System.now().toEpochMilliseconds()
+        val manager = playTimeSyncManager
+        if (manager != null) {
+            manager.reportPlayTime(
+                gameId = gameId,
+                gameTitle = gameTitle,
+                durationSeconds = seconds,
+                playedAtMillis = playedAtMillis,
+                trigger = trigger,
+            )
+            return
+        }
+
+        try {
+            apiClient.updatePlayTime(gameId, seconds)
+        } catch (_: Exception) {
+            // Best effort in tests that construct PresenceService without the
+            // durable sync manager.
         }
     }
 

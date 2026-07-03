@@ -159,6 +159,7 @@ func Initialize(dbPath string) (*gorm.DB, error) {
 		&GameDisc{},
 		&Favorite{},
 		&PlayHistory{},
+		&PlayTimeReportReceipt{},
 		&RefreshToken{},
 		&ServerSetting{},
 		&Core{},

@@ -361,6 +361,20 @@ type PlayHistory struct {
 	PlayTime   int64     `json:"playTime"` // seconds
 }
 
+// PlayTimeReportReceipt records client-supplied play-time report IDs that have
+// already been applied, so offline retry uploads do not double-count.
+type PlayTimeReportReceipt struct {
+	ID             uint      `gorm:"primarykey" json:"id"`
+	CreatedAt      time.Time `json:"createdAt"`
+	UserID         uint      `gorm:"uniqueIndex:idx_play_time_receipt_user_report;not null" json:"userId"`
+	User           User      `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"-"`
+	ClientReportID string    `gorm:"uniqueIndex:idx_play_time_receipt_user_report;size:128;not null" json:"clientReportId"`
+	GameID         uint      `gorm:"index;not null" json:"gameId"`
+	Game           Game      `gorm:"foreignKey:GameID;constraint:OnDelete:CASCADE" json:"-"`
+	PlayedAt       time.Time `json:"playedAt"`
+	Seconds        int64     `json:"seconds"`
+}
+
 // DailyPlayActivity aggregates play time per user per day for heatmap display.
 type DailyPlayActivity struct {
 	ID       uint      `gorm:"primarykey" json:"id"`

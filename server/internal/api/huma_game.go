@@ -12,6 +12,7 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/spela/server/internal/db"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // --- Input / output types ---
@@ -767,49 +768,93 @@ func (h *GameHandler) HumaUpdatePlayTime(ctx context.Context, in *UpdateGamePlay
 	if seconds < 0 || seconds > 86400 {
 		return nil, huma.Error400BadRequest("invalid request: seconds must be between 0 and 86400")
 	}
+	playedAt := time.Now()
+	if in.Body.PlayedAt != nil {
+		playedAt = *in.Body.PlayedAt
+	}
+	clientReportID := ""
+	if in.Body.ClientReportID != nil {
+		clientReportID = *in.Body.ClientReportID
+	}
+	updatePresence := true
+	if in.Body.UpdatePresence != nil {
+		updatePresence = *in.Body.UpdatePresence
+	}
 
 	var ph db.PlayHistory
-	result := h.DB.Where("user_id = ? AND game_id = ?", uid, gid).First(&ph)
-	// Whether this report begins a new play session. A brand-new PlayHistory
-	// row is always a new session; an existing one only when the previous
-	// report was long enough ago (gap measured before LastPlayed is bumped).
-	newSession := false
-	if result.Error == gorm.ErrRecordNotFound {
-		newSession = true
-		ph = db.PlayHistory{
-			UserID:     uid,
-			GameID:     uint(gid),
-			LastPlayed: time.Now(),
-			PlayTime:   seconds,
+	applied := false
+	if err := h.DB.Transaction(func(tx *gorm.DB) error {
+		if clientReportID != "" {
+			receipt := db.PlayTimeReportReceipt{
+				UserID:         uid,
+				ClientReportID: clientReportID,
+				GameID:         uint(gid),
+				PlayedAt:       playedAt,
+				Seconds:        seconds,
+			}
+			result := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&receipt)
+			if result.Error != nil {
+				return huma.Error500InternalServerError("failed to record play-time report receipt")
+			}
+			if result.RowsAffected == 0 {
+				if err := tx.Where("user_id = ? AND game_id = ?", uid, gid).First(&ph).Error; err != nil {
+					return huma.Error500InternalServerError("failed to load play history")
+				}
+				return nil
+			}
 		}
-		if err := h.DB.Create(&ph).Error; err != nil {
-			return nil, huma.Error500InternalServerError("failed to create play history")
+
+		result := tx.Where("user_id = ? AND game_id = ?", uid, gid).First(&ph)
+		// Whether this report begins a new play session. A brand-new PlayHistory
+		// row is always a new session; an existing one only when the previous
+		// report was long enough ago (gap measured before LastPlayed is bumped).
+		newSession := false
+		if result.Error == gorm.ErrRecordNotFound {
+			newSession = true
+			ph = db.PlayHistory{
+				UserID:     uid,
+				GameID:     uint(gid),
+				LastPlayed: playedAt,
+				PlayTime:   seconds,
+			}
+			if err := tx.Create(&ph).Error; err != nil {
+				return huma.Error500InternalServerError("failed to create play history")
+			}
+		} else if result.Error != nil {
+			return huma.Error500InternalServerError("failed to load play history")
+		} else {
+			newSession = playedAt.Sub(ph.LastPlayed) > db.StartedPlayingSessionGap
+			newTotal := ph.PlayTime + seconds
+			if newTotal > maxPlayTimeSeconds {
+				newTotal = maxPlayTimeSeconds
+			}
+			ph.PlayTime = newTotal
+			if playedAt.After(ph.LastPlayed) {
+				ph.LastPlayed = playedAt
+			}
+			if err := tx.Save(&ph).Error; err != nil {
+				return huma.Error500InternalServerError("failed to update play time")
+			}
 		}
-	} else {
-		newSession = time.Since(ph.LastPlayed) > db.StartedPlayingSessionGap
-		newTotal := ph.PlayTime + seconds
-		if newTotal > maxPlayTimeSeconds {
-			newTotal = maxPlayTimeSeconds
+
+		RecordDailyPlayActivityAt(tx, uid, seconds, playedAt)
+
+		// Only emit a feed event when a session actually starts — not on every
+		// heartbeat, which would flood the activity feed.
+		if newSession {
+			CreateActivityEvent(tx, h.Hub, uid, "started_playing", uint(gid), StartedPlayingMetadata{
+				Seconds: seconds,
+			})
 		}
-		ph.PlayTime = newTotal
-		ph.LastPlayed = time.Now()
-		if err := h.DB.Save(&ph).Error; err != nil {
-			return nil, huma.Error500InternalServerError("failed to update play time")
-		}
+
+		applied = true
+		return nil
+	}); err != nil {
+		return nil, err
 	}
 
-	RecordDailyPlayActivity(h.DB, uid, seconds)
-
-	if h.Hub != nil {
+	if applied && updatePresence && h.Hub != nil {
 		h.Hub.SetUserGame(uid, uint(gid))
-	}
-
-	// Only emit a feed event when a session actually starts — not on every
-	// heartbeat, which would flood the activity feed.
-	if newSession {
-		CreateActivityEvent(h.DB, h.Hub, uid, "started_playing", uint(gid), StartedPlayingMetadata{
-			Seconds: seconds,
-		})
 	}
 
 	return &UpdateGamePlayTimeOutput{
@@ -831,4 +876,3 @@ func (h *GameHandler) HumaStopPlaying(ctx context.Context, _ *StopPlayingInput) 
 	}
 	return &StopPlayingOutput{Body: StatusMessageResponse{Status: "cleared"}}, nil
 }
-

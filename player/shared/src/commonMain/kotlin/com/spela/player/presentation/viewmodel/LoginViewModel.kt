@@ -1,5 +1,6 @@
 package com.spela.player.presentation.viewmodel
 
+import com.spela.player.data.remote.PlayTimeSyncManager
 import com.spela.player.domain.usecase.LoginUseCase
 import com.spela.player.domain.usecase.RegisterUseCase
 import com.spela.player.presentation.intent.LoginIntent
@@ -20,6 +21,7 @@ class LoginViewModel(
     private val registerUseCase: RegisterUseCase,
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
+    private val playTimeSyncManager: PlayTimeSyncManager? = null,
 ) {
     private val _state = MutableStateFlow(LoginState())
     val state: StateFlow<LoginState> = _state.asStateFlow()
@@ -72,6 +74,7 @@ class LoginViewModel(
             result.fold(
                 onSuccess = {
                     _state.update { it.copy(isLoading = false, isLoggedIn = true) }
+                    playTimeSyncManager?.drainPending(trigger = "login")
                     _loginSucceeded.tryEmit(Unit)
                 },
                 onFailure = { error ->

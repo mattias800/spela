@@ -65,4 +65,42 @@ class SaveSyncQueueSettingsTest {
         onNodeWithText("2 KB - Retries: 1", substring = true).assertIsDisplayed()
         onNodeWithText("Last error: offline").assertIsDisplayed()
     }
+
+    @Test
+    fun failedQueuedPlayActivityIsVisibleInStorageSync() = runComposeUiTest {
+        val harness = createLoggedInHarness()
+        val queuedId = runBlocking {
+            val id = harness.pendingPlayTimeSyncRepository.enqueue(
+                clientReportId = "report-offline",
+                serverUrl = "http://server",
+                userId = "user-1",
+                gameId = "42",
+                gameTitle = "Metroid Prime",
+                durationSeconds = 125L,
+                playedAt = 1_700_000_000_000L,
+                createdAt = 1_700_000_030_000L,
+            )
+            harness.pendingPlayTimeSyncRepository.markRetry(id, "offline")
+            id
+        }
+
+        setContent { harness.App() }
+        navigateToStorageSync(harness)
+
+        onNodeWithTag("settings_category_content_list", useUnmergedTree = true)
+            .performScrollToNode(hasTestTag(TestTags.SETTINGS_PLAY_TIME_SYNC_QUEUE_SUMMARY))
+        advanceQuick(harness)
+
+        onNodeWithTag(TestTags.SETTINGS_PLAY_TIME_SYNC_QUEUE_SUMMARY, useUnmergedTree = true)
+            .assertExists()
+        onNodeWithText("Play activity").assertIsDisplayed()
+        onNodeWithText("1 pending - 2m 5s queued - 1 retrying - 0 stuck").assertIsDisplayed()
+        onNodeWithTag(TestTags.settingsPlayTimeSyncJob(queuedId), useUnmergedTree = true)
+            .assertExists()
+        onNodeWithText("Metroid Prime").assertIsDisplayed()
+        onNodeWithText("2m 5s play time - Retries: 1").assertIsDisplayed()
+        onNodeWithText("Played ", substring = true).assertIsDisplayed()
+        onNodeWithText(" - Queued ", substring = true).assertIsDisplayed()
+        onNodeWithText("Last error: offline").assertIsDisplayed()
+    }
 }

@@ -109,6 +109,26 @@ SELECT * FROM AuthTokenEntity WHERE id = 1;
 deleteTokens:
 DELETE FROM AuthTokenEntity WHERE id = 1;
 
+-- Cached authenticated user identity. Used for offline-safe local queues: a
+-- queued job records the user that created it, and drain workers only replay
+-- jobs for the currently authenticated user.
+CREATE TABLE CachedUserEntity (
+    id INTEGER NOT NULL PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    username TEXT NOT NULL,
+    cached_at INTEGER NOT NULL
+);
+
+insertCachedUser:
+INSERT OR REPLACE INTO CachedUserEntity(id, user_id, username, cached_at)
+VALUES (1, ?, ?, ?);
+
+getCachedUser:
+SELECT * FROM CachedUserEntity WHERE id = 1;
+
+deleteCachedUser:
+DELETE FROM CachedUserEntity WHERE id = 1;
+
 -- Play history
 CREATE TABLE PlayHistoryEntity (
     id TEXT NOT NULL PRIMARY KEY,
@@ -467,6 +487,62 @@ DELETE FROM PendingSaveUploadEntity WHERE id = ?;
 
 incrementPendingSaveUploadRetry:
 UPDATE PendingSaveUploadEntity
+SET retry_count = retry_count + 1, last_error = ?
+WHERE id = ?;
+
+-- Pending play-time reports (#1564 offline play activity sync).
+-- Each row is a failed/offline play-time delta that must be retried later.
+-- server_url + user_id guard against replaying one account's offline play
+-- activity into a different account after sign-out / server switch.
+CREATE TABLE PendingPlayTimeSyncEntity (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    client_report_id TEXT NOT NULL,
+    server_url TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    game_id TEXT NOT NULL,
+    game_title TEXT NOT NULL DEFAULT '',
+    duration_seconds INTEGER NOT NULL,
+    played_at INTEGER NOT NULL,
+    created_at INTEGER NOT NULL,
+    retry_count INTEGER NOT NULL DEFAULT 0,
+    last_error TEXT
+);
+
+CREATE UNIQUE INDEX pending_play_time_sync_client_report_idx
+    ON PendingPlayTimeSyncEntity(client_report_id);
+
+CREATE INDEX pending_play_time_sync_context_idx
+    ON PendingPlayTimeSyncEntity(server_url, user_id);
+
+enqueuePendingPlayTimeSync:
+INSERT INTO PendingPlayTimeSyncEntity(
+    client_report_id, server_url, user_id, game_id, game_title, duration_seconds,
+    played_at, created_at, retry_count, last_error
+)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, NULL);
+
+lastInsertedPendingPlayTimeSyncId:
+SELECT last_insert_rowid();
+
+getAllPendingPlayTimeSyncs:
+SELECT * FROM PendingPlayTimeSyncEntity ORDER BY created_at ASC, id ASC;
+
+getPendingPlayTimeSyncsForContext:
+SELECT * FROM PendingPlayTimeSyncEntity
+WHERE server_url = ? AND user_id = ?
+ORDER BY created_at ASC, id ASC;
+
+getPendingPlayTimeSyncById:
+SELECT * FROM PendingPlayTimeSyncEntity WHERE id = ?;
+
+countPendingPlayTimeSyncs:
+SELECT COUNT(*) FROM PendingPlayTimeSyncEntity;
+
+deletePendingPlayTimeSync:
+DELETE FROM PendingPlayTimeSyncEntity WHERE id = ?;
+
+incrementPendingPlayTimeSyncRetry:
+UPDATE PendingPlayTimeSyncEntity
 SET retry_count = retry_count + 1, last_error = ?
 WHERE id = ?;
 

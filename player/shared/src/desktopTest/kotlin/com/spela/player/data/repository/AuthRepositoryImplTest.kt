@@ -6,6 +6,7 @@ import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.data.remote.interceptor.TokenManager
 import com.spela.player.domain.model.AuthTokens
 import com.spela.player.test.NoOpMockEngineFactory
+import java.util.Base64
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -32,6 +33,7 @@ class AuthRepositoryImplTest {
             apiClient = apiClient,
             tokenManager = tokenManager,
             database = database,
+            currentUserContextRepository = CurrentUserContextRepositoryImpl(database),
         )
     }
 
@@ -65,6 +67,24 @@ class AuthRepositoryImplTest {
         assertNotNull(tokens)
         assertEquals("persisted-access", tokens.accessToken)
         assertEquals("persisted-refresh", tokens.refreshToken)
+    }
+
+    @Test
+    fun getStoredTokensSeedsCurrentUserContextFromAccessToken() = runTest {
+        database.spelaDatabaseQueries.insertTokens(
+            access_token = unsignedJwt("""{"userId":"42","username":"alice"}"""),
+            refresh_token = "persisted-refresh",
+            expires_at = "",
+        )
+
+        val repo = createRepo()
+        val tokens = repo.getStoredTokens()
+
+        assertNotNull(tokens)
+        val cached = database.spelaDatabaseQueries.getCachedUser().executeAsOneOrNull()
+        assertNotNull(cached)
+        assertEquals("42", cached.user_id)
+        assertEquals("alice", cached.username)
     }
 
     @Test
@@ -117,5 +137,12 @@ class AuthRepositoryImplTest {
     fun getStoredTokensReturnsNullWhenNoPersistence() = runTest {
         val repo = createRepo()
         assertNull(repo.getStoredTokens())
+    }
+
+    private fun unsignedJwt(payload: String): String {
+        val encoder = Base64.getUrlEncoder().withoutPadding()
+        val header = encoder.encodeToString("""{"alg":"none"}""".encodeToByteArray())
+        val body = encoder.encodeToString(payload.encodeToByteArray())
+        return "$header.$body.signature"
     }
 }

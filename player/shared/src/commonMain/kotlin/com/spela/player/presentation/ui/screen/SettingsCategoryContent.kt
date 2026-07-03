@@ -37,6 +37,7 @@ import com.spela.player.presentation.ui.components.SpRadioOption
 import com.spela.player.presentation.ui.components.SpTextField
 import com.spela.player.presentation.ui.components.SpSyncStatusIndicator
 import com.spela.player.presentation.ui.feature.settings.DeviceManagementSection
+import com.spela.player.presentation.ui.feature.settings.PlayTimeSyncQueueSection
 import com.spela.player.presentation.ui.feature.settings.SaveSyncQueueSection
 import com.spela.player.presentation.ui.feature.settings.SettingsDivider
 import com.spela.player.presentation.ui.feature.settings.SettingsInfoRow
@@ -524,6 +525,12 @@ private fun androidx.compose.foundation.lazy.LazyListScope.storageSyncContent(
                 )
             }
         }
+    }
+
+    item { Spacer(Modifier.height(SpSpacing.Medium)) }
+    item { SettingsSectionHeader(title = "Play Activity Queue") }
+    item {
+        PlayTimeSyncQueueSection(snapshot = state.playTimeSyncQueue)
     }
 
     item { Spacer(Modifier.height(SpSpacing.Medium)) }

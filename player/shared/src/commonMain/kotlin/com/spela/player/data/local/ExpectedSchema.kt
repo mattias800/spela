@@ -12,6 +12,7 @@ object ExpectedSchema {
         "ServerConnectionEntity" to setOf("id", "name", "url", "is_active"),
         "DownloadEntity" to setOf("game_id", "local_path", "file_size", "downloaded_at"),
         "AuthTokenEntity" to setOf("id", "access_token", "refresh_token", "expires_at"),
+        "CachedUserEntity" to setOf("id", "user_id", "username", "cached_at"),
         "PlayHistoryEntity" to setOf("id", "game_id", "started_at", "duration_seconds"),
         "ShaderOverrideEntity" to setOf("console_id", "shader"),
         "KeyMappingEntity" to setOf("id", "console_id", "port", "platform_key_code", "libretro_button_id"),
@@ -36,6 +37,10 @@ object ExpectedSchema {
             "id", "session_id", "kind", "slot", "name", "core_name", "compression",
             "file_path", "file_size", "screenshot_path", "created_at",
             "retry_count", "last_error",
+        ),
+        "PendingPlayTimeSyncEntity" to setOf(
+            "id", "client_report_id", "server_url", "user_id", "game_id", "game_title",
+            "duration_seconds", "played_at", "created_at", "retry_count", "last_error",
         ),
         "OnboardingHintEntity" to setOf("hint_key", "dismissed_at"),
         "PartialDownloadEntity" to setOf(

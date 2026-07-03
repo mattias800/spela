@@ -1,0 +1,30 @@
+-- Migration from schema version 7 to 8: add cached authenticated user identity
+-- and durable pending play-time sync queue (#1564). The cached user lets the
+-- queue worker avoid replaying one user's offline play activity into another
+-- account after sign-out / server switch.
+CREATE TABLE CachedUserEntity (
+    id INTEGER NOT NULL PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    username TEXT NOT NULL,
+    cached_at INTEGER NOT NULL
+);
+
+CREATE TABLE PendingPlayTimeSyncEntity (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    client_report_id TEXT NOT NULL,
+    server_url TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    game_id TEXT NOT NULL,
+    game_title TEXT NOT NULL DEFAULT '',
+    duration_seconds INTEGER NOT NULL,
+    played_at INTEGER NOT NULL,
+    created_at INTEGER NOT NULL,
+    retry_count INTEGER NOT NULL DEFAULT 0,
+    last_error TEXT
+);
+
+CREATE UNIQUE INDEX pending_play_time_sync_client_report_idx
+    ON PendingPlayTimeSyncEntity(client_report_id);
+
+CREATE INDEX pending_play_time_sync_context_idx
+    ON PendingPlayTimeSyncEntity(server_url, user_id);

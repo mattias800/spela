@@ -24,7 +24,10 @@ import kotlinx.serialization.encoding.*
  * 
  *
  * @param dollarSchema A URL to the JSON Schema for this object.
- * @param seconds 
+ * @param clientReportId
+ * @param playedAt
+ * @param seconds
+ * @param updatePresence
  */
 @Serializable
 
@@ -33,10 +36,15 @@ data class UpdateGamePlayTimeRequest (
     /* A URL to the JSON Schema for this object. */
     @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null,
 
-    @SerialName(value = "seconds") val seconds: kotlin.Long? = null
+    @SerialName(value = "clientReportId") val clientReportId: kotlin.String? = null,
+
+    @SerialName(value = "playedAt") val playedAt: kotlinx.datetime.Instant? = null,
+
+    @SerialName(value = "seconds") val seconds: kotlin.Long? = null,
+
+    @SerialName(value = "updatePresence") val updatePresence: kotlin.Boolean? = null
 
 ) {
 
 
 }
-

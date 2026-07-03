@@ -3,11 +3,13 @@ package com.spela.player.presentation.viewmodel
 import com.spela.player.data.device.DeviceManager
 import com.spela.player.data.remote.ConnectionState
 import com.spela.player.data.remote.ConnectivityMonitor
+import com.spela.player.data.remote.PlayTimeSyncManager
 import com.spela.player.data.remote.SyncEngine
 import com.spela.player.data.remote.SyncState
 import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.data.remote.dto.DeviceDto
 import com.spela.player.domain.model.Console
+import com.spela.player.domain.model.PendingPlayTimeSyncQueueSnapshot
 import com.spela.player.domain.model.PendingSaveUploadQueueSnapshot
 import com.spela.player.domain.model.RAStatus
 import com.spela.player.domain.model.ShaderPreset
@@ -16,6 +18,7 @@ import com.spela.player.domain.repository.AuthRepository
 import com.spela.player.domain.repository.DownloadRepository
 import com.spela.player.domain.repository.GameRepository
 import com.spela.player.domain.repository.KeyMappingRepository
+import com.spela.player.domain.repository.PendingPlayTimeSyncRepository
 import com.spela.player.domain.repository.PendingSaveUploadRepository
 import com.spela.player.domain.repository.PreferencesRepository
 import com.spela.player.domain.repository.ServerRepository
@@ -78,6 +81,7 @@ data class SettingsState(
     val orientationLock: String = "auto",
     val defaultSecondScreenPage: String = "art",
     val saveSyncQueue: PendingSaveUploadQueueSnapshot = PendingSaveUploadQueueSnapshot.Empty,
+    val playTimeSyncQueue: PendingPlayTimeSyncQueueSnapshot = PendingPlayTimeSyncQueueSnapshot.Empty,
 )
 
 sealed interface SettingsIntent {
@@ -138,6 +142,8 @@ class SettingsViewModel(
     private val connectivityMonitor: ConnectivityMonitor,
     private val apiClient: SpelaApiClient,
     private val pendingUploadRepository: PendingSaveUploadRepository,
+    private val pendingPlayTimeSyncRepository: PendingPlayTimeSyncRepository? = null,
+    private val playTimeSyncManager: PlayTimeSyncManager? = null,
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
 ) {
@@ -151,6 +157,7 @@ class SettingsViewModel(
 
     private var deviceNameSyncJob: Job? = null
     private var saveSyncQueueJob: Job? = null
+    private var playTimeSyncQueueJob: Job? = null
 
     fun onIntent(intent: SettingsIntent) {
         when (intent) {
@@ -231,6 +238,7 @@ class SettingsViewModel(
     }
 
     private fun syncNow() {
+        playTimeSyncManager?.drainPending(trigger = "sync_now")
         scope.launch(dispatchers.io) {
             syncEngine.syncAll()
         }
@@ -241,6 +249,16 @@ class SettingsViewModel(
         saveSyncQueueJob = scope.launch(dispatchers.io) {
             pendingUploadRepository.observeSnapshot().collect { snapshot ->
                 _state.update { it.copy(saveSyncQueue = snapshot) }
+            }
+        }
+    }
+
+    private fun startPlayTimeSyncQueueObserver() {
+        if (playTimeSyncQueueJob?.isActive == true) return
+        val repo = pendingPlayTimeSyncRepository ?: return
+        playTimeSyncQueueJob = scope.launch(dispatchers.io) {
+            repo.observeSnapshot().collect { snapshot ->
+                _state.update { it.copy(playTimeSyncQueue = snapshot) }
             }
         }
     }
@@ -262,6 +280,7 @@ class SettingsViewModel(
 
     private fun loadSettings() {
         startSaveSyncQueueObserver()
+        startPlayTimeSyncQueueObserver()
         scope.launch(dispatchers.io) {
             val user = authRepository.getCurrentUser().getOrNull()
             val cacheSize = downloadRepository.getCacheSize()

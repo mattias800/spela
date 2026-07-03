@@ -217,13 +217,188 @@ func TestUpdatePlayTime_CreatesPlayHistory(t *testing.T) {
 // given game and asserts it succeeds.
 func postPlayTime(t *testing.T, router http.Handler, token, gameID string, seconds int64) {
 	t.Helper()
-	body, _ := json.Marshal(map[string]interface{}{"seconds": seconds})
+	postPlayTimePayload(t, router, token, gameID, map[string]interface{}{"seconds": seconds})
+}
+
+func postPlayTimePayload(t *testing.T, router http.Handler, token, gameID string, payload map[string]interface{}) {
+	t.Helper()
+	body, _ := json.Marshal(payload)
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("POST", "/api/games/"+gameID+"/play-time", bytes.NewReader(body))
 	req.Header.Set("Authorization", "Bearer "+token)
 	req.Header.Set("Content-Type", "application/json")
 	router.ServeHTTP(w, req)
 	require.Equal(t, http.StatusOK, w.Code)
+}
+
+func TestUpdatePlayTime_PlayedAtSetsLastPlayed(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	token := registerAndGetToken(t, router)
+
+	var user db.User
+	require.NoError(t, database.Order("id DESC").First(&user).Error)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Offline Timestamp Game", FileName: "ot.nes", FilePath: "/tmp/ot.nes", FileSize: 100}
+	require.NoError(t, database.Create(&game).Error)
+	gameID := fmt.Sprintf("%d", game.ID)
+	playedAt := time.Date(2026, time.February, 3, 4, 5, 6, 0, time.UTC)
+
+	body, _ := json.Marshal(map[string]interface{}{
+		"seconds":  60,
+		"playedAt": playedAt,
+	})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/games/"+gameID+"/play-time", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var resp struct {
+		PlayTime   int64     `json:"playTime"`
+		LastPlayed time.Time `json:"lastPlayed"`
+	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Equal(t, int64(60), resp.PlayTime)
+	assert.True(t, playedAt.Equal(resp.LastPlayed), "response lastPlayed should preserve playedAt")
+
+	var ph db.PlayHistory
+	require.NoError(t, database.Where("user_id = ? AND game_id = ?", user.ID, game.ID).First(&ph).Error)
+	assert.True(t, playedAt.Equal(ph.LastPlayed), "PlayHistory.LastPlayed should preserve playedAt")
+
+	var daily db.DailyPlayActivity
+	playedDay := playedAt.UTC().Truncate(24 * time.Hour)
+	require.NoError(t, database.Where("user_id = ? AND date = ?", user.ID, playedDay).First(&daily).Error)
+	assert.Equal(t, int64(60), daily.PlayTime)
+}
+
+func TestUpdatePlayTime_OlderPlayedAtDoesNotMoveLastPlayedBackward(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	token := registerAndGetToken(t, router)
+
+	var user db.User
+	require.NoError(t, database.Order("id DESC").First(&user).Error)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Backfill Timestamp Game", FileName: "bt.nes", FilePath: "/tmp/bt.nes", FileSize: 100}
+	require.NoError(t, database.Create(&game).Error)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	newerPlayedAt := time.Date(2026, time.February, 3, 5, 0, 0, 0, time.UTC)
+	olderPlayedAt := newerPlayedAt.Add(-30 * time.Minute)
+
+	postPlayTimePayload(t, router, token, gameID, map[string]interface{}{
+		"seconds":  100,
+		"playedAt": newerPlayedAt,
+	})
+	postPlayTimePayload(t, router, token, gameID, map[string]interface{}{
+		"seconds":  30,
+		"playedAt": olderPlayedAt,
+	})
+
+	var ph db.PlayHistory
+	require.NoError(t, database.Where("user_id = ? AND game_id = ?", user.ID, game.ID).First(&ph).Error)
+	assert.Equal(t, int64(130), ph.PlayTime)
+	assert.True(t, newerPlayedAt.Equal(ph.LastPlayed), "older offline report should not regress LastPlayed")
+}
+
+func TestUpdatePlayTime_ClientReportIDIsIdempotent(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	token := registerAndGetToken(t, router)
+
+	var user db.User
+	require.NoError(t, database.Order("id DESC").First(&user).Error)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Retried Report Game", FileName: "rr.nes", FilePath: "/tmp/rr.nes", FileSize: 100}
+	require.NoError(t, database.Create(&game).Error)
+	gameID := fmt.Sprintf("%d", game.ID)
+	playedAt := time.Now().UTC().Add(-2 * time.Hour).Truncate(time.Second)
+	payload := map[string]interface{}{
+		"seconds":        30,
+		"playedAt":       playedAt,
+		"clientReportId": "retry-report-1",
+	}
+
+	postPlayTimePayload(t, router, token, gameID, payload)
+	postPlayTimePayload(t, router, token, gameID, payload)
+
+	var ph db.PlayHistory
+	require.NoError(t, database.Where("user_id = ? AND game_id = ?", user.ID, game.ID).First(&ph).Error)
+	assert.Equal(t, int64(30), ph.PlayTime, "duplicate clientReportId must not double-count play time")
+
+	var eventCount int64
+	database.Model(&db.ActivityEvent{}).
+		Where("user_id = ? AND game_id = ? AND event_type = ?", user.ID, game.ID, "started_playing").
+		Count(&eventCount)
+	assert.Equal(t, int64(1), eventCount, "duplicate clientReportId must not create another started_playing event")
+
+	var receiptCount int64
+	database.Model(&db.PlayTimeReportReceipt{}).
+		Where("user_id = ? AND client_report_id = ?", user.ID, "retry-report-1").
+		Count(&receiptCount)
+	assert.Equal(t, int64(1), receiptCount)
+}
+
+func TestUpdatePlayTime_UpdatePresenceFalseDoesNotSetCurrentGame(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	token := registerAndGetToken(t, router)
+
+	var user db.User
+	require.NoError(t, database.Order("id DESC").First(&user).Error)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Backfill Presence Game", FileName: "bp.nes", FilePath: "/tmp/bp.nes", FileSize: 100}
+	require.NoError(t, database.Create(&game).Error)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	postPlayTimePayload(t, router, token, gameID, map[string]interface{}{
+		"seconds":        30,
+		"playedAt":       time.Now().UTC().Add(-2 * time.Hour),
+		"clientReportId": "presence-backfill-1",
+		"updatePresence": false,
+	})
+
+	assert.Equal(t, uint(0), cfg.Hub.GetUserGame(user.ID), "backfill uploads must not resurrect current-game presence")
+
+	var ph db.PlayHistory
+	require.NoError(t, database.Where("user_id = ? AND game_id = ?", user.ID, game.ID).First(&ph).Error)
+	assert.Equal(t, int64(30), ph.PlayTime)
+}
+
+func TestUpdatePlayTime_UpdatePresenceDefaultsToTrue(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	token := registerAndGetToken(t, router)
+
+	var user db.User
+	require.NoError(t, database.Order("id DESC").First(&user).Error)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Live Presence Game", FileName: "lp.nes", FilePath: "/tmp/lp.nes", FileSize: 100}
+	require.NoError(t, database.Create(&game).Error)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	postPlayTimePayload(t, router, token, gameID, map[string]interface{}{
+		"seconds": 0,
+	})
+
+	assert.Equal(t, game.ID, cfg.Hub.GetUserGame(user.ID), "omitted updatePresence preserves legacy presence behavior")
 }
 
 // TestUpdatePlayTime_HeartbeatsCreateSingleStartedPlayingEvent reproduces the
@@ -265,6 +440,40 @@ func TestUpdatePlayTime_HeartbeatsCreateSingleStartedPlayingEvent(t *testing.T) 
 		Where("user_id = ? AND game_id = ? AND event_type = ?", user.ID, game.ID, "started_playing").
 		Count(&count)
 	assert.Equal(t, int64(1), count, "a single play session must create exactly one started_playing event")
+}
+
+func TestUpdatePlayTime_OfflinePlayedAtWithinSessionDoesNotEmitNewEvent(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	token := registerAndGetToken(t, router)
+
+	var user db.User
+	require.NoError(t, database.Order("id DESC").First(&user).Error)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Offline Session Game", FileName: "os.nes", FilePath: "/tmp/os.nes", FileSize: 100}
+	require.NoError(t, database.Create(&game).Error)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	firstPlayedAt := time.Now().UTC().Add(-2 * time.Hour).Truncate(time.Second)
+	secondPlayedAt := firstPlayedAt.Add(30 * time.Second)
+
+	postPlayTimePayload(t, router, token, gameID, map[string]interface{}{
+		"seconds":  0,
+		"playedAt": firstPlayedAt,
+	})
+	postPlayTimePayload(t, router, token, gameID, map[string]interface{}{
+		"seconds":  30,
+		"playedAt": secondPlayedAt,
+	})
+
+	var count int64
+	database.Model(&db.ActivityEvent{}).
+		Where("user_id = ? AND game_id = ? AND event_type = ?", user.ID, game.ID, "started_playing").
+		Count(&count)
+	assert.Equal(t, int64(1), count, "offline heartbeats in one session must not create a new started_playing event because upload happens later")
 }
 
 // TestUpdatePlayTime_NewSessionAfterGapEmitsNewEvent guards against the fix
