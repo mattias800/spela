@@ -37,42 +37,187 @@ export function useDiscManager({
   // (the background download effect shouldn't re-run every progress tick).
   const discStatesRef = useRef(discStates);
   discStatesRef.current = discStates;
+  const initializedGameIdRef = useRef<string | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
-  const isMultiDisc =
-    !!game && game.discCount > 1 && !!game.discs && game.discs.length > 1;
+  const gameId = game?.id;
+  const gameDiscs = game?.discs;
+  const availableDiscCount = gameDiscs?.length ?? 0;
+  const discListKey = JSON.stringify(
+    gameDiscs?.map((disc) => [disc.discNumber, disc.fileName]) ?? [],
+  );
+  const isMultiDisc = !!game && game.discCount > 1 && availableDiscCount > 1;
+
+  const downloadSingleDisc = useCallback(
+    async (gameId: string, discNumber: number, signal?: AbortSignal) => {
+      setDiscStates((prev) =>
+        prev.map((d) =>
+          d.discNumber === discNumber
+            ? { ...d, status: "downloading", progress: 0 }
+            : d,
+        ),
+      );
+
+      try {
+        const token = api.getAccessToken();
+        const tokenParam = token ? `&token=${encodeURIComponent(token)}` : "";
+        const url = `/api/games/${gameId}/discs/${discNumber}/download?format=zip${tokenParam}`;
+
+        const response = await fetch(url, { signal });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const contentLength = response.headers.get("content-length");
+        const total = contentLength ? parseInt(contentLength, 10) : 0;
+
+        if (!response.body || total === 0) {
+          const data = await response.arrayBuffer();
+          setDiscStates((prev) =>
+            prev.map((d) =>
+              d.discNumber === discNumber
+                ? { ...d, status: "ready", progress: 1, data }
+                : d,
+            ),
+          );
+          return;
+        }
+
+        // Stream with progress
+        const reader = response.body.getReader();
+        const chunks: Uint8Array[] = [];
+        let received = 0;
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          chunks.push(value);
+          received += value.length;
+          const progress = total > 0 ? received / total : 0;
+          setDiscStates((prev) =>
+            prev.map((d) =>
+              d.discNumber === discNumber ? { ...d, progress } : d,
+            ),
+          );
+        }
+
+        const combined = new Uint8Array(received);
+        let offset = 0;
+        for (const chunk of chunks) {
+          combined.set(chunk, offset);
+          offset += chunk.length;
+        }
+
+        setDiscStates((prev) =>
+          prev.map((d) =>
+            d.discNumber === discNumber
+              ? { ...d, status: "ready", progress: 1, data: combined.buffer }
+              : d,
+          ),
+        );
+      } catch (err) {
+        // AbortError is expected on unmount — don't surface as a download error.
+        if (err instanceof DOMException && err.name === "AbortError") {
+          return;
+        }
+        const message = err instanceof Error ? err.message : "Download failed";
+        setDiscStates((prev) =>
+          prev.map((d) =>
+            d.discNumber === discNumber ? { ...d, status: "error" } : d,
+          ),
+        );
+        onDiscErrorRef.current?.(discNumber, message);
+      }
+    },
+    [],
+  );
+
+  const downloadDiscsSequentially = useCallback(
+    async (gameId: string, discCount: number, signal?: AbortSignal) => {
+      for (let i = 1; i <= discCount; i++) {
+        if (!downloadingRef.current) break;
+        if (signal?.aborted) break;
+        // Don't re-download a disc that already finished during a
+        // previous pass. `emulatorStatus` flips through "saving" →
+        // "playing" during a disc switch (requestSaveState), which
+        // restarts this effect; without this guard we'd race the
+        // already-complete first disc back to "downloading" mid-
+        // switch and `buildMultiDiscBundle` would briefly return
+        // null even though we already hold the bytes.
+        const current = discStatesRef.current.find((d) => d.discNumber === i);
+        if (current?.status === "ready" && current.data) continue;
+        await downloadSingleDisc(gameId, i, signal);
+      }
+    },
+    [downloadSingleDisc],
+  );
 
   // Initialize disc states when game data is available
   useEffect(() => {
-    if (!game?.discs || !isMultiDisc) {
+    if (!gameId || !gameDiscs || !isMultiDisc) {
+      initializedGameIdRef.current = null;
       setDiscStates([]);
       return;
     }
 
-    setDiscStates(
-      game.discs.map((disc) => ({
-        discNumber: disc.discNumber,
-        fileName: disc.fileName,
-        status: "pending",
-        progress: 0,
-        data: null,
-      })),
-    );
-  }, [game?.id, isMultiDisc]);
+    const previousGameId = initializedGameIdRef.current;
+    initializedGameIdRef.current = gameId;
 
-  // AbortController for the in-flight disc download so an unmount cancels
-  // the fetch + stream reader instead of letting them keep consuming
-  // network and calling setState on an unmounted component.
-  const abortControllerRef = useRef<AbortController | null>(null);
+    const currentStates = discStatesRef.current;
+    const hasSameDiscs =
+      previousGameId === gameId &&
+      currentStates.length === gameDiscs.length &&
+      currentStates.every((discState, index) => {
+        const disc = gameDiscs[index];
+        return (
+          discState.discNumber === disc.discNumber &&
+          discState.fileName === disc.fileName
+        );
+      });
+
+    if (hasSameDiscs) return;
+
+    const nextStates: DiscState[] = gameDiscs.map((disc) => {
+      const existingState =
+        previousGameId === gameId
+          ? currentStates.find(
+              (state) =>
+                state.discNumber === disc.discNumber &&
+                state.fileName === disc.fileName,
+            )
+          : undefined;
+
+      return (
+        existingState ?? {
+          discNumber: disc.discNumber,
+          fileName: disc.fileName,
+          status: "pending",
+          progress: 0,
+          data: null,
+        }
+      );
+    });
+
+    discStatesRef.current = nextStates;
+    setDiscStates(nextStates);
+  }, [gameDiscs, gameId, isMultiDisc]);
 
   // Start background downloading when game starts playing
   useEffect(() => {
-    if (!isMultiDisc || emulatorStatus !== "playing" || !game?.discs) return;
+    if (
+      !isMultiDisc ||
+      emulatorStatus !== "playing" ||
+      !gameId ||
+      availableDiscCount === 0
+    ) {
+      return;
+    }
     if (downloadingRef.current) return;
 
     const controller = new AbortController();
     abortControllerRef.current = controller;
     downloadingRef.current = true;
-    downloadDiscsSequentially(game.id, game.discs.length, controller.signal);
+    downloadDiscsSequentially(gameId, availableDiscCount, controller.signal);
 
     return () => {
       downloadingRef.current = false;
@@ -81,131 +226,28 @@ export function useDiscManager({
         abortControllerRef.current = null;
       }
     };
-  }, [isMultiDisc, emulatorStatus, game?.id]);
-
-  async function downloadSingleDisc(
-    gameId: string,
-    discNumber: number,
-    signal?: AbortSignal,
-  ) {
-    setDiscStates((prev) =>
-      prev.map((d) =>
-        d.discNumber === discNumber
-          ? { ...d, status: "downloading", progress: 0 }
-          : d,
-      ),
-    );
-
-    try {
-      const token = api.getAccessToken();
-      const tokenParam = token
-        ? `&token=${encodeURIComponent(token)}`
-        : "";
-      const url = `/api/games/${gameId}/discs/${discNumber}/download?format=zip${tokenParam}`;
-
-      const response = await fetch(url, { signal });
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-
-      const contentLength = response.headers.get("content-length");
-      const total = contentLength ? parseInt(contentLength, 10) : 0;
-
-      if (!response.body || total === 0) {
-        const data = await response.arrayBuffer();
-        setDiscStates((prev) =>
-          prev.map((d) =>
-            d.discNumber === discNumber
-              ? { ...d, status: "ready", progress: 1, data }
-              : d,
-          ),
-        );
-        return;
-      }
-
-      // Stream with progress
-      const reader = response.body.getReader();
-      const chunks: Uint8Array[] = [];
-      let received = 0;
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        chunks.push(value);
-        received += value.length;
-        const progress = total > 0 ? received / total : 0;
-        setDiscStates((prev) =>
-          prev.map((d) =>
-            d.discNumber === discNumber ? { ...d, progress } : d,
-          ),
-        );
-      }
-
-      const combined = new Uint8Array(received);
-      let offset = 0;
-      for (const chunk of chunks) {
-        combined.set(chunk, offset);
-        offset += chunk.length;
-      }
-
-      setDiscStates((prev) =>
-        prev.map((d) =>
-          d.discNumber === discNumber
-            ? { ...d, status: "ready", progress: 1, data: combined.buffer }
-            : d,
-        ),
-      );
-    } catch (err) {
-      // AbortError is expected on unmount — don't surface as a download error.
-      if (
-        err instanceof DOMException &&
-        err.name === "AbortError"
-      ) {
-        return;
-      }
-      const message =
-        err instanceof Error ? err.message : "Download failed";
-      setDiscStates((prev) =>
-        prev.map((d) =>
-          d.discNumber === discNumber ? { ...d, status: "error" } : d,
-        ),
-      );
-      onDiscErrorRef.current?.(discNumber, message);
-    }
-  }
-
-  async function downloadDiscsSequentially(
-    gameId: string,
-    discCount: number,
-    signal?: AbortSignal,
-  ) {
-    for (let i = 1; i <= discCount; i++) {
-      if (!downloadingRef.current) break;
-      if (signal?.aborted) break;
-      // Don't re-download a disc that already finished during a
-      // previous pass. `emulatorStatus` flips through "saving" →
-      // "playing" during a disc switch (requestSaveState), which
-      // restarts this effect; without this guard we'd race the
-      // already-complete first disc back to "downloading" mid-
-      // switch and `buildMultiDiscBundle` would briefly return
-      // null even though we already hold the bytes.
-      const current = discStatesRef.current.find(
-        (d) => d.discNumber === i,
-      );
-      if (current?.status === "ready" && current.data) continue;
-      await downloadSingleDisc(gameId, i, signal);
-    }
-  }
+  }, [
+    availableDiscCount,
+    discListKey,
+    downloadDiscsSequentially,
+    emulatorStatus,
+    gameId,
+    isMultiDisc,
+  ]);
 
   const retryDisc = useCallback(
     (discNumber: number) => {
-      if (!game) return;
+      if (!gameId) return;
       // Pass the same abort signal the background loop uses so a
       // user-initiated retry that's still mid-flight when the
       // component unmounts gets cancelled too.
-      downloadSingleDisc(game.id, discNumber, abortControllerRef.current?.signal);
+      downloadSingleDisc(
+        gameId,
+        discNumber,
+        abortControllerRef.current?.signal,
+      );
     },
-    [game?.id],
+    [downloadSingleDisc, gameId],
   );
 
   const allDiscsReady =
@@ -239,8 +281,7 @@ export function useDiscManager({
       const m3uBytes = new TextEncoder().encode(m3uContent);
 
       // Use game title as .m3u filename
-      const m3uName =
-        game.title.replace(/[^a-zA-Z0-9 ._-]/g, "") + ".m3u";
+      const m3uName = game.title.replace(/[^a-zA-Z0-9 ._-]/g, "") + ".m3u";
       allFiles.set(m3uName, m3uBytes);
 
       return createZipStore(allFiles);
