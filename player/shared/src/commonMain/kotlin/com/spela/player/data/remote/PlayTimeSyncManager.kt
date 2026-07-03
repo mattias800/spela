@@ -1,7 +1,6 @@
 package com.spela.player.data.remote
 
 import com.spela.player.data.remote.api.SpelaApiClient
-import com.spela.player.domain.model.PendingPlayTimeSync
 import com.spela.player.domain.repository.CurrentUserContextRepository
 import com.spela.player.domain.repository.PendingPlayTimeSyncRepository
 import com.spela.player.domain.repository.ServerRepository
