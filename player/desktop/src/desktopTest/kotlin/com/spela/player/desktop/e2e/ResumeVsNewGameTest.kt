@@ -2,8 +2,10 @@ package com.spela.player.desktop.e2e
 
 import androidx.compose.ui.test.*
 import com.spela.player.domain.model.GameSession
+import com.spela.player.domain.model.UserPreferences
 import com.spela.player.presentation.navigation.NavigationIntent
 import com.spela.player.presentation.navigation.SpScreen
+import com.spela.player.presentation.ui.TestTags
 import com.spela.player.presentation.viewmodel.PendingLaunch
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -74,6 +76,54 @@ class ResumeVsNewGameTest {
     }
 
     @Test
+    fun autoSaveRecoveryAffordanceAppearsForResumeState() = runComposeUiTest {
+        val harness = createLoggedInHarness()
+        harness.downloadRepo.preCacheGame("1")
+        harness.addSessionForGame("1")
+
+        setContent { harness.App() }
+        showGameDetail(harness)
+
+        onNodeWithTag(TestTags.GAME_DETAIL_AUTOSAVE_RECOVERY, useUnmergedTree = true)
+            .assertIsDisplayed()
+        onNodeWithTag(TestTags.GAME_DETAIL_AUTOSAVE_RECOVERY_ACTION, useUnmergedTree = true)
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun autoSaveRecoveryAffordanceHiddenWithoutSaves() = runComposeUiTest {
+        val harness = createLoggedInHarness()
+        harness.downloadRepo.preCacheGame("1")
+
+        setContent { harness.App() }
+        showGameDetail(harness)
+
+        onNodeWithTag(TestTags.GAME_DETAIL_AUTOSAVE_RECOVERY, useUnmergedTree = true)
+            .assertDoesNotExist()
+        onNodeWithTag(TestTags.GAME_DETAIL_AUTOSAVE_RECOVERY_ACTION, useUnmergedTree = true)
+            .assertDoesNotExist()
+    }
+
+    @Test
+    fun autoSaveRecoveryAffordanceHiddenWhenAutoLoadDisabled() = runComposeUiTest {
+        val harness = createLoggedInHarness()
+        harness.downloadRepo.preCacheGame("1")
+        harness.addSessionForGame("1")
+        harness.preferencesRepo.preferencesResult = Result.success(
+            UserPreferences(autoLoadSaveEnabled = false)
+        )
+
+        setContent { harness.App() }
+        showGameDetail(harness)
+
+        onNodeWithText("Continue").assertIsDisplayed()
+        onNodeWithTag(TestTags.GAME_DETAIL_AUTOSAVE_RECOVERY, useUnmergedTree = true)
+            .assertDoesNotExist()
+        onNodeWithTag(TestTags.GAME_DETAIL_AUTOSAVE_RECOVERY_ACTION, useUnmergedTree = true)
+            .assertDoesNotExist()
+    }
+
+    @Test
     fun menuReflectsGameWithoutSaves() = runComposeUiTest {
         val harness = createLoggedInHarness()
         harness.downloadRepo.preCacheGame("1")
@@ -112,6 +162,31 @@ class ResumeVsNewGameTest {
         assertEquals("1", resumeLaunch.gameId)
         assertFalse(resumeLaunch.skipAutoLoad, "skipAutoLoad should be false")
         assertFalse(resumeLaunch.forceNewSession, "forceNewSession should be false")
+    }
+
+    @Test
+    fun autoSaveRecoveryActionDispatchesLaunchWithoutAutoLoad() = runComposeUiTest {
+        val harness = createLoggedInHarness()
+        harness.downloadRepo.preCacheGame("1")
+        harness.addSessionForGame("1")
+
+        var capturedLaunch: PendingLaunch? = null
+        harness.scope.launch {
+            harness.emulationViewModel.launchReady.collect { capturedLaunch = it }
+        }
+
+        setContent { harness.App() }
+        showGameDetail(harness)
+
+        onNodeWithTag(TestTags.GAME_DETAIL_AUTOSAVE_RECOVERY_ACTION, useUnmergedTree = true)
+            .performClick()
+        advance(harness)
+
+        val titleScreenLaunch = capturedLaunch
+        assertTrue(titleScreenLaunch != null, "Expected a PendingLaunch to be emitted")
+        assertEquals("1", titleScreenLaunch.gameId)
+        assertTrue(titleScreenLaunch.skipAutoLoad, "skipAutoLoad should be true")
+        assertFalse(titleScreenLaunch.forceNewSession, "forceNewSession should be false")
     }
 
     @Test

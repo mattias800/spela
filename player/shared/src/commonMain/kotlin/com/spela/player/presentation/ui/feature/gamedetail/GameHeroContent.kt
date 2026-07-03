@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
@@ -38,8 +39,10 @@ import com.spela.player.domain.model.DownloadFailureReason
 import com.spela.player.domain.model.DownloadState
 import com.spela.player.domain.model.Game
 import com.spela.player.domain.model.NETPLAY_SUPPORTED_CONSOLES
+import com.spela.player.domain.model.PlaySemantics
 import com.spela.player.presentation.state.GameDetailState
 import com.spela.player.presentation.state.GameSyncState
+import com.spela.player.presentation.ui.TestTags
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpChip
@@ -206,215 +209,209 @@ fun GameHeroContent(
         // itself only contains same-height button-shaped items so
         // CenterVertically alignment is honest. See #893.
         Column(verticalArrangement = Arrangement.spacedBy(SpSpacing.XSmall)) {
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-            verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
-            itemVerticalAlignment = Alignment.CenterVertically,
-        ) {
-            if (showCachedStyleButton) {
-                if (game.playable) {
-                    val menuItems = buildList {
-                        if (hasSaves && onPlayFromTitleScreen != null) {
-                            add(SpSplitButtonMenuItem(
-                                label = "Continue from Title Screen",
-                                description = "Keep your in-game save, start from the beginning",
-                            ) { onPlayFromTitleScreen(gameId) })
+            val hasRequiredBiosMissing = missingBiosFiles.any { it.required }
+            val isSyncing = syncState != null
+            val titleScreenLauncher = onPlayFromTitleScreen
+            val showAutoSaveRecovery =
+                showCachedStyleButton &&
+                    game.playable &&
+                    state.playSemantics == PlaySemantics.ResumesFromSaveState &&
+                    titleScreenLauncher != null
 
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+                verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+                itemVerticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (showCachedStyleButton) {
+                    if (game.playable) {
+                        val menuItems = buildList {
+                            if (hasSaves && onPlayFromTitleScreen != null) {
+                                add(
+                                    SpSplitButtonMenuItem(
+                                        label = "Continue from Title Screen",
+                                        description = "Keep your in-game save, start from the beginning",
+                                    ) { onPlayFromTitleScreen(gameId) },
+                                )
+                            }
+                            if (hasSaves && onPlayFresh != null) {
+                                // Renamed from "New Game" to disambiguate
+                                // from the top-button label which now also
+                                // says "New game" when no session exists
+                                // (#900). The fresh-playthrough action
+                                // wants distinct phrasing — "Start fresh
+                                // playthrough" reads as a deliberate
+                                // override of the existing save state.
+                                add(
+                                    SpSplitButtonMenuItem(
+                                        label = "Start fresh playthrough",
+                                        description = "Keep your existing saves, start a separate playthrough from scratch",
+                                    ) { onPlayFresh(gameId) },
+                                )
+                            }
+                            if (onCreateNetplay != null && supportsNetplay) {
+                                add(SpSplitButtonMenuItem("Netplay") { onCreateNetplay(gameId) })
+                            }
+                            // Delete Download only meaningful when the
+                            // game is actually downloaded — skip on the
+                            // instant-download silent-Play path (#932).
+                            if (state.isGameCached) {
+                                add(SpSplitButtonMenuItem("Delete Download") { onDeleteLocalGame() })
+                            }
                         }
-                        if (hasSaves && onPlayFresh != null) {
-                            // Renamed from "New Game" to disambiguate
-                            // from the top-button label which now also
-                            // says "New game" when no session exists
-                            // (#900). The fresh-playthrough action
-                            // wants distinct phrasing — "Start fresh
-                            // playthrough" reads as a deliberate
-                            // override of the existing save state.
-                            add(SpSplitButtonMenuItem(
-                                label = "Start fresh playthrough",
-                                description = "Keep your existing saves, start a separate playthrough from scratch",
-                            ) { onPlayFresh(gameId) })
+                        // Three-state label per #884 / #900:
+                        //   NoSession → "New game" (no save to pick up
+                        //     from — the user is starting fresh)
+                        //   ResumesFromSaveState → "Resume" (auto-load
+                        //     on launch — user lands mid-frame)
+                        //   LaunchesFresh → "Continue" (session exists
+                        //     but engine starts at title screen, e.g.
+                        //     ScummVM or user opted out of save states)
+                        // Suffix "— {h m}" when the targeted session has a
+                        // meaningful play time (≥ 60 s). Resolver is pure —
+                        // unit-tested in PlayCtaLabelTest. See #1098 and
+                        // [gameDetailPlayLabel].
+                        val playLabel = gameDetailPlayLabel(
+                            semantics = state.playSemantics,
+                            sessionPlayTimeSeconds = state.sessions.firstOrNull()?.totalPlayTime ?: 0L,
+                        )
+                        // Click target depends on whether the game is
+                        // already on disk. Cached → direct play. Uncached
+                        // (only reachable here when isInstantDownload-
+                        // Candidate is true) → silent download-then-
+                        // launch via the ViewModel; the screen
+                        // LaunchedEffect will call onPlay once download
+                        // succeeds. The ViewModel additionally gates the
+                        // auto-launch on its own size check so this
+                        // routing can't be inadvertently broken from
+                        // elsewhere. #932.
+                        val playOnClick: () -> Unit = if (state.isGameCached) {
+                            { onPlay(gameId) }
+                        } else {
+                            onDownloadAndPlay
                         }
+                        SpSplitButton(
+                            text = playLabel,
+                            onClick = playOnClick,
+                            modifier = Modifier
+                                .focusRestoreItem(
+                                    key = "game_detail_play",
+                                    isDefault = true,
+                                )
+                                .testTag(TestTags.GAME_DETAIL_PLAY_BUTTON),
+                            enabled = !hasRequiredBiosMissing && !isSyncing,
+                            isLoading = false,
+                            menuItems = menuItems,
+                            onGradient = true,
+                        )
+                    } else {
+                        SpButton(
+                            text = "Delete Download",
+                            onClick = onDeleteLocalGame,
+                            // Tinted, not Ghost: this is the sole action for a
+                            // non-playable game, sitting on the gradient hero.
+                            // Ghost on a gradient is just white text with no
+                            // fill/border and reads as transparent (#1256). Tinted
+                            // is the established gradient-hero button treatment.
+                            style = SpButtonStyle.Tinted,
+                            onGradient = true,
+                            modifier = Modifier.focusRestoreItem(
+                                key = "game_detail_play",
+                                isDefault = true,
+                            ),
+                        )
+                    }
+                } else {
+                    // A paused/resumably-failed partial → Resume; a terminally
+                    // failed one → Start over. Otherwise a fresh Download. (#1296)
+                    val dpState = state.downloadProgress?.state
+                    val isPaused = dpState == DownloadState.PAUSED
+                    val isTerminalFailed = dpState == DownloadState.FAILED
+                    val pausedPct = state.downloadProgress
+                        ?.takeIf { it.totalBytes > 0 }
+                        ?.let { (it.progress * 100).toInt().coerceIn(0, 100) }
+                    val menuItems = buildList {
                         if (onCreateNetplay != null && supportsNetplay) {
                             add(SpSplitButtonMenuItem("Netplay") { onCreateNetplay(gameId) })
                         }
-                        // Delete Download only meaningful when the
-                        // game is actually downloaded — skip on the
-                        // instant-download silent-Play path (#932).
-                        if (state.isGameCached) {
-                            add(SpSplitButtonMenuItem("Delete Download") { onDeleteLocalGame() })
+                        // Recovery options for a stopped partial.
+                        if (isPaused) {
+                            add(SpSplitButtonMenuItem("Start over") { onRestartDownload() })
+                        }
+                        if (isPaused || isTerminalFailed) {
+                            add(SpSplitButtonMenuItem("Remove download") { onDeleteLocalGame() })
                         }
                     }
-                    val hasRequiredBiosMissing = missingBiosFiles.any { it.required }
-                    val isSyncing = syncState != null
-                    // Three-state label per #884 / #900:
-                    //   NoSession → "New game" (no save to pick up
-                    //     from — the user is starting fresh)
-                    //   ResumesFromSaveState → "Resume" (auto-load
-                    //     on launch — user lands mid-frame)
-                    //   LaunchesFresh → "Continue" (session exists
-                    //     but engine starts at title screen, e.g.
-                    //     ScummVM or user opted out of save states)
-                    // Suffix "— {h m}" when the targeted session has a
-                    // meaningful play time (≥ 60 s). Resolver is pure —
-                    // unit-tested in PlayCtaLabelTest. See #1098 and
-                    // [gameDetailPlayLabel].
-                    val playLabel = gameDetailPlayLabel(
-                        semantics = state.playSemantics,
-                        sessionPlayTimeSeconds = state.sessions.firstOrNull()?.totalPlayTime ?: 0L,
-                    )
-                    // Click target depends on whether the game is
-                    // already on disk. Cached → direct play. Uncached
-                    // (only reachable here when isInstantDownload-
-                    // Candidate is true) → silent download-then-
-                    // launch via the ViewModel; the screen
-                    // LaunchedEffect will call onPlay once download
-                    // succeeds. The ViewModel additionally gates the
-                    // auto-launch on its own size check so this
-                    // routing can't be inadvertently broken from
-                    // elsewhere. #932.
-                    val playOnClick: () -> Unit = if (state.isGameCached) {
-                        { onPlay(gameId) }
-                    } else {
-                        onDownloadAndPlay
-                    }
+                    // For a game Spela can't emulate, downloading to the managed
+                    // cache is pointless — let the user pick a folder instead
+                    // (desktop only; Android keeps the default). (#1257)
+                    val downloadToFolder = !game.playable && currentPlatform() != "android"
                     SpSplitButton(
-                        text = playLabel,
-                        onClick = playOnClick,
+                        text = when {
+                            isBusy -> "Downloading..."
+                            isPaused -> pausedPct?.let { "Resume $it%" } ?: "Resume"
+                            isTerminalFailed -> "Start over"
+                            downloadToFolder -> "Download to folder…"
+                            else -> "Download"
+                        },
+                        onClick = when {
+                            isPaused -> onResumeDownload
+                            isTerminalFailed -> onRestartDownload
+                            downloadToFolder -> onDownloadToFolder
+                            else -> onDownloadGame
+                        },
                         modifier = Modifier
                             .focusRestoreItem(
                                 key = "game_detail_play",
                                 isDefault = true,
                             )
-                            .testTag("game_detail_play_button"),
-                        enabled = !hasRequiredBiosMissing && !isSyncing,
-                        isLoading = false,
+                            .testTag(TestTags.GAME_DETAIL_DOWNLOAD_BUTTON),
+                        isLoading = isBusy,
+                        enabled = !isBusy,
                         menuItems = menuItems,
                         onGradient = true,
                     )
-                } else {
-                    SpButton(
-                        text = "Delete Download",
-                        onClick = onDeleteLocalGame,
-                        // Tinted, not Ghost: this is the sole action for a
-                        // non-playable game, sitting on the gradient hero.
-                        // Ghost on a gradient is just white text with no
-                        // fill/border and reads as transparent (#1256). Tinted
-                        // is the established gradient-hero button treatment.
-                        style = SpButtonStyle.Tinted,
-                        onGradient = true,
-                        modifier = Modifier.focusRestoreItem(
-                            key = "game_detail_play",
-                            isDefault = true,
-                        ),
-                    )
                 }
-            } else {
-                // A paused/resumably-failed partial → Resume; a terminally
-                // failed one → Start over. Otherwise a fresh Download. (#1296)
-                val dpState = state.downloadProgress?.state
-                val isPaused = dpState == DownloadState.PAUSED
-                val isTerminalFailed = dpState == DownloadState.FAILED
-                val pausedPct = state.downloadProgress
-                    ?.takeIf { it.totalBytes > 0 }
-                    ?.let { (it.progress * 100).toInt().coerceIn(0, 100) }
-                val menuItems = buildList {
-                    if (onCreateNetplay != null && supportsNetplay) {
-                        add(SpSplitButtonMenuItem("Netplay") { onCreateNetplay(gameId) })
-                    }
-                    // Recovery options for a stopped partial.
-                    if (isPaused) {
-                        add(SpSplitButtonMenuItem("Start over") { onRestartDownload() })
-                    }
-                    if (isPaused || isTerminalFailed) {
-                        add(SpSplitButtonMenuItem("Remove download") { onDeleteLocalGame() })
-                    }
-                }
-                // For a game Spela can't emulate, downloading to the managed
-                // cache is pointless — let the user pick a folder instead
-                // (desktop only; Android keeps the default). (#1257)
-                val downloadToFolder = !game.playable && currentPlatform() != "android"
-                SpSplitButton(
-                    text = when {
-                        isBusy -> "Downloading..."
-                        isPaused -> pausedPct?.let { "Resume $it%" } ?: "Resume"
-                        isTerminalFailed -> "Start over"
-                        downloadToFolder -> "Download to folder…"
-                        else -> "Download"
-                    },
-                    onClick = when {
-                        isPaused -> onResumeDownload
-                        isTerminalFailed -> onRestartDownload
-                        downloadToFolder -> onDownloadToFolder
-                        else -> onDownloadGame
-                    },
-                    modifier = Modifier
-                        .focusRestoreItem(
-                            key = "game_detail_play",
-                            isDefault = true,
-                        )
-                        .testTag("game_detail_download_button"),
-                    isLoading = isBusy,
-                    enabled = !isBusy,
-                    menuItems = menuItems,
+
+                // Per-game save-state policy override is only meaningful
+                // for Medium/Large console tiers — Small-tier consoles
+                // (NES / GB / SNES, KB-sized states) never opt out at the
+                // console level, so the per-game override has nothing to
+                // override. Hide the menu entry entirely on those consoles
+                // rather than show a sheet with only a no-op toggle.
+                val showSaveStateSettings = game.consoleSaveStatePolicy !=
+                    com.spela.player.domain.model.SaveStatePolicyTier.Small
+                GameActionsMenu(
+                    isFavorite = game.isFavorite,
+                    isInPlayLater = game.isInPlayLater,
+                    onToggleFavorite = onToggleFavorite,
+                    onTogglePlayLater = onTogglePlayLater,
+                    onAddToCollection = onAddToCollection,
                     onGradient = true,
+                    onSaveStateSettings = if (showSaveStateSettings) {
+                        { showGameSettingsSheet = true }
+                    } else null,
+                    // Only for downloaded games, and only where the OS file
+                    // manager can browse the download location — i.e. desktop,
+                    // not Android (app-private storage). (#1259)
+                    onOpenDownloadFolder = if (state.isGameCached && currentPlatform() != "android") {
+                        onOpenDownloadFolder
+                    } else null,
+                    onAdminScrape = onAdminScrape,
+                    onAdminRefreshAchievements = onAdminRefreshAchievements,
+                    isAdminActionLoading = state.isAdminActionLoading,
                 )
-            }
 
-            // Per-game save-state policy override is only meaningful
-            // for Medium/Large console tiers — Small-tier consoles
-            // (NES / GB / SNES, KB-sized states) never opt out at the
-            // console level, so the per-game override has nothing to
-            // override. Hide the menu entry entirely on those consoles
-            // rather than show a sheet with only a no-op toggle.
-            val showSaveStateSettings = game.consoleSaveStatePolicy !=
-                com.spela.player.domain.model.SaveStatePolicyTier.Small
-            GameActionsMenu(
-                isFavorite = game.isFavorite,
-                isInPlayLater = game.isInPlayLater,
-                onToggleFavorite = onToggleFavorite,
-                onTogglePlayLater = onTogglePlayLater,
-                onAddToCollection = onAddToCollection,
-                onGradient = true,
-                onSaveStateSettings = if (showSaveStateSettings) {
-                    { showGameSettingsSheet = true }
-                } else null,
-                // Only for downloaded games, and only where the OS file
-                // manager can browse the download location — i.e. desktop,
-                // not Android (app-private storage). (#1259)
-                onOpenDownloadFolder = if (state.isGameCached && currentPlatform() != "android") {
-                    onOpenDownloadFolder
-                } else null,
-                onAdminScrape = onAdminScrape,
-                onAdminRefreshAchievements = onAdminRefreshAchievements,
-                isAdminActionLoading = state.isAdminActionLoading,
-            )
-
-            // Playtime + last played grouped so they wrap together
-            if (game.totalPlayTime > 0 || game.lastPlayedAt != null) {
-                Row(horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small)) {
-                    if (game.totalPlayTime > 0) {
-                        SpChip(
-                            text = formatPlayTime(game.totalPlayTime),
-                            onGradient = true,
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Filled.AccessTime,
-                                    contentDescription = null,
-                                    tint = SpColor.OnGradientSecondary,
-                                    modifier = Modifier.size(14.dp),
-                                )
-                            },
-                        )
-                    }
-                    game.lastPlayedAt?.let { timestamp ->
-                        val relative = formatRelativeTime(timestamp)
-                        if (relative.isNotEmpty()) {
+                // Playtime + last played grouped so they wrap together
+                if (game.totalPlayTime > 0 || game.lastPlayedAt != null) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small)) {
+                        if (game.totalPlayTime > 0) {
                             SpChip(
-                                text = relative,
+                                text = formatPlayTime(game.totalPlayTime),
                                 onGradient = true,
                                 leadingIcon = {
                                     Icon(
-                                        imageVector = Icons.Filled.History,
+                                        imageVector = Icons.Filled.AccessTime,
                                         contentDescription = null,
                                         tint = SpColor.OnGradientSecondary,
                                         modifier = Modifier.size(14.dp),
@@ -422,10 +419,34 @@ fun GameHeroContent(
                                 },
                             )
                         }
+                        game.lastPlayedAt?.let { timestamp ->
+                            val relative = formatRelativeTime(timestamp)
+                            if (relative.isNotEmpty()) {
+                                SpChip(
+                                    text = relative,
+                                    onGradient = true,
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Filled.History,
+                                            contentDescription = null,
+                                            tint = SpColor.OnGradientSecondary,
+                                            modifier = Modifier.size(14.dp),
+                                        )
+                                    },
+                                )
+                            }
+                        }
                     }
                 }
             }
-        }
+
+            if (showAutoSaveRecovery) {
+                AutoSaveRecoveryNotice(
+                    onClick = { titleScreenLauncher(gameId) },
+                    enabled = !hasRequiredBiosMissing && !isSyncing,
+                )
+            }
+
             // Size hint under the action row — answers "is this 5 MB
             // or 5 GB?" before the user commits, without scrolling
             // down to the metadata table. Hidden during the active
@@ -469,7 +490,7 @@ fun GameHeroContent(
                 if (p != null && p.totalDiscs > 1) "Downloading disc ${p.currentDisc}/${p.totalDiscs}…"
                 else "Downloading…"
             }
-            showPausedStatus -> when (pausedDp?.failureReason) {
+            showPausedStatus -> when (pausedDp.failureReason) {
                 DownloadFailureReason.NETWORK -> "Connection lost — Resume to continue"
                 DownloadFailureReason.SERVER -> "Server interrupted — Resume to continue"
                 else -> "Paused — Resume to continue"
@@ -549,6 +570,51 @@ fun GameHeroContent(
                 }
             },
             modifier = Modifier.testTag("game_detail_settings_sheet"),
+        )
+    }
+}
+
+@Composable
+private fun AutoSaveRecoveryNotice(
+    onClick: () -> Unit,
+    enabled: Boolean,
+) {
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+        verticalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
+        itemVerticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.testTag(TestTags.GAME_DETAIL_AUTOSAVE_RECOVERY),
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Info,
+                contentDescription = null,
+                tint = SpColor.OnGradientSecondary,
+                modifier = Modifier.size(18.dp),
+            )
+            Text(
+                text = "Stuck after resume?",
+                style = SpTypography.BodySmall,
+                color = SpColor.OnGradientSecondary,
+            )
+        }
+        SpButton(
+            text = "Title screen",
+            onClick = onClick,
+            style = SpButtonStyle.Ghost,
+            enabled = enabled,
+            onGradient = true,
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Filled.Replay,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+            },
+            modifier = Modifier.testTag(TestTags.GAME_DETAIL_AUTOSAVE_RECOVERY_ACTION),
         )
     }
 }

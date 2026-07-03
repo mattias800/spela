@@ -75,4 +75,18 @@ class PlaySemanticsTest {
         )
         assertEquals(PlaySemantics.LaunchesFresh, out)
     }
+
+    @Test
+    fun sessionExists_autoLoadGloballyDisabled_continues() {
+        // The launch path checks the global auto-load preference too;
+        // the hero label must not promise "Resume" when launch will go
+        // to the title screen.
+        val out = resolvePlaySemantics(
+            hasSession = true,
+            consoleSaveStateSupport = true,
+            effectiveChoice = SaveStateChoice.Enabled,
+            autoLoadSaveEnabled = false,
+        )
+        assertEquals(PlaySemantics.LaunchesFresh, out)
+    }
 }

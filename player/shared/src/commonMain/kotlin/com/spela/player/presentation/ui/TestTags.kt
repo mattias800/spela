@@ -83,6 +83,8 @@ object TestTags {
     // visible label, since a Continue/Resume copy change shouldn't fail tests.
     const val GAME_DETAIL_PLAY_BUTTON = "game_detail_play_button"
     const val GAME_DETAIL_DOWNLOAD_BUTTON = "game_detail_download_button"
+    const val GAME_DETAIL_AUTOSAVE_RECOVERY = "game_detail_autosave_recovery"
+    const val GAME_DETAIL_AUTOSAVE_RECOVERY_ACTION = "game_detail_autosave_recovery_action"
 
     // Game detail — More-actions overflow menu (GameActionsMenu). The
     // dropdown items moved here from being top-level buttons; tests

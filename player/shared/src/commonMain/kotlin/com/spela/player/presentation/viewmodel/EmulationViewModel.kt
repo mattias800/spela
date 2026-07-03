@@ -861,6 +861,7 @@ class EmulationViewModel(
             currentPreferences = preferencesRepository.getPreferences()
                 .getOrDefault(UserPreferences())
             println("[Emulation] Preferences fetched, autoUpdateCores=${currentPreferences.autoUpdateCoresEnabled}")
+            var autoLoadAllowed = currentPreferences.autoLoadSaveEnabled
 
             // Get game detail for consoleId
             println("[Emulation] Fetching game detail for $gameId")
@@ -878,9 +879,11 @@ class EmulationViewModel(
                     consoleAbbr = detail.game.consoleId,
                     tier = detail.game.consoleSaveStatePolicy,
                     overrides = currentPreferences.consoleSaveStatePolicies,
+                    gameOverride = currentPreferences.gameSaveStatePolicies[gameId],
                 )
                 val optedOut = effectiveChoice ==
                     com.spela.player.domain.model.SaveStateChoice.Disabled
+                autoLoadAllowed = currentPreferences.autoLoadSaveEnabled && !optedOut
                 val askOnce = effectiveChoice ==
                     com.spela.player.domain.model.SaveStateChoice.AskOnce
                 val displayAspectChoice = preferencesRepository.resolveDisplayAspectChoice(
@@ -1304,7 +1307,7 @@ class EmulationViewModel(
                         // Try to load auto-save: in shared session mode, download shared session auto-save
                         else if (sharedSessionId != null) {
                             netplayManager.loadSharedSessionSave(sharedSessionId)
-                        } else if (currentPreferences.autoLoadSaveEnabled && !skipAutoLoad && !hwRender) {
+                        } else if (autoLoadAllowed && !skipAutoLoad && !hwRender) {
                             // For non-HW cores, load save state immediately.
                             // HW render cores (e.g. Dolphin) boot asynchronously — their
                             // GPU thread isn't ready for retro_unserialize yet. Deferred below.
@@ -1377,8 +1380,8 @@ class EmulationViewModel(
                         // Deferred auto-load for HW render cores (e.g. Dolphin).
                         // These cores boot asynchronously and crash if retro_unserialize
                         // is called before their GPU thread is fully initialized.
-                        println("[Emulation] Deferred auto-load check: hwRender=$hwRender autoLoad=${currentPreferences.autoLoadSaveEnabled} skipAutoLoad=$skipAutoLoad challengeId=$challengeId sharedSessionId=$sharedSessionId saveStatesSupported=$saveStatesSupported")
-                        if (hwRender && currentPreferences.autoLoadSaveEnabled && !skipAutoLoad
+                        println("[Emulation] Deferred auto-load check: hwRender=$hwRender autoLoadAllowed=$autoLoadAllowed skipAutoLoad=$skipAutoLoad challengeId=$challengeId sharedSessionId=$sharedSessionId saveStatesSupported=$saveStatesSupported")
+                        if (hwRender && autoLoadAllowed && !skipAutoLoad
                             && challengeId == null && sharedSessionId == null
                             // Don't try to auto-load on cores that don't support
                             // save states. Existing rows from before the support
