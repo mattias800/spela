@@ -132,6 +132,16 @@ data class EmulationState(
      */
     val showNamedSaveDialog: Boolean = false,
     /**
+     * True when this session can switch Wii controller schemes (#1559):
+     * a Wii game on the dolphin core. Gates the in-game drawer action.
+     */
+    val isWiiControlSchemeSelectable: Boolean = false,
+    /** The Wii controller scheme currently applied to the session (#1559). */
+    val wiiControlScheme: com.spela.player.domain.model.WiiControlScheme =
+        com.spela.player.domain.model.WiiControlScheme.NUNCHUK,
+    /** True when the in-game Wii control scheme picker dialog is open (#1559). */
+    val showWiiControlSchemePicker: Boolean = false,
+    /**
      * Non-null when the user long-presses a filled slot cell on the
      * in-game slot picker. Drives the slot-actions bottom sheet
      * (Rename / Delete / Cancel). See #831.
