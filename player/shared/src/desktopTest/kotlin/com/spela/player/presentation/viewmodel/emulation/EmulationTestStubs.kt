@@ -484,6 +484,7 @@ class StubSessionRepository : SessionRepository {
     var downloadSessionAutoSaveCallCount = 0; private set
     var uploadSessionSramCallCount = 0; private set
     var downloadSessionSramCallCount = 0; private set
+    var uploadSlotSaveCallCount = 0; private set
     var uploadSessionSaveCallCount = 0; private set
     var createSessionCallCount = 0; private set
     var lastCreatedSessionName: String? = null; private set
@@ -494,6 +495,7 @@ class StubSessionRepository : SessionRepository {
      *  tests don't need to set it. Tests covering #803's failure feedback
      *  set this to [Result.failure] before calling [SaveManager.saveState]. */
     var uploadSessionSaveResult: Result<SaveState> = Result.success(SaveState(id = "1", name = "Manual Save"))
+    var uploadSessionAutoSaveResult: Result<Unit> = Result.success(Unit)
     var existingSessions: List<GameSession> = emptyList()
 
     override suspend fun getSessionsForGame(gameId: String) = Result.success(existingSessions)
@@ -595,12 +597,12 @@ class StubSessionRepository : SessionRepository {
     override suspend fun downloadSessionSave(sessionId: String, saveId: String) = Result.success(downloadedSaveBytes)
     override suspend fun uploadSessionAutoSave(sessionId: String, data: ByteArray, screenshot: ByteArray?, coreName: String): Result<Unit> {
         uploadSessionAutoSaveCallCount++
-        return Result.success(Unit)
+        return uploadSessionAutoSaveResult
     }
     override suspend fun uploadSessionAutoSaveFromFile(sessionId: String, savePath: String, saveSize: Long, screenshot: ByteArray?, coreName: String, compression: String): Result<Unit> {
         uploadSessionAutoSaveCallCount++
         lastUploadCompression = compression
-        return Result.success(Unit)
+        return uploadSessionAutoSaveResult
     }
     override suspend fun downloadSessionAutoSave(sessionId: String): Result<ByteArray> {
         downloadSessionAutoSaveCallCount++
@@ -621,9 +623,12 @@ class StubSessionRepository : SessionRepository {
     override suspend fun uploadSessionSaveDirBundleFromFile(sessionId: String, tarPath: String, tarSize: Long): Result<Unit> = Result.success(Unit)
     override suspend fun downloadSessionSaveDirBundleToFile(sessionId: String, fileStorage: com.spela.player.util.FileStorage, outputPath: String): Result<Unit> =
         Result.failure(Exception("no save_dir bundle"))
-    override suspend fun uploadSlotSave(sessionId: String, slot: Int, data: ByteArray, screenshot: ByteArray?, coreName: String) =
-        Result.success(SaveState(id = "1", name = "Slot $slot"))
+    override suspend fun uploadSlotSave(sessionId: String, slot: Int, data: ByteArray, screenshot: ByteArray?, coreName: String): Result<SaveState> {
+        uploadSlotSaveCallCount++
+        return Result.success(SaveState(id = "1", name = "Slot $slot"))
+    }
     override suspend fun uploadSlotSaveFromFile(sessionId: String, slot: Int, savePath: String, saveSize: Long, screenshot: ByteArray?, coreName: String, compression: String): Result<SaveState> {
+        uploadSlotSaveCallCount++
         lastUploadCompression = compression
         return Result.success(SaveState(id = "1", name = "Slot $slot"))
     }
@@ -757,12 +762,19 @@ class StubPendingSaveUploadRepository :
 
     private val rows = mutableListOf<com.spela.player.domain.model.PendingSaveUpload>()
     private var nextId = 1L
+    private var isDraining = false
+    private val snapshot = MutableStateFlow(
+        com.spela.player.domain.model.PendingSaveUploadQueueSnapshot.Empty,
+    )
 
     /** Captures every row passed to [enqueue], even after the drain
      *  removes them from the live queue. Lets tests assert the row
      *  shape (e.g. server-visible name) without setting up an upload
      *  failure to keep the row alive. See #830. */
     val enqueueLog: MutableList<com.spela.player.domain.model.PendingSaveUpload> = mutableListOf()
+
+    override fun observeSnapshot(): Flow<com.spela.player.domain.model.PendingSaveUploadQueueSnapshot> =
+        snapshot
 
     override suspend fun enqueue(
         sessionId: String,
@@ -794,6 +806,7 @@ class StubPendingSaveUploadRepository :
         )
         rows.add(row)
         enqueueLog.add(row)
+        publishSnapshot()
         return id
     }
 
@@ -815,6 +828,7 @@ class StubPendingSaveUploadRepository :
 
     override suspend fun delete(id: Long) {
         rows.removeAll { it.id == id }
+        publishSnapshot()
     }
 
     override suspend fun markRetry(id: Long, lastError: String?) {
@@ -823,6 +837,19 @@ class StubPendingSaveUploadRepository :
             val r = rows[idx]
             rows[idx] = r.copy(retryCount = r.retryCount + 1, lastError = lastError)
         }
+        publishSnapshot()
+    }
+
+    override fun setDraining(isDraining: Boolean) {
+        this.isDraining = isDraining
+        publishSnapshot()
+    }
+
+    private fun publishSnapshot() {
+        snapshot.value = com.spela.player.domain.model.pendingSaveUploadQueueSnapshot(
+            rows.sortedWith(compareBy({ it.createdAt }, { it.id })),
+            isDraining,
+        )
     }
 }
 

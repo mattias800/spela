@@ -18,6 +18,7 @@ import com.spela.player.presentation.viewmodel.emulation.StubAchievementsReposit
 import com.spela.player.presentation.viewmodel.emulation.StubDownloadRepository
 import com.spela.player.presentation.viewmodel.emulation.StubGameRepository
 import com.spela.player.presentation.viewmodel.emulation.StubKeyMappingRepository
+import com.spela.player.presentation.viewmodel.emulation.StubPendingSaveUploadRepository
 import com.spela.player.presentation.viewmodel.emulation.StubPreferencesRepository
 import com.spela.player.test.NoOpMockEngineFactory
 import com.spela.player.util.DispatcherProvider
@@ -82,6 +83,7 @@ class SettingsViewModelSaveStatePolicyTest {
             syncEngine = syncEngine,
             connectivityMonitor = connectivityMonitor,
             apiClient = apiClient,
+            pendingUploadRepository = StubPendingSaveUploadRepository(),
             dispatchers = testDispatchers,
             scope = scope,
         )

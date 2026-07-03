@@ -3,6 +3,7 @@ package com.spela.player.data.repository
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.spela.player.data.local.SpelaDatabase
 import com.spela.player.domain.model.PendingUploadKind
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -118,6 +119,40 @@ class PendingSaveUploadRepositoryImplTest {
         val row = repo.getById(id)!!
         assertEquals(2, row.retryCount)
         assertEquals("timeout", row.lastError, "last_error stores the latest")
+    }
+
+    @Test
+    fun observeSnapshotExposesAggregateStateAndJobs() = runTest {
+        val id = repo.enqueue(
+            sessionId = "session-offline",
+            kind = PendingUploadKind.Slot,
+            slot = 3,
+            name = "Slot 3",
+            coreName = "snes9x",
+            compression = "gzip",
+            filePath = "/tmp/offline-save.gz",
+            fileSize = 2_048L,
+            screenshotPath = null,
+            createdAt = 1_700_000_000_000L,
+        )
+        repo.markRetry(id, "offline")
+        repo.setDraining(true)
+
+        val snapshot = repo.observeSnapshot().first()
+
+        assertEquals(1, snapshot.pendingCount)
+        assertEquals(1, snapshot.retryingCount)
+        assertEquals(0, snapshot.stuckCount)
+        assertTrue(snapshot.isDraining)
+        val job = snapshot.jobs.single()
+        assertEquals(id, job.id)
+        assertEquals(PendingUploadKind.Slot, job.kind)
+        assertEquals("session-offline", job.sessionId)
+        assertEquals(3, job.slot)
+        assertEquals(2_048L, job.size)
+        assertEquals(1, job.retryCount)
+        assertEquals("offline", job.lastError)
+        assertEquals(1_700_000_000_000L, job.createdAt)
     }
 
     @Test

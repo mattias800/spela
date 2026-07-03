@@ -3,6 +3,7 @@ package com.spela.player.presentation.viewmodel
 import com.spela.player.data.remote.ConnectivityMonitor
 import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.data.remote.interceptor.TokenManager
+import com.spela.player.domain.model.PendingUploadKind
 import com.spela.player.presentation.state.EmulationState
 import com.spela.player.presentation.viewmodel.emulation.StubLibretroController
 import com.spela.player.presentation.viewmodel.emulation.StubMockEngineFactory
@@ -117,6 +118,55 @@ class SaveManagerDeferredSyncTest {
     }
 
     @Test
+    fun autoSaveOnStopEnqueuesAutoRowAndDrainsThroughAutoEndpoint() = runTest {
+        val dispatcher = UnconfinedTestDispatcher(testScheduler)
+        val scope = CoroutineScope(dispatcher + Job())
+        val fx = makeFixture(scope, dispatcher)
+
+        fx.manager.autoSaveOnStop("g1")
+        advanceUntilIdle()
+
+        assertEquals(1, fx.sessionRepo.uploadSessionAutoSaveCallCount)
+        assertEquals(0L, fx.pending.count())
+        assertEquals(PendingUploadKind.Auto, fx.pending.enqueueLog.single().kind)
+    }
+
+    @Test
+    fun autoSaveOnUploadFailureLeavesRowVisibleWithRetryAndError() = runTest {
+        val dispatcher = UnconfinedTestDispatcher(testScheduler)
+        val scope = CoroutineScope(dispatcher + Job())
+        val fx = makeFixture(scope, dispatcher)
+        fx.sessionRepo.uploadSessionAutoSaveResult =
+            Result.failure(RuntimeException("offline"))
+
+        fx.manager.autoSaveOnStop("g1")
+        advanceUntilIdle()
+
+        assertEquals(1L, fx.pending.count())
+        val row = fx.pending.getAll().single()
+        assertEquals(PendingUploadKind.Auto, row.kind)
+        assertEquals(1, row.retryCount)
+        assertTrue(row.lastError?.contains("offline") == true)
+        assertTrue(fx.state.value.hasPendingUploads)
+    }
+
+    @Test
+    fun saveToSlotEnqueuesSlotRowAndDrainsThroughSlotEndpoint() = runTest {
+        val dispatcher = UnconfinedTestDispatcher(testScheduler)
+        val scope = CoroutineScope(dispatcher + Job())
+        val fx = makeFixture(scope, dispatcher)
+
+        fx.manager.saveToSlot(4)
+        advanceUntilIdle()
+
+        assertEquals(1, fx.sessionRepo.uploadSlotSaveCallCount)
+        assertEquals(0L, fx.pending.count())
+        val queued = fx.pending.enqueueLog.single()
+        assertEquals(PendingUploadKind.Slot, queued.kind)
+        assertEquals(4, queued.slot)
+    }
+
+    @Test
     fun saveStateOnUploadFailureLeavesRowInQueueWithLastError() = runTest {
         val dispatcher = UnconfinedTestDispatcher(testScheduler)
         val scope = CoroutineScope(dispatcher + Job())
@@ -221,6 +271,36 @@ class SaveManagerDeferredSyncTest {
         assertEquals(0L, fx.pending.count())
         assertEquals(0, fx.state.value.stuckUploadCount,
             "queue empty → indicator off")
+        assertFalse(fx.state.value.hasPendingUploads)
+    }
+
+    @Test
+    fun startupDrainClearsPersistedRowWhenAppStartsAlreadyOnline() = runTest {
+        // DI calls drainPendingUploads once at SaveManager startup so
+        // rows persisted during offline play are not stranded when the
+        // app relaunches after connectivity has already returned.
+        val dispatcher = UnconfinedTestDispatcher(testScheduler)
+        val scope = CoroutineScope(dispatcher + Job())
+        val fx = makeFixture(scope, dispatcher)
+
+        fx.pending.enqueue(
+            sessionId = "s1",
+            kind = PendingUploadKind.Manual,
+            slot = null,
+            name = "Offline Save",
+            coreName = "nestopia",
+            compression = "",
+            filePath = "/tmp/offline-save",
+            fileSize = 1024L,
+            screenshotPath = null,
+            createdAt = 1L,
+        )
+
+        fx.manager.drainPendingUploads()
+        advanceUntilIdle()
+
+        assertEquals(0L, fx.pending.count())
+        assertEquals(1, fx.sessionRepo.uploadSessionSaveCallCount)
         assertFalse(fx.state.value.hasPendingUploads)
     }
 

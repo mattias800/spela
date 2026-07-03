@@ -147,6 +147,22 @@ class PrepareGameUseCaseTest {
         )
     }
 
+    @Test
+    fun failsWhenRecommendedCoreCannotBeResolvedInsteadOfGuessingFromLocalCache() = runTest {
+        val core = FakeCoreRepository(
+            local = "/local/unrelated-core.so",
+            isCurrent = null,
+            recommendedCoreResult = Result.failure(RuntimeException("offline")),
+        )
+        val useCase = buildPrepareGameUseCase(core)
+
+        val result = useCase.invoke(gameId = "g1")
+
+        assertTrue(result.isFailure)
+        assertEquals("offline", result.exceptionOrNull()?.message)
+        assertEquals(0, core.downloadCoreCalls, "must not download or guess a core after recommendation failure")
+    }
+
     // ── #672 core-upgrade decision detection ──────────────────────
 
     @Test
@@ -660,6 +676,7 @@ private class ConfigurableDownloadRepository(
 private class FakeCoreRepository(
     private val local: String?,
     private val isCurrent: Boolean?,
+    private val recommendedCoreResult: Result<LibretroCore> = Result.success(LibretroCore(id = 1L, name = "nestopia")),
     private val downloadResult: Result<String> = Result.success("/local/downloaded-core.so"),
     private val serverSha: String? = null,
     // PinPruned tests override this with Result.failure(CorePrunedException(...)).
@@ -675,7 +692,7 @@ private class FakeCoreRepository(
         Result.success(listOf(LibretroCore(id = 1L, name = "nestopia")))
 
     override suspend fun getRecommendedCore(gameId: String): Result<LibretroCore> =
-        Result.success(LibretroCore(id = 1L, name = "nestopia"))
+        recommendedCoreResult
 
     override suspend fun downloadCore(
         coreName: String,

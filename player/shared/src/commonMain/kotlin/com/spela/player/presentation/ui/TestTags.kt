@@ -58,6 +58,9 @@ object TestTags {
     const val SETTINGS_CATEGORY_ACHIEVEMENTS = "settings_category_achievements"
     const val SETTINGS_CATEGORY_STORAGE_SYNC = "settings_category_storage_sync"
     const val SETTINGS_CATEGORY_ABOUT = "settings_category_about"
+    const val SETTINGS_SAVE_SYNC_QUEUE_SUMMARY = "settings_save_sync_queue_summary"
+    const val SETTINGS_SAVE_SYNC_QUEUE_EMPTY = "settings_save_sync_queue_empty"
+    fun settingsSaveSyncJob(jobId: Long) = "settings_save_sync_job_$jobId"
 
     // Console library — per-console card on the Consoles screen
     fun consoleCard(consoleId: String) = "console_card_$consoleId"

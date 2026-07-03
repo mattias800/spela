@@ -1,7 +1,9 @@
 package com.spela.player.domain.repository
 
 import com.spela.player.domain.model.PendingSaveUpload
+import com.spela.player.domain.model.PendingSaveUploadQueueSnapshot
 import com.spela.player.domain.model.PendingUploadKind
+import kotlinx.coroutines.flow.Flow
 
 /**
  * Persistent FIFO queue of save uploads that have been staged to
@@ -16,6 +18,12 @@ import com.spela.player.domain.model.PendingUploadKind
  * success or increments [PendingSaveUpload.retryCount] on failure.
  */
 interface PendingSaveUploadRepository {
+    /**
+     * Observable aggregate queue state for Settings > Storage & Sync.
+     * Implementations should emit whenever rows change or a drain starts/stops.
+     */
+    fun observeSnapshot(): Flow<PendingSaveUploadQueueSnapshot>
+
     /**
      * Enqueue a save for later upload. Returns the row's auto-
      * incremented id so callers can correlate UI feedback (e.g.
@@ -63,4 +71,11 @@ interface PendingSaveUploadRepository {
      * worker can retry on the next opportunity.
      */
     suspend fun markRetry(id: Long, lastError: String?)
+
+    /**
+     * Non-persistent worker state layered onto [observeSnapshot] so UI can show
+     * that the queue is actively draining. The queue repository remains the
+     * single source for visible save-sync state.
+     */
+    fun setDraining(isDraining: Boolean)
 }

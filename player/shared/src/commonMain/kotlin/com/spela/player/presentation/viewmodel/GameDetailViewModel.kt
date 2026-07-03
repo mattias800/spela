@@ -392,7 +392,13 @@ class GameDetailViewModel(
                 },
                 onFailure = { error ->
                     if (currentGameId != gameId) return@fold
-                    _state.update { it.copy(error = error.message, isLoading = false) }
+                    _state.update { state ->
+                        if (state.gameDetail?.game?.id == gameId) {
+                            state.copy(isLoading = false)
+                        } else {
+                            state.copy(error = error.message, isLoading = false)
+                        }
+                    }
                 },
             )
         }

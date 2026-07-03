@@ -67,12 +67,22 @@ class GameRepositoryImpl(
                 grouped = grouped,
             )
             val games = response.data.map { it.toDomain().resolveImageUrls() }
-            if (page == 1) cacheGames(games)
+            cacheGames(games)
             PaginatedResult(
                 data = games,
                 total = response.total,
                 page = response.page.toInt(),
                 pageSize = response.pageSize.toInt(),
+            )
+        }.recoverCatching {
+            val cached = getCachedGamesForConsole(consoleId)
+            if (cached.isEmpty()) throw it
+            paginateCachedGames(
+                games = cached,
+                page = page,
+                pageSize = pageSize,
+                sortBy = "title",
+                sortOrder = "asc",
             )
         }
     }
@@ -102,12 +112,22 @@ class GameRepositoryImpl(
                 grouped = grouped,
             )
             val games = response.data.map { it.toDomain().resolveImageUrls() }
-            if (page == 1) cacheGames(games)
+            cacheGames(games)
             PaginatedResult(
                 data = games,
                 total = response.total,
                 page = response.page.toInt(),
                 pageSize = response.pageSize.toInt(),
+            )
+        }.recoverCatching {
+            val cached = getAllCachedGames()
+            if (cached.isEmpty()) throw it
+            paginateCachedGames(
+                games = cached,
+                page = page,
+                pageSize = pageSize,
+                sortBy = "title",
+                sortOrder = "asc",
             )
         }
     }
@@ -119,10 +139,24 @@ class GameRepositoryImpl(
         sortOrder: String?,
     ): Result<List<Game>> {
         return runCatching {
-            apiClient.searchGames(query, consoleId, sortBy, sortOrder).data.map { it.toDomain().resolveImageUrls() }
+            val games = apiClient.searchGames(query, consoleId, sortBy, sortOrder)
+                .data
+                .map { it.toDomain().resolveImageUrls() }
+            cacheGames(games)
+            games
         }.recoverCatching {
-            val cached = searchCachedGames(query)
-            if (cached.isNotEmpty()) cached else throw it
+            val cached = getAllCachedGames()
+            if (cached.isEmpty()) throw it
+            val results = paginateCachedGames(
+                games = cached,
+                page = 1,
+                pageSize = cached.size.coerceAtLeast(1),
+                query = query,
+                consoleId = consoleId,
+                sortBy = sortBy,
+                sortOrder = sortOrder,
+            ).data
+            if (results.isNotEmpty()) results else throw it
         }
     }
 
@@ -148,11 +182,24 @@ class GameRepositoryImpl(
                 pageSize = pageSize,
             )
             val games = response.data.map { it.toDomain().resolveImageUrls() }
+            cacheGames(games)
             PaginatedResult(
                 data = games,
                 total = response.total,
                 page = response.page.toInt(),
                 pageSize = response.pageSize.toInt(),
+            )
+        }.recoverCatching {
+            val cached = getAllCachedGames()
+            if (cached.isEmpty()) throw it
+            paginateCachedGames(
+                games = cached,
+                page = page,
+                pageSize = pageSize,
+                query = query,
+                consoleId = consoleId,
+                sortBy = sortBy,
+                sortOrder = sortOrder,
             )
         }
     }
@@ -354,6 +401,48 @@ class GameRepositoryImpl(
 
     private fun getCachedRecentGames(): List<Game> {
         return database.spelaDatabaseQueries.getCachedRecentGames().executeAsList().map { it.toGame() }
+    }
+
+    private fun paginateCachedGames(
+        games: List<Game>,
+        page: Int,
+        pageSize: Int,
+        query: String = "",
+        consoleId: String? = null,
+        sortBy: String? = null,
+        sortOrder: String? = null,
+    ): PaginatedResult<Game> {
+        val normalizedQuery = query.trim()
+        val filtered = games.filter { game ->
+            (consoleId == null || game.consoleId == consoleId) &&
+                (normalizedQuery.isEmpty() || game.title.contains(normalizedQuery, ignoreCase = true))
+        }
+        val sorted = sortCachedGames(filtered, sortBy, sortOrder)
+        val safePage = page.coerceAtLeast(1)
+        val safePageSize = pageSize.coerceAtLeast(1)
+        val offset = (safePage - 1) * safePageSize
+        return PaginatedResult(
+            data = sorted.drop(offset).take(safePageSize),
+            total = sorted.size.toLong(),
+            page = safePage,
+            pageSize = safePageSize,
+        )
+    }
+
+    private fun sortCachedGames(
+        games: List<Game>,
+        sortBy: String?,
+        sortOrder: String?,
+    ): List<Game> {
+        val sorted = when (sortBy) {
+            "release_date", "releaseDate" -> games.sortedBy { it.releaseDate.orEmpty() }
+            "last_played", "lastPlayedAt" -> games.sortedBy { it.lastPlayedAt.orEmpty() }
+            "file_size", "fileSize" -> games.sortedBy { it.fileSize }
+            "play_time", "totalPlayTime" -> games.sortedBy { it.totalPlayTime }
+            "rating", "communityRating" -> games.sortedBy { it.communityRating }
+            else -> games.sortedBy { it.title.lowercase() }
+        }
+        return if (sortOrder.equals("desc", ignoreCase = true)) sorted.asReversed() else sorted
     }
 
     private fun com.spela.player.GetCachedRecentGames.toGame(): Game = Game(
