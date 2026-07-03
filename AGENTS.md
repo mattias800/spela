@@ -88,6 +88,26 @@ fine when they're naturally bundled.
 Drive-by fixes without an issue link are tracking debt — file a one-line issue
 even for small things so the change is discoverable later.
 
+## Claiming Issues (avoid duplicate work)
+
+Multiple agents work this repo concurrently. Branches are the lightweight
+cross-agent lock — they're visible to everyone on GitHub, unlike per-session
+state.
+
+- **Before picking an issue,** check what's already claimed by listing remote
+  branches: `git ls-remote --heads origin` or
+  `gh api repos/<owner>/<repo>/branches --jq '.[].name'`. Branch names follow
+  `feat/<issue-number>-<slug>` (or `fix/…`, `docs/…`), so a remote branch
+  maps to a claimed issue. If a branch already exists for an issue, pick
+  something else.
+- **When you start,** create your `feat/<issue>-<slug>` branch and **push it
+  immediately** to plant the claim — before the work is finished. This is free:
+  CI only runs on pushes to `master` and on PRs targeting `master`, never on
+  arbitrary branch pushes, so an early claim push triggers nothing.
+- **Keep the list truthful.** Merged PRs auto-delete their branch
+  (`gh pr merge --delete-branch`). If you abandon a claim, delete the branch
+  (`git push origin --delete <branch>`) so it doesn't block another agent.
+
 ## Updating Issues With Findings
 
 Every time you make material progress on an issue — whether that's diagnosing
