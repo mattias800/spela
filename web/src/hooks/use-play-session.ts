@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { typedApi } from "@/lib/api-client";
 import type { EmulatorStatus } from "./use-emulator-iframe";
 
@@ -6,7 +6,8 @@ export function usePlaySession(
   gameId: string | undefined,
   emulatorStatus: EmulatorStatus,
 ) {
-  const lastReportedRef = useRef<number>(Date.now());
+  const [initialReportTime] = useState(() => Date.now());
+  const lastReportedRef = useRef<number>(initialReportTime);
 
   const flushPlayTime = useCallback(() => {
     if (!gameId) return;

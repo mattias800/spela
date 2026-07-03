@@ -3,13 +3,12 @@ import {
   useRef,
   useState,
   type MutableRefObject,
-  type RefObject,
 } from "react";
 
 interface EmulatorControls {
   pause: () => void;
   requestSaveState: () => void;
-  iframeRef: RefObject<HTMLIFrameElement | null>;
+  reloadEmulator: (src: string) => void;
 }
 
 interface UseDiscSwitchFlowArgs {
@@ -140,10 +139,7 @@ export function useDiscSwitchFlow({
       // resets the parent's `iframeLoaded` gate so the subsequent
       // onLoad actually triggers a re-render.
       onIframeWillReload();
-      const iframe = emulator.iframeRef.current;
-      if (iframe) {
-        iframe.src = emulatorSrc;
-      }
+      emulator.reloadEmulator(emulatorSrc);
       return true;
     },
     [emulator, emulatorSrc, onIframeWillReload],

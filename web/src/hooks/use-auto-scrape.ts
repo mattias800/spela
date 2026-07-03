@@ -5,7 +5,7 @@ import type { Game } from "@/types/api";
 
 export function useAutoScrape(game: Game) {
   const needsScrape = !game.coverUrl && game.scrapeAttempts === 0;
-  const { ref, isInView } = useInView();
+  const { observe, isInView } = useInView();
 
   useEffect(() => {
     if (needsScrape && isInView) {
@@ -15,5 +15,5 @@ export function useAutoScrape(game: Game) {
 
   const isScraping = needsScrape && isInView;
 
-  return { ref, isScraping };
+  return { ref: observe, isScraping };
 }

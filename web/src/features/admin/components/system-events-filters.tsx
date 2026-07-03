@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { Search, X } from "lucide-react";
 import { Button, FilterChip, Input } from "@/components/ui";
-import { SYSTEM_EVENT_META } from "./system-event-badge";
+import { SYSTEM_EVENT_META } from "./system-event-meta";
 import type {
   SystemEventType,
   SystemEventCategoryCode,

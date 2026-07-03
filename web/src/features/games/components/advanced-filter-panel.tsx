@@ -17,8 +17,6 @@ import {
   REGION_OPTIONS,
 } from "../lib/filter-helpers";
 
-export { savedSearchToFilters } from "../lib/filter-helpers";
-
 // Range input — two numeric `Input`s with a "to" separator. Kept
 // local since it's only used inside this panel, but delegates
 // styling to the shared `Input` component instead of duplicating

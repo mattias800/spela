@@ -14,7 +14,7 @@ vi.mock("@/hooks/use-netplay", () => ({
 }));
 
 vi.mock("@/hooks/use-social", () => ({
-  useSearchUsers: vi.fn((_query: string) => ({
+  useSearchUsers: vi.fn(() => ({
     data: {
       data: [
         { id: "u1", username: "alice", avatarUrl: null },

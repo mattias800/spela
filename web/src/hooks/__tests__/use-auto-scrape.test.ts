@@ -21,12 +21,12 @@ const mockEnqueueScrape = enqueueScrape as ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockUseInView.mockReturnValue({ ref: vi.fn(), isInView: false });
+  mockUseInView.mockReturnValue({ observe: vi.fn(), isInView: false });
 });
 
 describe("useAutoScrape", () => {
   it("enqueues scrape when game needs scraping and is in view", () => {
-    mockUseInView.mockReturnValue({ ref: vi.fn(), isInView: true });
+    mockUseInView.mockReturnValue({ observe: vi.fn(), isInView: true });
 
     renderHook(() => useAutoScrape(makeGame()));
 
@@ -34,7 +34,7 @@ describe("useAutoScrape", () => {
   });
 
   it("does not scrape when game has coverUrl", () => {
-    mockUseInView.mockReturnValue({ ref: vi.fn(), isInView: true });
+    mockUseInView.mockReturnValue({ observe: vi.fn(), isInView: true });
 
     renderHook(() =>
       useAutoScrape(makeGame({ coverUrl: "https://example.com/cover.jpg" })),
@@ -44,7 +44,7 @@ describe("useAutoScrape", () => {
   });
 
   it("does not scrape when scrapeAttempts > 0", () => {
-    mockUseInView.mockReturnValue({ ref: vi.fn(), isInView: true });
+    mockUseInView.mockReturnValue({ observe: vi.fn(), isInView: true });
 
     renderHook(() => useAutoScrape(makeGame({ scrapeAttempts: 1 })));
 
@@ -52,7 +52,7 @@ describe("useAutoScrape", () => {
   });
 
   it("does not scrape when not in view", () => {
-    mockUseInView.mockReturnValue({ ref: vi.fn(), isInView: false });
+    mockUseInView.mockReturnValue({ observe: vi.fn(), isInView: false });
 
     renderHook(() => useAutoScrape(makeGame()));
 
@@ -61,7 +61,7 @@ describe("useAutoScrape", () => {
 
   it("returns a ref for attaching to the element", () => {
     const mockRef = vi.fn();
-    mockUseInView.mockReturnValue({ ref: mockRef, isInView: false });
+    mockUseInView.mockReturnValue({ observe: mockRef, isInView: false });
 
     const { result } = renderHook(() => useAutoScrape(makeGame()));
 
@@ -69,7 +69,7 @@ describe("useAutoScrape", () => {
   });
 
   it("returns isScraping=true when needs scrape and in view", () => {
-    mockUseInView.mockReturnValue({ ref: vi.fn(), isInView: true });
+    mockUseInView.mockReturnValue({ observe: vi.fn(), isInView: true });
 
     const { result } = renderHook(() => useAutoScrape(makeGame()));
 
@@ -77,7 +77,7 @@ describe("useAutoScrape", () => {
   });
 
   it("returns isScraping=false when game has cover", () => {
-    mockUseInView.mockReturnValue({ ref: vi.fn(), isInView: true });
+    mockUseInView.mockReturnValue({ observe: vi.fn(), isInView: true });
 
     const { result } = renderHook(() =>
       useAutoScrape(makeGame({ coverUrl: "https://example.com/cover.jpg" })),
@@ -87,7 +87,7 @@ describe("useAutoScrape", () => {
   });
 
   it("returns isScraping=false when not in view", () => {
-    mockUseInView.mockReturnValue({ ref: vi.fn(), isInView: false });
+    mockUseInView.mockReturnValue({ observe: vi.fn(), isInView: false });
 
     const { result } = renderHook(() => useAutoScrape(makeGame()));
 

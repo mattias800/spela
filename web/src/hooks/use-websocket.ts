@@ -9,7 +9,7 @@ interface WsEvent {
 type Listener = (payload: unknown) => void;
 
 let socket: WebSocket | null = null;
-let listeners: Map<string, Set<Listener>> = new Map();
+const listeners: Map<string, Set<Listener>> = new Map();
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
 function connect() {

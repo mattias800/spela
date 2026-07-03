@@ -1,9 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, it, expect } from "vitest";
-import {
-  SystemEventBadge,
-  getSystemEventLabel,
-} from "../system-event-badge";
+import { SystemEventBadge } from "../system-event-badge";
+import { getSystemEventLabel } from "../system-event-meta";
 
 describe("SystemEventBadge", () => {
   it("renders a known event type with its humanized label", () => {

@@ -114,33 +114,6 @@ function multiDiscGame(): Record<string, unknown> {
   };
 }
 
-function psxConsole(): Record<string, unknown> {
-  return {
-    abbreviation: "psx",
-    browserPlayable: true,
-    code: "psx",
-    colorTheme: "blue",
-    coverAspectRatio: 1.0,
-    createdAt: new Date().toISOString(),
-    defaultCore: "pcsx_rearmed",
-    emulatorJsCore: "psx",
-    extensions: ["bin", "cue", "m3u"],
-    gameCount: 1,
-    generation: 5,
-    iconUrl: "",
-    id: CONSOLE_ID,
-    logoPngUrl: "",
-    logoUrl: "",
-    maker: { id: "sony", name: "Sony" },
-    mediaType: { id: "disc", name: "Disc" },
-    name: "PlayStation",
-    playable: true,
-    releaseYear: 1994,
-    sortKey: "psx",
-    type: "console",
-  };
-}
-
 async function mockGameApi(page: Page): Promise<void> {
   // Game detail
   await page.route(`**/api/games/${GAME_ID}`, (route) =>

@@ -9,10 +9,7 @@ import { useGames, useToggleFavorite } from "@/hooks/use-games";
 import { useTogglePlayLater } from "@/hooks/use-play-later";
 import { useConsoles } from "@/hooks/use-consoles";
 import { GamesFilterBar } from "@/features/games/components/games-filter-bar";
-import {
-  AdvancedFilterPanel,
-  savedSearchToFilters,
-} from "@/features/games/components/advanced-filter-panel";
+import { AdvancedFilterPanel } from "@/features/games/components/advanced-filter-panel";
 import { ActiveFilterPills } from "@/features/games/components/active-filter-pills";
 import { BestVersionsButton } from "@/features/games/components/best-versions-button";
 import { GameListRow } from "@/features/games/components/game-list-row";
@@ -26,6 +23,7 @@ import {
   useDeleteSavedSearch,
 } from "@/hooks/use-saved-searches";
 import { useDefaultRegionFilters } from "@/hooks/use-default-region-filters";
+import { savedSearchToFilters } from "@/features/games/lib/filter-helpers";
 import type { GameFilters, SavedSearch } from "@/types/api";
 
 type ViewMode = "grid" | "list";

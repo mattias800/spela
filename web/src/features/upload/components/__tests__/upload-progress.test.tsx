@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { describe, it, expect } from "vitest";
 import { UploadProgress, type UploadFileStatus } from "../upload-progress";
 
-function makeFile(name: string, _size = 1024): File {
+function makeFile(name: string): File {
   return new File(["x"], name, { type: "application/octet-stream" });
 }
 

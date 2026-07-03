@@ -4,8 +4,8 @@ import { cn } from "@/lib/cn";
 import { formatDateTime } from "@/lib/format";
 import {
   SystemEventBadge,
-  getSystemEventLabel,
 } from "./system-event-badge";
+import { getSystemEventLabel } from "./system-event-meta";
 import type { SystemEvent } from "@/types/api";
 
 interface SystemEventDetailModalProps {

@@ -3,8 +3,8 @@ import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi } from "vitest";
 import {
   AdvancedFilterPanel,
-  savedSearchToFilters,
 } from "../advanced-filter-panel";
+import { savedSearchToFilters } from "../../lib/filter-helpers";
 import type { GameFilters, Console, Theme, Keyword, SavedSearch } from "@/types/api";
 
 const makeConsole = (abbr: string, name: string): Console => ({

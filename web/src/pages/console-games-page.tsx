@@ -22,10 +22,7 @@ import {
   useDeleteSavedSearch,
 } from "@/hooks/use-saved-searches";
 import { GamesFilterBar } from "@/features/games/components/games-filter-bar";
-import {
-  AdvancedFilterPanel,
-  savedSearchToFilters,
-} from "@/features/games/components/advanced-filter-panel";
+import { AdvancedFilterPanel } from "@/features/games/components/advanced-filter-panel";
 import { ActiveFilterPills } from "@/features/games/components/active-filter-pills";
 import { BestVersionsButton } from "@/features/games/components/best-versions-button";
 import { GameListRow } from "@/features/games/components/game-list-row";
@@ -34,6 +31,7 @@ import { Pagination } from "@/components/pagination";
 import { BiosWarningBanner } from "@/features/bios/components/bios-warning-banner";
 import { useAuth } from "@/hooks/use-auth";
 import { useDefaultRegionFilters } from "@/hooks/use-default-region-filters";
+import { savedSearchToFilters } from "@/features/games/lib/filter-helpers";
 import type { GameFilters, SavedSearch } from "@/types/api";
 
 type ViewMode = "grid" | "list";

@@ -144,6 +144,13 @@ export function useEmulatorIframe(options: EmulatorIframeOptions = {}) {
     }, 50);
   }, []);
 
+  const reloadEmulator = useCallback((src: string) => {
+    const iframe = iframeRef.current;
+    if (iframe) {
+      iframe.src = src;
+    }
+  }, []);
+
   return {
     iframeRef,
     status,
@@ -156,5 +163,6 @@ export function useEmulatorIframe(options: EmulatorIframeOptions = {}) {
     pause,
     resume,
     focusEmulator,
+    reloadEmulator,
   };
 }
