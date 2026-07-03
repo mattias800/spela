@@ -62,7 +62,7 @@ fun wiiIrPointerCoreVariables(
         emptyList()
     }
 
-internal fun isWiiWithDolphin(consoleId: String, corePath: String): Boolean {
+private fun isWiiWithDolphin(consoleId: String, corePath: String): Boolean {
     val console = consoleId.trim().lowercase().replace("-", "").replace("_", "")
     val core = corePath.substringAfterLast('/').substringBeforeLast('.').lowercase()
     return console == "wii" && core.contains("dolphin")
