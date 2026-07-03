@@ -116,6 +116,7 @@ open class StubLibretroController : LibretroController {
     val presentationEvents = mutableListOf<String>()
     val calls = mutableListOf<String>()
     val coreVariables = mutableMapOf<String, String>()
+    val controllerPortDevices = mutableMapOf<Int, Int>()
 
     var lastLoadCorePath: String? = null; private set
     var lastLoadGamePath: String? = null; private set
@@ -168,6 +169,10 @@ open class StubLibretroController : LibretroController {
     override fun setCoreVariable(key: String, value: String) {
         coreVariables[key] = value
         calls += "setCoreVariable:$key=$value"
+    }
+    override fun setControllerPortDevice(port: Int, device: Int) {
+        controllerPortDevices[port] = device
+        calls += "setControllerPortDevice:$port=$device"
     }
     override fun clearCoreVariables() {
         coreVariables.clear()

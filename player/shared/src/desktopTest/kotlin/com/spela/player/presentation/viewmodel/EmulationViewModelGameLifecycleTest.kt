@@ -146,6 +146,56 @@ class EmulationViewModelGameLifecycleTest {
     }
 
     @Test
+    fun startGameAttachesNunchukToAllWiimotePortsAfterLoadGame() = runTest {
+        builder.gameRepository = StubGameRepository(
+            consoleId = "wii",
+            consoleName = "Nintendo Wii",
+        )
+        builder.coreRepository.recommendedCore = LibretroCore(
+            id = 2,
+            name = "dolphin",
+            displayName = "Dolphin",
+        )
+        builder.coreRepository.localCorePath = "/path/to/dolphin_libretro.so"
+
+        val vm = builder.build()
+        vm.onIntent(EmulationIntent.StartGame("game1"))
+        builder.advanceTimeBy(100)
+
+        // All four Wiimote ports get the Nunchuk (0x301 = (3 shl 8) or 1).
+        for (port in 0..3) {
+            assertEquals(0x301, builder.libretroController.controllerPortDevices[port])
+        }
+        // AFTER loadGame — the native bridge resets ports to plain JOYPAD
+        // inside the load path, and the core ignores earlier calls.
+        assertTrue(
+            builder.libretroController.calls.indexOf("setControllerPortDevice:0=769") >
+                builder.libretroController.calls.indexOf("loadGame"),
+        )
+    }
+
+    @Test
+    fun startGameLeavesPortDevicesAloneForGameCube() = runTest {
+        builder.gameRepository = StubGameRepository(
+            // "gamecube" is the production console code (see server console registry).
+            consoleId = "gamecube",
+            consoleName = "Nintendo GameCube",
+        )
+        builder.coreRepository.recommendedCore = LibretroCore(
+            id = 2,
+            name = "dolphin",
+            displayName = "Dolphin",
+        )
+        builder.coreRepository.localCorePath = "/path/to/dolphin_libretro.so"
+
+        val vm = builder.build()
+        vm.onIntent(EmulationIntent.StartGame("game1"))
+        builder.advanceTimeBy(100)
+
+        assertTrue(builder.libretroController.controllerPortDevices.isEmpty())
+    }
+
+    @Test
     fun startGameDoesNotSetIrVariablesForGameCube() = runTest {
         builder.gameRepository = StubGameRepository(
             // "gamecube" is the production console code (see server console registry).
