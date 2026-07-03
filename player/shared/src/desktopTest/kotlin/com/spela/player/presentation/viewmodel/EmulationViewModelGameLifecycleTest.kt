@@ -248,6 +248,31 @@ class EmulationViewModelGameLifecycleTest {
     }
 
     @Test
+    fun startGameDoesNotSetPortDeviceForScummVm() = runTest {
+        // #1563: the old ScummVM setControllerPortDevice(0, MOUSE) call ran
+        // before loadCore (a native no-op) and was removed as dead code.
+        // ScummVM reads mouse state regardless of the declared port device,
+        // so a launch should issue no port-device call at all.
+        builder.gameRepository = StubGameRepository(
+            consoleId = "scummvm",
+            consoleName = "ScummVM",
+        )
+        builder.coreRepository.recommendedCore = LibretroCore(
+            id = 3,
+            name = "scummvm",
+            displayName = "ScummVM",
+        )
+        builder.coreRepository.localCorePath = "/path/to/scummvm_libretro.so"
+
+        val vm = builder.build()
+        vm.onIntent(EmulationIntent.StartGame("game1"))
+        builder.advanceTimeBy(100)
+
+        assertTrue(builder.libretroController.controllerPortDevices.isEmpty())
+        assertFalse(builder.libretroController.calls.any { it.startsWith("setControllerPortDevice") })
+    }
+
+    @Test
     fun startGameAppliesStoredWiiControlScheme() = runTest {
         builder.gameRepository = StubGameRepository(
             consoleId = "wii",

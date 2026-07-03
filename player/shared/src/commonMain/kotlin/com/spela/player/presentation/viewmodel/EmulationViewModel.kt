@@ -996,11 +996,6 @@ class EmulationViewModel(
                 }
             }
 
-            // ScummVM: set port 0 to RETRO_DEVICE_MOUSE for point-and-click input
-            if (lc == "scummvm") {
-                libretroController.setControllerPortDevice(0, 2) // RETRO_DEVICE_MOUSE = 2
-            }
-
             // Restore persisted control tab for this console
             val savedControlTab = com.spela.player.presentation.state.ControlTab.fromId(
                 preferencesRepository.getControlTab(consoleId)
