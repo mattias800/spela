@@ -1,4 +1,5 @@
-import { Button, Modal } from "@/components/ui";
+import { Button } from "@/components/ui/button";
+import { Modal } from "@/components/ui/modal";
 
 interface ConfirmDeleteModalProps {
   open: boolean;

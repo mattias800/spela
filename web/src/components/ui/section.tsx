@@ -31,5 +31,5 @@ export function Section({ className, hover, children, ...props }: SectionProps) 
 
 // Re-export layout components for backward compatibility.
 // New code should import from @/components/layout directly.
-export { TitledSection } from "@/components/layout";
-export { SectionList } from "@/components/layout";
+export { TitledSection } from "@/components/layout/titled-section";
+export { SectionList } from "@/components/layout/section-list";
