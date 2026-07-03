@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Code,
@@ -23,6 +23,7 @@ import type { CatalogAvailability } from "@/generated/schemas";
 
 // Cap the connected-servers teaser so it never crowds out local results.
 const FEDERATED_LIMIT = 6;
+const EMPTY_FEDERATED_GAMES: CatalogAvailability[] = [];
 
 interface SearchResultsDisplayProps {
   // Optional: federated results can render before the local search resolves.
@@ -140,18 +141,26 @@ export function SearchResultsDisplay({
   onNavigate,
   federatedGames,
 }: SearchResultsDisplayProps) {
-  const sections = results ? buildSections(results) : [];
-  const allFedGames = Array.isArray(federatedGames) ? federatedGames : [];
-  const fedGames = allFedGames.slice(0, FEDERATED_LIMIT);
-  const allItems: ResultItem[] = [
-    ...sections.flatMap((s) => s.items),
-    ...fedGames.map((game) => ({
-      id: `federated-${game.key}`,
-      path: `/remote-games/${encodeURIComponent(game.key)}`,
-      state: game,
-      render: (hl: boolean) => <FederatedGameRow game={game} highlighted={hl} />,
-    })),
-  ];
+  const sections = useMemo(() => (results ? buildSections(results) : []), [results]);
+  const allFedGames = Array.isArray(federatedGames)
+    ? federatedGames
+    : EMPTY_FEDERATED_GAMES;
+  const fedGames = useMemo(
+    () => allFedGames.slice(0, FEDERATED_LIMIT),
+    [allFedGames],
+  );
+  const allItems: ResultItem[] = useMemo(
+    () => [
+      ...sections.flatMap((s) => s.items),
+      ...fedGames.map((game) => ({
+        id: `federated-${game.key}`,
+        path: `/remote-games/${encodeURIComponent(game.key)}`,
+        state: game,
+        render: (hl: boolean) => <FederatedGameRow game={game} highlighted={hl} />,
+      })),
+    ],
+    [fedGames, sections],
+  );
   const [highlightIndex, setHighlightIndex] = useState(-1);
   const scrollRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();

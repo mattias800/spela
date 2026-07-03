@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   Button,
@@ -18,7 +18,6 @@ import { useTogglePlayLater } from "@/hooks/use-play-later";
 import { useAuth } from "@/hooks/use-auth";
 import { useScrapeGame, useRefreshAchievements } from "@/hooks/use-admin";
 import { useConsoles } from "@/hooks/use-consoles";
-import { useEffect } from "react";
 import {
   useMyCollections,
   useAddGameToCollection,
@@ -139,7 +138,7 @@ export function GameDetailPage() {
   const scrapeGame = useScrapeGame();
   const { scrapeStatus } = useGameScrapeStatus(id!);
   const refreshAchievements = useRefreshAchievements();
-  const scrapeIfNeeded = useScrapeIfNeeded();
+  const { mutate: scrapeIfNeeded } = useScrapeIfNeeded();
   const { data: consoles } = useConsoles();
   const isAdmin =
     currentUser?.role === "admin" || currentUser?.role === "owner";
@@ -190,12 +189,21 @@ export function GameDetailPage() {
   const [showCollectionPicker, setShowCollectionPicker] = useState(false);
   const [showScrapeMatch, setShowScrapeMatch] = useState(false);
   const [showReplaceRom, setShowReplaceRom] = useState(false);
+  const autoScrapeRequestedGameIdsRef = useRef<Set<string>>(new Set());
+
+  const gameId = game?.id;
+  const scrapeAttempts = game?.scrapeAttempts;
 
   useEffect(() => {
-    if (game && game.scrapeAttempts === 0) {
-      scrapeIfNeeded.mutate(game.id);
+    if (
+      gameId &&
+      scrapeAttempts === 0 &&
+      !autoScrapeRequestedGameIdsRef.current.has(gameId)
+    ) {
+      autoScrapeRequestedGameIdsRef.current.add(gameId);
+      scrapeIfNeeded(gameId);
     }
-  }, [game?.id, game?.scrapeAttempts]);
+  }, [gameId, scrapeAttempts, scrapeIfNeeded]);
 
   const isFavorite = game?.isFavorite ?? false;
   const isInPlayLater = game?.isInPlayLater ?? false;

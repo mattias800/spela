@@ -4,10 +4,15 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { GameDetailPage } from "../game-detail-page";
 
+const mockScrapeIfNeededMutate = vi.hoisted(() => vi.fn());
+
 vi.mock("@/hooks/use-games", () => ({
   useGame: vi.fn(),
   useToggleFavorite: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
-  useScrapeIfNeeded: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
+  useScrapeIfNeeded: vi.fn(() => ({
+    mutate: (gameId: string) => mockScrapeIfNeededMutate(gameId),
+    isPending: false,
+  })),
   useReplaceRom: vi.fn(() => ({
     mutate: vi.fn(),
     isPending: false,
@@ -167,23 +172,31 @@ const mockGame = {
   screenshotUrls: [],
 };
 
-function renderPage(gameId = "g1") {
-  const queryClient = new QueryClient({
+function createQueryClient() {
+  return new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
-  return render(
+}
+
+function renderPageElement(gameId = "g1", queryClient = createQueryClient()) {
+  return (
     <QueryClientProvider client={queryClient}>
       <MemoryRouter initialEntries={[`/games/${gameId}`]}>
         <Routes>
           <Route path="games/:id" element={<GameDetailPage />} />
         </Routes>
       </MemoryRouter>
-    </QueryClientProvider>,
+    </QueryClientProvider>
   );
+}
+
+function renderPage(gameId = "g1") {
+  return render(renderPageElement(gameId));
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockScrapeIfNeededMutate.mockClear();
   mockUseGame.mockReturnValue({
     data: mockGame,
     isLoading: false,
@@ -194,6 +207,64 @@ describe("GameDetailPage - Cheats", () => {
   it("does not render a GameCheats/cheat codes section on the game detail page", () => {
     renderPage();
     expect(screen.queryByText("Cheat Codes")).not.toBeInTheDocument();
+  });
+});
+
+describe("GameDetailPage - scrape-if-needed", () => {
+  it("requests metadata scrape once for an unscraped game", () => {
+    mockUseGame.mockReturnValue({
+      data: { ...mockGame, scrapeAttempts: 0 },
+      isLoading: false,
+    });
+
+    renderPage();
+
+    expect(mockScrapeIfNeededMutate).toHaveBeenCalledTimes(1);
+    expect(mockScrapeIfNeededMutate).toHaveBeenCalledWith("g1");
+  });
+
+  it("does not request metadata scrape again on rerender while scrape is pending", () => {
+    mockUseGame.mockReturnValue({
+      data: { ...mockGame, scrapeAttempts: 0 },
+      isLoading: false,
+    });
+    const queryClient = createQueryClient();
+    const { rerender } = render(renderPageElement("g1", queryClient));
+
+    rerender(renderPageElement("g1", queryClient));
+
+    expect(mockScrapeIfNeededMutate).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not request metadata scrape again when returning to a previously requested game id", () => {
+    const queryClient = createQueryClient();
+    mockUseGame.mockReturnValue({
+      data: { ...mockGame, id: "g1", scrapeAttempts: 0 },
+      isLoading: false,
+    });
+    const { rerender } = render(renderPageElement("g1", queryClient));
+
+    mockUseGame.mockReturnValue({
+      data: { ...mockGame, id: "g2", scrapeAttempts: 0 },
+      isLoading: false,
+    });
+    rerender(renderPageElement("g2", queryClient));
+
+    mockUseGame.mockReturnValue({
+      data: { ...mockGame, id: "g1", scrapeAttempts: 0 },
+      isLoading: false,
+    });
+    rerender(renderPageElement("g1", queryClient));
+
+    expect(mockScrapeIfNeededMutate).toHaveBeenCalledTimes(2);
+    expect(mockScrapeIfNeededMutate).toHaveBeenNthCalledWith(1, "g1");
+    expect(mockScrapeIfNeededMutate).toHaveBeenNthCalledWith(2, "g2");
+  });
+
+  it("does not request metadata scrape after a game has scrape attempts", () => {
+    renderPage();
+
+    expect(mockScrapeIfNeededMutate).not.toHaveBeenCalled();
   });
 });
 
