@@ -261,6 +261,12 @@ fun SecondaryScreenContent(
                                 // See #858.
                                 gameWidth = controller.getVideoWidth(),
                                 gameHeight = controller.getVideoHeight(),
+                                // Wii + Touch Pointer (#1581): offer the IR
+                                // pointer tab on the second screen.
+                                showPointerTab = state.isWiiIrSourceSelectable &&
+                                    state.wiiIrSource == com.spela.player.domain.model.WiiIrSource.TOUCH_POINTER,
+                                pointerAspectRatio = state.widescreenMode.displayAspectRatio
+                                    .takeIf { it > 0f } ?: (4f / 3f),
                             )
                         }
                         PAGE_DASHBOARD -> {
