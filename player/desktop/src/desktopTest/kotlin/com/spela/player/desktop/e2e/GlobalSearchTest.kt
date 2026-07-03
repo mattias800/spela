@@ -231,8 +231,7 @@ class GlobalSearchTest {
         harness.globalSearchViewModel.updateQuery("mario")
 
         mainClock.autoAdvance = false
-        harness.testDispatcher.scheduler.advanceTimeBy(2_000)
-        harness.testDispatcher.scheduler.runCurrent()
+        advanceHarnessSchedulerByOnUiThread(harness, 2_000)
         mainClock.advanceTimeBy(2_000)
         mainClock.autoAdvance = true
 

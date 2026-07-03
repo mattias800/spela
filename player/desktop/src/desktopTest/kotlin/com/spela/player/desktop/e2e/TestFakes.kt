@@ -79,10 +79,7 @@ import com.spela.player.presentation.navigation.SpScreen
 private fun ComposeUiTest.advanceN(harness: SpelaTestHarness, iterations: Int) {
     mainClock.autoAdvance = false
     repeat(iterations) {
-        runOnUiThread {
-            harness.testDispatcher.scheduler.advanceTimeBy(1_000)
-            harness.testDispatcher.scheduler.runCurrent()
-        }
+        advanceHarnessSchedulerByOnUiThread(harness, 1_000)
         mainClock.advanceTimeBy(1_000)
         // Compose's recomposer runs on the main clock, and recomposition
         // can spawn fresh coroutines via LaunchedEffect / produceState /
@@ -93,12 +90,42 @@ private fun ComposeUiTest.advanceN(harness: SpelaTestHarness, iterations: Int) {
         // (e.g. validateServer → addServer → form auto-close) are
         // borderline-stable under parallel-fork CPU contention even at 6
         // iterations.
-        runOnUiThread {
-            harness.testDispatcher.scheduler.runCurrent()
-        }
+        drainHarnessSchedulerOnUiThread(harness)
         waitForIdle()
     }
     mainClock.autoAdvance = true
+}
+
+/**
+ * Drain the harness test scheduler from Compose's UI thread.
+ *
+ * Use this for bespoke desktop E2E flows that intentionally need finer clock
+ * control than [advanceQuick], [advance], or [advanceFully]. Running scheduler
+ * work on the JUnit thread after `setContent` can resume `collectAsState`
+ * collectors off the EDT and lose snapshot invalidations under CPU contention.
+ */
+@OptIn(ExperimentalTestApi::class, ExperimentalCoroutinesApi::class)
+fun ComposeUiTest.drainHarnessSchedulerOnUiThread(harness: SpelaTestHarness) {
+    runOnUiThread {
+        harness.testDispatcher.scheduler.runCurrent()
+    }
+}
+
+/**
+ * Advance the harness test scheduler from Compose's UI thread, then drain it.
+ *
+ * This preserves the bounded virtual-time behavior used by tests that avoid
+ * `advanceUntilIdle()` because the player has perpetual coroutines.
+ */
+@OptIn(ExperimentalTestApi::class, ExperimentalCoroutinesApi::class)
+fun ComposeUiTest.advanceHarnessSchedulerByOnUiThread(
+    harness: SpelaTestHarness,
+    milliseconds: Long,
+) {
+    runOnUiThread {
+        harness.testDispatcher.scheduler.advanceTimeBy(milliseconds)
+        harness.testDispatcher.scheduler.runCurrent()
+    }
 }
 
 /** 2 iterations — for simple click-then-assert (toggle, button tap, immediate state). */

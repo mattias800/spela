@@ -31,13 +31,15 @@ class ChallengeNavigationTest {
         return harness
     }
 
-    private fun SpelaTestHarness.preLoadChallengeDetail(challengeId: String) {
-        challengeDetailViewModel.onIntent(ChallengeIntent.LoadChallengeDetail(challengeId))
+    private fun ComposeUiTest.preLoadChallengeDetail(
+        harness: SpelaTestHarness,
+        challengeId: String,
+    ) {
+        harness.challengeDetailViewModel.onIntent(ChallengeIntent.LoadChallengeDetail(challengeId))
         // Bounded advance instead of advanceUntilIdle() — the gamepad config
         // ViewModel runs a perpetual 200ms refresh loop on the shared dispatcher,
         // so advanceUntilIdle() would hang forever.
-        testDispatcher.scheduler.advanceTimeBy(2_000)
-        testDispatcher.scheduler.runCurrent()
+        advanceHarnessSchedulerByOnUiThread(harness, 2_000)
     }
 
     @Test
@@ -98,7 +100,7 @@ class ChallengeNavigationTest {
         val harness = createLoggedInHarness()
         harness.challengeRepo.preAddChallenge(id = "1", gameId = "1", name = "Beat Dracula")
         // Pre-load to avoid skeleton hang
-        harness.preLoadChallengeDetail("1")
+        preLoadChallengeDetail(harness, "1")
 
         setContent { harness.App() }
 
@@ -133,7 +135,7 @@ class ChallengeNavigationTest {
             type = ChallengeType.SPEEDRUN,
             difficulty = ChallengeDifficulty.HARD,
         )
-        harness.preLoadChallengeDetail("1")
+        preLoadChallengeDetail(harness, "1")
 
         setContent { harness.App() }
 

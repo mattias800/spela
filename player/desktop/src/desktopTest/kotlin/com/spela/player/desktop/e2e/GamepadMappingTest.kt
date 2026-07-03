@@ -74,7 +74,7 @@ class GamepadMappingTest {
         // onPreviewKeyEvent fixes). runCurrent (no virtual-time advance) processes
         // the capture without elapsing the 2s commit hold.
         onNodeWithTag("binding_prompt").performKeyInput { keyDown(Key.ButtonA) }
-        harness.testDispatcher.scheduler.runCurrent()
+        drainHarnessSchedulerOnUiThread(harness)
         waitForIdle()
 
         onNodeWithTag("binding_prompt").assertExists() // did NOT close

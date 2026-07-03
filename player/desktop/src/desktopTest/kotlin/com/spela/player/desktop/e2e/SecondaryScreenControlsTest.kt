@@ -342,16 +342,14 @@ class SecondaryScreenControlsTest {
         harness.emulationViewModel.onIntent(EmulationIntent.StartGame(gameId = "1"))
         mainClock.autoAdvance = false
         repeat(4) {
-            harness.testDispatcher.scheduler.advanceTimeBy(1_000)
-            harness.testDispatcher.scheduler.runCurrent()
+            advanceHarnessSchedulerByOnUiThread(harness, 1_000)
         }
         mainClock.autoAdvance = true
 
         harness.emulationViewModel.onIntent(EmulationIntent.SelectTouchControlPort(1))
         mainClock.autoAdvance = false
         repeat(2) {
-            harness.testDispatcher.scheduler.advanceTimeBy(1_000)
-            harness.testDispatcher.scheduler.runCurrent()
+            advanceHarnessSchedulerByOnUiThread(harness, 1_000)
         }
         mainClock.autoAdvance = true
 
@@ -364,8 +362,7 @@ class SecondaryScreenControlsTest {
         harness.emulationViewModel.onIntent(EmulationIntent.StopGame)
         mainClock.autoAdvance = false
         repeat(4) {
-            harness.testDispatcher.scheduler.advanceTimeBy(1_000)
-            harness.testDispatcher.scheduler.runCurrent()
+            advanceHarnessSchedulerByOnUiThread(harness, 1_000)
         }
         mainClock.autoAdvance = true
 

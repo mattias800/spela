@@ -238,9 +238,9 @@ class SettingsConsoleNavigationTest {
         // Fine-grained clock control so the 2s hold doesn't auto-complete.
         fun settle(ms: Long) {
             mainClock.autoAdvance = false
-            harness.testDispatcher.scheduler.runCurrent()
+            drainHarnessSchedulerOnUiThread(harness)
             mainClock.advanceTimeBy(ms)
-            harness.testDispatcher.scheduler.runCurrent()
+            drainHarnessSchedulerOnUiThread(harness)
             waitForIdle()
         }
 
