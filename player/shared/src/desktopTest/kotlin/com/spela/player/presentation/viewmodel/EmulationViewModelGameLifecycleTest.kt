@@ -201,6 +201,69 @@ class EmulationViewModelGameLifecycleTest {
     }
 
     @Test
+    fun selectWiiControlSchemePersistsAndReappliesLive() = runTest {
+        builder.gameRepository = StubGameRepository(
+            consoleId = "wii",
+            consoleName = "Nintendo Wii",
+        )
+        builder.coreRepository.recommendedCore = LibretroCore(
+            id = 2,
+            name = "dolphin",
+            displayName = "Dolphin",
+        )
+        builder.coreRepository.localCorePath = "/path/to/dolphin_libretro.so"
+
+        val vm = builder.build()
+        vm.onIntent(EmulationIntent.StartGame("game1"))
+        builder.advanceTimeBy(100)
+        assertTrue(vm.state.value.isWiiControlSchemeSelectable)
+        assertEquals(WiiControlScheme.NUNCHUK, vm.state.value.wiiControlScheme)
+
+        vm.onIntent(EmulationIntent.ShowWiiControlSchemePicker)
+        builder.advanceTimeBy(10)
+        assertTrue(vm.state.value.showWiiControlSchemePicker)
+
+        vm.onIntent(EmulationIntent.SelectWiiControlScheme(WiiControlScheme.WIIMOTE_SIDEWAYS))
+        builder.advanceTimeBy(100)
+
+        // Persisted, live re-applied to all ports, state updated, picker closed.
+        assertEquals(
+            listOf("game1" to WiiControlScheme.WIIMOTE_SIDEWAYS),
+            builder.preferencesRepository.wiiControlSchemeWrites,
+        )
+        for (port in 0..3) {
+            assertEquals(0x201, builder.libretroController.controllerPortDevices[port])
+        }
+        assertEquals(WiiControlScheme.WIIMOTE_SIDEWAYS, vm.state.value.wiiControlScheme)
+        assertFalse(vm.state.value.showWiiControlSchemePicker)
+    }
+
+    @Test
+    fun selectWiiControlSchemeIsIgnoredForNonWiiSessions() = runTest {
+        builder.gameRepository = StubGameRepository(
+            consoleId = "gamecube",
+            consoleName = "Nintendo GameCube",
+        )
+        builder.coreRepository.recommendedCore = LibretroCore(
+            id = 2,
+            name = "dolphin",
+            displayName = "Dolphin",
+        )
+        builder.coreRepository.localCorePath = "/path/to/dolphin_libretro.so"
+
+        val vm = builder.build()
+        vm.onIntent(EmulationIntent.StartGame("game1"))
+        builder.advanceTimeBy(100)
+        assertFalse(vm.state.value.isWiiControlSchemeSelectable)
+
+        vm.onIntent(EmulationIntent.SelectWiiControlScheme(WiiControlScheme.GC_PAD))
+        builder.advanceTimeBy(100)
+
+        assertTrue(builder.preferencesRepository.wiiControlSchemeWrites.isEmpty())
+        assertTrue(builder.libretroController.controllerPortDevices.isEmpty())
+    }
+
+    @Test
     fun startGameLeavesPortDevicesAloneForGameCube() = runTest {
         builder.gameRepository = StubGameRepository(
             // "gamecube" is the production console code (see server console registry).

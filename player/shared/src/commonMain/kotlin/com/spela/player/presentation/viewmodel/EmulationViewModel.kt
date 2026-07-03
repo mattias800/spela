@@ -349,6 +349,13 @@ class EmulationViewModel(
                 _state.update { it.copy(slotPickerMode = null) }
             }
 
+            // Wii control scheme picker (#1559)
+            EmulationIntent.ShowWiiControlSchemePicker ->
+                _state.update { it.copy(showWiiControlSchemePicker = true) }
+            EmulationIntent.DismissWiiControlSchemePicker ->
+                _state.update { it.copy(showWiiControlSchemePicker = false) }
+            is EmulationIntent.SelectWiiControlScheme -> selectWiiControlScheme(intent.scheme)
+
             // Named-save link on the slot picker (medium tier only) — #830
             EmulationIntent.ShowNamedSaveDialog ->
                 _state.update {
@@ -1264,9 +1271,18 @@ class EmulationViewModel(
                         // load path, and the core ignores port-device calls
                         // before a core is loaded.
                         val wiiScheme = preferencesRepository.resolveWiiControlScheme(gameId)
-                        wiiControllerPortDevice(consoleId, corePath, wiiScheme)?.let { device ->
+                        val wiiDevice = wiiControllerPortDevice(consoleId, corePath, wiiScheme)
+                        if (wiiDevice != null) {
                             for (port in 0..3) {
-                                libretroController.setControllerPortDevice(port, device)
+                                libretroController.setControllerPortDevice(port, wiiDevice)
+                            }
+                        }
+                        withContext(dispatchers.main) {
+                            _state.update {
+                                it.copy(
+                                    isWiiControlSchemeSelectable = wiiDevice != null,
+                                    wiiControlScheme = wiiScheme,
+                                )
                             }
                         }
 
@@ -1569,6 +1585,28 @@ class EmulationViewModel(
                             it.copy(netplayPauseElapsedSeconds = it.netplayPauseElapsedSeconds + 1)
                         }
                     }
+                }
+            }
+        }
+    }
+
+    /**
+     * Persist and live-apply a Wii controller scheme (#1559). The core
+     * rebuilds its Wiimote mappings on retro_set_controller_port_device,
+     * so no relaunch is needed. Gated on isWiiControlSchemeSelectable —
+     * the session's core cannot change mid-session.
+     */
+    private fun selectWiiControlScheme(scheme: com.spela.player.domain.model.WiiControlScheme) {
+        if (!_state.value.isWiiControlSchemeSelectable) return
+        val gameId = _state.value.gameId
+        scope.launch(dispatchers.io) {
+            preferencesRepository.setWiiControlScheme(gameId, scheme)
+            for (port in 0..3) {
+                libretroController.setControllerPortDevice(port, scheme.portDevice)
+            }
+            withContext(dispatchers.main) {
+                _state.update {
+                    it.copy(wiiControlScheme = scheme, showWiiControlSchemePicker = false)
                 }
             }
         }

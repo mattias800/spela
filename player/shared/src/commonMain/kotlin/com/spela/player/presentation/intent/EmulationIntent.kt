@@ -106,6 +106,21 @@ sealed interface EmulationIntent {
     /** Dismiss the slot-primary slot picker modal without saving or
      *  loading. The user is bailing out of the choice. See #804 phase 5. */
     data object DismissSlotPicker : EmulationIntent
+
+    /** Open the in-game Wii control scheme picker (#1559). */
+    data object ShowWiiControlSchemePicker : EmulationIntent
+
+    /** Close the in-game Wii control scheme picker (#1559). */
+    data object DismissWiiControlSchemePicker : EmulationIntent
+
+    /**
+     * Persist and live-apply a Wii controller scheme for the running
+     * game (#1559) — no relaunch; the core rebuilds mappings on
+     * retro_set_controller_port_device.
+     */
+    data class SelectWiiControlScheme(
+        val scheme: com.spela.player.domain.model.WiiControlScheme,
+    ) : EmulationIntent
     /** Open the medium-tier "Save with name…" dialog from the slot
      *  picker. Power-user escape hatch for deliberate named saves
      *  on top of the slot grid. See #830. */
