@@ -40,6 +40,7 @@ import androidx.compose.material.icons.filled.HighQuality
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Gamepad
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Sync
@@ -371,6 +372,15 @@ private fun NormalOverlayActions(
         showButtonRemap = showButtonRemap,
         onConfigureButtons = onConfigureButtons,
     )
+
+    // Wii sessions: controller scheme picker (#1559).
+    if (state.isWiiControlSchemeSelectable) {
+        OverlayAction(
+            label = "Wii Remote",
+            icon = Icons.Filled.Gamepad,
+            onClick = { viewModel.onIntent(EmulationIntent.ShowWiiControlSchemePicker) },
+        )
+    }
 
     if (state.stuckUploadCount > 0) {
         val msg = if (state.stuckUploadCount == 1) {

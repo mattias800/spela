@@ -372,6 +372,17 @@ fun InGameOverlay(
         )
     }
 
+    // Wii control scheme picker (#1559)
+    if (state.showWiiControlSchemePicker) {
+        com.spela.player.presentation.ui.feature.ingame.InGameWiiControlSchemeDialog(
+            currentScheme = state.wiiControlScheme,
+            onSelect = { scheme ->
+                viewModel.onIntent(EmulationIntent.SelectWiiControlScheme(scheme))
+            },
+            onDismiss = { viewModel.onIntent(EmulationIntent.DismissWiiControlSchemePicker) },
+        )
+    }
+
     // Named-save dialog reachable from the slot picker on medium tier
     // (#830). Slot-primary stays the default; this is the power-user
     // marker affordance.
