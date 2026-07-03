@@ -450,12 +450,16 @@ fun GameDetailScreen(
                         )
                     }
 
-                    // 8b. Wii controller scheme (#1559) — Wii games only
+                    // 8b. Wii controller scheme + IR source (#1559, #1560) — Wii games only
                     if (game.consoleId == "wii") {
                         com.spela.player.presentation.ui.feature.gamedetail.WiiControlSchemeSection(
                             currentScheme = state.wiiControlScheme,
+                            currentIrSource = state.wiiIrSource,
                             onSelectScheme = { scheme ->
                                 viewModel.onIntent(GameDetailIntent.SelectWiiControlScheme(scheme))
+                            },
+                            onSelectIrSource = { source ->
+                                viewModel.onIntent(GameDetailIntent.SelectWiiIrSource(source))
                             },
                         )
                     }

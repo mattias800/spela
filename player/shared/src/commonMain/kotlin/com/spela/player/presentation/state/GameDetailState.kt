@@ -36,6 +36,9 @@ data class GameDetailState(
     /** Per-game Wii controller scheme (#1559); meaningful only for Wii games. */
     val wiiControlScheme: com.spela.player.domain.model.WiiControlScheme =
         com.spela.player.domain.model.WiiControlScheme.NUNCHUK,
+    /** Per-game Wii IR pointer source (#1560); meaningful only for Wii games. */
+    val wiiIrSource: com.spela.player.domain.model.WiiIrSource =
+        com.spela.player.domain.model.WiiIrSource.RIGHT_STICK,
     val isLoading: Boolean = false,
     val isDownloading: Boolean = false,
     /**

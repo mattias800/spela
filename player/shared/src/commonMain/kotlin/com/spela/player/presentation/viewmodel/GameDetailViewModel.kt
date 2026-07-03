@@ -137,6 +137,7 @@ class GameDetailViewModel(
                 setGameSaveStatePolicy(intent.choice)
             is GameDetailIntent.RateGame -> rateGame(intent.rating, intent.review)
             is GameDetailIntent.SelectWiiControlScheme -> selectWiiControlScheme(intent.scheme)
+            is GameDetailIntent.SelectWiiIrSource -> selectWiiIrSource(intent.source)
             GameDetailIntent.DeleteRating -> deleteRating()
             GameDetailIntent.LoadSharedSaves -> loadSharedSaves()
             is GameDetailIntent.ShareSave -> shareSave(intent.sessionId, intent.saveId, intent.name, intent.description)
@@ -291,9 +292,11 @@ class GameDetailViewModel(
 
     private fun loadGame(gameId: String) {
         currentGameId = gameId
-        // Per-game Wii controller scheme (#1559), device-local; baked into
-        // the fresh state constructions below so it survives the reset.
+        // Per-game Wii controller scheme (#1559) + IR source (#1560),
+        // device-local; baked into the fresh state constructions below so
+        // they survive the reset.
         val wiiScheme = preferencesRepository.resolveWiiControlScheme(gameId)
+        val wiiIrSource = preferencesRepository.resolveWiiIrSource(gameId)
 
         // Stale-while-revalidate: if we've fetched this game before
         // in this app session, the cache still has the last detail
@@ -309,10 +312,13 @@ class GameDetailViewModel(
                     gameDetail = cached,
                     isLoading = false,
                     wiiControlScheme = wiiScheme,
+                    wiiIrSource = wiiIrSource,
                 )
             }
         } else {
-            _state.update { GameDetailState(isLoading = true, wiiControlScheme = wiiScheme) }
+            _state.update {
+                GameDetailState(isLoading = true, wiiControlScheme = wiiScheme, wiiIrSource = wiiIrSource)
+            }
         }
 
 
@@ -984,6 +990,17 @@ class GameDetailViewModel(
             preferencesRepository.setWiiControlScheme(gameId, scheme)
             withContext(dispatchers.main) {
                 _state.update { it.copy(wiiControlScheme = scheme) }
+            }
+        }
+    }
+
+    /** Persist the per-game Wii IR pointer source (#1560). Applies next launch. */
+    private fun selectWiiIrSource(source: com.spela.player.domain.model.WiiIrSource) {
+        val gameId = currentGameId ?: return
+        scope.launch(dispatchers.io) {
+            preferencesRepository.setWiiIrSource(gameId, source)
+            withContext(dispatchers.main) {
+                _state.update { it.copy(wiiIrSource = source) }
             }
         }
     }

@@ -47,6 +47,11 @@ sealed interface GameDetailIntent {
     data class SelectWiiControlScheme(
         val scheme: com.spela.player.domain.model.WiiControlScheme,
     ) : GameDetailIntent
+
+    /** Persist the per-game Wii IR pointer source (#1560). */
+    data class SelectWiiIrSource(
+        val source: com.spela.player.domain.model.WiiIrSource,
+    ) : GameDetailIntent
     data object LoadSharedSaves : GameDetailIntent
     /**
      * Upload a session save to the public shared-saves library.
