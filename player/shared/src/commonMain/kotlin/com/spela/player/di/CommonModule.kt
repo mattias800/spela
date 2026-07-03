@@ -52,7 +52,7 @@ val commonModule = module {
     single<GameRepository> { GameRepositoryImpl(get(), get(), get()) }
     single<FederationRepository> { FederationRepositoryImpl(get()) }
     single<SaveDataRepository> { SaveDataRepositoryImpl(get()) }
-    single<CoreRepository> { CoreRepositoryImpl(get(), get(), get()) }
+    single<CoreRepository> { CoreRepositoryImpl(get(), get(), get(), get()) }
     single { CoreUpdateService(get(), get(), get(), get()) }
     single<DownloadRepository> { DownloadRepositoryImpl(get(), get(), get()) }
     single<ServerRepository> { ServerRepositoryImpl(get(), get(), get()) }
@@ -218,11 +218,13 @@ val commonModule = module {
             pendingUploadRepository = get(),
         ).also {
             // Kick off the network-reconnect collector once the
-            // SaveManager singleton is wired. Tests don't get this
-            // (they construct SaveManager directly) so their
-            // `runTest` scopes still complete cleanly. See #804
-            // phase 6 slice 3.
+            // SaveManager singleton is wired, then immediately try one
+            // drain for rows persisted across an app restart that began
+            // already-online (no reconnect event will fire in that case).
+            // Tests don't get this (they construct SaveManager directly)
+            // so their `runTest` scopes still complete cleanly.
             it.startReconnectListener()
+            it.drainPendingUploads(showCompletionFeedback = false)
         }
     }
     single {
@@ -475,6 +477,7 @@ val commonModule = module {
             syncEngine = get(),
             connectivityMonitor = get(),
             apiClient = get(),
+            pendingUploadRepository = get(),
             dispatchers = get(),
             scope = get(),
         )

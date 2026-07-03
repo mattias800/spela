@@ -8,6 +8,7 @@ import com.spela.player.data.remote.SyncState
 import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.data.remote.dto.DeviceDto
 import com.spela.player.domain.model.Console
+import com.spela.player.domain.model.PendingSaveUploadQueueSnapshot
 import com.spela.player.domain.model.RAStatus
 import com.spela.player.domain.model.ShaderPreset
 import com.spela.player.domain.repository.AchievementsRepository
@@ -15,6 +16,7 @@ import com.spela.player.domain.repository.AuthRepository
 import com.spela.player.domain.repository.DownloadRepository
 import com.spela.player.domain.repository.GameRepository
 import com.spela.player.domain.repository.KeyMappingRepository
+import com.spela.player.domain.repository.PendingSaveUploadRepository
 import com.spela.player.domain.repository.PreferencesRepository
 import com.spela.player.domain.repository.ServerRepository
 import com.spela.player.util.DispatcherProvider
@@ -75,6 +77,7 @@ data class SettingsState(
     val scrollOffset: Int = 0,
     val orientationLock: String = "auto",
     val defaultSecondScreenPage: String = "art",
+    val saveSyncQueue: PendingSaveUploadQueueSnapshot = PendingSaveUploadQueueSnapshot.Empty,
 )
 
 sealed interface SettingsIntent {
@@ -134,6 +137,7 @@ class SettingsViewModel(
     private val syncEngine: SyncEngine,
     private val connectivityMonitor: ConnectivityMonitor,
     private val apiClient: SpelaApiClient,
+    private val pendingUploadRepository: PendingSaveUploadRepository,
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
 ) {
@@ -146,6 +150,7 @@ class SettingsViewModel(
         .stateIn(scope, kotlinx.coroutines.flow.SharingStarted.Eagerly, "default-dark")
 
     private var deviceNameSyncJob: Job? = null
+    private var saveSyncQueueJob: Job? = null
 
     fun onIntent(intent: SettingsIntent) {
         when (intent) {
@@ -231,6 +236,15 @@ class SettingsViewModel(
         }
     }
 
+    private fun startSaveSyncQueueObserver() {
+        if (saveSyncQueueJob?.isActive == true) return
+        saveSyncQueueJob = scope.launch(dispatchers.io) {
+            pendingUploadRepository.observeSnapshot().collect { snapshot ->
+                _state.update { it.copy(saveSyncQueue = snapshot) }
+            }
+        }
+    }
+
     private fun togglePreference(
         currentValue: (SettingsState) -> Boolean,
         optimisticUpdate: (SettingsState, Boolean) -> SettingsState,
@@ -247,6 +261,7 @@ class SettingsViewModel(
     }
 
     private fun loadSettings() {
+        startSaveSyncQueueObserver()
         scope.launch(dispatchers.io) {
             val user = authRepository.getCurrentUser().getOrNull()
             val cacheSize = downloadRepository.getCacheSize()

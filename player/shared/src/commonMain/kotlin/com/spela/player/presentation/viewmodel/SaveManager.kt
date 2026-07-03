@@ -2,6 +2,10 @@ package com.spela.player.presentation.viewmodel
 
 import com.spela.player.data.remote.ConnectivityMonitor
 import com.spela.player.domain.controller.ScreenshotCapture
+import com.spela.player.domain.model.PENDING_SAVE_UPLOAD_STUCK_RETRY_THRESHOLD
+import com.spela.player.domain.model.PendingSaveUpload
+import com.spela.player.domain.model.PendingUploadKind
+import com.spela.player.domain.repository.PendingSaveUploadRepository
 import com.spela.player.domain.repository.SaveDataRepository
 import com.spela.player.domain.repository.SessionRepository
 import com.spela.player.presentation.state.EmulationState
@@ -10,6 +14,7 @@ import com.spela.player.presentation.state.SecondaryToastData
 import com.spela.player.presentation.state.SecondaryToastType
 import com.spela.player.util.DispatcherProvider
 import com.spela.player.util.FileStorage
+import com.spela.player.util.spelaLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,6 +27,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import kotlin.random.Random
 
 /**
  * Result of attempting to auto-load a save state.
@@ -99,8 +105,7 @@ class SaveManager(
      * enqueue (slice 2); future slices add explicit triggers (game
      * exit, app pause, network reconnect).
      */
-    private val pendingUploadRepository:
-        com.spela.player.domain.repository.PendingSaveUploadRepository,
+    private val pendingUploadRepository: PendingSaveUploadRepository,
 ) {
     /** The libretro core name used for the current emulation session. */
     var currentCoreName: String = ""
@@ -530,37 +535,32 @@ class SaveManager(
             currentSessionId?.let { saveDirOnStop(it) }
             return
         }
-        println("[SaveManager] autoSaveOnStop: staged ${staged.size} bytes at ${staged.path}, uploading…")
-        try {
-            val sessionId = currentSessionId
-            if (sessionId != null) {
-                val screenshot = screenshotCapture?.captureScreenshot()
-                val result = sessionRepository.uploadSessionAutoSaveFromFile(
-                    sessionId, staged.path, staged.size, screenshot, currentCoreName, staged.compression,
+        println("[SaveManager] autoSaveOnStop: staged ${staged.size} bytes at ${staged.path}, queueing...")
+        val sessionId = currentSessionId
+        if (sessionId != null) {
+            try {
+                enqueueStagedSave(
+                    sessionId = sessionId,
+                    kind = PendingUploadKind.Auto,
+                    slot = null,
+                    name = "Auto Save",
+                    staged = staged,
                 )
-                if (result.isSuccess) {
-                    println("[SaveManager] autoSaveOnStop: upload OK")
+                withContext(dispatchers.main) {
+                    _state.update { it.copy(hasPendingUploads = true) }
                 }
-                if (result.isFailure) {
-                    val msg = result.exceptionOrNull()?.message ?: "Unknown error"
-                    println("[SaveManager] autoSaveOnStop: upload failed: $msg")
-                    val userMsg = if (msg.contains("413") || msg.contains("quota", ignoreCase = true)) {
-                        "Auto-save failed: storage quota exceeded. Delete old saves to free space."
-                    } else {
-                        "Auto-save upload failed: $msg"
-                    }
-                    withContext(dispatchers.main) {
-                        _state.update { it.copy(error = userMsg) }
-                    }
+            } catch (e: Exception) {
+                staged.cleanup()
+                println("[SaveManager] autoSaveOnStop: queue failed: ${e.message}")
+                withContext(dispatchers.main) {
+                    _state.update { it.copy(error = "Auto-save queue failed: ${e.message}") }
                 }
             }
-        } catch (e: Exception) {
-            println("[SaveManager] autoSaveOnStop: exception: ${e.message}")
-        } finally {
+        } else {
             staged.cleanup()
         }
         // Game-exit drain (#804 phase 6 slice 3 spec point a). The
-        // auto-save itself runs inline above, but any manual saves
+        // auto-save itself is queued above, and any manual/slot saves
         // queued during gameplay are still on disk waiting for an
         // opportunity. This is that opportunity.
         drainPendingUploads()
@@ -590,16 +590,13 @@ class SaveManager(
          */
         const val GZIP_MIN_BYTES: Long = 32 * 1024L
 
-        /**
-         * Retry count at which a pending upload counts as "stuck"
-         * for the in-game overlay's "Sync paused — N saves waiting"
-         * indicator. Three transient failures is enough to suspect a
-         * server-side issue (quota, 5xx) rather than just packet
-         * loss. See #804 phase 6 slice 4.
-         */
-        const val STUCK_RETRY_THRESHOLD = 3
+        const val SAVE_SYNC_LOG_TAG = "SaveSync"
     }
 
+
+    private fun saveSyncLog(message: String) {
+        spelaLog(SAVE_SYNC_LOG_TAG, message)
+    }
 
     /**
      * Serialises drain calls so concurrent triggers (e.g. game-exit
@@ -621,8 +618,8 @@ class SaveManager(
      * drain will pick up any newly-enqueued rows on its next
      * iteration). See #804 phase 6 slice 3.
      */
-    fun drainPendingUploads() {
-        launchDrainPendingUploads()
+    fun drainPendingUploads(showCompletionFeedback: Boolean = true) {
+        launchDrainPendingUploads(showCompletionFeedback)
     }
 
     /**
@@ -635,7 +632,7 @@ class SaveManager(
     fun startReconnectListener() {
         scope.launch(dispatchers.io) {
             connectivityMonitor.onReconnect.collect {
-                println("[SaveManager] onReconnect — draining pending uploads")
+                saveSyncLog("reconnect_drain")
                 drainPendingUploads()
             }
         }
@@ -651,6 +648,59 @@ class SaveManager(
      * (#830) so power users get their pre-boss-fight markers without
      * the slot grid going stale.
      */
+    private suspend fun enqueueStagedSave(
+        sessionId: String,
+        kind: PendingUploadKind,
+        slot: Int?,
+        name: String,
+        staged: StagedSave,
+    ): Long {
+        val screenshot = screenshotCapture?.captureScreenshot()
+        val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
+        var screenshotPath: String? = null
+        try {
+            screenshotPath = if (screenshot != null) {
+                runCatching {
+                    val suffix = Random.nextLong(0, Long.MAX_VALUE)
+                    val path = "${fileStorage.getSavesDir()}/.tmp-shot-$sessionId-${kind.apiId}-$now-$suffix.png"
+                    fileStorage.writeFile(path, screenshot)
+                    path
+                }.onFailure { e ->
+                    saveSyncLog(
+                        "screenshot_stage_failure kind=${kind.apiId} session=$sessionId " +
+                            "error=${e.message ?: e::class.simpleName}",
+                    )
+                }.getOrNull()
+            } else {
+                null
+            }
+            val rowId = pendingUploadRepository.enqueue(
+                sessionId = sessionId,
+                kind = kind,
+                slot = slot,
+                name = name,
+                coreName = currentCoreName,
+                compression = staged.compression,
+                filePath = staged.path,
+                fileSize = staged.size,
+                screenshotPath = screenshotPath,
+                createdAt = now,
+            )
+            saveSyncLog(
+                "enqueue id=$rowId kind=${kind.apiId} session=$sessionId " +
+                    "size=${staged.size} retry=0",
+            )
+            return rowId
+        } catch (e: Exception) {
+            screenshotPath?.let { path -> runCatching { fileStorage.deleteFile(path) } }
+            saveSyncLog(
+                "enqueue_failure kind=${kind.apiId} session=$sessionId " +
+                    "size=${staged.size} error=${e.message ?: e::class.simpleName}",
+            )
+            throw e
+        }
+    }
+
     fun saveState(name: String = "Manual Save") {
         if (_state.value.isChallengeMode) return
         if (_state.value.isHardcoreMode) {
@@ -701,35 +751,30 @@ class SaveManager(
                 }
                 return@launch
             }
-            // Capture the screenshot and stage it to disk alongside
-            // the save bytes so the queue is fully durable across
-            // app-kill — a force-quit between save and upload no
-            // longer drops the thumbnail. See #804 phase 6 slice 4.
-            val screenshot = screenshotCapture?.captureScreenshot()
-            val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
-            val screenshotPath = if (screenshot != null) {
-                runCatching {
-                    val path = "${fileStorage.getSavesDir()}/.tmp-shot-$sessionId-$now.png"
-                    fileStorage.writeFile(path, screenshot)
-                    path
-                }.getOrNull()
-            } else null
-            val rowId = pendingUploadRepository.enqueue(
-                sessionId = sessionId,
-                kind = com.spela.player.domain.model.PendingUploadKind.Manual,
-                slot = null,
-                // Caller-supplied label for the save row (#830). Empty /
-                // blank falls back to the historical placeholder so the
-                // server never receives a row with no human-readable
-                // label.
-                name = name.ifBlank { "Manual Save" },
-                coreName = currentCoreName,
-                compression = staged.compression,
-                filePath = staged.path,
-                fileSize = staged.size,
-                screenshotPath = screenshotPath,
-                createdAt = now,
-            )
+            try {
+                enqueueStagedSave(
+                    sessionId = sessionId,
+                    kind = PendingUploadKind.Manual,
+                    slot = null,
+                    // Caller-supplied label for the save row (#830). Empty /
+                    // blank falls back to the historical placeholder so the
+                    // server never receives a row with no human-readable
+                    // label.
+                    name = name.ifBlank { "Manual Save" },
+                    staged = staged,
+                )
+            } catch (e: Exception) {
+                staged.cleanup()
+                withContext(dispatchers.main) {
+                    _state.update {
+                        it.copy(
+                            isSaveInProgress = false,
+                            saveStateError = "Failed to queue save: ${e.message}",
+                        )
+                    }
+                }
+                return@launch
+            }
             withContext(dispatchers.main) {
                 _state.update {
                     it.copy(
@@ -759,34 +804,44 @@ class SaveManager(
      * one left off. Clears [EmulationState.hasPendingUploads] when the
      * queue empties. See #804 phase 6.
      */
-    private fun launchDrainPendingUploads() {
+    private fun launchDrainPendingUploads(showCompletionFeedback: Boolean = true) {
         scope.launch(dispatchers.io) {
             // tryLock so a redundant trigger (e.g. reconnect arrives
             // while the post-enqueue drain is still running) is a
             // cheap no-op instead of a parallel drain that would
             // race on the same rows.
             if (!drainMutex.tryLock()) {
+                saveSyncLog("drain_skip reason=already_running")
                 return@launch
             }
+            saveSyncLog("drain_start")
+            pendingUploadRepository.setDraining(true)
             try {
                 while (true) {
                     val pending = pendingUploadRepository.getAll()
                     publishStuckCount(pending)
                     if (pending.isEmpty()) {
+                        saveSyncLog("empty_queue")
                         withContext(dispatchers.main) {
                             _state.update {
                                 it.copy(
                                     hasPendingUploads = false,
-                                    saveStateJustSucceeded = true,
+                                    saveStateJustSucceeded = if (showCompletionFeedback) {
+                                        true
+                                    } else {
+                                        it.saveStateJustSucceeded
+                                    },
                                     stuckUploadCount = 0,
                                 )
                             }
                         }
                         refreshSaveSlots()
-                        scope.launch(dispatchers.io) {
-                            kotlinx.coroutines.delay(SAVE_SUCCESS_FLASH_MS)
-                            withContext(dispatchers.main) {
-                                _state.update { it.copy(saveStateJustSucceeded = false) }
+                        if (showCompletionFeedback) {
+                            scope.launch(dispatchers.io) {
+                                kotlinx.coroutines.delay(SAVE_SUCCESS_FLASH_MS)
+                                withContext(dispatchers.main) {
+                                    _state.update { it.copy(saveStateJustSucceeded = false) }
+                                }
                             }
                         }
                         return@launch
@@ -795,25 +850,39 @@ class SaveManager(
                     val screenshot: ByteArray? = row.screenshotPath?.let { path ->
                         runCatching { fileStorage.readFile(path) }.getOrNull()
                     }
+                    saveSyncLog(
+                        "row_upload_start id=${row.id} kind=${row.kind.apiId} " +
+                            "session=${row.sessionId} size=${row.fileSize} retry=${row.retryCount}",
+                    )
                     val result = uploadPendingRow(row, screenshot)
                     if (result.isSuccess) {
+                        saveSyncLog("row_upload_success id=${row.id} kind=${row.kind.apiId}")
                         pendingUploadRepository.delete(row.id)
+                        saveSyncLog("delete id=${row.id}")
                         runCatching { fileStorage.deleteFile(row.filePath) }
                         row.screenshotPath?.let {
                             runCatching { fileStorage.deleteFile(it) }
                         }
                     } else {
                         val msg = result.exceptionOrNull()?.message ?: "upload failed"
+                        saveSyncLog(
+                            "row_upload_failure id=${row.id} kind=${row.kind.apiId} " +
+                                "error=$msg",
+                        )
                         pendingUploadRepository.markRetry(row.id, msg)
+                        saveSyncLog(
+                            "retry_marked id=${row.id} retry=${row.retryCount + 1} " +
+                                "error=$msg",
+                        )
                         // Re-read the queue so the stuck count
                         // reflects the bumped retry counter on the
                         // failed row before we exit the drain loop.
                         publishStuckCount(pendingUploadRepository.getAll())
-                        println("[SaveManager] drain: row ${row.id} failed: $msg — leaving in queue")
                         return@launch
                     }
                 }
             } finally {
+                pendingUploadRepository.setDraining(false)
                 drainMutex.unlock()
             }
         }
@@ -823,14 +892,14 @@ class SaveManager(
      * Pushes the current "stuck" count to [EmulationState] so the
      * in-game overlay can surface a "Sync paused — N saves waiting"
      * line. A row is stuck once its retry counter reaches
-     * [STUCK_RETRY_THRESHOLD] — three transient failures is enough
+     * [PENDING_SAVE_UPLOAD_STUCK_RETRY_THRESHOLD] — three transient failures is enough
      * to suspect a server-side issue (quota, 5xx) rather than just
      * packet loss. See #804 phase 6 slice 4.
      */
     private suspend fun publishStuckCount(
-        pending: List<com.spela.player.domain.model.PendingSaveUpload>,
+        pending: List<PendingSaveUpload>,
     ) {
-        val stuck = pending.count { it.retryCount >= STUCK_RETRY_THRESHOLD }
+        val stuck = pending.count { it.retryCount >= PENDING_SAVE_UPLOAD_STUCK_RETRY_THRESHOLD }
         withContext(dispatchers.main) {
             _state.update { it.copy(stuckUploadCount = stuck) }
         }
@@ -838,15 +907,15 @@ class SaveManager(
 
     /**
      * Routes a queued row to the correct session endpoint based on
-     * its [com.spela.player.domain.model.PendingUploadKind]. Kept
+     * its [PendingUploadKind]. Kept
      * here rather than on the repository so the SQL layer stays
      * upload-agnostic.
      */
     private suspend fun uploadPendingRow(
-        row: com.spela.player.domain.model.PendingSaveUpload,
+        row: PendingSaveUpload,
         screenshot: ByteArray?,
     ): Result<Unit> = when (row.kind) {
-        com.spela.player.domain.model.PendingUploadKind.Manual ->
+        PendingUploadKind.Manual ->
             sessionRepository.uploadSessionSaveFromFile(
                 sessionId = row.sessionId,
                 name = row.name,
@@ -856,7 +925,7 @@ class SaveManager(
                 coreName = row.coreName,
                 compression = row.compression,
             ).map { Unit }
-        com.spela.player.domain.model.PendingUploadKind.Auto ->
+        PendingUploadKind.Auto ->
             sessionRepository.uploadSessionAutoSaveFromFile(
                 sessionId = row.sessionId,
                 savePath = row.filePath,
@@ -865,7 +934,7 @@ class SaveManager(
                 coreName = row.coreName,
                 compression = row.compression,
             )
-        com.spela.player.domain.model.PendingUploadKind.Slot ->
+        PendingUploadKind.Slot ->
             sessionRepository.uploadSlotSaveFromFile(
                 sessionId = row.sessionId,
                 slot = row.slot ?: 1,
@@ -921,7 +990,9 @@ class SaveManager(
      * never blocks a save.
      */
     private suspend fun stageSaveToTempFile(): StagedSave? {
-        val tempPath = "${fileStorage.getSavesDir()}/.tmp-save-${currentSessionId ?: "none"}"
+        val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
+        val suffix = Random.nextLong(0, Long.MAX_VALUE)
+        val tempPath = "${fileStorage.getSavesDir()}/.tmp-save-${currentSessionId ?: "none"}-$now-$suffix"
         val cleanupRaw: suspend () -> Unit = { runCatching { fileStorage.deleteFile(tempPath) } }
         val rawSize: Long? = run {
             val written = libretroController.serializeToFile(tempPath)
@@ -998,40 +1069,41 @@ class SaveManager(
         }
         scope.launch(dispatchers.io) {
             val staged = stageSaveToTempFile() ?: return@launch
-            try {
-                val sessionId = currentSessionId
-                if (sessionId != null) {
-                    val screenshot = screenshotCapture?.captureScreenshot()
-                    sessionRepository.uploadSlotSaveFromFile(
-                        sessionId, slot, staged.path, staged.size, screenshot, currentCoreName, staged.compression,
-                    ).fold(
-                        onSuccess = {
-                            withContext(dispatchers.main) {
-                                _state.update {
-                                    it.copy(
-                                        statusMessage = "Saved to slot $slot",
-                                        secondaryToast = SecondaryToastData(
-                                            message = "Saved to Slot $slot",
-                                            type = SecondaryToastType.SAVE,
-                                        ),
-                                    )
-                                }
-                            }
-                            refreshSaveSlots()
-                        },
-                        onFailure = { error ->
-                            withContext(dispatchers.main) {
-                                _state.update { it.copy(error = "Failed to save to slot $slot: ${error.message}") }
-                            }
-                        },
+            val sessionId = currentSessionId
+            if (sessionId != null) {
+                try {
+                    enqueueStagedSave(
+                        sessionId = sessionId,
+                        kind = PendingUploadKind.Slot,
+                        slot = slot,
+                        name = "Slot $slot",
+                        staged = staged,
                     )
-                } else {
+                } catch (e: Exception) {
+                    staged.cleanup()
                     withContext(dispatchers.main) {
-                        _state.update { it.copy(statusMessage = "State saved") }
+                        _state.update { it.copy(error = "Failed to queue slot $slot: ${e.message}") }
+                    }
+                    return@launch
+                }
+                withContext(dispatchers.main) {
+                    _state.update {
+                        it.copy(
+                            statusMessage = "Saved to slot $slot",
+                            hasPendingUploads = true,
+                            secondaryToast = SecondaryToastData(
+                                message = "Saved to Slot $slot - syncing",
+                                type = SecondaryToastType.SAVE,
+                            ),
+                        )
                     }
                 }
-            } finally {
+                launchDrainPendingUploads()
+            } else {
                 staged.cleanup()
+                withContext(dispatchers.main) {
+                    _state.update { it.copy(statusMessage = "State saved") }
+                }
             }
         }
     }

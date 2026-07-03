@@ -31,6 +31,75 @@ data class PendingSaveUpload(
     val lastError: String?,
 )
 
+/**
+ * Retry count at which a pending upload is no longer just "waiting" and should
+ * be surfaced as stuck in user-facing queue state.
+ */
+const val PENDING_SAVE_UPLOAD_STUCK_RETRY_THRESHOLD = 3
+
+/**
+ * Aggregate, UI-safe view of the durable save-sync queue.
+ *
+ * The raw queue row includes local file paths. Settings only needs operational
+ * visibility, so expose a small snapshot with counts plus the per-job fields a
+ * user or tester can reason about.
+ */
+data class PendingSaveUploadQueueSnapshot(
+    val pendingCount: Int,
+    val retryingCount: Int,
+    val stuckCount: Int,
+    val isDraining: Boolean,
+    val jobs: List<PendingSaveUploadQueueJob>,
+) {
+    companion object {
+        val Empty = PendingSaveUploadQueueSnapshot(
+            pendingCount = 0,
+            retryingCount = 0,
+            stuckCount = 0,
+            isDraining = false,
+            jobs = emptyList(),
+        )
+    }
+}
+
+data class PendingSaveUploadQueueJob(
+    val id: Long,
+    val kind: PendingUploadKind,
+    val sessionId: String,
+    val slot: Int?,
+    val name: String,
+    val size: Long,
+    val retryCount: Int,
+    val lastError: String?,
+    val createdAt: Long,
+)
+
+fun pendingSaveUploadQueueSnapshot(
+    rows: List<PendingSaveUpload>,
+    isDraining: Boolean,
+): PendingSaveUploadQueueSnapshot {
+    val jobs = rows.map { row ->
+        PendingSaveUploadQueueJob(
+            id = row.id,
+            kind = row.kind,
+            sessionId = row.sessionId,
+            slot = row.slot,
+            name = row.name,
+            size = row.fileSize,
+            retryCount = row.retryCount,
+            lastError = row.lastError,
+            createdAt = row.createdAt,
+        )
+    }
+    return PendingSaveUploadQueueSnapshot(
+        pendingCount = jobs.size,
+        retryingCount = jobs.count { it.retryCount > 0 },
+        stuckCount = jobs.count { it.retryCount >= PENDING_SAVE_UPLOAD_STUCK_RETRY_THRESHOLD },
+        isDraining = isDraining,
+        jobs = jobs,
+    )
+}
+
 /** Categorises a pending upload so the worker calls the right server endpoint. */
 enum class PendingUploadKind(val apiId: String) {
     Manual("manual"),

@@ -37,6 +37,7 @@ import com.spela.player.presentation.ui.components.SpRadioOption
 import com.spela.player.presentation.ui.components.SpTextField
 import com.spela.player.presentation.ui.components.SpSyncStatusIndicator
 import com.spela.player.presentation.ui.feature.settings.DeviceManagementSection
+import com.spela.player.presentation.ui.feature.settings.SaveSyncQueueSection
 import com.spela.player.presentation.ui.feature.settings.SettingsDivider
 import com.spela.player.presentation.ui.feature.settings.SettingsInfoRow
 import com.spela.player.presentation.ui.feature.settings.SettingsSectionHeader
@@ -523,6 +524,12 @@ private fun androidx.compose.foundation.lazy.LazyListScope.storageSyncContent(
                 )
             }
         }
+    }
+
+    item { Spacer(Modifier.height(SpSpacing.Medium)) }
+    item { SettingsSectionHeader(title = "Save Sync Queue") }
+    item {
+        SaveSyncQueueSection(snapshot = state.saveSyncQueue)
     }
 }
 

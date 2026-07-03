@@ -97,11 +97,23 @@ class GameRepositoryOfflineTest {
                             HttpStatusCode.OK,
                             headersOf(HttpHeaders.ContentType, "application/json"),
                         )
-                        path.endsWith("/api/games") -> respond(
-                            """{"data":[${gameJson()}],"total":1,"page":1,"pageSize":20}""",
-                            HttpStatusCode.OK,
-                            headersOf(HttpHeaders.ContentType, "application/json"),
-                        )
+                        path.endsWith("/api/games") -> {
+                            val page = request.url.parameters["page"] ?: "1"
+                            val search = request.url.parameters["search"]
+                            val game = when {
+                                !search.isNullOrBlank() ->
+                                    gameJson(id = "40", title = "Metroid Search Result")
+                                page == "2" ->
+                                    gameJson(id = "20", title = "Page Two Game")
+                                else ->
+                                    gameJson()
+                            }
+                            respond(
+                                """{"data":[$game],"total":2,"page":$page,"pageSize":20}""",
+                                HttpStatusCode.OK,
+                                headersOf(HttpHeaders.ContentType, "application/json"),
+                            )
+                        }
                         path.matches(Regex(".*/api/games/\\d+$")) -> respond(
                             gameJson(screenshotUrls = listOf("/screenshots/smb1.png")),
                             HttpStatusCode.OK,
@@ -274,6 +286,57 @@ class GameRepositoryOfflineTest {
         assertEquals("Super Mario Bros", cached[0].title)
     }
 
+    @Test
+    fun getGamesForConsolePaginatedCachesViewedNonFirstPageOnSuccess() = runTest(testDispatcher) {
+        val repo = createRepo(workingEngineFactory, this)
+
+        val result = repo.getGamesForConsolePaginated(
+            consoleId = "1",
+            page = 2,
+            pageSize = 20,
+            hidePreRelease = true,
+            grouped = true,
+        )
+
+        assertTrue(result.isSuccess)
+        assertEquals("Page Two Game", result.getOrThrow().data.single().title)
+        val cached = database.spelaDatabaseQueries.getCachedGame("20").executeAsOneOrNull()
+        assertEquals("Page Two Game", cached?.title)
+    }
+
+    @Test
+    fun searchGamesPaginatedCachesViewedResultsOnSuccess() = runTest(testDispatcher) {
+        val repo = createRepo(workingEngineFactory, this)
+
+        val result = repo.searchGamesPaginated(
+            query = "metroid",
+            consoleId = null,
+            sortBy = null,
+            sortOrder = null,
+            page = 1,
+            pageSize = 20,
+            hidePreRelease = true,
+            grouped = true,
+        )
+
+        assertTrue(result.isSuccess)
+        assertEquals("Metroid Search Result", result.getOrThrow().data.single().title)
+        val cached = database.spelaDatabaseQueries.getCachedGame("40").executeAsOneOrNull()
+        assertEquals("Metroid Search Result", cached?.title)
+    }
+
+    @Test
+    fun searchGamesCachesViewedResultsOnSuccess() = runTest(testDispatcher) {
+        val repo = createRepo(workingEngineFactory, this)
+
+        val result = repo.searchGames("metroid")
+
+        assertTrue(result.isSuccess)
+        assertEquals("Metroid Search Result", result.getOrThrow().single().title)
+        val cached = database.spelaDatabaseQueries.getCachedGame("40").executeAsOneOrNull()
+        assertEquals("Metroid Search Result", cached?.title)
+    }
+
     // --- Test 5: getGamesForConsole returns cache when API fails ---
 
     @Test
@@ -290,6 +353,28 @@ class GameRepositoryOfflineTest {
         assertEquals("1", games[0].consoleId)
     }
 
+    @Test
+    fun getGamesForConsolePaginatedReturnsCacheWhenApiFails() = runTest(testDispatcher) {
+        prepopulateGame(id = "10", title = "Super Mario Bros")
+        prepopulateGame(id = "20", title = "Zelda", consoleId = "1")
+
+        val repo = createRepo(failingEngineFactory, this)
+        val result = repo.getGamesForConsolePaginated(
+            consoleId = "1",
+            page = 2,
+            pageSize = 1,
+            hidePreRelease = true,
+            grouped = true,
+        )
+
+        assertTrue(result.isSuccess)
+        val page = result.getOrThrow()
+        assertEquals(2L, page.total)
+        assertEquals(2, page.page)
+        assertEquals(1, page.pageSize)
+        assertEquals(listOf("Zelda"), page.data.map { it.title })
+    }
+
     // --- Test 6: searchGames falls back to LIKE query ---
 
     @Test
@@ -304,6 +389,48 @@ class GameRepositoryOfflineTest {
         val games = result.getOrThrow()
         assertEquals(1, games.size)
         assertEquals("Super Mario Bros", games[0].title)
+    }
+
+    @Test
+    fun searchGamesFallbackRespectsConsoleAndSortArguments() = runTest(testDispatcher) {
+        prepopulateGame(id = "10", title = "Super Mario Bros", consoleId = "1")
+        prepopulateGame(id = "20", title = "Mario Kart", consoleId = "1")
+        prepopulateGame(id = "30", title = "Mario Paint", consoleId = "2")
+
+        val repo = createRepo(failingEngineFactory, this)
+        val result = repo.searchGames(
+            query = "mario",
+            consoleId = "1",
+            sortBy = "title",
+            sortOrder = "desc",
+        )
+
+        assertTrue(result.isSuccess)
+        assertEquals(listOf("Super Mario Bros", "Mario Kart"), result.getOrThrow().map { it.title })
+    }
+
+    @Test
+    fun searchGamesPaginatedFallsBackToFilteredSortedCacheWhenApiFails() = runTest(testDispatcher) {
+        prepopulateGame(id = "10", title = "Super Mario Bros", consoleId = "1")
+        prepopulateGame(id = "20", title = "Mario Kart", consoleId = "1")
+        prepopulateGame(id = "30", title = "Mario Paint", consoleId = "2")
+
+        val repo = createRepo(failingEngineFactory, this)
+        val result = repo.searchGamesPaginated(
+            query = "mario",
+            consoleId = "1",
+            sortBy = "title",
+            sortOrder = "desc",
+            page = 1,
+            pageSize = 10,
+            hidePreRelease = true,
+            grouped = true,
+        )
+
+        assertTrue(result.isSuccess)
+        val page = result.getOrThrow()
+        assertEquals(2L, page.total)
+        assertEquals(listOf("Super Mario Bros", "Mario Kart"), page.data.map { it.title })
     }
 
     // --- Test 7: getGameDetail returns cache when API fails ---

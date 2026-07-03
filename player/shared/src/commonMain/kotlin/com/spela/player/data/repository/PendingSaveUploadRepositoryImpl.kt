@@ -1,10 +1,17 @@
 package com.spela.player.data.repository
 
+import app.cash.sqldelight.coroutines.asFlow
 import com.spela.player.PendingSaveUploadEntity
 import com.spela.player.data.local.SpelaDatabase
 import com.spela.player.domain.model.PendingSaveUpload
+import com.spela.player.domain.model.PendingSaveUploadQueueSnapshot
 import com.spela.player.domain.model.PendingUploadKind
+import com.spela.player.domain.model.pendingSaveUploadQueueSnapshot
 import com.spela.player.domain.repository.PendingSaveUploadRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 
 /**
  * SQLDelight-backed implementation of the pending-upload queue.
@@ -17,6 +24,17 @@ class PendingSaveUploadRepositoryImpl(
 ) : PendingSaveUploadRepository {
 
     private val queries = database.spelaDatabaseQueries
+    private val isDraining = MutableStateFlow(false)
+
+    override fun observeSnapshot(): Flow<PendingSaveUploadQueueSnapshot> =
+        combine(
+            queries.getAllPendingSaveUploads()
+                .asFlow()
+                .map { query -> query.executeAsList().map { it.toDomain() } },
+            isDraining,
+        ) { rows, draining ->
+            pendingSaveUploadQueueSnapshot(rows, draining)
+        }
 
     override suspend fun enqueue(
         sessionId: String,
@@ -65,6 +83,10 @@ class PendingSaveUploadRepositoryImpl(
 
     override suspend fun markRetry(id: Long, lastError: String?) {
         queries.incrementPendingSaveUploadRetry(last_error = lastError, id = id)
+    }
+
+    override fun setDraining(isDraining: Boolean) {
+        this.isDraining.value = isDraining
     }
 }
 

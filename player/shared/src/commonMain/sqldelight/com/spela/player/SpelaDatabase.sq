@@ -301,6 +301,9 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 getAllCachedConsoles:
 SELECT * FROM CachedConsoleEntity;
 
+getCachedConsole:
+SELECT * FROM CachedConsoleEntity WHERE id = ?;
+
 deleteCachedConsole:
 DELETE FROM CachedConsoleEntity WHERE id = ?;
 

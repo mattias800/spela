@@ -202,6 +202,8 @@ class SpelaTestHarness(
     // `achievementsCtrl.emitEvent(...)` to fire an unlock.
     val achievementsRepo = FakeAchievementsRepository()
     val achievementsCtrl = FakeAchievementsController()
+    val pendingUploadRepository: com.spela.player.domain.repository.PendingSaveUploadRepository =
+        HarnessPendingSaveUploadRepository()
 
     private val emulationState = MutableStateFlow(EmulationState())
 
@@ -215,7 +217,7 @@ class SpelaTestHarness(
         scope = scope,
         sessionRepository = sessionRepo,
         fileStorage = HarnessFileStorage(),
-        pendingUploadRepository = HarnessPendingSaveUploadRepository(),
+        pendingUploadRepository = pendingUploadRepository,
     )
     private val challengeManager = ChallengeManager(
         challengeRepository = challengeRepo,
@@ -280,6 +282,7 @@ class SpelaTestHarness(
         syncEngine = syncEngine,
         connectivityMonitor = connectivityMonitor,
         apiClient = fakeApiClient,
+        pendingUploadRepository = pendingUploadRepository,
         dispatchers = dispatchers,
         scope = scope,
     )
@@ -536,6 +539,12 @@ private class HarnessPendingSaveUploadRepository :
     com.spela.player.domain.repository.PendingSaveUploadRepository {
     private val rows = mutableListOf<com.spela.player.domain.model.PendingSaveUpload>()
     private var nextId = 1L
+    private var isDraining = false
+    private val snapshot = MutableStateFlow(
+        com.spela.player.domain.model.PendingSaveUploadQueueSnapshot.Empty,
+    )
+    override fun observeSnapshot(): kotlinx.coroutines.flow.Flow<com.spela.player.domain.model.PendingSaveUploadQueueSnapshot> =
+        snapshot
     override suspend fun enqueue(
         sessionId: String,
         kind: com.spela.player.domain.model.PendingUploadKind,
@@ -555,21 +564,34 @@ private class HarnessPendingSaveUploadRepository :
                 filePath, fileSize, screenshotPath, createdAt, 0, null,
             ),
         )
+        publishSnapshot()
         return id
     }
-    override suspend fun getAll() = rows.toList()
+    override suspend fun getAll() = rows.sortedWith(compareBy({ it.createdAt }, { it.id }))
     override suspend fun getForSession(sessionId: String) =
         rows.filter { it.sessionId == sessionId }
     override suspend fun getById(id: Long) = rows.find { it.id == id }
     override suspend fun count(): Long = rows.size.toLong()
     override suspend fun delete(id: Long) {
         rows.removeAll { it.id == id }
+        publishSnapshot()
     }
     override suspend fun markRetry(id: Long, lastError: String?) {
         val idx = rows.indexOfFirst { it.id == id }
         if (idx >= 0) rows[idx] = rows[idx].copy(
             retryCount = rows[idx].retryCount + 1,
             lastError = lastError,
+        )
+        publishSnapshot()
+    }
+    override fun setDraining(isDraining: Boolean) {
+        this.isDraining = isDraining
+        publishSnapshot()
+    }
+    private fun publishSnapshot() {
+        snapshot.value = com.spela.player.domain.model.pendingSaveUploadQueueSnapshot(
+            rows.sortedWith(compareBy({ it.createdAt }, { it.id })),
+            isDraining,
         )
     }
 }

@@ -2,6 +2,7 @@ package com.spela.player.data.repository
 
 import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.data.remote.dto.toDomain
+import com.spela.player.data.local.SpelaDatabase
 import com.spela.player.domain.model.LibretroCore
 import com.spela.player.domain.repository.CorePrunedException
 import com.spela.player.domain.repository.CoreRepository
@@ -23,6 +24,7 @@ import io.ktor.utils.io.core.*
 
 class CoreRepositoryImpl(
     private val apiClient: SpelaApiClient,
+    private val database: SpelaDatabase,
     private val fileStorage: FileStorage,
     private val httpClient: HttpClient,
 ) : CoreRepository {
@@ -39,8 +41,29 @@ class CoreRepositoryImpl(
             Result.success(core)
         } catch (t: Throwable) {
             println("[CoreRepo] getRecommendedCore FAILED: ${t::class.simpleName}: ${t.message}")
-            Result.failure(t)
+            cachedRecommendedCore(gameId)?.let { core ->
+                println("[CoreRepo] getRecommendedCore using cached console default: ${core.name}")
+                Result.success(core)
+            } ?: Result.failure(t)
         }
+    }
+
+    private fun cachedRecommendedCore(gameId: String): LibretroCore? {
+        val cachedGame = runCatching {
+            database.spelaDatabaseQueries.getCachedGame(gameId).executeAsOneOrNull()
+        }.getOrNull() ?: return null
+        val defaultCore = runCatching {
+            database.spelaDatabaseQueries.getCachedConsole(cachedGame.console_id)
+                .executeAsOneOrNull()
+                ?.default_core
+        }.getOrNull()
+            ?.takeIf { it.isNotBlank() }
+            ?: return null
+        return LibretroCore(
+            id = 0L,
+            name = defaultCore,
+            displayName = defaultCore,
+        )
     }
 
     override suspend fun downloadCore(
