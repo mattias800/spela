@@ -41,6 +41,8 @@ class WiiControlSchemeTest {
 
         onNodeWithTag("wii-control-scheme-section").assertExists()
         onNodeWithTag("wii-scheme-option-nunchuk", useUnmergedTree = true).assertExists()
+        // Motion expectations hint (#1585).
+        onNodeWithTag("wii-motion-hint", useUnmergedTree = true).assertExists()
     }
 
     @Test

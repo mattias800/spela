@@ -71,6 +71,19 @@ fun WiiControlSchemeSection(
                     modifier = Modifier.testTag("wii-ir-source-option-${source.storageId}"),
                 )
             }
+            Spacer(Modifier.height(SpSpacing.Small))
+            // Set honest expectations for motion (#1585): shake, steering,
+            // and pointing work via the gamepad + touch, but full 1:1 motion
+            // (e.g. sword swings) is not supported. See epic #1558.
+            Text(
+                text = "Motion support is limited: shaking, steering, and pointing work; " +
+                    "full 1:1 motion (like sword swings) isn't supported.",
+                style = SpTypography.BodySmall,
+                color = SpColor.OnBackgroundSecondary,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("wii-motion-hint"),
+            )
         }
     }
 }
