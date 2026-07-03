@@ -149,7 +149,22 @@ int16_t input_state_callback(unsigned port, unsigned device, unsigned index, uns
 
         case RETRO_DEVICE_ANALOG:
             if (index < 2 && id < 2) {
+                /* Analog sticks: index = LEFT/RIGHT, id = X/Y. */
                 result = input_state.analog[port][index][id];
+            } else if (index == RETRO_DEVICE_INDEX_ANALOG_BUTTON && id < MAX_BUTTONS) {
+                /* Analog button pressure (#1570). Some cores bind analog
+                 * triggers here rather than reading the digital button —
+                 * e.g. dolphin maps the GameCube L/R triggers with
+                 * AddAxis(L2/R2, ..., RETRO_DEVICE_INDEX_ANALOG_BUTTON)
+                 * (DolphinLibretro/Input.cpp). We don't yet carry per-button
+                 * analog pressure from the platform input layer, so serve the
+                 * digital state at full scale: a held trigger reads 0x7FFF
+                 * instead of 0. Without this the trigger never registers on
+                 * this path (we're our own libretro frontend, so there's no
+                 * RetroArch-style digital→analog synthesis to fall back on).
+                 * True partial pressure is a follow-up (needs the trigger
+                 * axes plumbed from Android/desktop). */
+                result = input_state.buttons[port][id] ? 0x7FFF : 0;
             }
             break;
 
