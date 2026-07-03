@@ -7,9 +7,9 @@ package com.spela.player.domain.model
  * this but launching takes them to the title screen and they have to
  * navigate to the engine's own save menu."
  *
- * Resolved from `(hasSession, consoleSaveStateSupport, effectiveSaveStateChoice)`
- * — see [resolvePlaySemantics]. The view-model maps this enum to the
- * label string the hero renders. See #884.
+ * Resolved from `(hasSession, consoleSaveStateSupport, effectiveSaveStateChoice,
+ * autoLoadSaveEnabled)` — see [resolvePlaySemantics]. The view-model maps this
+ * enum to the label string the hero renders. See #884.
  */
 enum class PlaySemantics {
     /** No session for this game yet. Label: "Play". */
@@ -18,16 +18,18 @@ enum class PlaySemantics {
     /**
      * Session exists AND save state will auto-load on launch — the
      * console supports save states *and* the user hasn't opted out
-     * via the per-console / per-game policy from #804. The user lands
-     * mid-frame where they left off. Label: "Resume".
+     * via the global auto-load setting or per-console / per-game
+     * policy from #804. The user lands mid-frame where they left off.
+     * Label: "Resume".
      */
     ResumesFromSaveState,
 
     /**
      * Session exists AND save state will NOT auto-load on launch —
      * the console doesn't support save states (e.g. ScummVM) or the
-     * user opted out for this console / game. Launching takes the
-     * user to the title screen; in-engine save menus are on them.
+     * user disabled global auto-load or opted out for this console /
+     * game. Launching takes the user to the title screen; in-engine
+     * save menus are on them.
      * Label: "Continue" — honest about the difference, vs. "Resume"
      * which would over-promise.
      */
@@ -46,6 +48,9 @@ enum class PlaySemantics {
  *    it's `Disabled` (no auto-load) or anything else (auto-load on).
  *    `AskOnce` counts as auto-load — the in-game flow treats it as
  *    Enabled until the prompt resolves to a deliberate choice.
+ *  - [autoLoadSaveEnabled] — the global user setting checked by
+ *    launch-time auto-load. When false, the label should say
+ *    "Continue" even if the console/game policy allows save states.
  *
  * Pure function — no IO, no platform calls. Trivial to unit test, and
  * cheap enough to recompute every recomposition.
@@ -54,8 +59,12 @@ fun resolvePlaySemantics(
     hasSession: Boolean,
     consoleSaveStateSupport: Boolean,
     effectiveChoice: SaveStateChoice,
+    autoLoadSaveEnabled: Boolean = true,
 ): PlaySemantics {
     if (!hasSession) return PlaySemantics.NoSession
-    val willAutoLoad = consoleSaveStateSupport && effectiveChoice != SaveStateChoice.Disabled
+    val willAutoLoad =
+        autoLoadSaveEnabled &&
+            consoleSaveStateSupport &&
+            effectiveChoice != SaveStateChoice.Disabled
     return if (willAutoLoad) PlaySemantics.ResumesFromSaveState else PlaySemantics.LaunchesFresh
 }

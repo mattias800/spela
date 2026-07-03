@@ -116,6 +116,15 @@ data class GameDetailState(
      */
     val userConsoleSaveStatePolicies: Map<String, SaveStateChoice> = emptyMap(),
 
+    /**
+     * Global auto-load preference, mirrored from
+     * [com.spela.player.domain.model.UserPreferences.autoLoadSaveEnabled].
+     * Launch-time auto-load checks this flag, so the hero label and recovery
+     * affordance must use the same input to avoid promising a resume that will
+     * actually land at the title screen.
+     */
+    val autoLoadSaveEnabled: Boolean = true,
+
     // Cheats (used by InGameOverlay, not displayed on game detail)
     val cheats: List<Cheat> = emptyList(),
     val isLoadingCheats: Boolean = false,
@@ -163,6 +172,7 @@ data class GameDetailState(
                 hasSession = sessions.isNotEmpty(),
                 consoleSaveStateSupport = console.saveStateSupport,
                 effectiveChoice = effective,
+                autoLoadSaveEnabled = autoLoadSaveEnabled,
             )
         }
 }

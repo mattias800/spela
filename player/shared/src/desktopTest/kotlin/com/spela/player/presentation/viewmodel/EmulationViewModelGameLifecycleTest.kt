@@ -373,6 +373,66 @@ class EmulationViewModelGameLifecycleTest {
     }
 
     @Test
+    fun startGameSetsSaveStatesOptedOutWhenPerGamePreferenceDisabled() = runTest {
+        builder.preferencesRepository.preferencesResult = Result.success(
+            UserPreferences(
+                gameSaveStatePolicies = mapOf("game1" to SaveStateChoice.Disabled),
+            ),
+        )
+        val vm = builder.build()
+        vm.onIntent(EmulationIntent.StartGame("game1"))
+        builder.advanceTimeBy(100)
+        assertTrue(vm.state.value.saveStatesOptedOut)
+    }
+
+    @Test
+    fun startGamePerGamePreferenceOverridesConsolePreference() = runTest {
+        builder.preferencesRepository.preferencesResult = Result.success(
+            UserPreferences(
+                consoleSaveStatePolicies = mapOf("nes" to SaveStateChoice.Disabled),
+                gameSaveStatePolicies = mapOf("game1" to SaveStateChoice.Enabled),
+            ),
+        )
+        val vm = builder.build()
+        vm.onIntent(EmulationIntent.StartGame("game1"))
+        builder.advanceTimeBy(100)
+        assertFalse(vm.state.value.saveStatesOptedOut)
+    }
+
+    @Test
+    fun startGameAutoLoadsExistingSessionByDefault() = runTest {
+        builder.sessionRepository.existingSessions = listOf(
+            com.spela.player.domain.model.GameSession(id = "existing-42", gameId = "game1", name = "Default")
+        )
+        builder.sessionRepository.downloadSessionAutoSaveResult = Result.success(byteArrayOf(1))
+
+        val vm = builder.build()
+        vm.onIntent(EmulationIntent.StartGame("game1"))
+        builder.advanceTimeBy(100)
+
+        assertEquals(1, builder.sessionRepository.downloadSessionAutoSaveCallCount)
+    }
+
+    @Test
+    fun startGameDoesNotAutoLoadWhenPerGamePreferenceDisabled() = runTest {
+        builder.sessionRepository.existingSessions = listOf(
+            com.spela.player.domain.model.GameSession(id = "existing-42", gameId = "game1", name = "Default")
+        )
+        builder.sessionRepository.downloadSessionAutoSaveResult = Result.success(byteArrayOf(1))
+        builder.preferencesRepository.preferencesResult = Result.success(
+            UserPreferences(
+                gameSaveStatePolicies = mapOf("game1" to SaveStateChoice.Disabled),
+            ),
+        )
+
+        val vm = builder.build()
+        vm.onIntent(EmulationIntent.StartGame("game1"))
+        builder.advanceTimeBy(100)
+
+        assertEquals(0, builder.sessionRepository.downloadSessionAutoSaveCallCount)
+    }
+
+    @Test
     fun startGameKeepsSaveStatesEnabledWhenNoOverride() = runTest {
         // Default preferences have an empty policy map. The flag must
         // stay false so the overlay continues to show Save / Load.

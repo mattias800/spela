@@ -348,6 +348,7 @@ class GameDetailViewModel(
                     val prefs = preferencesRepository.getPreferences().getOrNull()
                     val perGameChoice = prefs?.gameSaveStatePolicies?.get(gameId)
                     val perConsolePolicies = prefs?.consoleSaveStatePolicies ?: emptyMap()
+                    val autoLoadSaveEnabled = prefs?.autoLoadSaveEnabled ?: true
                     // Write to cache even if this response is for a
                     // game the user has already navigated away from —
                     // we don't want to throw away a finished fetch
@@ -373,6 +374,7 @@ class GameDetailViewModel(
                             // label resolver in GameDetailState.playSemantics
                             // doesn't need access to UserPreferences. See #884.
                             userConsoleSaveStatePolicies = perConsolePolicies,
+                            autoLoadSaveEnabled = autoLoadSaveEnabled,
                             isLoading = false,
                         )
                     }
