@@ -75,8 +75,7 @@ class DeviceManagementTest {
         // Trigger delete confirmation programmatically while section is in viewport
         harness.settingsViewModel.onIntent(SettingsIntent.ShowDeleteDeviceConfirm(1))
         // Use bounded advance to avoid scrolling the item off-screen
-        harness.testDispatcher.scheduler.advanceTimeBy(1_000)
-        harness.testDispatcher.scheduler.runCurrent()
+        advanceHarnessSchedulerByOnUiThread(harness, 1_000)
         waitForIdle()
 
         // Confirmation dialog should appear
@@ -92,16 +91,14 @@ class DeviceManagementTest {
         navigateToSettingsAndScrollToDevices(harness)
 
         harness.settingsViewModel.onIntent(SettingsIntent.ShowDeleteDeviceConfirm(1))
-        harness.testDispatcher.scheduler.advanceTimeBy(1_000)
-        harness.testDispatcher.scheduler.runCurrent()
+        advanceHarnessSchedulerByOnUiThread(harness, 1_000)
         waitForIdle()
 
         onNodeWithText("Remove Device").assertIsDisplayed()
 
         // Dismiss
         harness.settingsViewModel.onIntent(SettingsIntent.DismissDeleteDeviceConfirm)
-        harness.testDispatcher.scheduler.advanceTimeBy(1_000)
-        harness.testDispatcher.scheduler.runCurrent()
+        advanceHarnessSchedulerByOnUiThread(harness, 1_000)
         waitForIdle()
 
         val state = harness.settingsViewModel.state.value
@@ -116,16 +113,14 @@ class DeviceManagementTest {
         navigateToSettingsAndScrollToDevices(harness)
 
         harness.settingsViewModel.onIntent(SettingsIntent.ShowDeleteDeviceConfirm(1))
-        harness.testDispatcher.scheduler.advanceTimeBy(1_000)
-        harness.testDispatcher.scheduler.runCurrent()
+        advanceHarnessSchedulerByOnUiThread(harness, 1_000)
         waitForIdle()
 
         onNodeWithText("Remove Device").assertIsDisplayed()
 
         // Tap "Remove" button
         onNodeWithText("Remove").performClick()
-        harness.testDispatcher.scheduler.advanceTimeBy(1_000)
-        harness.testDispatcher.scheduler.runCurrent()
+        advanceHarnessSchedulerByOnUiThread(harness, 1_000)
         waitForIdle()
 
         val state = harness.settingsViewModel.state.value

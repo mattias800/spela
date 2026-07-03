@@ -150,8 +150,7 @@ class SecondaryScreenArtPageTest {
     private fun ComposeUiTest.advanceSeconds(harness: SpelaTestHarness, seconds: Int) {
         mainClock.autoAdvance = false
         repeat(seconds) {
-            harness.testDispatcher.scheduler.advanceTimeBy(1_000)
-            harness.testDispatcher.scheduler.runCurrent()
+            advanceHarnessSchedulerByOnUiThread(harness, 1_000)
             mainClock.advanceTimeBy(1_000)
             waitForIdle()
         }
@@ -165,8 +164,7 @@ class SecondaryScreenArtPageTest {
         harness.emulationViewModel.onIntent(EmulationIntent.StartGame(gameId = gameId))
         mainClock.autoAdvance = false
         repeat(4) {
-            harness.testDispatcher.scheduler.advanceTimeBy(1_000)
-            harness.testDispatcher.scheduler.runCurrent()
+            advanceHarnessSchedulerByOnUiThread(harness, 1_000)
         }
         mainClock.autoAdvance = true
 

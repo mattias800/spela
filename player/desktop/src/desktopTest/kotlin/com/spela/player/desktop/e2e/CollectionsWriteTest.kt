@@ -100,8 +100,7 @@ class CollectionsWriteTest {
         onNodeWithText("Create").performClick()
         // Advance test dispatcher only (not Compose clock) to process ViewModel coroutine
         // before snackbar auto-dismiss timer fires
-        harness.testDispatcher.scheduler.advanceTimeBy(2_000)
-        harness.testDispatcher.scheduler.runCurrent()
+        advanceHarnessSchedulerByOnUiThread(harness, 2_000)
 
         // Verify via ViewModel state: dialog dismissed and success message set
         val state = harness.collectionsViewModel.state.value
@@ -138,8 +137,7 @@ class CollectionsWriteTest {
 
         // Save
         onNodeWithText("Save").performClick()
-        harness.testDispatcher.scheduler.advanceTimeBy(2_000)
-        harness.testDispatcher.scheduler.runCurrent()
+        advanceHarnessSchedulerByOnUiThread(harness, 2_000)
 
         // Verify via ViewModel state: dialog dismissed and success message set
         val state = harness.collectionsViewModel.state.value
@@ -214,8 +212,7 @@ class CollectionsWriteTest {
 
         // Select the collection
         onNodeWithContentDescription("Best NES Games, 3 games").performClick()
-        harness.testDispatcher.scheduler.advanceTimeBy(2_000)
-        harness.testDispatcher.scheduler.runCurrent()
+        advanceHarnessSchedulerByOnUiThread(harness, 2_000)
 
         // Verify via ViewModel state: dialog dismissed and success message set
         val state = harness.gameDetailViewModel.state.value
@@ -242,8 +239,7 @@ class CollectionsWriteTest {
         // Remove Castlevania from collection (owner-only X button)
         onNodeWithContentDescription("Remove Castlevania from collection").performClick()
         // Advance test dispatcher for optimistic update + async completion
-        harness.testDispatcher.scheduler.advanceTimeBy(2_000)
-        harness.testDispatcher.scheduler.runCurrent()
+        advanceHarnessSchedulerByOnUiThread(harness, 2_000)
 
         // Verify via ViewModel state: game removed and success message set
         val state = harness.collectionsViewModel.state.value

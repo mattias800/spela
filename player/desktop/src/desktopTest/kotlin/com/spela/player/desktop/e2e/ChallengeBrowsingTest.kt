@@ -33,13 +33,15 @@ class ChallengeBrowsingTest {
      * Pre-loads ChallengeDetailViewModel data so the skeleton never renders.
      * Must be called BEFORE setContent when navigating to ChallengeDetail.
      */
-    private fun SpelaTestHarness.preLoadChallengeDetail(challengeId: String) {
-        challengeDetailViewModel.onIntent(ChallengeIntent.LoadChallengeDetail(challengeId))
+    private fun ComposeUiTest.preLoadChallengeDetail(
+        harness: SpelaTestHarness,
+        challengeId: String,
+    ) {
+        harness.challengeDetailViewModel.onIntent(ChallengeIntent.LoadChallengeDetail(challengeId))
         // Bounded advance instead of advanceUntilIdle() — the gamepad config
         // ViewModel runs a perpetual 200ms refresh loop on the shared dispatcher,
         // so advanceUntilIdle() would hang forever.
-        testDispatcher.scheduler.advanceTimeBy(2_000)
-        testDispatcher.scheduler.runCurrent()
+        advanceHarnessSchedulerByOnUiThread(harness, 2_000)
     }
 
     @Test
@@ -161,7 +163,7 @@ class ChallengeBrowsingTest {
             )
         )
         // Pre-load so skeleton with SpShimmer never renders
-        harness.preLoadChallengeDetail("1")
+        preLoadChallengeDetail(harness, "1")
 
         setContent { harness.App() }
 
@@ -184,7 +186,7 @@ class ChallengeBrowsingTest {
         val harness = createLoggedInHarness()
         harness.challengeRepo.preAddChallenge(id = "1", gameId = "1", name = "Beat Dracula")
         harness.challengeRepo.preSetLeaderboard(emptyList())
-        harness.preLoadChallengeDetail("1")
+        preLoadChallengeDetail(harness, "1")
 
         setContent { harness.App() }
 
