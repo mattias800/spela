@@ -395,6 +395,12 @@ class StubPreferencesRepository : PreferencesRepository {
     }
     override fun resolveWiiControlScheme(gameId: String): WiiControlScheme =
         wiiControlSchemeResult
+
+    val wiiControlSchemeWrites = mutableListOf<Pair<String, WiiControlScheme>>()
+    override fun setWiiControlScheme(gameId: String, scheme: WiiControlScheme) {
+        wiiControlSchemeWrites += gameId to scheme
+        wiiControlSchemeResult = scheme
+    }
     override fun resolveRenderScaleChoice(consoleId: String, preferences: UserPreferences?): RenderScaleChoice =
         resolveRenderScaleChoiceResult
     override fun resolveRenderScale(consoleId: String, preferences: UserPreferences?): RenderScale =

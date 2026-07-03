@@ -789,6 +789,17 @@ class FakeFileStorage : FileStorage {
 }
 
 class FakePreferencesRepository : PreferencesRepository {
+    val wiiControlSchemes = mutableMapOf<String, com.spela.player.domain.model.WiiControlScheme>()
+    override fun resolveWiiControlScheme(gameId: String): com.spela.player.domain.model.WiiControlScheme =
+        wiiControlSchemes[gameId] ?: com.spela.player.domain.model.WiiControlScheme.NUNCHUK
+    override fun setWiiControlScheme(gameId: String, scheme: com.spela.player.domain.model.WiiControlScheme) {
+        if (scheme == com.spela.player.domain.model.WiiControlScheme.NUNCHUK) {
+            wiiControlSchemes.remove(gameId)
+        } else {
+            wiiControlSchemes[gameId] = scheme
+        }
+    }
+
     var syncKeyMappingsCalled = false
     var pushKeyMappingsCalled = false
 

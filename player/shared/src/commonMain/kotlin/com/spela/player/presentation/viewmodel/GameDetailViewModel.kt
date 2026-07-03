@@ -291,12 +291,10 @@ class GameDetailViewModel(
 
     private fun loadGame(gameId: String) {
         currentGameId = gameId
+        // Per-game Wii controller scheme (#1559), device-local; baked into
+        // the fresh state constructions below so it survives the reset.
+        val wiiScheme = preferencesRepository.resolveWiiControlScheme(gameId)
 
-        // Per-game Wii controller scheme (#1559) — cheap local read; only
-        // rendered for Wii games but harmless to resolve for all.
-        _state.update {
-            it.copy(wiiControlScheme = preferencesRepository.resolveWiiControlScheme(gameId))
-        }
 
         // Stale-while-revalidate: if we've fetched this game before
         // in this app session, the cache still has the last detail
@@ -311,11 +309,13 @@ class GameDetailViewModel(
                 GameDetailState(
                     gameDetail = cached,
                     isLoading = false,
+                    wiiControlScheme = wiiScheme,
                 )
             }
         } else {
-            _state.update { GameDetailState(isLoading = true) }
+            _state.update { GameDetailState(isLoading = true, wiiControlScheme = wiiScheme) }
         }
+
 
         // Cancel any observers from a previous loadGame call (a
         // back-and-forth nav, or a switch to a different game) so
