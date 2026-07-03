@@ -295,7 +295,6 @@ class GameDetailViewModel(
         // the fresh state constructions below so it survives the reset.
         val wiiScheme = preferencesRepository.resolveWiiControlScheme(gameId)
 
-
         // Stale-while-revalidate: if we've fetched this game before
         // in this app session, the cache still has the last detail
         // we observed. Paint the screen with it immediately so the

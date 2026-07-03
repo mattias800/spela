@@ -3,7 +3,7 @@ package com.spela.player.presentation.ui.feature.gamedetail
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Gamepad
+import androidx.compose.material.icons.filled.SettingsRemote
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -25,7 +25,7 @@ fun WiiControlSchemeSection(
 ) {
     SpTitledSection(
         title = "Wii Remote",
-        icon = Icons.Filled.Gamepad,
+        icon = Icons.Filled.SettingsRemote,
     ) {
         Column(
             modifier = Modifier.testTag("wii-control-scheme-section"),

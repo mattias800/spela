@@ -40,7 +40,7 @@ import androidx.compose.material.icons.filled.HighQuality
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.Save
-import androidx.compose.material.icons.filled.Gamepad
+import androidx.compose.material.icons.filled.SettingsRemote
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Sync
@@ -377,7 +377,7 @@ private fun NormalOverlayActions(
     if (state.isWiiControlSchemeSelectable) {
         OverlayAction(
             label = "Wii Remote",
-            icon = Icons.Filled.Gamepad,
+            icon = Icons.Filled.SettingsRemote,
             onClick = { viewModel.onIntent(EmulationIntent.ShowWiiControlSchemePicker) },
         )
     }

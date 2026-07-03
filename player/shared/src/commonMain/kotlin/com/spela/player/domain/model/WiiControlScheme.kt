@@ -43,13 +43,13 @@ enum class WiiControlScheme(
     WIIMOTE_SIDEWAYS(
         storageId = "wiimote_sideways",
         displayName = "Wii Remote (Sideways)",
-        description = "Held sideways, NES-style (e.g. NSMB Wii).",
+        description = "Held sideways like an NES pad (e.g. New Super Mario Bros. Wii).",
         portDevice = RETRO_DEVICE_WIIMOTE_SIDEWAYS,
     ),
     CLASSIC_CONTROLLER(
         storageId = "classic",
         displayName = "Classic Controller",
-        description = "For Classic Controller titles and VC games.",
+        description = "For Classic Controller titles and Virtual Console games.",
         portDevice = RETRO_DEVICE_CLASSIC,
     ),
     CLASSIC_PRO(
