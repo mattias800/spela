@@ -10,6 +10,15 @@
  * Args:
  *   --core <path> --game <path> --system <dir> --save <dir> --shm <file>
  *   [--width N --height N] [--var key=value ...]
+ *   [--loadstate <path> [--loadstate-frame N]]
+ *   [--savestate <path> [--savestate-frame N]]
+ *
+ * Save-state replay (#1533/#1571): --loadstate applies a libretro save state
+ * once the core has run --loadstate-frame frames (default 0 = before the first
+ * frame). Cores that must boot before unserialize (e.g. dolphin) take a small
+ * --loadstate-frame. --savestate writes the state after --savestate-frame
+ * frames, or, if that flag is omitted, just before the process exits. Together
+ * these let a downloaded session state be replayed against a core off-device.
  *
  * Phase 1: focuses on Vulkan HW-render cores (Azahar). Software-rendered
  * output is passed through raw with its pixel format in the header.
@@ -92,6 +101,9 @@ int main(int argc, char **argv) {
     const char *core = NULL, *game = NULL, *system_dir = NULL, *save_dir = NULL, *shm = NULL;
     int off_w = 256, off_h = 224;
     const char *vars[64]; int nvars = 0;
+    const char *loadstate = NULL, *savestate = NULL;
+    uint64_t loadstate_frame = 0;
+    long savestate_frame = -1;   /* -1 = save on exit */
 
     for (int i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "--core")   && i + 1 < argc) core = argv[++i];
@@ -102,9 +114,14 @@ int main(int argc, char **argv) {
         else if (!strcmp(argv[i], "--width")  && i + 1 < argc) off_w = atoi(argv[++i]);
         else if (!strcmp(argv[i], "--height") && i + 1 < argc) off_h = atoi(argv[++i]);
         else if (!strcmp(argv[i], "--var")    && i + 1 < argc && nvars < 64) vars[nvars++] = argv[++i];
+        else if (!strcmp(argv[i], "--loadstate")       && i + 1 < argc) loadstate = argv[++i];
+        else if (!strcmp(argv[i], "--loadstate-frame") && i + 1 < argc) loadstate_frame = (uint64_t)strtoull(argv[++i], NULL, 10);
+        else if (!strcmp(argv[i], "--savestate")       && i + 1 < argc) savestate = argv[++i];
+        else if (!strcmp(argv[i], "--savestate-frame") && i + 1 < argc) savestate_frame = atol(argv[++i]);
     }
     if (!core || !game || !shm) {
-        HOSTLOG("usage: --core P --game P --shm FILE [--system D --save D --width N --height N --var k=v]");
+        HOSTLOG("usage: --core P --game P --shm FILE [--system D --save D --width N --height N --var k=v]"
+                " [--loadstate P [--loadstate-frame N]] [--savestate P [--savestate-frame N]]");
         return 2;
     }
 
@@ -148,7 +165,32 @@ int main(int argc, char **argv) {
     const double period = (double)freq.QuadPart / fps;
 #endif
 
+    bool loadstate_done = false, savestate_done = false;
+
     while (!h->should_stop) {
+        /* Apply a save state once the core has run the requested number of
+         * frames (default 0 = before the first frame runs). */
+        if (loadstate && !loadstate_done && h->frame_counter == loadstate_frame) {
+            bool ok = sp_host_load_state(loadstate);
+            HOSTLOG("loadstate %s at frame %llu: %s",
+                    loadstate, (unsigned long long)loadstate_frame, ok ? "ok" : "FAILED");
+            loadstate_done = true;
+        }
+
+        /* Capture a save state once the core has run the requested number of
+         * frames. Checked here (before this frame's run) rather than after the
+         * increment so frame 0 — the boot state, before any retro_run — is
+         * reachable, matching --loadstate-frame's semantics. The state is
+         * identical to capturing it after the previous frame's run since no
+         * retro_run happens in between. */
+        if (savestate && !savestate_done && savestate_frame >= 0 &&
+            h->frame_counter == (uint64_t)savestate_frame) {
+            long n = sp_host_save_state(savestate);
+            HOSTLOG("savestate %s at frame %ld: %s (%ld bytes)",
+                    savestate, savestate_frame, n >= 0 ? "ok" : "FAILED", n);
+            savestate_done = true;
+        }
+
         apply_input(h);
         if (!h->paused) sp_host_run_frame();
 
@@ -191,6 +233,13 @@ int main(int argc, char **argv) {
 #else
         sp_sleep_ms((int)(1000.0 / fps));
 #endif
+    }
+
+    /* Save on exit when no explicit frame was requested. */
+    if (savestate && !savestate_done && savestate_frame < 0) {
+        long n = sp_host_save_state(savestate);
+        HOSTLOG("savestate %s on exit: %s (%ld bytes)",
+                savestate, n >= 0 ? "ok" : "FAILED", n);
     }
 
     HOSTLOG("stopping");

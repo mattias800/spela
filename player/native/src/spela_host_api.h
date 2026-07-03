@@ -70,6 +70,16 @@ void sp_host_set_pointer(unsigned port, int16_t x, int16_t y, bool pressed);
 /* Set a core option (key/value) before sp_host_load_game. */
 void sp_host_set_core_variable(const char *key, const char *value);
 
+/* Save/load a libretro save state to/from a filesystem path. These let a
+ * downloaded session state be replayed against a core out-of-process — how
+ * the poisoned BG&E state behind #1533 was reproduced byte-identically off
+ * the device. sp_host_save_state returns the number of bytes written, or -1
+ * on failure; sp_host_load_state returns true on success. Both require a
+ * game to be loaded, and save additionally requires the core to have run at
+ * least one frame (some cores' retro_serialize_size is 0 before that). */
+long sp_host_save_state(const char *path);
+bool sp_host_load_state(const char *path);
+
 void sp_host_unload(void);   /* unload game */
 void sp_host_deinit(void);   /* deinit core */
 

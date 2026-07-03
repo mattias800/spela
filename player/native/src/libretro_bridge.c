@@ -2454,4 +2454,68 @@ void sp_host_deinit(void) {
     }
 }
 
+/* Mirrors nativeSerializeToFile: write the current libretro state to a file.
+ * Returns bytes written, or -1 on failure. */
+long sp_host_save_state(const char *path) {
+    if (!g_core.game_loaded || !path) return -1;
+
+    size_t size = g_core.retro_serialize_size();
+    if (size == 0) return -1;
+
+    void *buf = malloc(size);
+    if (!buf) return -1;
+
+    if (!g_core.retro_serialize(buf, size)) {
+        free(buf);
+        return -1;
+    }
+
+    FILE *f = fopen(path, "wb");
+    if (!f) { free(buf); return -1; }
+
+    size_t written = fwrite(buf, 1, size, f);
+    int closed = fclose(f);
+    free(buf);
+
+    if (written != size || closed != 0) return -1;
+    return (long)size;
+}
+
+/* Mirrors nativeUnserializeFromFile: read a libretro state from a file and
+ * apply it via retro_unserialize. Returns true on success. The HW-render
+ * make-current dance matches the JNI path — Citra/Azahar reinitialise GLES
+ * inside retro_unserialize and crash without a current context. */
+bool sp_host_load_state(const char *path) {
+    if (!g_core.game_loaded || !path) return false;
+
+    FILE *f = fopen(path, "rb");
+    if (!f) return false;
+
+    if (fseek(f, 0, SEEK_END) != 0) { fclose(f); return false; }
+    long sz = ftell(f);
+    if (sz <= 0) { fclose(f); return false; }
+    if (fseek(f, 0, SEEK_SET) != 0) { fclose(f); return false; }
+
+    void *buf = malloc((size_t)sz);
+    if (!buf) { fclose(f); return false; }
+
+    size_t read_bytes = fread(buf, 1, (size_t)sz, f);
+    fclose(f);
+    if (read_bytes != (size_t)sz) { free(buf); return false; }
+
+    bool made_current = false;
+    if (g_core.hw_render_enabled && g_core.hw_gl_ctx) {
+        hw_gl_make_current(g_core.hw_gl_ctx);
+        made_current = true;
+    }
+
+    bool ok = g_core.retro_unserialize(buf, (size_t)sz);
+    free(buf);
+
+    if (made_current) {
+        hw_gl_release_current(g_core.hw_gl_ctx);
+    }
+    return ok;
+}
+
 #endif /* !__ANDROID__ */
