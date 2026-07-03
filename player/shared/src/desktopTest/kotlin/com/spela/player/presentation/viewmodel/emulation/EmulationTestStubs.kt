@@ -13,6 +13,7 @@ import com.spela.player.data.repository.BiosRepository
 import com.spela.player.domain.controller.AchievementsController
 import com.spela.player.domain.controller.ScreenshotCapture
 import com.spela.player.domain.model.AchievementEvent
+import com.spela.player.domain.model.WiiControlScheme
 import com.spela.player.domain.model.BiosMissingFile
 import com.spela.player.domain.model.Challenge
 import com.spela.player.domain.model.ChallengeAttempt
@@ -328,6 +329,8 @@ class StubPreferencesRepository : PreferencesRepository {
     var resolveShaderResult: ShaderPreset = ShaderPreset.NONE
     var resolveDisplayAspectChoiceResult: DisplayAspectChoice = DisplayAspectChoice.AUTO
     var resolveRenderScaleChoiceResult: RenderScaleChoice = RenderScaleChoice.AUTO
+    var wiiControlSchemeResult: WiiControlScheme =
+        WiiControlScheme.NUNCHUK
     var lastResolvedDisplayAspectChoiceGameId: String? = null
         private set
     var lastResolvedDisplayAspectChoiceConsoleId: String? = null
@@ -390,6 +393,8 @@ class StubPreferencesRepository : PreferencesRepository {
         lastSetDisplayAspectChoiceConsoleId = consoleId
         lastSetDisplayAspectChoice = choice
     }
+    override fun resolveWiiControlScheme(gameId: String): WiiControlScheme =
+        wiiControlSchemeResult
     override fun resolveRenderScaleChoice(consoleId: String, preferences: UserPreferences?): RenderScaleChoice =
         resolveRenderScaleChoiceResult
     override fun resolveRenderScale(consoleId: String, preferences: UserPreferences?): RenderScale =

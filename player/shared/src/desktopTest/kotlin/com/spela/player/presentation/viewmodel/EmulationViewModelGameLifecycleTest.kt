@@ -7,6 +7,7 @@ import com.spela.player.domain.model.SaveStateChoice
 import com.spela.player.domain.model.SaveStatePolicyTier
 import com.spela.player.domain.model.ShaderPreset
 import com.spela.player.domain.model.UserPreferences
+import com.spela.player.domain.model.WiiControlScheme
 import com.spela.player.presentation.intent.EmulationIntent
 import com.spela.player.presentation.state.SlotPickerMode
 import com.spela.player.presentation.viewmodel.emulation.EmulationViewModelTestBuilder
@@ -172,6 +173,31 @@ class EmulationViewModelGameLifecycleTest {
             builder.libretroController.calls.indexOf("setControllerPortDevice:0=769") >
                 builder.libretroController.calls.indexOf("loadGame"),
         )
+    }
+
+    @Test
+    fun startGameAppliesStoredWiiControlScheme() = runTest {
+        builder.gameRepository = StubGameRepository(
+            consoleId = "wii",
+            consoleName = "Nintendo Wii",
+        )
+        builder.coreRepository.recommendedCore = LibretroCore(
+            id = 2,
+            name = "dolphin",
+            displayName = "Dolphin",
+        )
+        builder.coreRepository.localCorePath = "/path/to/dolphin_libretro.so"
+        builder.preferencesRepository.wiiControlSchemeResult =
+            WiiControlScheme.CLASSIC_CONTROLLER
+
+        val vm = builder.build()
+        vm.onIntent(EmulationIntent.StartGame("game1"))
+        builder.advanceTimeBy(100)
+
+        // Classic Controller = 0x401, replacing the NUNCHUK default.
+        for (port in 0..3) {
+            assertEquals(0x401, builder.libretroController.controllerPortDevices[port])
+        }
     }
 
     @Test

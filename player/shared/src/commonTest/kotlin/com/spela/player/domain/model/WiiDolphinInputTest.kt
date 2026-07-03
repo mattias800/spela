@@ -7,31 +7,57 @@ import kotlin.test.assertTrue
 
 class WiiDolphinInputTest {
 
-    // ---- wiiControllerPortDevice (#1534) ----
+    // ---- wiiControllerPortDevice (#1534, #1559) ----
 
     @Test
-    fun wiiWithDolphinAttachesNunchuk() {
+    fun wiiWithDolphinUsesTheSchemeDevice() {
         assertEquals(
             RETRO_DEVICE_WIIMOTE_NC,
-            wiiControllerPortDevice("wii", "/cores/dolphin_libretro.so"),
+            wiiControllerPortDevice("wii", "/cores/dolphin_libretro.so", WiiControlScheme.NUNCHUK),
+        )
+        assertEquals(
+            RETRO_DEVICE_CLASSIC,
+            wiiControllerPortDevice(
+                "wii",
+                "/cores/dolphin_libretro.so",
+                WiiControlScheme.CLASSIC_CONTROLLER,
+            ),
         )
     }
 
     @Test
-    fun nunchukDeviceMatchesDolphinSubclassEncoding() {
-        // (3 << 8) | RETRO_DEVICE_JOYPAD — see DolphinLibretro/Input.cpp.
-        assertEquals(0x301, RETRO_DEVICE_WIIMOTE_NC)
+    fun schemeDevicesMatchDolphinSubclassEncodings() {
+        // (subclass << 8) | RETRO_DEVICE_JOYPAD — see DolphinLibretro/Input.cpp.
+        assertEquals(1, WiiControlScheme.WIIMOTE.portDevice)
+        assertEquals(0x201, WiiControlScheme.WIIMOTE_SIDEWAYS.portDevice)
+        assertEquals(0x301, WiiControlScheme.NUNCHUK.portDevice)
+        assertEquals(0x401, WiiControlScheme.CLASSIC_CONTROLLER.portDevice)
+        assertEquals(0x501, WiiControlScheme.CLASSIC_PRO.portDevice)
+        assertEquals(0x601, WiiControlScheme.GC_PAD.portDevice)
+    }
+
+    @Test
+    fun storageIdsRoundTrip() {
+        for (scheme in WiiControlScheme.entries) {
+            assertEquals(scheme, WiiControlScheme.fromStorageId(scheme.storageId))
+        }
+        assertNull(WiiControlScheme.fromStorageId(null))
+        assertNull(WiiControlScheme.fromStorageId("bogus"))
     }
 
     @Test
     fun gamecubeGetsNoWiimoteDevice() {
         // "gamecube" is the production console code (see server console registry).
-        assertNull(wiiControllerPortDevice("gamecube", "/cores/dolphin_libretro.so"))
+        assertNull(
+            wiiControllerPortDevice("gamecube", "/cores/dolphin_libretro.so", WiiControlScheme.NUNCHUK),
+        )
     }
 
     @Test
     fun nonDolphinCoreOnWiiGetsNoWiimoteDevice() {
-        assertNull(wiiControllerPortDevice("wii", "/cores/other_libretro.so"))
+        assertNull(
+            wiiControllerPortDevice("wii", "/cores/other_libretro.so", WiiControlScheme.GC_PAD),
+        )
     }
 
     // ---- wiiIrPointerCoreVariables (#1524) ----

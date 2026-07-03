@@ -6,6 +6,7 @@ import com.spela.player.domain.model.RenderScale
 import com.spela.player.domain.model.RenderScaleChoice
 import com.spela.player.domain.model.UserPreferences
 import com.spela.player.domain.model.WidescreenMode
+import com.spela.player.domain.model.WiiControlScheme
 import com.spela.player.domain.model.defaultWidescreenMode
 
 interface PreferencesRepository {
@@ -53,6 +54,14 @@ interface PreferencesRepository {
     fun resolveWidescreenMode(gameId: String, consoleId: String): WidescreenMode =
         defaultWidescreenMode(consoleId)
     fun setWidescreenMode(gameId: String, consoleId: String, mode: WidescreenMode) {}
+
+    /**
+     * Per-game Wii controller scheme (#1559), device-local like the
+     * per-game widescreen mode. Defaults to [WiiControlScheme.NUNCHUK]
+     * (the #1534 behavior) when nothing is stored.
+     */
+    fun resolveWiiControlScheme(gameId: String): WiiControlScheme = WiiControlScheme.NUNCHUK
+    fun setWiiControlScheme(gameId: String, scheme: WiiControlScheme) {}
     fun resolveRenderScaleChoice(
         consoleId: String,
         preferences: UserPreferences? = null,
