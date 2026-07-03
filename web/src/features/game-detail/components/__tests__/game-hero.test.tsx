@@ -136,9 +136,12 @@ describe("GameHero", () => {
 
   it("hides 'Add to Collection' in actions menu when callback not provided", async () => {
     const game = makeGame();
-    const { onAddToCollection: _, ...propsWithoutAddToCollection } = defaultProps;
     renderWithQuery(
-      <GameHero game={game} {...propsWithoutAddToCollection} />,
+      <GameHero
+        game={game}
+        {...defaultProps}
+        onAddToCollection={undefined}
+      />,
     );
 
     await userEvent.click(screen.getByTestId("actions-menu-btn"));

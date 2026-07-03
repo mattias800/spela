@@ -6,12 +6,8 @@ import { Button, Skeleton } from "@/components/ui";
 // early-return block in the page body; extracted for readability
 // and to let the page body focus on the happy path.
 
-interface PlayPageLoadingProps {
-  // intentionally empty — renders a fixed skeleton
-}
-
 /** Top-bar + blank stage skeleton while game / consoles are loading. */
-export function PlayPageLoading(_props: PlayPageLoadingProps = {}) {
+export function PlayPageLoading() {
   return (
     <div data-comp="PlayPageLoading" className="flex flex-col h-screen">
       <div className="flex items-center justify-between px-4 py-2 border-b border-surface-800 bg-surface-950/80">

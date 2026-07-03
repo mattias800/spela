@@ -252,7 +252,7 @@ export function ExplorePage() {
       <WildFeaturesSection />
 
       {/* Personalized & Social Discovery — lazy-loaded */}
-      <div ref={social.ref}  />
+      <div ref={social.observe} />
       <ForYouSection
         rows={forYouData?.rows ?? undefined}
         isLoading={isForYouLoading}
@@ -305,7 +305,7 @@ export function ExplorePage() {
       />
 
       {/* Temporal Discovery — lazy-loaded */}
-      <div ref={temporal.ref}  />
+      <div ref={temporal.observe} />
       <OnThisDayShelf
         data={onThisDayData}
         isLoading={isOnThisDayLoading}
@@ -337,7 +337,7 @@ export function ExplorePage() {
       />
 
       {/* Achievement & Challenge Discovery — lazy-loaded */}
-      <div ref={achievements.ref}  />
+      <div ref={achievements.observe} />
       <EasyToCompleteShelf
         data={easyToCompleteData}
         isLoading={isEasyToCompleteLoading}
@@ -390,7 +390,7 @@ export function ExplorePage() {
       ) : null}
 
       {/* Catalog bottom — lazy-loaded */}
-      <div ref={catalogBottom.ref}  />
+      <div ref={catalogBottom.observe} />
       <ThemeGrid themes={themes} isLoading={isThemesLoading} />
 
       <KeywordChips keywords={keywords} isLoading={isKeywordsLoading} />

@@ -10,17 +10,19 @@ interface KeywordChipsProps {
 }
 
 function KeywordChipsSkeleton() {
+  const chipWidths = [96, 132, 108, 140, 88, 124, 116, 136, 100, 128, 92, 120];
+
   return (
     <section data-comp="KeywordChipsSkeleton" data-testid="keyword-chips-skeleton">
       <h2 className="text-xl font-bold text-surface-100 mb-5">
         Popular Keywords
       </h2>
       <div className="flex gap-3 overflow-hidden flex-wrap">
-        {Array.from({ length: 12 }, (_, i) => (
+        {chipWidths.map((width, i) => (
           <Skeleton
             key={i}
             className="h-9 rounded-full"
-            style={{ width: `${80 + Math.random() * 60}px` }}
+            style={{ width }}
           />
         ))}
       </div>

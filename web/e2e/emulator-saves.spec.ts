@@ -178,14 +178,13 @@ test.describe("Emulator Save State Sync", () => {
 
       // Create a session first so we have a real session ID (auto-load is
       // skipped for fresh sessions created via /play/new)
-      let sessionId: string | undefined;
       const sessionCreatePromise = page.waitForResponse(
         (resp) => resp.url().includes(`/api/games/${gameId}/sessions`) && resp.request().method() === "POST",
       );
       await page.goto(`/games/${gameId}/play/new`);
       const createResp = await sessionCreatePromise;
       const sessionData = await createResp.json();
-      sessionId = sessionData.id;
+      const sessionId: string = sessionData.id;
 
       // Now navigate to the play page with the real session ID so auto-load triggers
       let autoLoadRequested = false;

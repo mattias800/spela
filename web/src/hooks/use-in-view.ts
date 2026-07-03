@@ -8,7 +8,7 @@ export function useInView({ rootMargin = "200px" }: UseInViewOptions = {}) {
   const [isInView, setIsInView] = useState(false);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
-  const ref = useCallback(
+  const observe = useCallback(
     (node: HTMLElement | null) => {
       if (observerRef.current) {
         observerRef.current.disconnect();
@@ -33,5 +33,5 @@ export function useInView({ rootMargin = "200px" }: UseInViewOptions = {}) {
     [rootMargin],
   );
 
-  return { ref, isInView };
+  return { observe, isInView };
 }

@@ -98,7 +98,8 @@ export function PlayPage() {
   const [isExitSaving, setIsExitSaving] = useState(false);
   const [showCoreMismatchModal, setShowCoreMismatchModal] = useState(false);
   const coreMismatchChoiceRef = useRef<CoreMismatchChoice | null>(null);
-  const sessionStartRef = useRef<number>(Date.now());
+  const [initialSessionStart] = useState(() => Date.now());
+  const sessionStartRef = useRef<number>(initialSessionStart);
 
   // Resolve the EmulatorJS core identifier for this game's console
   const consoleInfo = consoles?.find((c) => c.id === game?.consoleId);
@@ -218,12 +219,9 @@ export function PlayPage() {
       // Re-trigger init by toggling iframeLoaded — the init useEffect will
       // re-run and use the stored choice.
       setIframeLoaded(false);
-      const iframe = emulator.iframeRef.current;
-      if (iframe) {
-        iframe.src = emulatorSrc;
-      }
+      emulator.reloadEmulator(emulatorSrc);
     },
-    [emulator.iframeRef, emulatorSrc],
+    [emulator, emulatorSrc],
   );
 
   // ── Loading / terminal states ─────────────────────────────────────
@@ -299,10 +297,7 @@ export function PlayPage() {
           }
           onRetry={() => {
             setIframeLoaded(false);
-            const iframe = emulator.iframeRef.current;
-            if (iframe) {
-              iframe.src = emulatorSrc;
-            }
+            emulator.reloadEmulator(emulatorSrc);
           }}
           onBack={() => navigate(`/games/${id}`)}
         />

@@ -6,7 +6,8 @@ import {
 } from "@/components/ui";
 import { formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/cn";
-import { SystemEventBadge, getSystemEventMeta } from "./system-event-badge";
+import { SystemEventBadge } from "./system-event-badge";
+import { getSystemEventMeta } from "./system-event-meta";
 import type { SystemEvent } from "@/types/api";
 
 interface SystemEventsTableProps {

@@ -34,7 +34,7 @@ export function useSaveQueue({
   onSaveSuccessRef.current = onSaveSuccess;
   onSaveErrorRef.current = onSaveError;
 
-  const processQueue = useCallback(async () => {
+  const processQueue = useCallback(async function processNextQueueItem() {
     if (saveQueueRef.current.length === 0) {
       setIsSaving(false);
       return;
@@ -80,16 +80,16 @@ export function useSaveQueue({
       saveQueueRef.current.shift();
       onSaveSuccessRef.current?.(item.isAuto);
 
-      processQueue();
+      processNextQueueItem();
     } catch {
       item.retries++;
       if (item.retries >= MAX_RETRIES) {
         saveQueueRef.current.shift();
         onSaveErrorRef.current?.(`Save failed after ${MAX_RETRIES} attempts`, item.isAuto);
-        processQueue();
+        processNextQueueItem();
       } else {
         retryTimerRef.current = setTimeout(() => {
-          processQueue();
+          processNextQueueItem();
         }, RETRY_DELAY_MS);
       }
     }

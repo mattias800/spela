@@ -51,7 +51,7 @@ describe("useInView", () => {
 
     const node = document.createElement("div");
     act(() => {
-      result.current.ref(node);
+      result.current.observe(node);
     });
 
     expect(observerInstances).toHaveLength(1);
@@ -63,7 +63,7 @@ describe("useInView", () => {
 
     const node = document.createElement("div");
     act(() => {
-      result.current.ref(node);
+      result.current.observe(node);
     });
 
     act(() => {
@@ -78,7 +78,7 @@ describe("useInView", () => {
 
     const node = document.createElement("div");
     act(() => {
-      result.current.ref(node);
+      result.current.observe(node);
     });
 
     act(() => {
@@ -93,7 +93,7 @@ describe("useInView", () => {
 
     const node = document.createElement("div");
     act(() => {
-      result.current.ref(node);
+      result.current.observe(node);
     });
 
     act(() => {
@@ -109,7 +109,7 @@ describe("useInView", () => {
 
     const node = document.createElement("div");
     act(() => {
-      result.current.ref(node);
+      result.current.observe(node);
     });
 
     expect(observerInstances[0].options?.rootMargin).toBe("100px");
@@ -120,7 +120,7 @@ describe("useInView", () => {
 
     const node = document.createElement("div");
     act(() => {
-      result.current.ref(node);
+      result.current.observe(node);
     });
 
     expect(observerInstances[0].options?.rootMargin).toBe("200px");
@@ -131,14 +131,14 @@ describe("useInView", () => {
 
     const node1 = document.createElement("div");
     act(() => {
-      result.current.ref(node1);
+      result.current.observe(node1);
     });
 
     const firstObserver = observerInstances[0];
 
     const node2 = document.createElement("div");
     act(() => {
-      result.current.ref(node2);
+      result.current.observe(node2);
     });
 
     expect(firstObserver.disconnect).toHaveBeenCalled();
