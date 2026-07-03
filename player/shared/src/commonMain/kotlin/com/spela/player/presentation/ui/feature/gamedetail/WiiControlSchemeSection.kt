@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import com.spela.player.domain.model.WiiControlScheme
 import com.spela.player.domain.model.WiiIrSource
+import com.spela.player.presentation.ui.components.SpInfoCallout
 import com.spela.player.presentation.ui.components.SpRadioOption
 import com.spela.player.presentation.ui.components.SpTitledSection
 import com.spela.player.presentation.ui.theme.SpColor
@@ -71,6 +72,12 @@ fun WiiControlSchemeSection(
                     modifier = Modifier.testTag("wii-ir-source-option-${source.storageId}"),
                 )
             }
+            Spacer(Modifier.height(SpSpacing.Small))
+            SpInfoCallout(
+                title = "Limited motion support",
+                text = "Shake works from a trigger, steering works with stick tilt, and pointer aiming works with touch. Full swing or sword controls need a real Wii Remote.",
+                testTagName = "wii-motion-support-hint",
+            )
         }
     }
 }

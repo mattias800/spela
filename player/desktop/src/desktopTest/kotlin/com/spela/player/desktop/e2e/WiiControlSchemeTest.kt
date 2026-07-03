@@ -41,6 +41,10 @@ class WiiControlSchemeTest {
 
         onNodeWithTag("wii-control-scheme-section").assertExists()
         onNodeWithTag("wii-scheme-option-nunchuk", useUnmergedTree = true).assertExists()
+        onNodeWithTag("wii-motion-support-hint").performScrollTo().assertIsDisplayed()
+        onNodeWithText("Limited motion support").assertIsDisplayed()
+        onNodeWithText("Full swing or sword controls need a real Wii Remote.", substring = true)
+            .assertIsDisplayed()
     }
 
     @Test
