@@ -1,7 +1,7 @@
 import type { HTMLAttributes, ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { BackButton } from "@/components/ui";
+import { BackButton } from "@/components/ui/back-button";
 
 interface PageLayoutProps extends HTMLAttributes<HTMLDivElement> {
   /** Full-width content rendered above the padded area (e.g., hero banners). */
