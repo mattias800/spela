@@ -37,13 +37,37 @@ const MaxBcryptPasswordLen = 72
 // indistinguishable. See #976.
 const BcryptCost = 12
 
+// passwordHashCost is the effective bcrypt cost used by HashPassword. It
+// defaults to the production BcryptCost and is only ever lowered by tests
+// via SetBcryptCostForTesting — hashing at cost 12 dominates test-suite
+// runtime when hundreds of users are registered. Production never touches
+// it, so real password hashes always use BcryptCost. See #1572.
+var passwordHashCost = BcryptCost
+
+// SetBcryptCostForTesting overrides the bcrypt cost used by HashPassword and
+// returns a function that restores the previous cost.
+//
+// TEST-ONLY. Never call from production code — it exists so test suites can
+// drop to bcrypt.MinCost and avoid ~250 ms per registration. The value is
+// clamped to bcrypt's valid range.
+func SetBcryptCostForTesting(cost int) func() {
+	if cost < bcrypt.MinCost {
+		cost = bcrypt.MinCost
+	} else if cost > bcrypt.MaxCost {
+		cost = bcrypt.MaxCost
+	}
+	prev := passwordHashCost
+	passwordHashCost = cost
+	return func() { passwordHashCost = prev }
+}
+
 // HashPassword hashes a password using bcrypt. Returns an error if the
 // password exceeds bcrypt's 72-byte limit.
 func HashPassword(password string) (string, error) {
 	if len(password) > MaxBcryptPasswordLen {
 		return "", fmt.Errorf("password exceeds maximum length of %d bytes", MaxBcryptPasswordLen)
 	}
-	bytes, err := bcrypt.GenerateFromPassword([]byte(password), BcryptCost)
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), passwordHashCost)
 	if err != nil {
 		return "", fmt.Errorf("hashing password: %w", err)
 	}
