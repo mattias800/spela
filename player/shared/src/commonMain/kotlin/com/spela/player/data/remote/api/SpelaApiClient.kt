@@ -1150,10 +1150,21 @@ class SpelaApiClient(
         return statsApi.getPublicPlayHeatmap(userId).body()
     }
 
-    suspend fun updatePlayTime(gameId: String, seconds: Long) {
+    suspend fun updatePlayTime(
+        gameId: String,
+        seconds: Long,
+        playedAtMillis: Long? = null,
+        clientReportId: String? = null,
+        updatePresence: Boolean? = null,
+    ) {
         gamesApi.updateGamePlayTime(
             gameId,
-            com.spela.client.models.UpdateGamePlayTimeRequest(seconds = seconds),
+            com.spela.client.models.UpdateGamePlayTimeRequest(
+                seconds = seconds,
+                playedAt = playedAtMillis?.let { kotlinx.datetime.Instant.fromEpochMilliseconds(it) },
+                clientReportId = clientReportId,
+                updatePresence = updatePresence,
+            ),
         )
     }
 

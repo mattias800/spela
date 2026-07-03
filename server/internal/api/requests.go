@@ -7,6 +7,7 @@ package api
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/spela/server/internal/db"
 )
@@ -118,7 +119,10 @@ type UpdateGameMetadataRequest struct {
 // supplied — huma replicates that behaviour via omitempty + handler-side range
 // validation).
 type UpdateGamePlayTimeRequest struct {
-	Seconds int64 `json:"seconds,omitempty"`
+	Seconds        int64      `json:"seconds,omitempty"`
+	PlayedAt       *time.Time `json:"playedAt,omitempty" required:"false"`
+	ClientReportID *string    `json:"clientReportId,omitempty" required:"false"`
+	UpdatePresence *bool      `json:"updatePresence,omitempty" required:"false"`
 }
 
 // UpdateVerificationTagRequest is the body for PUT /api/admin/games/:id/verification-tag.

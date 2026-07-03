@@ -1396,7 +1396,7 @@ class EmulationViewModel(
                         // frames actually advanced (drained from the
                         // controller), not wall-clock, so paused/background
                         // time isn't counted (#1282).
-                        presenceService.startHeartbeat(gameId) {
+                        presenceService.startHeartbeat(gameId, _state.value.gameTitle) {
                             libretroController.consumeActivePlayMillis()
                         }
 

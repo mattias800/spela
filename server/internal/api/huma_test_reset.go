@@ -103,6 +103,7 @@ func (h *TestHandler) HumaReset(_ context.Context, _ *TestResetInput) (*TestRese
 		// 6. User-game associations
 		tx.Unscoped().Where("1 = 1").Delete(&db.Favorite{})
 		tx.Unscoped().Where("1 = 1").Delete(&db.PlayHistory{})
+		tx.Unscoped().Where("1 = 1").Delete(&db.PlayTimeReportReceipt{})
 		tx.Unscoped().Where("1 = 1").Delete(&db.DailyPlayActivity{})
 		tx.Unscoped().Where("1 = 1").Delete(&db.PlayLaterItem{})
 		tx.Unscoped().Where("1 = 1").Delete(&db.GameRating{})

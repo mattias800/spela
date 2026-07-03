@@ -2,6 +2,7 @@ package com.spela.player.di
 
 import com.spela.player.data.device.DeviceManager
 import com.spela.player.data.remote.ConnectivityMonitor
+import com.spela.player.data.remote.PlayTimeSyncManager
 import com.spela.player.data.remote.PresenceService
 import com.spela.player.data.remote.ScrapeService
 import com.spela.player.data.remote.SyncEngine
@@ -43,12 +44,27 @@ val commonModule = module {
 
     /* Sync Engine */
     single { SyncEngine(get(), get(), get(), get(), get()) }
+    single {
+        PlayTimeSyncManager(
+            apiClient = get(),
+            connectivityMonitor = get(),
+            pendingRepository = get(),
+            serverRepository = get(),
+            currentUserContextRepository = get(),
+            dispatchers = get(),
+            scope = get(),
+        ).also {
+            it.startReconnectListener()
+            it.drainPending(trigger = "startup")
+        }
+    }
 
     /* Presence */
-    single { PresenceService(get(), get(), get(), get(), get()) }
+    single { PresenceService(get(), get(), get(), get(), get(), get()) }
 
     /* Repositories */
-    single<AuthRepository> { AuthRepositoryImpl(get(), get(), get()) }
+    single<CurrentUserContextRepository> { CurrentUserContextRepositoryImpl(get()) }
+    single<AuthRepository> { AuthRepositoryImpl(get(), get(), get(), get()) }
     single<GameRepository> { GameRepositoryImpl(get(), get(), get()) }
     single<FederationRepository> { FederationRepositoryImpl(get()) }
     single<SaveDataRepository> { SaveDataRepositoryImpl(get()) }
@@ -71,6 +87,7 @@ val commonModule = module {
     single<GameStatsRepository> { GameStatsRepositoryImpl(get()) }
     single<CheatRepository> { CheatRepositoryImpl(get(), get()) }
     single<PendingSaveUploadRepository> { PendingSaveUploadRepositoryImpl(get()) }
+    single<PendingPlayTimeSyncRepository> { PendingPlayTimeSyncRepositoryImpl(get()) }
     single<OnboardingRepository> { OnboardingRepositoryImpl(get()) }
     single<ControllerStyleOverrideRepository> { ControllerStyleOverrideRepositoryImpl(get()) }
     single<ControllerAssignmentRepository> { ControllerAssignmentRepositoryImpl(get()) }
@@ -140,6 +157,7 @@ val commonModule = module {
             registerUseCase = get(),
             dispatchers = get(),
             scope = get(),
+            playTimeSyncManager = get(),
         )
     }
     factory {
@@ -478,6 +496,8 @@ val commonModule = module {
             connectivityMonitor = get(),
             apiClient = get(),
             pendingUploadRepository = get(),
+            pendingPlayTimeSyncRepository = get(),
+            playTimeSyncManager = get(),
             dispatchers = get(),
             scope = get(),
         )

@@ -61,6 +61,9 @@ object TestTags {
     const val SETTINGS_SAVE_SYNC_QUEUE_SUMMARY = "settings_save_sync_queue_summary"
     const val SETTINGS_SAVE_SYNC_QUEUE_EMPTY = "settings_save_sync_queue_empty"
     fun settingsSaveSyncJob(jobId: Long) = "settings_save_sync_job_$jobId"
+    const val SETTINGS_PLAY_TIME_SYNC_QUEUE_SUMMARY = "settings_play_time_sync_queue_summary"
+    const val SETTINGS_PLAY_TIME_SYNC_QUEUE_EMPTY = "settings_play_time_sync_queue_empty"
+    fun settingsPlayTimeSyncJob(jobId: Long) = "settings_play_time_sync_job_$jobId"
 
     // Console library — per-console card on the Consoles screen
     fun consoleCard(consoleId: String) = "console_card_$consoleId"

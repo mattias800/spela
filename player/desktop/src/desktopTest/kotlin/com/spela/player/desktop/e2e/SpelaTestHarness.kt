@@ -204,6 +204,8 @@ class SpelaTestHarness(
     val achievementsCtrl = FakeAchievementsController()
     val pendingUploadRepository: com.spela.player.domain.repository.PendingSaveUploadRepository =
         HarnessPendingSaveUploadRepository()
+    val pendingPlayTimeSyncRepository: com.spela.player.domain.repository.PendingPlayTimeSyncRepository =
+        HarnessPendingPlayTimeSyncRepository()
 
     private val emulationState = MutableStateFlow(EmulationState())
 
@@ -283,6 +285,7 @@ class SpelaTestHarness(
         connectivityMonitor = connectivityMonitor,
         apiClient = fakeApiClient,
         pendingUploadRepository = pendingUploadRepository,
+        pendingPlayTimeSyncRepository = pendingPlayTimeSyncRepository,
         dispatchers = dispatchers,
         scope = scope,
     )
@@ -590,6 +593,90 @@ private class HarnessPendingSaveUploadRepository :
     }
     private fun publishSnapshot() {
         snapshot.value = com.spela.player.domain.model.pendingSaveUploadQueueSnapshot(
+            rows.sortedWith(compareBy({ it.createdAt }, { it.id })),
+            isDraining,
+        )
+    }
+}
+
+private class HarnessPendingPlayTimeSyncRepository :
+    com.spela.player.domain.repository.PendingPlayTimeSyncRepository {
+    private val rows = mutableListOf<com.spela.player.domain.model.PendingPlayTimeSync>()
+    private var nextId = 1L
+    private var isDraining = false
+    private val snapshot = MutableStateFlow(
+        com.spela.player.domain.model.PendingPlayTimeSyncQueueSnapshot.Empty,
+    )
+
+    override fun observeSnapshot(): kotlinx.coroutines.flow.Flow<com.spela.player.domain.model.PendingPlayTimeSyncQueueSnapshot> =
+        snapshot
+
+    override suspend fun enqueue(
+        clientReportId: String,
+        serverUrl: String,
+        userId: String,
+        gameId: String,
+        gameTitle: String,
+        durationSeconds: Long,
+        playedAt: Long,
+        createdAt: Long,
+    ): Long {
+        val id = nextId++
+        rows.add(
+            com.spela.player.domain.model.PendingPlayTimeSync(
+                id = id,
+                clientReportId = clientReportId,
+                serverUrl = serverUrl,
+                userId = userId,
+                gameId = gameId,
+                gameTitle = gameTitle,
+                durationSeconds = durationSeconds,
+                playedAt = playedAt,
+                createdAt = createdAt,
+                retryCount = 0,
+                lastError = null,
+            ),
+        )
+        publishSnapshot()
+        return id
+    }
+
+    override suspend fun getAll(): List<com.spela.player.domain.model.PendingPlayTimeSync> =
+        rows.sortedWith(compareBy({ it.createdAt }, { it.id }))
+
+    override suspend fun getForContext(
+        serverUrl: String,
+        userId: String,
+    ): List<com.spela.player.domain.model.PendingPlayTimeSync> =
+        rows.filter { it.serverUrl == serverUrl && it.userId == userId }
+            .sortedWith(compareBy({ it.createdAt }, { it.id }))
+
+    override suspend fun getById(id: Long): com.spela.player.domain.model.PendingPlayTimeSync? =
+        rows.find { it.id == id }
+
+    override suspend fun count(): Long = rows.size.toLong()
+
+    override suspend fun delete(id: Long) {
+        rows.removeAll { it.id == id }
+        publishSnapshot()
+    }
+
+    override suspend fun markRetry(id: Long, lastError: String?) {
+        val idx = rows.indexOfFirst { it.id == id }
+        if (idx >= 0) {
+            val row = rows[idx]
+            rows[idx] = row.copy(retryCount = row.retryCount + 1, lastError = lastError)
+        }
+        publishSnapshot()
+    }
+
+    override fun setDraining(isDraining: Boolean) {
+        this.isDraining = isDraining
+        publishSnapshot()
+    }
+
+    private fun publishSnapshot() {
+        snapshot.value = com.spela.player.domain.model.pendingPlayTimeSyncQueueSnapshot(
             rows.sortedWith(compareBy({ it.createdAt }, { it.id })),
             isDraining,
         )

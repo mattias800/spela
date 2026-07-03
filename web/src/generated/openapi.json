@@ -10913,9 +10913,19 @@
             "readOnly": true,
             "type": "string"
           },
+          "clientReportId": {
+            "type": "string"
+          },
+          "playedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
           "seconds": {
             "format": "int64",
             "type": "integer"
+          },
+          "updatePresence": {
+            "type": "boolean"
           }
         },
         "type": "object"
