@@ -22,7 +22,14 @@ enum class SlotPickerMode { Save, Load }
 enum class ControlTab(val id: String) {
     GAMEPAD("gamepad"),
     KEYBOARD("keyboard"),
-    TRACKPAD("trackpad");
+    TRACKPAD("trackpad"),
+
+    /**
+     * Wii IR pointer surface on the secondary screen (#1581). Only offered
+     * when the session is Wii + Touch Pointer — filtered out of the tab
+     * selector otherwise.
+     */
+    POINTER("pointer");
 
     companion object {
         fun fromId(id: String): ControlTab = entries.find { it.id == id } ?: GAMEPAD

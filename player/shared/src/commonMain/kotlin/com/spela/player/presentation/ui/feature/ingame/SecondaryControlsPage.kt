@@ -51,20 +51,30 @@ fun SecondaryControlsPage(
      *  cursor speed depending on the core's native resolution (#858). */
     gameWidth: Int = 0,
     gameHeight: Int = 0,
+    /** Wii + Touch Pointer session (#1581): surfaces the Pointer tab and
+     *  its IR touch surface, sized to [pointerAspectRatio]. */
+    showPointerTab: Boolean = false,
+    pointerAspectRatio: Float = 4f / 3f,
     modifier: Modifier = Modifier,
 ) {
+    // POINTER is only offered for Wii + Touch Pointer sessions.
+    val tabs = ControlTab.entries.filter { it != ControlTab.POINTER || showPointerTab }
+    // Guard against a stale persisted "pointer" tab when it isn't available.
+    val activeTab = if (selectedTab in tabs) selectedTab else ControlTab.GAMEPAD
+
     Column(
         modifier = modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         // Segmented control tab selector
         ControlTabSelector(
-            selectedTab = selectedTab,
+            tabs = tabs,
+            selectedTab = activeTab,
             onSelectTab = onSelectTab,
         )
 
         // Tab content filling remaining space
-        when (selectedTab) {
+        when (activeTab) {
             ControlTab.GAMEPAD -> GamepadTabContent(
                 controller = controller,
                 touchControlPort = touchControlPort,
@@ -82,6 +92,11 @@ fun SecondaryControlsPage(
                 onMouseButton = onMouseButton,
                 gameWidth = gameWidth,
                 gameHeight = gameHeight,
+                modifier = Modifier.weight(1f),
+            )
+            ControlTab.POINTER -> SecondaryWiiPointerTab(
+                controller = controller,
+                aspectRatio = pointerAspectRatio,
                 modifier = Modifier.weight(1f),
             )
         }
@@ -119,6 +134,7 @@ private fun GamepadTabContent(
  */
 @Composable
 private fun ControlTabSelector(
+    tabs: List<ControlTab>,
     selectedTab: ControlTab,
     onSelectTab: (ControlTab) -> Unit,
 ) {
@@ -132,7 +148,7 @@ private fun ControlTabSelector(
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        ControlTab.entries.forEachIndexed { index, tab ->
+        tabs.forEachIndexed { index, tab ->
             if (index > 0) Spacer(Modifier.width(4.dp))
             TabPill(
                 label = tab.id.replaceFirstChar { it.uppercase() },

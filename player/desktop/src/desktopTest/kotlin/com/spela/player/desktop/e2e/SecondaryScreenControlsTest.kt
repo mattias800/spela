@@ -376,6 +376,84 @@ class SecondaryScreenControlsTest {
         )
     }
 
+    // --- Wii Pointer tab (#1581) ---
+
+    @Test
+    fun pointerTabHiddenByDefault() = runComposeUiTest {
+        val harness = SpelaTestHarness(StandardTestDispatcher())
+
+        setContent {
+            SecondaryControlsPage(
+                controller = harness.libretroController,
+                touchControlPort = 0,
+                selectedTab = ControlTab.GAMEPAD,
+                consoleId = "snes",
+                onSelectPort = {},
+                onSelectTab = {},
+                onKeyDown = {},
+                onKeyUp = {},
+                onMouseMove = { _, _ -> },
+                onMouseButton = { _, _ -> },
+            )
+        }
+        waitForIdle()
+
+        onNodeWithContentDescription("Pointer input mode").assertDoesNotExist()
+    }
+
+    @Test
+    fun pointerTabShownForWiiTouchSession() = runComposeUiTest {
+        val harness = SpelaTestHarness(StandardTestDispatcher())
+
+        setContent {
+            SecondaryControlsPage(
+                controller = harness.libretroController,
+                touchControlPort = 0,
+                selectedTab = ControlTab.POINTER,
+                consoleId = "wii",
+                onSelectPort = {},
+                onSelectTab = {},
+                onKeyDown = {},
+                onKeyUp = {},
+                onMouseMove = { _, _ -> },
+                onMouseButton = { _, _ -> },
+                showPointerTab = true,
+                pointerAspectRatio = 4f / 3f,
+            )
+        }
+        waitForIdle()
+
+        onNodeWithContentDescription("Pointer input mode").assertExists()
+        onNodeWithContentDescription("Input mode: pointer").assertExists()
+    }
+
+    @Test
+    fun stalePointerSelectionFallsBackToGamepadWhenTabUnavailable() = runComposeUiTest {
+        val harness = SpelaTestHarness(StandardTestDispatcher())
+
+        // selectedTab persisted as POINTER but the session no longer offers it.
+        setContent {
+            SecondaryControlsPage(
+                controller = harness.libretroController,
+                touchControlPort = 0,
+                selectedTab = ControlTab.POINTER,
+                consoleId = "snes",
+                onSelectPort = {},
+                onSelectTab = {},
+                onKeyDown = {},
+                onKeyUp = {},
+                onMouseMove = { _, _ -> },
+                onMouseButton = { _, _ -> },
+                showPointerTab = false,
+            )
+        }
+        waitForIdle()
+
+        onNodeWithContentDescription("Pointer input mode").assertDoesNotExist()
+        // Falls back to the Gamepad tab (its port selector is visible).
+        onNodeWithContentDescription("Input mode: gamepad").assertExists()
+    }
+
     // -- Helpers ---------------------------------------------------------------
 
     private fun createHarnessWithNesGame(): SpelaTestHarness {
