@@ -2,6 +2,8 @@ package com.spela.player.presentation.ui.feature.gamedetail
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.SettingsRemote
@@ -38,6 +40,12 @@ fun WiiControlSchemeSection(
             modifier = Modifier.testTag("wii-control-scheme-section"),
             verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
         ) {
+            Text(
+                text = "Controller",
+                style = SpTypography.LabelMedium,
+                color = SpColor.OnBackgroundSecondary,
+                modifier = Modifier.fillMaxWidth(),
+            )
             WiiControlScheme.entries.forEach { scheme ->
                 SpRadioOption(
                     title = scheme.displayName,
@@ -47,6 +55,7 @@ fun WiiControlSchemeSection(
                     modifier = Modifier.testTag("wii-scheme-option-${scheme.storageId}"),
                 )
             }
+            Spacer(Modifier.height(SpSpacing.Small))
             Text(
                 text = "Pointer",
                 style = SpTypography.LabelMedium,

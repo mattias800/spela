@@ -83,6 +83,12 @@ fun InGameWiiControlSchemeDialog(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
             ) {
+                Text(
+                    text = "Controller",
+                    style = SpTypography.LabelMedium,
+                    color = SpColor.OnBackgroundSecondary,
+                    modifier = Modifier.fillMaxWidth(),
+                )
                 WiiControlScheme.entries.forEach { scheme ->
                     SpRadioOption(
                         title = scheme.displayName,
