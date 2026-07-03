@@ -14,6 +14,7 @@ import com.spela.player.domain.model.DisplayAspectChoice
 import com.spela.player.domain.model.RenderScale
 import com.spela.player.domain.model.RenderScaleChoice
 import com.spela.player.domain.model.WidescreenMode
+import com.spela.player.domain.model.WiiControlScheme
 import com.spela.player.domain.model.ShaderPreset
 import com.spela.player.domain.model.supportsRenderScale
 import com.spela.player.libretro.GamepadMappingMigration
@@ -42,6 +43,7 @@ class PreferencesRepositoryImpl(
         /** Device-local flag marking the one-time legacy gamepad keycode → positional migration done. */
         const val GAMEPAD_MIGRATION_FLAG = "gamepad_positional_migration_v1"
         const val GAME_WIDESCREEN_MODE_PREFIX = "game_widescreen_mode:"
+        const val GAME_WII_CONTROL_SCHEME_PREFIX = "game_wii_control_scheme:"
         const val CONSOLE_RENDER_SCALE_PREFIX = "console_render_scale:"
     }
 
@@ -183,6 +185,27 @@ class PreferencesRepositoryImpl(
             database.spelaDatabaseQueries.deleteDeviceSetting(key)
         } else {
             database.spelaDatabaseQueries.insertDeviceSetting(key, choice.storageId)
+        }
+    }
+
+    override fun resolveWiiControlScheme(gameId: String): WiiControlScheme {
+        val stored = if (gameId.isNotBlank()) {
+            database.spelaDatabaseQueries.getDeviceSetting(GAME_WII_CONTROL_SCHEME_PREFIX + gameId)
+                .executeAsOneOrNull()
+        } else {
+            null
+        }
+        return WiiControlScheme.fromStorageId(stored) ?: WiiControlScheme.NUNCHUK
+    }
+
+    override fun setWiiControlScheme(gameId: String, scheme: WiiControlScheme) {
+        if (gameId.isBlank()) return
+        val key = GAME_WII_CONTROL_SCHEME_PREFIX + gameId
+        if (scheme == WiiControlScheme.NUNCHUK) {
+            // NUNCHUK is the default — store nothing, like AUTO widescreen.
+            database.spelaDatabaseQueries.deleteDeviceSetting(key)
+        } else {
+            database.spelaDatabaseQueries.insertDeviceSetting(key, scheme.storageId)
         }
     }
 

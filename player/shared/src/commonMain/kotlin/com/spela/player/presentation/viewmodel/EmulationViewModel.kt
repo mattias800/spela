@@ -1257,12 +1257,14 @@ class EmulationViewModel(
                         libretroController.loadGame(gamePath)
                         println("[Emulation] loadGame returned")
 
-                        // Wii: attach the Nunchuk to every Wiimote port (#1534).
+                        // Wii: attach the selected controller scheme to every
+                        // Wiimote port (#1534, #1559 — Nunchuk by default).
                         // Must come AFTER loadGame — the native bridge defaults
                         // ports 0-3 to plain JOYPAD (bare Wiimote) inside the
                         // load path, and the core ignores port-device calls
                         // before a core is loaded.
-                        wiiControllerPortDevice(consoleId, corePath)?.let { device ->
+                        val wiiScheme = preferencesRepository.resolveWiiControlScheme(gameId)
+                        wiiControllerPortDevice(consoleId, corePath, wiiScheme)?.let { device ->
                             for (port in 0..3) {
                                 libretroController.setControllerPortDevice(port, device)
                             }
