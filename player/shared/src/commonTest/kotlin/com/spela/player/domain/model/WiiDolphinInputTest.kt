@@ -60,38 +60,66 @@ class WiiDolphinInputTest {
         )
     }
 
-    // ---- wiiIrPointerCoreVariables (#1524) ----
+    // ---- wiiIrPointerCoreVariables (#1524, #1560) ----
 
     @Test
-    fun wiiWithDolphinCentersIrRestPosition() {
+    fun wiiWithDolphinCentersIrRestPositionAndRightStickMode() {
         assertEquals(
             listOf(
+                CoreVariableOverride("dolphin_ir_mode", "1"),
                 CoreVariableOverride("dolphin_ir_offset", "10"),
                 CoreVariableOverride("dolphin_ir_pitch", "20"),
             ),
-            wiiIrPointerCoreVariables("wii", "/cores/dolphin_libretro.so"),
+            wiiIrPointerCoreVariables("wii", "/cores/dolphin_libretro.so", WiiIrSource.RIGHT_STICK),
+        )
+    }
+
+    @Test
+    fun touchPointerSourceSelectsIrModeTwo() {
+        assertEquals(
+            listOf(
+                CoreVariableOverride("dolphin_ir_mode", "2"),
+                CoreVariableOverride("dolphin_ir_offset", "10"),
+                CoreVariableOverride("dolphin_ir_pitch", "20"),
+            ),
+            wiiIrPointerCoreVariables("wii", "/cores/dolphin_libretro.so", WiiIrSource.TOUCH_POINTER),
         )
     }
 
     @Test
     fun consoleIdIsNormalized() {
         assertEquals(
-            listOf(
-                CoreVariableOverride("dolphin_ir_offset", "10"),
-                CoreVariableOverride("dolphin_ir_pitch", "20"),
-            ),
-            wiiIrPointerCoreVariables(" Wii ", "/cores/dolphin_libretro.dylib"),
+            "1",
+            wiiIrPointerCoreVariables(" Wii ", "/cores/dolphin_libretro.dylib", WiiIrSource.RIGHT_STICK)
+                .first { it.key == "dolphin_ir_mode" }.value,
         )
     }
 
     @Test
     fun gamecubeHasNoIrPointer() {
         // "gamecube" is the production console code (see server console registry).
-        assertTrue(wiiIrPointerCoreVariables("gamecube", "/cores/dolphin_libretro.so").isEmpty())
+        assertTrue(
+            wiiIrPointerCoreVariables("gamecube", "/cores/dolphin_libretro.so", WiiIrSource.TOUCH_POINTER)
+                .isEmpty(),
+        )
     }
 
     @Test
     fun nonDolphinCoreOnWiiProducesNoOverrides() {
-        assertTrue(wiiIrPointerCoreVariables("wii", "/cores/other_libretro.so").isEmpty())
+        assertTrue(
+            wiiIrPointerCoreVariables("wii", "/cores/other_libretro.so", WiiIrSource.TOUCH_POINTER)
+                .isEmpty(),
+        )
+    }
+
+    // ---- WiiIrSource (#1560) ----
+
+    @Test
+    fun irSourceStorageIdsRoundTrip() {
+        for (source in WiiIrSource.entries) {
+            assertEquals(source, WiiIrSource.fromStorageId(source.storageId))
+        }
+        assertNull(WiiIrSource.fromStorageId(null))
+        assertNull(WiiIrSource.fromStorageId("bogus"))
     }
 }

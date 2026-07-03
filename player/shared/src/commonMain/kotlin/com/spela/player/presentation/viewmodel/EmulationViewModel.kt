@@ -355,6 +355,7 @@ class EmulationViewModel(
             EmulationIntent.DismissWiiControlSchemePicker ->
                 _state.update { it.copy(showWiiControlSchemePicker = false) }
             is EmulationIntent.SelectWiiControlScheme -> selectWiiControlScheme(intent.scheme)
+            is EmulationIntent.SelectWiiIrSource -> selectWiiIrSource(intent.source)
 
             // Named-save link on the slot picker (medium tier only) — #830
             EmulationIntent.ShowNamedSaveDialog ->
@@ -1233,8 +1234,11 @@ class EmulationViewModel(
                         for (override in renderScaleCoreVariables(consoleId, corePath, displayProfile.renderScale)) {
                             libretroController.setCoreVariable(override.key, override.value)
                         }
-                        // Center the Wiimote IR pointer's rest position (#1524).
-                        for (override in wiiIrPointerCoreVariables(consoleId, corePath)) {
+                        // Center the Wiimote IR pointer's rest position (#1524)
+                        // and select its input source (#1560: right stick vs
+                        // touch pointer → dolphin_ir_mode). Before loadCore.
+                        val wiiIrSource = preferencesRepository.resolveWiiIrSource(gameId)
+                        for (override in wiiIrPointerCoreVariables(consoleId, corePath, wiiIrSource)) {
                             libretroController.setCoreVariable(override.key, override.value)
                         }
 
@@ -1285,6 +1289,8 @@ class EmulationViewModel(
                                 it.copy(
                                     isWiiControlSchemeSelectable = wiiDevice != null,
                                     wiiControlScheme = wiiScheme,
+                                    isWiiIrSourceSelectable = wiiDevice != null,
+                                    wiiIrSource = wiiIrSource,
                                 )
                             }
                         }
@@ -1610,6 +1616,31 @@ class EmulationViewModel(
             withContext(dispatchers.main) {
                 _state.update {
                     it.copy(wiiControlScheme = scheme, showWiiControlSchemePicker = false)
+                }
+            }
+        }
+    }
+
+    /**
+     * Persist and attempt to live-apply the Wii IR pointer source (#1560).
+     * Unlike the scheme's port-device call, dolphin_ir_mode is a core option
+     * variable — whether the core re-reads it mid-session (vs only at load)
+     * is unverified on hardware, so this best-effort live call may need a
+     * relaunch to take full effect. The persisted value always applies on the
+     * next launch. Gated on isWiiIrSourceSelectable.
+     */
+    private fun selectWiiIrSource(source: com.spela.player.domain.model.WiiIrSource) {
+        if (!_state.value.isWiiIrSourceSelectable) return
+        val gameId = _state.value.gameId
+        scope.launch(dispatchers.io) {
+            preferencesRepository.setWiiIrSource(gameId, source)
+            libretroController.setCoreVariable(
+                "dolphin_ir_mode",
+                if (source == com.spela.player.domain.model.WiiIrSource.TOUCH_POINTER) "2" else "1",
+            )
+            withContext(dispatchers.main) {
+                _state.update {
+                    it.copy(wiiIrSource = source, showWiiControlSchemePicker = false)
                 }
             }
         }

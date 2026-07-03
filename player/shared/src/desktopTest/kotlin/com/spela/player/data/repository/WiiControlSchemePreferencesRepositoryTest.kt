@@ -6,6 +6,7 @@ import com.spela.player.data.local.SpelaDatabase
 import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.data.remote.interceptor.TokenManager
 import com.spela.player.domain.model.WiiControlScheme
+import com.spela.player.domain.model.WiiIrSource
 import com.spela.player.presentation.viewmodel.emulation.StubMockEngineFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -67,5 +68,38 @@ class WiiControlSchemePreferencesRepositoryTest {
         val repo = repo(db)
         db.spelaDatabaseQueries.insertDeviceSetting("game_wii_control_scheme:game1", "bogus")
         assertEquals(WiiControlScheme.NUNCHUK, repo.resolveWiiControlScheme("game1"))
+    }
+
+    @Test
+    fun irSourceDefaultsToRightStick() {
+        assertEquals(WiiIrSource.RIGHT_STICK, repo(database()).resolveWiiIrSource("game1"))
+    }
+
+    @Test
+    fun irSourceRoundTripsAndRightStickClears() {
+        val db = database()
+        val repo = repo(db)
+
+        repo.setWiiIrSource("game1", WiiIrSource.TOUCH_POINTER)
+        assertEquals(WiiIrSource.TOUCH_POINTER, repo.resolveWiiIrSource("game1"))
+
+        repo.setWiiIrSource("game1", WiiIrSource.RIGHT_STICK)
+        assertEquals(WiiIrSource.RIGHT_STICK, repo.resolveWiiIrSource("game1"))
+        assertNull(
+            db.spelaDatabaseQueries
+                .getDeviceSetting("game_wii_ir_source:game1")
+                .executeAsOneOrNull(),
+        )
+    }
+
+    @Test
+    fun irSourceIsPerGameAndIndependentOfScheme() {
+        val repo = repo(database())
+        repo.setWiiIrSource("game1", WiiIrSource.TOUCH_POINTER)
+        repo.setWiiControlScheme("game1", WiiControlScheme.CLASSIC_CONTROLLER)
+        // Orthogonal: both persist for the same game.
+        assertEquals(WiiIrSource.TOUCH_POINTER, repo.resolveWiiIrSource("game1"))
+        assertEquals(WiiControlScheme.CLASSIC_CONTROLLER, repo.resolveWiiControlScheme("game1"))
+        assertEquals(WiiIrSource.RIGHT_STICK, repo.resolveWiiIrSource("game2"))
     }
 }

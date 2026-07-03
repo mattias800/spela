@@ -63,6 +63,7 @@ import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.feature.ingame.DsPrimaryTouchOverlay
+import com.spela.player.presentation.ui.feature.ingame.WiiTouchPointerOverlay
 import com.spela.player.presentation.ui.screen.InGameOverlay
 import com.spela.player.presentation.ui.feature.ingame.PlatformEmulationSurface
 import com.spela.player.presentation.ui.feature.ingame.PlatformTouchControls
@@ -497,6 +498,22 @@ fun SpelaApp(deps: SpelaAppDependencies) = with(deps) {
                                 controller = libretroController,
                                 consoleId = emulationState.consoleId,
                                 splitY = emulationState.dualScreenSplitY,
+                            )
+                        }
+
+                        // Wii touch IR pointer overlay on primary display (#1560),
+                        // when the touch source is selected and no secondary
+                        // display is taking over. Mutually exclusive with the DS
+                        // overlay above (a console is either dual-screen or Wii).
+                        if (emulationState.isWiiIrSourceSelectable
+                            && emulationState.wiiIrSource == com.spela.player.domain.model.WiiIrSource.TOUCH_POINTER
+                            && !emulationState.secondaryDisplayActive
+                            && emulationState.isRunning && !emulationState.showOverlay
+                        ) {
+                            WiiTouchPointerOverlay(
+                                controller = libretroController,
+                                aspectRatio = emulationState.widescreenMode.displayAspectRatio
+                                    .takeIf { it > 0f } ?: (4f / 3f),
                             )
                         }
 

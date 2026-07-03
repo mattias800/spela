@@ -121,6 +121,13 @@ sealed interface EmulationIntent {
     data class SelectWiiControlScheme(
         val scheme: com.spela.player.domain.model.WiiControlScheme,
     ) : EmulationIntent
+
+    /**
+     * Persist and (best-effort) live-apply the Wii IR pointer source (#1560).
+     */
+    data class SelectWiiIrSource(
+        val source: com.spela.player.domain.model.WiiIrSource,
+    ) : EmulationIntent
     /** Open the medium-tier "Save with name…" dialog from the slot
      *  picker. Power-user escape hatch for deliberate named saves
      *  on top of the slot grid. See #830. */

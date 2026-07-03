@@ -142,6 +142,15 @@ data class EmulationState(
     /** True when the in-game Wii control scheme picker dialog is open (#1559). */
     val showWiiControlSchemePicker: Boolean = false,
     /**
+     * True when this session can switch the Wii IR pointer source (#1560).
+     * Same condition as [isWiiControlSchemeSelectable] (Wii + dolphin); named
+     * for the picker's own semantics.
+     */
+    val isWiiIrSourceSelectable: Boolean = false,
+    /** The Wii IR pointer source currently applied to the session (#1560). */
+    val wiiIrSource: com.spela.player.domain.model.WiiIrSource =
+        com.spela.player.domain.model.WiiIrSource.RIGHT_STICK,
+    /**
      * Non-null when the user long-presses a filled slot cell on the
      * in-game slot picker. Drives the slot-actions bottom sheet
      * (Rename / Delete / Cancel). See #831.

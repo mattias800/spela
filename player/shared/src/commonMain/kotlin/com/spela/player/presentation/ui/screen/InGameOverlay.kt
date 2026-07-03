@@ -376,8 +376,12 @@ fun InGameOverlay(
     if (state.showWiiControlSchemePicker) {
         com.spela.player.presentation.ui.feature.ingame.InGameWiiControlSchemeDialog(
             currentScheme = state.wiiControlScheme,
+            currentIrSource = state.wiiIrSource,
             onSelect = { scheme ->
                 viewModel.onIntent(EmulationIntent.SelectWiiControlScheme(scheme))
+            },
+            onSelectIrSource = { source ->
+                viewModel.onIntent(EmulationIntent.SelectWiiIrSource(source))
             },
             onDismiss = { viewModel.onIntent(EmulationIntent.DismissWiiControlSchemePicker) },
         )

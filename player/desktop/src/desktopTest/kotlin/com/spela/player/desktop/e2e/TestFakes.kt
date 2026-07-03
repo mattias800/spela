@@ -800,6 +800,17 @@ class FakePreferencesRepository : PreferencesRepository {
         }
     }
 
+    val wiiIrSources = mutableMapOf<String, com.spela.player.domain.model.WiiIrSource>()
+    override fun resolveWiiIrSource(gameId: String): com.spela.player.domain.model.WiiIrSource =
+        wiiIrSources[gameId] ?: com.spela.player.domain.model.WiiIrSource.RIGHT_STICK
+    override fun setWiiIrSource(gameId: String, source: com.spela.player.domain.model.WiiIrSource) {
+        if (source == com.spela.player.domain.model.WiiIrSource.RIGHT_STICK) {
+            wiiIrSources.remove(gameId)
+        } else {
+            wiiIrSources[gameId] = source
+        }
+    }
+
     var syncKeyMappingsCalled = false
     var pushKeyMappingsCalled = false
 

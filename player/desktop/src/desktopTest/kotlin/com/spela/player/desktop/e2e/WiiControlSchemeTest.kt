@@ -3,6 +3,7 @@ package com.spela.player.desktop.e2e
 import androidx.compose.ui.test.*
 import androidx.compose.ui.semantics.SemanticsProperties
 import com.spela.player.domain.model.WiiControlScheme
+import com.spela.player.domain.model.WiiIrSource
 import com.spela.player.presentation.navigation.NavigationIntent
 import com.spela.player.presentation.navigation.SpScreen
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -59,6 +60,39 @@ class WiiControlSchemeTest {
             WiiControlScheme.CLASSIC_CONTROLLER,
             harness.preferencesRepo.wiiControlSchemes["1"],
         )
+    }
+
+    @Test
+    fun selectingIrSourcePersistsPerGame() = runComposeUiTest {
+        val harness = createHarness(wiiGame = true)
+
+        setContent { harness.App() }
+        harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.GameDetail("1")))
+        advance(harness)
+
+        onNodeWithTag("wii-ir-source-option-touch_pointer", useUnmergedTree = true)
+            .performScrollTo()
+            .performClick()
+        advanceQuick(harness)
+
+        assertEquals(
+            WiiIrSource.TOUCH_POINTER,
+            harness.preferencesRepo.wiiIrSources["1"],
+        )
+    }
+
+    @Test
+    fun storedIrSourceIsPreselectedOnReturn() = runComposeUiTest {
+        val harness = createHarness(wiiGame = true)
+        harness.preferencesRepo.wiiIrSources["1"] = WiiIrSource.TOUCH_POINTER
+
+        setContent { harness.App() }
+        harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.GameDetail("1")))
+        advance(harness)
+
+        onNodeWithTag("wii-ir-source-option-touch_pointer", useUnmergedTree = true)
+            .assertExists()
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Selected"))
     }
 
     @Test

@@ -15,6 +15,7 @@ import com.spela.player.domain.model.RenderScale
 import com.spela.player.domain.model.RenderScaleChoice
 import com.spela.player.domain.model.WidescreenMode
 import com.spela.player.domain.model.WiiControlScheme
+import com.spela.player.domain.model.WiiIrSource
 import com.spela.player.domain.model.ShaderPreset
 import com.spela.player.domain.model.supportsRenderScale
 import com.spela.player.libretro.GamepadMappingMigration
@@ -44,6 +45,7 @@ class PreferencesRepositoryImpl(
         const val GAMEPAD_MIGRATION_FLAG = "gamepad_positional_migration_v1"
         const val GAME_WIDESCREEN_MODE_PREFIX = "game_widescreen_mode:"
         const val GAME_WII_CONTROL_SCHEME_PREFIX = "game_wii_control_scheme:"
+        const val GAME_WII_IR_SOURCE_PREFIX = "game_wii_ir_source:"
         const val CONSOLE_RENDER_SCALE_PREFIX = "console_render_scale:"
     }
 
@@ -206,6 +208,27 @@ class PreferencesRepositoryImpl(
             database.spelaDatabaseQueries.deleteDeviceSetting(key)
         } else {
             database.spelaDatabaseQueries.insertDeviceSetting(key, scheme.storageId)
+        }
+    }
+
+    override fun resolveWiiIrSource(gameId: String): WiiIrSource {
+        val stored = if (gameId.isNotBlank()) {
+            database.spelaDatabaseQueries.getDeviceSetting(GAME_WII_IR_SOURCE_PREFIX + gameId)
+                .executeAsOneOrNull()
+        } else {
+            null
+        }
+        return WiiIrSource.fromStorageId(stored) ?: WiiIrSource.RIGHT_STICK
+    }
+
+    override fun setWiiIrSource(gameId: String, source: WiiIrSource) {
+        if (gameId.isBlank()) return
+        val key = GAME_WII_IR_SOURCE_PREFIX + gameId
+        if (source == WiiIrSource.RIGHT_STICK) {
+            // RIGHT_STICK is the default — store nothing.
+            database.spelaDatabaseQueries.deleteDeviceSetting(key)
+        } else {
+            database.spelaDatabaseQueries.insertDeviceSetting(key, source.storageId)
         }
     }
 

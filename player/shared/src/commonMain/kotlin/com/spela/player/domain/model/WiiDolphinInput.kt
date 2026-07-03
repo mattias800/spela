@@ -41,9 +41,20 @@ fun wiiControllerPortDevice(
  * those values. Total yaw is left at the core default (25), which already
  * matches standalone Dolphin.
  */
-fun wiiIrPointerCoreVariables(consoleId: String, corePath: String): List<CoreVariableOverride> =
+fun wiiIrPointerCoreVariables(
+    consoleId: String,
+    corePath: String,
+    irSource: WiiIrSource,
+): List<CoreVariableOverride> =
     if (isWiiWithDolphin(consoleId, corePath)) {
         listOf(
+            // dolphin_ir_mode (#1560): 1 = right-stick absolute (default),
+            // 2 = RETRO_DEVICE_POINTER (touch/mouse) drives IR and frees the
+            // right stick for Nunchuk tilt. Set explicitly for both sources.
+            CoreVariableOverride(
+                "dolphin_ir_mode",
+                if (irSource == WiiIrSource.TOUCH_POINTER) "2" else "1",
+            ),
             CoreVariableOverride("dolphin_ir_offset", "10"),
             CoreVariableOverride("dolphin_ir_pitch", "20"),
         )

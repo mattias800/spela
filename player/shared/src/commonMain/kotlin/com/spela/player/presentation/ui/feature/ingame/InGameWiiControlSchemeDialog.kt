@@ -24,6 +24,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.WiiControlScheme
+import com.spela.player.domain.model.WiiIrSource
 import com.spela.player.presentation.ui.components.SpRadioOption
 import com.spela.player.presentation.ui.components.SpSecondaryButton
 import com.spela.player.presentation.ui.theme.SpColor
@@ -31,14 +32,17 @@ import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 
 /**
- * In-game Wii controller scheme picker (#1559). One radio row per
- * [WiiControlScheme]; picking a scheme commits (persist + live re-apply)
- * and closes. Same scrim/card structure as [InGameSlotPickerDialog].
+ * In-game Wii controller picker (#1559, #1560). A radio group for the
+ * controller [WiiControlScheme] and one for the IR pointer [WiiIrSource];
+ * picking either commits (persist + live-apply) and closes. Same scrim/card
+ * structure as [InGameSlotPickerDialog].
  */
 @Composable
 fun InGameWiiControlSchemeDialog(
     currentScheme: WiiControlScheme,
+    currentIrSource: WiiIrSource,
     onSelect: (WiiControlScheme) -> Unit,
+    onSelectIrSource: (WiiIrSource) -> Unit,
     onDismiss: () -> Unit,
 ) {
     Box(
@@ -79,6 +83,12 @@ fun InGameWiiControlSchemeDialog(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
             ) {
+                Text(
+                    text = "Controller",
+                    style = SpTypography.LabelMedium,
+                    color = SpColor.OnBackgroundSecondary,
+                    modifier = Modifier.fillMaxWidth(),
+                )
                 WiiControlScheme.entries.forEach { scheme ->
                     SpRadioOption(
                         title = scheme.displayName,
@@ -86,6 +96,22 @@ fun InGameWiiControlSchemeDialog(
                         isSelected = scheme == currentScheme,
                         onClick = { onSelect(scheme) },
                         modifier = Modifier.testTag("wii-scheme-option-${scheme.storageId}"),
+                    )
+                }
+                Spacer(Modifier.height(SpSpacing.Small))
+                Text(
+                    text = "Pointer",
+                    style = SpTypography.LabelMedium,
+                    color = SpColor.OnBackgroundSecondary,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                WiiIrSource.entries.forEach { source ->
+                    SpRadioOption(
+                        title = source.displayName,
+                        description = source.description,
+                        isSelected = source == currentIrSource,
+                        onClick = { onSelectIrSource(source) },
+                        modifier = Modifier.testTag("wii-ir-source-option-${source.storageId}"),
                     )
                 }
             }
