@@ -10,26 +10,23 @@ package com.spela.player.domain.model
  */
 
 /**
- * dolphin-libretro's "WiiMote + Nunchuk" controller type:
- * `RETRO_DEVICE_WIIMOTE_NC = (3 << 8) | RETRO_DEVICE_JOYPAD`.
- */
-const val RETRO_DEVICE_WIIMOTE_NC: Int = (3 shl 8) or 1
-
-/**
  * The controller device to set on the Wiimote ports after `loadGame`, or
- * null to keep the frontend default (#1534).
+ * null to keep the frontend default (#1534, #1559).
  *
  * The native bridge defaults every port to plain RETRO_DEVICE_JOYPAD — a
  * bare Wiimote — right after `retro_load_game`, which hard-blocks Nunchuk
- * games ("Connect a Nunchuk to Player 1's Wii Remote"). Attaching the
- * Nunchuk matches what most Wii titles expect and is harmless for
- * Wiimote-only games, exactly like real hardware. The core's Nunchuk
- * scheme (descWiimoteNunchuk): left stick = Nunchuk stick, X = C, Y = Z,
+ * games ("Connect a Nunchuk to Player 1's Wii Remote"). The scheme (the
+ * per-game choice, [WiiControlScheme.NUNCHUK] by default) decides which
+ * controller type the core attaches instead. The core's Nunchuk scheme
+ * (descWiimoteNunchuk): left stick = Nunchuk stick, X = C, Y = Z,
  * L/R = −/+, R2/L2 = shake Wiimote/Nunchuk, right stick stays IR pointer.
- * Per-game scheme selection (sideways, Classic Controller, …) is #1559.
  */
-fun wiiControllerPortDevice(consoleId: String, corePath: String): Int? =
-    if (isWiiWithDolphin(consoleId, corePath)) RETRO_DEVICE_WIIMOTE_NC else null
+fun wiiControllerPortDevice(
+    consoleId: String,
+    corePath: String,
+    scheme: WiiControlScheme,
+): Int? =
+    if (isWiiWithDolphin(consoleId, corePath)) scheme.portDevice else null
 
 /**
  * Core-variable overrides that center the Wiimote IR pointer's rest
