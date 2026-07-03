@@ -1,10 +1,8 @@
 package com.spela.player.desktop.e2e
 
 import androidx.compose.ui.test.*
-import com.spela.player.domain.model.Challenge
 import com.spela.player.domain.model.ChallengeDifficulty
 import com.spela.player.domain.model.ChallengeType
-import com.spela.player.domain.model.Game
 import com.spela.player.domain.model.RecentAchievement
 import com.spela.player.domain.model.UserStats
 import com.spela.player.presentation.navigation.NavigationIntent
