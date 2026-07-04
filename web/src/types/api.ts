@@ -65,6 +65,7 @@ export type OperationalEventType =
   | "api_credentials_invalid"
   | "emulatorjs_load_failed"
   | "core_updated"
+  | "core_update_failed"
   | "bios_download_failed";
 
 export type SystemEventType = SecurityEventType | OperationalEventType;

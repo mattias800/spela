@@ -115,6 +115,12 @@ export const SYSTEM_EVENT_META: Record<SystemEventType, EventMeta> = {
     icon: RefreshCw,
     severity: "info",
   },
+  core_update_failed: {
+    label: "Core Update Failed",
+    variant: "warning",
+    icon: RefreshCw,
+    severity: "notice",
+  },
   bios_download_failed: {
     label: "BIOS Download Failed",
     variant: "warning",
