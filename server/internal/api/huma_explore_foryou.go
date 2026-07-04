@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"sort"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/spela/server/internal/db"
@@ -73,7 +74,7 @@ func (h *ExploreHandler) HumaGetForYou(ctx context.Context, _ *GetForYouInput) (
 	// with every row builder. The map is read-only after construction so
 	// the parallel goroutines below can safely read it without locking.
 	// See [explore_handler_foryou_dedup.go] for the dedupe rules
-	// (issue #1183 v1).
+	// (issue #1186, with #1183's normalized-title fallback).
 	mostPlayedByTitle := h.fetchMostPlayedTitleMap(userID)
 
 	// Run the four row builders in parallel — they're independent and
@@ -141,16 +142,14 @@ func (h *ExploreHandler) HumaGetPlayersLikeYou(ctx context.Context, _ *GetPlayer
 		return nil, huma.Error401Unauthorized("authentication required")
 	}
 
-	var myFavIDs []uint
-	if err := h.DB.Model(&db.Favorite{}).
-		Select("game_id").
-		Where("user_id = ?", userID).
-		Pluck("game_id", &myFavIDs).Error; err != nil {
+	myFavoriteRows, err := h.fetchFavoriteTitleRowsForUser(userID)
+	if err != nil {
 		slog.Error("failed to get user favorites", "error", err)
 		return nil, huma.Error500InternalServerError("failed to get recommendations")
 	}
 
-	if len(myFavIDs) == 0 {
+	myFavoriteKeys := titleKeySet(myFavoriteRows)
+	if len(myFavoriteKeys) == 0 {
 		return &GetPlayersLikeYouOutput{
 			CacheControl: "private, max-age=120",
 			Body: PlayersLikeYouResponse{
@@ -160,22 +159,14 @@ func (h *ExploreHandler) HumaGetPlayersLikeYou(ctx context.Context, _ *GetPlayer
 		}, nil
 	}
 
-	type userOverlap struct {
-		UserID       uint
-		OverlapCount int
-	}
-	var overlaps []userOverlap
-	if err := h.DB.Model(&db.Favorite{}).
-		Select("user_id, COUNT(*) as overlap_count").
-		Where("user_id != ? AND game_id IN ?", userID, myFavIDs).
-		Group("user_id").
-		Order("overlap_count DESC").
-		Scan(&overlaps).Error; err != nil {
+	overlapRows, err := h.fetchPotentialOverlapFavoriteTitleRows(userID, myFavoriteRows)
+	if err != nil {
 		slog.Error("failed to find similar users", "error", err)
 		return nil, huma.Error500InternalServerError("failed to get recommendations")
 	}
 
-	if len(overlaps) == 0 {
+	candidateUserIDs := usersWithTitleKeyOverlap(userID, myFavoriteKeys, overlapRows)
+	if len(candidateUserIDs) == 0 {
 		return &GetPlayersLikeYouOutput{
 			CacheControl: "private, max-age=120",
 			Body: PlayersLikeYouResponse{
@@ -183,6 +174,20 @@ func (h *ExploreHandler) HumaGetPlayersLikeYou(ctx context.Context, _ *GetPlayer
 				SimilarUsersCount: 0,
 			},
 		}, nil
+	}
+
+	candidateFavoriteRows, err := h.fetchFavoriteTitleRowsForUsers(candidateUserIDs)
+	if err != nil {
+		slog.Error("failed to get candidate favorite rows", "error", err)
+		return nil, huma.Error500InternalServerError("failed to get recommendations")
+	}
+
+	favoriteKeysByUser := make(map[uint]map[string]struct{}, len(candidateUserIDs))
+	for _, row := range candidateFavoriteRows {
+		if favoriteKeysByUser[row.UserID] == nil {
+			favoriteKeysByUser[row.UserID] = make(map[string]struct{})
+		}
+		favoriteKeysByUser[row.UserID][row.titleKey()] = struct{}{}
 	}
 
 	type similarUser struct {
@@ -190,76 +195,98 @@ func (h *ExploreHandler) HumaGetPlayersLikeYou(ctx context.Context, _ *GetPlayer
 		similarity float64
 	}
 
-	candidateUserIDs := make([]uint, len(overlaps))
-	overlapMap := make(map[uint]int, len(overlaps))
-	for i, o := range overlaps {
-		candidateUserIDs[i] = o.UserID
-		overlapMap[o.UserID] = o.OverlapCount
-	}
-
-	type favCountRow struct {
-		UserID   uint
-		FavCount int
-	}
-	var favCounts []favCountRow
-	if err := h.DB.Model(&db.Favorite{}).
-		Select("user_id, COUNT(*) as fav_count").
-		Where("user_id IN ?", candidateUserIDs).
-		Group("user_id").
-		Scan(&favCounts).Error; err != nil {
-		slog.Error("failed to get candidate favorite counts", "error", err)
-		return nil, huma.Error500InternalServerError("failed to get recommendations")
-	}
-
 	var similarUsers []similarUser
-	myFavCount := len(myFavIDs)
-	for _, fc := range favCounts {
-		intersection := overlapMap[fc.UserID]
-		union := myFavCount + fc.FavCount - intersection
+	for _, candidateUserID := range candidateUserIDs {
+		candidateKeys := favoriteKeysByUser[candidateUserID]
+		intersection := countTitleKeyOverlap(myFavoriteKeys, candidateKeys)
+		if intersection == 0 {
+			continue
+		}
+		union := len(myFavoriteKeys) + len(candidateKeys) - intersection
 		if union == 0 {
 			continue
 		}
 		similarity := float64(intersection) / float64(union)
 		similarUsers = append(similarUsers, similarUser{
-			userID:     fc.UserID,
+			userID:     candidateUserID,
 			similarity: similarity,
 		})
 	}
 
-	for i := 0; i < len(similarUsers); i++ {
-		for j := i + 1; j < len(similarUsers); j++ {
-			if similarUsers[j].similarity > similarUsers[i].similarity {
-				similarUsers[i], similarUsers[j] = similarUsers[j], similarUsers[i]
-			}
-		}
+	if len(similarUsers) == 0 {
+		return &GetPlayersLikeYouOutput{
+			CacheControl: "private, max-age=120",
+			Body: PlayersLikeYouResponse{
+				Games:             []GameResponse{},
+				SimilarUsersCount: 0,
+			},
+		}, nil
 	}
+
+	sort.SliceStable(similarUsers, func(i, j int) bool {
+		if similarUsers[i].similarity != similarUsers[j].similarity {
+			return similarUsers[i].similarity > similarUsers[j].similarity
+		}
+		return similarUsers[i].userID < similarUsers[j].userID
+	})
 
 	if len(similarUsers) > 5 {
 		similarUsers = similarUsers[:5]
 	}
 
-	topUserIDs := make([]uint, len(similarUsers))
-	for i, su := range similarUsers {
-		topUserIDs[i] = su.userID
+	topUserSet := make(map[uint]struct{}, len(similarUsers))
+	for _, su := range similarUsers {
+		topUserSet[su.userID] = struct{}{}
 	}
 
-	type recGameRow struct {
-		GameID    uint
-		UserCount int
+	type recommendedTitle struct {
+		key       string
+		userIDs   map[uint]struct{}
+		gameIDs   []uint
+		gameIDSet map[uint]struct{}
 	}
-	var recGameRows []recGameRow
-	if err := h.DB.Model(&db.Favorite{}).
-		Select("game_id, COUNT(DISTINCT user_id) as user_count").
-		Where("user_id IN ? AND game_id NOT IN ?", topUserIDs, myFavIDs).
-		Group("game_id").
-		Order("user_count DESC").
-		Limit(20).
-		Scan(&recGameRows).Error; err != nil {
-		slog.Error("failed to get recommended games from similar users", "error", err)
-		return nil, huma.Error500InternalServerError("failed to get recommendations")
+	recommendedByKey := make(map[string]*recommendedTitle)
+	for _, row := range candidateFavoriteRows {
+		if _, ok := topUserSet[row.UserID]; !ok {
+			continue
+		}
+		key := row.titleKey()
+		if _, alreadyFavorite := myFavoriteKeys[key]; alreadyFavorite {
+			continue
+		}
+		rec := recommendedByKey[key]
+		if rec == nil {
+			rec = &recommendedTitle{
+				key:       key,
+				userIDs:   make(map[uint]struct{}),
+				gameIDSet: make(map[uint]struct{}),
+			}
+			recommendedByKey[key] = rec
+		}
+		rec.userIDs[row.UserID] = struct{}{}
+		if _, exists := rec.gameIDSet[row.GameID]; !exists {
+			rec.gameIDSet[row.GameID] = struct{}{}
+			rec.gameIDs = append(rec.gameIDs, row.GameID)
+		}
 	}
 
-	if len(recGameRows) == 0 {
+	recommendedTitles := make([]*recommendedTitle, 0, len(recommendedByKey))
+	for _, rec := range recommendedByKey {
+		sort.Slice(rec.gameIDs, func(i, j int) bool { return rec.gameIDs[i] < rec.gameIDs[j] })
+		recommendedTitles = append(recommendedTitles, rec)
+	}
+	sort.SliceStable(recommendedTitles, func(i, j int) bool {
+		leftCount, rightCount := len(recommendedTitles[i].userIDs), len(recommendedTitles[j].userIDs)
+		if leftCount != rightCount {
+			return leftCount > rightCount
+		}
+		return recommendedTitles[i].key < recommendedTitles[j].key
+	})
+	if len(recommendedTitles) > 20 {
+		recommendedTitles = recommendedTitles[:20]
+	}
+
+	if len(recommendedTitles) == 0 {
 		return &GetPlayersLikeYouOutput{
 			CacheControl: "private, max-age=120",
 			Body: PlayersLikeYouResponse{
@@ -269,9 +296,9 @@ func (h *ExploreHandler) HumaGetPlayersLikeYou(ctx context.Context, _ *GetPlayer
 		}, nil
 	}
 
-	gameIDs := make([]uint, len(recGameRows))
-	for i, r := range recGameRows {
-		gameIDs[i] = r.GameID
+	gameIDs := make([]uint, 0, len(recommendedTitles))
+	for _, rec := range recommendedTitles {
+		gameIDs = append(gameIDs, rec.gameIDs...)
 	}
 
 	var games []db.Game
@@ -284,17 +311,22 @@ func (h *ExploreHandler) HumaGetPlayersLikeYou(ctx context.Context, _ *GetPlayer
 	for _, g := range games {
 		gameMap[g.ID] = g
 	}
-	sorted := make([]db.Game, 0, len(recGameRows))
-	for _, r := range recGameRows {
-		if g, ok := gameMap[r.GameID]; ok {
-			sorted = append(sorted, g)
+	sorted := make([]db.Game, 0, len(gameIDs))
+	for _, rec := range recommendedTitles {
+		for _, gameID := range rec.gameIDs {
+			if g, ok := gameMap[gameID]; ok {
+				sorted = append(sorted, g)
+			}
 		}
 	}
 
-	// Cross-platform title dedupe (#1183 v1). Without it, a similar user
+	// Cross-platform title dedupe. Without it, a similar user
 	// who has Street Fighter II on SNES, Genesis, and Arcade favourited
 	// would inflate this shelf with all three platform variants.
 	sorted = dedupeGamesByTitle(sorted, h.fetchMostPlayedTitleMap(userID))
+	if len(sorted) > 20 {
+		sorted = sorted[:20]
+	}
 
 	return &GetPlayersLikeYouOutput{
 		CacheControl: "private, max-age=120",
@@ -305,3 +337,123 @@ func (h *ExploreHandler) HumaGetPlayersLikeYou(ctx context.Context, _ *GetPlayer
 	}, nil
 }
 
+type favoriteTitleRow struct {
+	UserID          uint
+	GameID          uint
+	Title           string
+	TitleRootIGDBID *uint
+}
+
+func (r favoriteTitleRow) titleKey() string {
+	return titleDedupeKey(db.Game{ID: r.GameID, Title: r.Title, TitleRootIGDBID: r.TitleRootIGDBID})
+}
+
+func (h *ExploreHandler) fetchFavoriteTitleRowsForUser(userID uint) ([]favoriteTitleRow, error) {
+	var rows []favoriteTitleRow
+	err := h.favoriteTitleRowsQuery().
+		Where("favorites.user_id = ?", userID).
+		Scan(&rows).Error
+	return rows, err
+}
+
+func (h *ExploreHandler) fetchFavoriteTitleRowsForUsers(userIDs []uint) ([]favoriteTitleRow, error) {
+	if len(userIDs) == 0 {
+		return nil, nil
+	}
+	var rows []favoriteTitleRow
+	err := h.favoriteTitleRowsQuery().
+		Where("favorites.user_id IN ?", userIDs).
+		Scan(&rows).Error
+	return rows, err
+}
+
+func (h *ExploreHandler) fetchPotentialOverlapFavoriteTitleRows(userID uint, myFavoriteRows []favoriteTitleRow) ([]favoriteTitleRow, error) {
+	rootIDs, includeNoRoot := overlapCandidateFilters(myFavoriteRows)
+	if len(rootIDs) == 0 && !includeNoRoot {
+		return nil, nil
+	}
+
+	query := h.favoriteTitleRowsQuery().
+		Where("favorites.user_id != ?", userID)
+	switch {
+	case len(rootIDs) > 0 && includeNoRoot:
+		query = query.Where("(games.title_root_igdb_id IN ? OR games.title_root_igdb_id IS NULL)", rootIDs)
+	case len(rootIDs) > 0:
+		query = query.Where("games.title_root_igdb_id IN ?", rootIDs)
+	default:
+		query = query.Where("games.title_root_igdb_id IS NULL")
+	}
+
+	var rows []favoriteTitleRow
+	err := query.Scan(&rows).Error
+	return rows, err
+}
+
+func (h *ExploreHandler) favoriteTitleRowsQuery() *gorm.DB {
+	return h.DB.Table("favorites").
+		Select("favorites.user_id, favorites.game_id, games.title, games.title_root_igdb_id").
+		Joins("JOIN games ON games.id = favorites.game_id AND games.deleted_at IS NULL").
+		Where("favorites.deleted_at IS NULL")
+}
+
+func titleKeySet(rows []favoriteTitleRow) map[string]struct{} {
+	keys := make(map[string]struct{}, len(rows))
+	for _, row := range rows {
+		keys[row.titleKey()] = struct{}{}
+	}
+	return keys
+}
+
+func overlapCandidateFilters(rows []favoriteTitleRow) ([]uint, bool) {
+	rootIDSet := make(map[uint]struct{})
+	includeNoRoot := false
+	for _, row := range rows {
+		if row.TitleRootIGDBID == nil {
+			includeNoRoot = true
+			continue
+		}
+		rootIDSet[*row.TitleRootIGDBID] = struct{}{}
+	}
+
+	rootIDs := make([]uint, 0, len(rootIDSet))
+	for id := range rootIDSet {
+		rootIDs = append(rootIDs, id)
+	}
+	sort.Slice(rootIDs, func(i, j int) bool { return rootIDs[i] < rootIDs[j] })
+	return rootIDs, includeNoRoot
+}
+
+func usersWithTitleKeyOverlap(userID uint, myFavoriteKeys map[string]struct{}, rows []favoriteTitleRow) []uint {
+	keysByUser := make(map[uint]map[string]struct{})
+	for _, row := range rows {
+		if row.UserID == userID {
+			continue
+		}
+		if keysByUser[row.UserID] == nil {
+			keysByUser[row.UserID] = make(map[string]struct{})
+		}
+		keysByUser[row.UserID][row.titleKey()] = struct{}{}
+	}
+
+	userIDs := make([]uint, 0, len(keysByUser))
+	for candidateUserID, candidateKeys := range keysByUser {
+		if countTitleKeyOverlap(myFavoriteKeys, candidateKeys) > 0 {
+			userIDs = append(userIDs, candidateUserID)
+		}
+	}
+	sort.Slice(userIDs, func(i, j int) bool { return userIDs[i] < userIDs[j] })
+	return userIDs
+}
+
+func countTitleKeyOverlap(left map[string]struct{}, right map[string]struct{}) int {
+	if len(left) > len(right) {
+		left, right = right, left
+	}
+	count := 0
+	for key := range left {
+		if _, ok := right[key]; ok {
+			count++
+		}
+	}
+	return count
+}

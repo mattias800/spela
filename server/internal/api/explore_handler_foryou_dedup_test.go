@@ -77,12 +77,37 @@ func TestDedupeGamesByTitle_MostPlayedHintWins(t *testing.T) {
 		{ID: 1, Title: "Street Fighter II", IGDBCriticsRating: 90, Console: db.Console{Generation: 4}},
 		{ID: 2, Title: "Street Fighter II (USA)", IGDBCriticsRating: 85, Console: db.Console{Generation: 3}},
 	}
-	hint := map[string]uint{"street fighter ii": 1}
+	hint := map[string]uint{titleDedupeKey(games[0]): 1}
 	out := dedupeGamesByTitle(games, hint)
 	if assert.Len(t, out, 1) {
 		assert.Equal(t, uint(1), out[0].ID,
 			"most-played hint should beat the generation rule")
 	}
+}
+
+func TestDedupeGamesByTitle_TitleRootCollapsesDifferentNames(t *testing.T) {
+	rootID := uint(6000)
+	games := []db.Game{
+		{ID: 1, Title: "Final Fantasy VI Advance", TitleRootIGDBID: &rootID, IGDBCriticsRating: 88, Console: db.Console{Generation: 6}},
+		{ID: 2, Title: "Final Fantasy VI", TitleRootIGDBID: &rootID, IGDBCriticsRating: 95, Console: db.Console{Generation: 4}},
+	}
+
+	out := dedupeGamesByTitle(games, nil)
+	if assert.Len(t, out, 1) {
+		assert.Equal(t, uint(2), out[0].ID, "same IGDB title root should collapse even when titles differ")
+	}
+}
+
+func TestDedupeGamesByTitle_DifferentTitleRootsKeepSameNamesSeparate(t *testing.T) {
+	rootA := uint(7000)
+	rootB := uint(8000)
+	games := []db.Game{
+		{ID: 1, Title: "Resident Evil 2", TitleRootIGDBID: &rootA, Console: db.Console{Generation: 5}},
+		{ID: 2, Title: "Resident Evil 2", TitleRootIGDBID: &rootB, Console: db.Console{Generation: 5}},
+	}
+
+	out := dedupeGamesByTitle(games, nil)
+	assert.Len(t, out, 2, "different IGDB title roots should not collapse just because titles match")
 }
 
 func TestDedupeGamesByTitle_RatingTiebreakWhenSameGeneration(t *testing.T) {

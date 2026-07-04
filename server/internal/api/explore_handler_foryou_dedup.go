@@ -9,8 +9,7 @@ import (
 	"github.com/spela/server/internal/db"
 )
 
-// --- Cross-platform title dedupe for the For-You + players-like-you shelves
-// (issue #1183 v1).
+// --- Cross-platform title dedupe for the For-You + players-like-you shelves.
 //
 // IGDB models each platform release of a game as a separate entry, so our
 // scraped library ends up with Street Fighter II (SNES), Street Fighter II
@@ -19,10 +18,9 @@ import (
 // history happily list all three of them side-by-side, which wastes carousel
 // slots and looks duplicated.
 //
-// The proper fix (v2 in the issue) is a Title / Work entity backed by IGDB's
-// `parent_game` / `version_parent` links so we know which entries are
-// versions of the same work. This file implements the v1 quick fix: a
-// normalised title key + a deterministic tiebreak picks one game per key.
+// The preferred key is IGDB's resolved title root (issue #1186). Games that do
+// not have IGDB relationship data keep the v1 fallback: a normalised title key
+// plus a deterministic tiebreak.
 
 // titleEditionSuffixes are tail strings stripped from a lower-cased title
 // before keying — these are platform/edition shouting-marks that genuinely
@@ -37,6 +35,7 @@ import (
 //     Street Fighter II vs Hyper Fighting). Leave them.
 //   - "Collection" / "Compilation" → those are genuinely distinct works
 //     (e.g. Mega Man Collection contains many games). Leave them.
+//
 // titleEditionSuffixes is ordered LONGEST-FIRST. The strip loop is
 // greedy and picks the first matching suffix; if a shorter phrase
 // preceded a longer one that contains it, the shorter would steal
@@ -117,13 +116,26 @@ func normalizeTitleKey(title string) string {
 	return strings.TrimSpace(s)
 }
 
-// dedupeGamesByTitle returns one game per normalised title (see
-// [normalizeTitleKey]). The relative order of the first occurrence of each
-// title is preserved.
+// titleDedupeKey returns the grouping key used by recommendation dedupe and
+// collaborative-filter similarity. IGDB title roots win because they distinguish
+// same-name unrelated games while still linking ports whose titles differ.
+func titleDedupeKey(game db.Game) string {
+	if game.TitleRootIGDBID != nil {
+		return fmt.Sprintf("igdb:%d", *game.TitleRootIGDBID)
+	}
+	if key := normalizeTitleKey(game.Title); key != "" {
+		return "title:" + key
+	}
+	// Untitled / all-punctuation rows should never collide with another game.
+	return fmt.Sprintf("id:%d", game.ID)
+}
+
+// dedupeGamesByTitle returns one game per title key (see [titleDedupeKey]). The
+// relative order of the first occurrence of each title is preserved.
 //
 // For each group, the winner is picked by:
 //  1. The user's most-played platform for this title, if [mostPlayedByTitle]
-//     has an entry for the key whose game ID appears in the group.
+//     has an entry for the title key whose game ID appears in the group.
 //  2. Lower [Console.Generation] — the original-platform release tends to
 //     be what users recognise as the canonical version. Generation 0 is
 //     treated as "unknown" and pushed to the end.
@@ -143,12 +155,7 @@ func dedupeGamesByTitle(games []db.Game, mostPlayedByTitle map[string]uint) []db
 	orderedKeys := make([]string, 0, len(games))
 
 	for _, g := range games {
-		key := normalizeTitleKey(g.Title)
-		if key == "" {
-			// Untitled / all-punctuation → key by ID so it never collides
-			// with another row.
-			key = fmt.Sprintf("__id_%d", g.ID)
-		}
+		key := titleDedupeKey(g)
 		if existing, ok := groupByKey[key]; ok {
 			existing.games = append(existing.games, g)
 		} else {
@@ -171,7 +178,7 @@ func dedupeGamesByTitle(games []db.Game, mostPlayedByTitle map[string]uint) []db
 
 // pickWinnerForTitle applies the tiebreak rules documented on
 // [dedupeGamesByTitle] to choose one game from a group sharing the same
-// normalised title key.
+// title key.
 func pickWinnerForTitle(key string, games []db.Game, mostPlayedByTitle map[string]uint) db.Game {
 	if mostPlayedID, ok := mostPlayedByTitle[key]; ok {
 		for _, g := range games {
@@ -204,14 +211,14 @@ func pickWinnerForTitle(key string, games []db.Game, mostPlayedByTitle map[strin
 	return sorted[0]
 }
 
-// fetchMostPlayedTitleMap returns a map from normalised title key to the
+// fetchMostPlayedTitleMap returns a map from title key to the
 // user's most-played game ID for that title. Used as a tiebreak hint by
 // [dedupeGamesByTitle] so the "user's most-played platform wins" rule
 // can resolve a dedupe group when the user has played the work on more
 // than one platform.
 //
 // Cheap single query: joins play_histories with games, ordered by
-// play_time DESC, and keeps the first hit per normalised key. The map
+// play_time DESC, and keeps the first hit per title key. The map
 // is request-scoped (no caching) so it always reflects current play
 // history.
 func (h *ExploreHandler) fetchMostPlayedTitleMap(userID uint) map[string]uint {
@@ -219,13 +226,14 @@ func (h *ExploreHandler) fetchMostPlayedTitleMap(userID uint) map[string]uint {
 		return nil
 	}
 	type row struct {
-		GameID   uint
-		Title    string
-		PlayTime int64
+		GameID          uint
+		Title           string
+		TitleRootIGDBID *uint
+		PlayTime        int64
 	}
 	var rows []row
 	if err := h.DB.Table("play_histories").
-		Select("play_histories.game_id, games.title, play_histories.play_time").
+		Select("play_histories.game_id, games.title, games.title_root_igdb_id, play_histories.play_time").
 		Joins("JOIN games ON games.id = play_histories.game_id AND games.deleted_at IS NULL").
 		Where("play_histories.user_id = ? AND play_histories.play_time > 0", userID).
 		Order("play_histories.play_time DESC").
@@ -234,10 +242,7 @@ func (h *ExploreHandler) fetchMostPlayedTitleMap(userID uint) map[string]uint {
 	}
 	result := make(map[string]uint, len(rows))
 	for _, r := range rows {
-		key := normalizeTitleKey(r.Title)
-		if key == "" {
-			continue
-		}
+		key := titleDedupeKey(db.Game{ID: r.GameID, Title: r.Title, TitleRootIGDBID: r.TitleRootIGDBID})
 		if _, exists := result[key]; !exists {
 			result[key] = r.GameID
 		}

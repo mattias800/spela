@@ -139,7 +139,7 @@ func (h *ExploreHandler) buildBecauseYouPlayedRows(userID uint, mostPlayedByTitl
 		if err := query.
 			Order("games.rating DESC").
 			// Fetch extra so the dedupe-by-title pass below still
-			// leaves enough cards to fill the shelf (#1183 v1). The
+			// leaves enough cards to fill the shelf (#1186). The
 			// previous "fetch 20" was sized for "filter duplicates"
 			// alone; cross-platform dedupe can collapse runs of 3-5
 			// platform releases into one entry, so widen the net.
@@ -148,9 +148,9 @@ func (h *ExploreHandler) buildBecauseYouPlayedRows(userID uint, mostPlayedByTitl
 			return nil, err
 		}
 
-		// Cross-platform title dedupe (#1183 v1) — collapse SNES /
-		// Genesis / Arcade releases of the same title to one entry
-		// per shelf. Done BEFORE the already-recommended filter and
+		// Cross-platform title dedupe (#1186) — collapse linked
+		// platform releases of the same title to one entry per shelf.
+		// Done BEFORE the already-recommended filter and
 		// the 10-card cap so we don't first commit slots to dups and
 		// then have nothing left.
 		recGames = dedupeGamesByTitle(recGames, mostPlayedByTitle)
