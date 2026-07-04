@@ -140,6 +140,7 @@ class EmulationViewModel(
     private var sessionTimerJob: Job? = null
     private var stopJob: Job? = null
     private var achievementCollectorJob: Job? = null
+    private var pausedForCoreMismatchDialog = false
 
     /**
      * Cross-dispatcher: written from the main-thread intent dispatcher when
@@ -806,6 +807,7 @@ class EmulationViewModel(
         // doesn't inherit a stale banner.
         val rehearsalPrompt = pendingRehearsalPrompt
         pendingRehearsalPrompt = null
+        pausedForCoreMismatchDialog = false
         // Recreate the emulation state from scratch so launching a game is
         // state-wise IDENTICAL to launching the very first game — no field
         // from the previous game can linger (the old hand-maintained copy()
@@ -1317,20 +1319,6 @@ class EmulationViewModel(
                         // Update session with current core name (best effort)
                         saveManager.updateSessionCoreName()
 
-                        // Challenge mode: load challenge save state and start attempt
-                        if (challengeId != null) {
-                            challengeManager.loadChallengeSave(challengeId, challengeSaveDataArg)
-                        }
-                        // Try to load auto-save: in shared session mode, download shared session auto-save
-                        else if (sharedSessionId != null) {
-                            netplayManager.loadSharedSessionSave(sharedSessionId)
-                        } else if (autoLoadAllowed && !skipAutoLoad && !hwRender) {
-                            // For non-HW cores, load save state immediately.
-                            // HW render cores (e.g. Dolphin) boot asynchronously — their
-                            // GPU thread isn't ready for retro_unserialize yet. Deferred below.
-                            handleAutoLoadResult(saveManager.autoLoadSaveState(gameId))
-                        }
-
                         // Set up netplay transport if in netplay mode
                         if (netplaySessionId != null) {
                             netplayManager.setupNetplayTransport(netplaySessionId, netplayLocalPort, netplayInputDelay, netplayIsHost)
@@ -1394,19 +1382,28 @@ class EmulationViewModel(
                             _state.update { it.copy(supportsSaveStates = saveStatesSupported) }
                         }
 
-                        // Deferred auto-load for HW render cores (e.g. Dolphin).
-                        // These cores boot asynchronously and crash if retro_unserialize
-                        // is called before their GPU thread is fully initialized.
-                        println("[Emulation] Deferred auto-load check: hwRender=$hwRender autoLoadAllowed=$autoLoadAllowed skipAutoLoad=$skipAutoLoad challengeId=$challengeId sharedSessionId=$sharedSessionId saveStatesSupported=$saveStatesSupported")
-                        if (hwRender && autoLoadAllowed && !skipAutoLoad
-                            && challengeId == null && sharedSessionId == null
-                            // Don't try to auto-load on cores that don't support
-                            // save states. Existing rows from before the support
-                            // probe was correct may contain garbage that crashes
-                            // retro_unserialize. See #852.
-                            && saveStatesSupported
-                        ) {
-                            handleAutoLoadResult(saveManager.autoLoadSaveState(gameId))
+                        // Restore any initial libretro state only after the core
+                        // has produced its first frame/readiness signal. Some
+                        // software cores return false from retro_unserialize if
+                        // called immediately after loadGame on desktop (#1302),
+                        // and HW cores need the same deferred path for GPU-
+                        // thread readiness.
+                        println("[Emulation] Deferred restore check: hwRender=$hwRender autoLoadAllowed=$autoLoadAllowed skipAutoLoad=$skipAutoLoad challengeId=$challengeId sharedSessionId=$sharedSessionId saveStatesSupported=$saveStatesSupported")
+                        when {
+                            challengeId != null -> {
+                                challengeManager.loadChallengeSave(challengeId, challengeSaveDataArg)
+                            }
+                            sharedSessionId != null -> {
+                                netplayManager.loadSharedSessionSave(sharedSessionId)
+                            }
+                            autoLoadAllowed && !skipAutoLoad
+                                // Don't try to auto-load on cores that don't support
+                                // save states. Existing rows from before the support
+                                // probe was correct may contain garbage that crashes
+                                // retro_unserialize. See #852.
+                                && saveStatesSupported -> {
+                                handleAutoLoadResult(saveManager.autoLoadSaveState(gameId))
+                            }
                         }
 
                         // Initialize achievements if RA is linked (skip for netplay)
@@ -1775,6 +1772,11 @@ class EmulationViewModel(
             }
             is AutoLoadResult.CoreMismatch -> {
                 println("[Emulation] Core mismatch detected: save='${result.saveCoreName}' current='${result.currentCoreName}'")
+                val shouldPauseForDialog = _state.value.isRunning && !_state.value.isPaused
+                if (shouldPauseForDialog) {
+                    pauseGame()
+                }
+                pausedForCoreMismatchDialog = shouldPauseForDialog
                 withContext(dispatchers.main) {
                     _state.update {
                         it.copy(
@@ -1807,6 +1809,7 @@ class EmulationViewModel(
             }
             withContext(dispatchers.main) {
                 _state.update { it.copy(statusMessage = message) }
+                resumeAfterCoreMismatchDialogIfNeeded()
             }
         }
     }
@@ -1815,6 +1818,7 @@ class EmulationViewModel(
         // SRAM was already loaded before the auto-save check, so just dismiss the dialog.
         // The game will start from the title screen with in-game save progress intact.
         _state.update { it.copy(showCoreMismatchDialog = false) }
+        resumeAfterCoreMismatchDialogIfNeeded()
     }
 
     private fun handleCoreMismatchStartFresh() {
@@ -1824,7 +1828,16 @@ class EmulationViewModel(
         _state.update { it.copy(showCoreMismatchDialog = false) }
         scope.launch(dispatchers.io) {
             libretroController.setSRAM(ByteArray(0))
+            withContext(dispatchers.main) {
+                resumeAfterCoreMismatchDialogIfNeeded()
+            }
         }
+    }
+
+    private fun resumeAfterCoreMismatchDialogIfNeeded() {
+        if (!pausedForCoreMismatchDialog) return
+        pausedForCoreMismatchDialog = false
+        resumeGame()
     }
 
     private fun applyCheatsToCore(gameId: String) {

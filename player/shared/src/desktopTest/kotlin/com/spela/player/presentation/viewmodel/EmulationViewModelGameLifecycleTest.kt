@@ -511,6 +511,53 @@ class EmulationViewModelGameLifecycleTest {
     }
 
     @Test
+    fun startGameAutoLoadsAfterCoreStartsForSoftwareCores() = runTest {
+        builder.sessionRepository.existingSessions = listOf(
+            com.spela.player.domain.model.GameSession(id = "existing-42", gameId = "game1", name = "Default")
+        )
+        builder.sessionRepository.downloadSessionAutoSaveResult = Result.success(byteArrayOf(1))
+
+        val vm = builder.build()
+        vm.onIntent(EmulationIntent.StartGame("game1"))
+        builder.advanceTimeBy(100)
+
+        val calls = builder.libretroController.calls
+        val startIndex = calls.indexOf("start")
+        val loadIndex = calls.indexOf("unserializeFromFile")
+        assertEquals(1, builder.libretroController.unserializeFromFileCallCount)
+        assertTrue(startIndex >= 0, "expected start call in $calls")
+        assertTrue(loadIndex > startIndex, "auto-load must run after core start; calls=$calls")
+    }
+
+    @Test
+    fun autoLoadCoreMismatchPausesUntilUserChoosesHowToContinue() = runTest {
+        builder.sessionRepository.existingSessions = listOf(
+            com.spela.player.domain.model.GameSession(
+                id = "existing-42",
+                gameId = "game1",
+                name = "Default",
+                coreName = "old-core",
+            )
+        )
+        builder.coreRepository.localCorePath = "/path/to/new-core.so"
+
+        val vm = builder.build()
+        vm.onIntent(EmulationIntent.StartGame("game1"))
+        builder.advanceTimeBy(100)
+
+        assertTrue(vm.state.value.showCoreMismatchDialog)
+        assertTrue(vm.state.value.isPaused)
+        assertEquals(1, builder.libretroController.pauseCallCount)
+
+        vm.onIntent(EmulationIntent.CoreMismatchGameSaveOnly)
+        builder.advanceTimeBy(100)
+
+        assertFalse(vm.state.value.showCoreMismatchDialog)
+        assertFalse(vm.state.value.isPaused)
+        assertEquals(1, builder.libretroController.resumeCallCount)
+    }
+
+    @Test
     fun startGameDoesNotAutoLoadWhenPerGamePreferenceDisabled() = runTest {
         builder.sessionRepository.existingSessions = listOf(
             com.spela.player.domain.model.GameSession(id = "existing-42", gameId = "game1", name = "Default")
