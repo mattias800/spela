@@ -32,10 +32,7 @@ fun GameShelf(
         Box(modifier = Modifier.focusRequester(focusRequester)) {
             ExploreGameCard(
                 game = games[index],
-                onClick = {
-                    println("[GameShelf] card clicked: id=${games[index].id} title=${games[index].title}")
-                    onGameSelected(games[index].id)
-                },
+                onClick = { onGameSelected(games[index].id) },
             )
         }
     }
