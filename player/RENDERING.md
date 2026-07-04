@@ -27,7 +27,7 @@ Libretro cores use one of three rendering approaches:
 | Dreamcast | Flycast | OpenGL HW | XRGB8888 |
 | GameCube/Wii | Dolphin | Vulkan HW | N/A (VkImage) |
 | Saturn | Beetle Saturn | Software | XRGB8888 |
-| PS2 | PCSX2 | Vulkan HW | N/A (VkImage) |
+| PS2 | Play! | OpenGL HW | XRGB8888 |
 | 3DS | Azahar | OpenGL HW | XRGB8888 |
 | PSP | PPSSPP | OpenGL HW or Vulkan HW | XRGB8888 |
 | DS | DeSmuME | Software | XRGB8888 |
