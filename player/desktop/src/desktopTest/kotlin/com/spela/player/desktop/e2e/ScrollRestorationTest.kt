@@ -49,11 +49,13 @@ class ScrollRestorationTest {
     // ── Scroll position preservation ──────────────────────────────────
 
     @Test
-    fun scrollPositionRestoredAfterManualScrollAndBack() = runComposeUiTest { // TODO: Needs update for non-lazy Column architecture
-        return@runComposeUiTest // Skip — console list no longer uses LazyColumn
-        @Suppress("UNREACHABLE_CODE")
+    fun scrollPositionRestoredAfterManualScrollAndBack() = runComposeUiTest {
         val harness = createHarnessWithManyConsoles()
-        setContent { harness.App() }
+        setContent {
+            Box(modifier = Modifier.width(560.dp).height(260.dp)) {
+                harness.App()
+            }
+        }
         advance(harness)
 
         // Navigate to console list
