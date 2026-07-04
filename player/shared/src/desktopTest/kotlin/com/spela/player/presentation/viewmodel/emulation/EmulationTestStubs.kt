@@ -114,6 +114,8 @@ open class StubLibretroController : LibretroController {
     var refreshPausedVideoCallCount = 0; private set
     var getSRAMCallCount = 0; private set
     var setSRAMCallCount = 0; private set
+    var setNetplayModeCallCount = 0; private set
+    var startNetplayInputSyncCallCount = 0; private set
     var clearNetplayModeCallCount = 0; private set
     val presentationEvents = mutableListOf<String>()
     val calls = mutableListOf<String>()
@@ -159,12 +161,13 @@ open class StubLibretroController : LibretroController {
         startCallCount++
         calls += "start"
     }
-    override fun pause() { pauseCallCount++ }
-    override fun resume() { resumeCallCount++ }
+    override fun pause() { pauseCallCount++; calls += "pause" }
+    override fun resume() { resumeCallCount++; calls += "resume" }
     override fun stop() { stopCallCount++ }
     override fun supportsSaveStates(): Boolean = supportsSaveStatesResult
     override fun serialize(): ByteArray? {
         serializeCallCount++
+        calls += "serialize"
         if (serializeThrows) throw RuntimeException("test: native serialize threw")
         return serializeResult
     }
@@ -201,6 +204,19 @@ open class StubLibretroController : LibretroController {
     override fun refreshPausedVideo() {
         refreshPausedVideoCallCount++
         presentationEvents += "refreshPausedVideo"
+    }
+    override fun setNetplayMode(
+        transport: com.spela.player.netplay.NetplayTransport,
+        inputBuffer: com.spela.player.netplay.NetplayInputBuffer,
+        localPort: Int,
+        inputDelay: Int,
+    ) {
+        setNetplayModeCallCount++
+        calls += "setNetplayMode"
+    }
+    override fun startNetplayInputSync() {
+        startNetplayInputSyncCallCount++
+        calls += "startNetplayInputSync"
     }
     override fun performanceStats(): Flow<Pair<Float, Float>> = emptyFlow()
     override fun isHwRenderEnabled(): Boolean = isHwRenderEnabledResult
@@ -929,6 +945,11 @@ class EmulationViewModelTestBuilder {
     var biosRepository: BiosRepository? = null
     var screenshotCapture: ScreenshotCapture? = null
     var gameRepository: GameRepository = StubGameRepository()
+    var netplayTransportFactory:
+        (com.spela.player.netplay.NetplaySignaling, CoroutineScope) -> com.spela.player.netplay.NetplayTransport =
+            { signaling, coroutineScope ->
+                com.spela.player.netplay.WebSocketRelayTransport(signaling, coroutineScope)
+            }
 
     lateinit var vmScope: CoroutineScope
     lateinit var connectivityMonitor: ConnectivityMonitor
@@ -993,6 +1014,7 @@ class EmulationViewModelTestBuilder {
             _state = mutableStateLocal,
             dispatchers = dispatchers,
             scope = vmScope,
+            transportFactory = netplayTransportFactory,
         )
 
         return EmulationViewModel(

@@ -1321,7 +1321,7 @@ class EmulationViewModel(
 
                         // Set up netplay transport if in netplay mode
                         if (netplaySessionId != null) {
-                            netplayManager.setupNetplayTransport(netplaySessionId, netplayLocalPort, netplayInputDelay, netplayIsHost)
+                            netplayManager.setupNetplayTransport(netplaySessionId, netplayLocalPort, netplayInputDelay)
                         }
 
                         println("[Emulation] About to start emulation")
@@ -1388,21 +1388,70 @@ class EmulationViewModel(
                         // called immediately after loadGame on desktop (#1302),
                         // and HW cores need the same deferred path for GPU-
                         // thread readiness.
-                        println("[Emulation] Deferred restore check: hwRender=$hwRender autoLoadAllowed=$autoLoadAllowed skipAutoLoad=$skipAutoLoad challengeId=$challengeId sharedSessionId=$sharedSessionId saveStatesSupported=$saveStatesSupported")
+                        println("[Emulation] Deferred restore check: hwRender=$hwRender autoLoadAllowed=$autoLoadAllowed skipAutoLoad=$skipAutoLoad challengeId=$challengeId sharedSessionId=$sharedSessionId netplaySessionId=$netplaySessionId netplayIsHost=$netplayIsHost saveStatesSupported=$saveStatesSupported")
                         when {
                             challengeId != null -> {
+                                println("[Emulation] Restoring challenge state after core readiness")
                                 challengeManager.loadChallengeSave(challengeId, challengeSaveDataArg)
                             }
                             sharedSessionId != null -> {
+                                println("[Emulation] Restoring shared-session state after core readiness")
                                 netplayManager.loadSharedSessionSave(sharedSessionId)
                             }
                             autoLoadAllowed && !skipAutoLoad
+                                && (netplaySessionId == null || netplayIsHost)
                                 // Don't try to auto-load on cores that don't support
                                 // save states. Existing rows from before the support
                                 // probe was correct may contain garbage that crashes
                                 // retro_unserialize. See #852.
                                 && saveStatesSupported -> {
-                                handleAutoLoadResult(saveManager.autoLoadSaveState(gameId))
+                                val autoLoadResult = saveManager.autoLoadSaveState(gameId)
+                                if (netplaySessionId != null) {
+                                    when (autoLoadResult) {
+                                        is AutoLoadResult.Loaded -> {
+                                            println("[Netplay] Host auto-load applied before initial state sync")
+                                        }
+                                        is AutoLoadResult.NoSave -> {
+                                            println("[Netplay] No host auto-load before initial state sync")
+                                        }
+                                        is AutoLoadResult.CoreMismatch -> {
+                                            failNetplayStartup(
+                                                "Host auto-save was created with ${autoLoadResult.saveCoreName}, but this launch uses ${autoLoadResult.currentCoreName}",
+                                            )
+                                            return@fold
+                                        }
+                                        is AutoLoadResult.Error -> {
+                                            failNetplayStartup("Host auto-save failed: ${autoLoadResult.message}")
+                                            return@fold
+                                        }
+                                    }
+                                } else {
+                                    handleAutoLoadResult(autoLoadResult)
+                                }
+                            }
+                        }
+
+                        if (netplaySessionId != null) {
+                            if (challengeId != null || sharedSessionId != null) {
+                                failNetplayStartup("Netplay cannot be combined with challenge or shared-session state")
+                                return@fold
+                            }
+
+                            val shouldResumeAfterNetplaySync = _state.value.isRunning && !_state.value.isPaused
+                            if (shouldResumeAfterNetplaySync) {
+                                pauseGame()
+                            }
+                            when (val result = netplayManager.syncInitialNetplayState(netplayIsHost)) {
+                                NetplayInitialStateSyncResult.Success -> {
+                                    libretroController.startNetplayInputSync()
+                                    if (shouldResumeAfterNetplaySync) {
+                                        resumeGame()
+                                    }
+                                }
+                                is NetplayInitialStateSyncResult.Error -> {
+                                    failNetplayStartup(result.message)
+                                    return@fold
+                                }
                             }
                         }
 
@@ -1442,7 +1491,13 @@ class EmulationViewModel(
                         }
                         withContext(dispatchers.main) {
                             _state.update {
-                                it.copy(error = errorMsg, isLoading = false)
+                                it.copy(
+                                    error = errorMsg,
+                                    fatalError = errorMsg,
+                                    isLoading = false,
+                                    isRunning = false,
+                                    isPaused = false,
+                                )
                             }
                         }
                     }
@@ -1450,8 +1505,15 @@ class EmulationViewModel(
                 onFailure = { error ->
                     println("[Emulation] prepareGameUseCase FAILED: ${error::class.simpleName}: ${error.message}")
                     withContext(dispatchers.main) {
+                        val errorMsg = "Failed to prepare game: ${error.message}"
                         _state.update {
-                            it.copy(error = "Failed to prepare game: ${error.message}", isLoading = false)
+                            it.copy(
+                                error = errorMsg,
+                                fatalError = errorMsg,
+                                isLoading = false,
+                                isRunning = false,
+                                isPaused = false,
+                            )
                         }
                     }
                 },
@@ -1533,6 +1595,35 @@ class EmulationViewModel(
         libretroController.resume()
         presenceService.paused = false
         _state.update { it.copy(isPaused = false) }
+    }
+
+    private suspend fun failNetplayStartup(message: String) {
+        println("[Netplay] Initial state sync failed: $message")
+        netplayManager.cleanup()
+        libretroController.stop()
+        presenceService.paused = false
+        withContext(dispatchers.main) {
+            _state.update {
+                it.copy(
+                    error = "Failed to synchronize netplay state: $message",
+                    fatalError = "Failed to synchronize netplay state: $message",
+                    isLoading = false,
+                    isRunning = false,
+                    isPaused = false,
+                    sharedSessionId = null,
+                    turnToken = null,
+                    netplaySessionId = null,
+                    netplayPeerUsername = null,
+                    netplayPeerLatencyMs = 0,
+                    netplayPeerDisconnected = false,
+                    netplayPausedByUsername = null,
+                    netplayShowLeaveConfirm = false,
+                    netplayPauseElapsedSeconds = 0,
+                    netplaySessionExpired = false,
+                    sessionId = null,
+                )
+            }
+        }
     }
 
     private fun lifecyclePause() {
@@ -2293,6 +2384,14 @@ interface LibretroController {
         localPort: Int,
         inputDelay: Int,
     ) {}
+
+    /**
+     * Begin lockstep input synchronization after initial host/client state
+     * exchange has completed. Controllers may enter netplay mode before
+     * start() so they choose the netplay loop, then run warm-up frames until
+     * this is called.
+     */
+    fun startNetplayInputSync() {}
 
     /** Exit netplay mode and return to normal emulation. */
     fun clearNetplayMode() {}

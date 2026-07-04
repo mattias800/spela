@@ -254,7 +254,18 @@ data class EmulationState(
     val renderScaleStateDescription: String = "Auto",
     val showKeyMapping: Boolean = false,
     val showGamepadConfig: Boolean = false,
+    /**
+     * Transient in-session error surfaced as a toast by the in-game overlay.
+     * Launch failures also copy their message here for existing consumers, but
+     * the sticky full-screen failure UI reads [fatalError].
+     */
     val error: String? = null,
+    /**
+     * Sticky emulation startup/runtime failure that requires an explicit Exit
+     * action. This is deliberately separate from [error], which the in-game
+     * toast surface auto-dismisses.
+     */
+    val fatalError: String? = null,
 
     val achievementEvent: AchievementEvent? = null,
     val isHardcoreMode: Boolean = false,

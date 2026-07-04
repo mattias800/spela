@@ -431,19 +431,6 @@ fun SpelaApp(deps: SpelaAppDependencies) = with(deps) {
                             overlayVisible = emulationState.showOverlay,
                         )
 
-                        // Error overlay: shown when emulation fails to start.
-                        // The Exit button auto-focuses so a gamepad acts on it
-                        // rather than a still-focused control underneath (#1411).
-                        emulationState.error?.let { error ->
-                            com.spela.player.presentation.ui.feature.ingame.EmulationErrorOverlay(
-                                error = error,
-                                onExit = {
-                                    emulationViewModel.onIntent(EmulationIntent.StopGame)
-                                    navigationViewModel.onIntent(NavigationIntent.HideOverlay)
-                                },
-                            )
-                        }
-
                         // Core download progress sheet — replaces the
                         // pre-#1192 opaque loading spinner with a
                         // foreground modal carrying "Updating Azahar —
@@ -558,6 +545,21 @@ fun SpelaApp(deps: SpelaAppDependencies) = with(deps) {
                                 navigationViewModel.onIntent(NavigationIntent.HideOverlay)
                             },
                         )
+
+                        // Error overlay: shown when emulation fails to start.
+                        // Rendered last so it owns focus and stays above any
+                        // in-game controls/drawers left from the failed launch.
+                        // The Exit button auto-focuses so a gamepad acts on it
+                        // rather than a still-focused control underneath (#1411).
+                        emulationState.fatalError?.let { error ->
+                            com.spela.player.presentation.ui.feature.ingame.EmulationErrorOverlay(
+                                error = error,
+                                onExit = {
+                                    emulationViewModel.onIntent(EmulationIntent.StopGame)
+                                    navigationViewModel.onIntent(NavigationIntent.HideOverlay)
+                                },
+                            )
+                        }
                     }
                 }
 

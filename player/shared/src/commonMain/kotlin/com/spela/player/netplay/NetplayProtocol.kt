@@ -13,13 +13,34 @@ object NetplayProtocol {
      * close the race where the host's chunks would otherwise arrive before the
      * client started collecting (silently dropped). See #1006. */
     const val MSG_CLIENT_READY: Byte = 0x04
+    /** Client → host signal: client received and applied the host state. The
+     * host waits for this before entering lockstep input sync so queued-but-not-
+     * delivered state chunks cannot be mistaken for a synchronized session. */
+    const val MSG_STATE_APPLIED: Byte = 0x05
+    /** Host → client signal: host observed the state-applied ACK and both sides
+     * may enter lockstep input sync. */
+    const val MSG_SYNC_COMPLETE: Byte = 0x06
     private val CLIENT_READY_PAYLOAD = byteArrayOf(MSG_CLIENT_READY)
+    private val STATE_APPLIED_PAYLOAD = byteArrayOf(MSG_STATE_APPLIED)
+    private val SYNC_COMPLETE_PAYLOAD = byteArrayOf(MSG_SYNC_COMPLETE)
 
     /** Returns the single-byte client-ready signal. */
     fun encodeClientReady(): ByteArray = CLIENT_READY_PAYLOAD.copyOf()
 
     /** True if [data] is the client-ready signal. */
     fun isClientReady(data: ByteArray): Boolean = data.size == 1 && data[0] == MSG_CLIENT_READY
+
+    /** Returns the single-byte client state-applied acknowledgement. */
+    fun encodeStateApplied(): ByteArray = STATE_APPLIED_PAYLOAD.copyOf()
+
+    /** True if [data] is the client state-applied acknowledgement. */
+    fun isStateApplied(data: ByteArray): Boolean = data.size == 1 && data[0] == MSG_STATE_APPLIED
+
+    /** Returns the single-byte host sync-complete signal. */
+    fun encodeSyncComplete(): ByteArray = SYNC_COMPLETE_PAYLOAD.copyOf()
+
+    /** True if [data] is the host sync-complete signal. */
+    fun isSyncComplete(data: ByteArray): Boolean = data.size == 1 && data[0] == MSG_SYNC_COMPLETE
 
     private const val INPUT_FRAME_SIZE = 12
     private const val DESYNC_CHECK_SIZE = 9

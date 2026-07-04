@@ -1,6 +1,8 @@
 package com.spela.player.netplay
 
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -29,6 +31,8 @@ class WebSocketRelayTransport(
 
     override val controlMessages: Flow<ControlMessage> = signaling.controlMessages
 
+    private var signalingBinaryCollectorJob: Job? = null
+
     override fun sendInput(frame: Long, port: Int, input: InputState) {
         val encoded = NetplayProtocol.encodeInputFrame(frame, port, input)
         signaling.sendBinary(encoded)
@@ -38,26 +42,35 @@ class WebSocketRelayTransport(
         signaling.sendBinary(data)
     }
 
+    override suspend fun sendBinaryReliable(data: ByteArray, targetPort: Int?) {
+        signaling.sendBinaryReliable(data)
+    }
+
     override fun sendControl(message: ControlMessage) {
         throw UnsupportedOperationException("Server relay does not support sending control messages")
     }
 
     override suspend fun connect() {
-        signaling.connect()
-
-        // Launch collector for incoming binary messages from signaling
-        scope.launch {
-            signaling.binaryMessages.collect { data ->
-                handleBinaryMessage(data)
+        if (signalingBinaryCollectorJob?.isActive != true) {
+            // Subscribe before the WebSocket can receive one-shot readiness
+            // messages or state chunks.
+            signalingBinaryCollectorJob = scope.launch(start = CoroutineStart.UNDISPATCHED) {
+                signaling.binaryMessages.collect { data ->
+                    handleBinaryMessage(data)
+                }
             }
         }
+
+        signaling.connect()
     }
 
     override fun disconnect() {
+        signalingBinaryCollectorJob?.cancel()
+        signalingBinaryCollectorJob = null
         signaling.disconnect()
     }
 
-    private fun handleBinaryMessage(data: ByteArray) {
+    internal suspend fun handleBinaryMessage(data: ByteArray) {
         if (data.isEmpty()) return
 
         when (data[0]) {
@@ -66,10 +79,14 @@ class WebSocketRelayTransport(
                 val (frame, port, input) = decoded
                 _remoteInputs.tryEmit(RemoteInput(frame, port, input))
             }
-            NetplayProtocol.MSG_STATE_CHUNK, NetplayProtocol.MSG_DESYNC_CHECK -> {
+            NetplayProtocol.MSG_STATE_CHUNK,
+            NetplayProtocol.MSG_DESYNC_CHECK,
+            NetplayProtocol.MSG_CLIENT_READY,
+            NetplayProtocol.MSG_STATE_APPLIED,
+            NetplayProtocol.MSG_SYNC_COMPLETE -> {
                 // Forward as raw binary for higher-level handling
                 // fromPort is unknown in relay mode; use -1 as sentinel
-                _remoteBinary.tryEmit(BinaryMessage(data, -1))
+                _remoteBinary.emit(BinaryMessage(data, -1))
             }
         }
     }

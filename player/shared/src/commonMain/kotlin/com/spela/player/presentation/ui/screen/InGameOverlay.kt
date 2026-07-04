@@ -253,12 +253,14 @@ fun InGameOverlay(
     // overlay, so the user lost their save silently. Mirror state.error
     // through the same toast surface as statusMessage so the message
     // actually reaches the screen.
-    state.error?.let { error ->
-        LaunchedEffect(error) {
-            delay(4000) // longer than status — these are real failures
-            viewModel.onIntent(EmulationIntent.DismissError)
+    if (state.fatalError == null) {
+        state.error?.let { error ->
+            LaunchedEffect(error) {
+                delay(4000) // longer than status — these are real failures
+                viewModel.onIntent(EmulationIntent.DismissError)
+            }
+            OverlayToast(message = error)
         }
-        OverlayToast(message = error)
     }
 
     // Challenge timer HUD (visible during challenge gameplay, top left)

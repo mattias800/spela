@@ -75,6 +75,15 @@ interface NetplayTransport {
     fun sendBinary(data: ByteArray, targetPort: Int? = null)
 
     /**
+     * Send raw binary data that must not be dropped. High-frequency input
+     * frames stay on [sendInput]; state/control transfers use this path so
+     * backpressure cannot silently truncate the payload.
+     */
+    suspend fun sendBinaryReliable(data: ByteArray, targetPort: Int? = null) {
+        sendBinary(data, targetPort)
+    }
+
+    /**
      * Flow of remote player inputs as they arrive.
      */
     val remoteInputs: Flow<RemoteInput>

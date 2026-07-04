@@ -55,6 +55,9 @@ class AndroidLibretroController(
     private var netplayInputDelay: Int = 0
 
     @Volatile
+    private var netplayInputSyncStarted = false
+
+    @Volatile
     private var netplayDisconnected = false
 
     /** When true, skip GPU present and populate frameBitmap from CPU buffer instead. */
@@ -332,6 +335,12 @@ class AndroidLibretroController(
         return if (completed) req.result as? T else null
     }
 
+    private fun pumpEmulationThreadQueue() {
+        val req = emulationThreadQueue.poll() ?: return
+        req.result = req.action()
+        req.latch.countDown()
+    }
+
     override fun supportsSaveStates(): Boolean =
         runOnEmulationThread { jni.nativeSerializeSize() > 0 } ?: true
 
@@ -589,6 +598,11 @@ class AndroidLibretroController(
         netplayInputBuffer = inputBuffer
         netplayLocalPort = localPort
         netplayInputDelay = inputDelay
+        netplayInputSyncStarted = false
+    }
+
+    override fun startNetplayInputSync() {
+        netplayInputSyncStarted = true
     }
 
     override fun clearNetplayMode() {
@@ -596,6 +610,7 @@ class AndroidLibretroController(
         netplayInputBuffer = null
         netplayLocalPort = 0
         netplayInputDelay = 0
+        netplayInputSyncStarted = false
         netplayDisconnected = false
         onNetplayPeerTimeout = null
     }
@@ -615,15 +630,53 @@ class AndroidLibretroController(
         val transport = netplayTransport ?: return
         val inputBuffer = netplayInputBuffer ?: return
         val localPort = netplayLocalPort
-        val remotePort = if (localPort == 0) 1 else 0
         val inputDelay = netplayInputDelay
         val frameTimeNs = (1_000_000_000.0 / targetFps).toLong()
         val playerCount = 2
         var frameCounter = 0L
         var fpsCounter = 0
         var fpsTimer = System.nanoTime()
+        var inputDelaySeeded = false
 
         while (running) {
+            pumpEmulationThreadQueue()
+            if (!netplayInputSyncStarted) {
+                if (paused) {
+                    Thread.sleep(16)
+                    continue
+                }
+                val frameStart = System.nanoTime()
+                accrueActivePlayTime(frameStart)
+
+                jni.nativeRun()
+                if (jni.nativeGpuIsActive() && !dualScreenSplitActive) {
+                    jni.nativeGpuRender()
+                }
+                if (dualScreenSplitActive || !jni.nativeGpuIsActive()) {
+                    updateVideoFrame()
+                }
+                if (!fastForward) {
+                    pushAudio()
+                    precisionSleep(frameStart + frameTimeNs)
+                } else {
+                    pushAudioDiscard()
+                }
+                currentFrameTime = (System.nanoTime() - frameStart) / 1_000_000f
+                continue
+            }
+            if (!inputDelaySeeded) {
+                frameCounter = 0L
+                val emptyInput = InputState()
+                for (f in 0L until inputDelay.toLong()) {
+                    for (p in 0 until playerCount) {
+                        runBlocking {
+                            inputBuffer.setLocalInput(f, p, emptyInput)
+                        }
+                        transport.sendInput(f, p, emptyInput)
+                    }
+                }
+                inputDelaySeeded = true
+            }
             if (paused) {
                 Thread.sleep(16)
                 continue
