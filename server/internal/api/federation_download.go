@@ -97,7 +97,7 @@ func (httpDownloadClient) FetchDownload(baseURL, requestID string, id federation
 	for k, v := range signedFederationHeaders(id, http.MethodGet, path, requestID, nil, peerFingerprint) {
 		req.Header.Set(k, v)
 	}
-	return fedDownloadHTTPClient.Do(req)
+	return doFederationRequest(fedDownloadHTTPClient, req, peerFingerprint)
 }
 
 // resolveLocalGameByKey finds a local game by its cross-server key (IGDB scraper

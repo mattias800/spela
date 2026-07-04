@@ -77,7 +77,7 @@ func (h *FederationHandler) HumaAcceptInvite(_ context.Context, in *AcceptInvite
 	if client == nil {
 		client = httpPairClient{}
 	}
-	resp, err := client.Pair(inv.BaseURL, bundle)
+	resp, err := client.Pair(inv.BaseURL, reqID, bundle)
 	if err != nil {
 		federation.RecordExchange(h.DB, federation.ExchangeRecord{
 			RequestID: reqID, PeerFingerprint: inv.Fingerprint, PeerName: in.Body.Name,

@@ -70,7 +70,7 @@ type FederationHandler struct {
 
 // pairClient performs the outbound pairing callback to a friend.
 type pairClient interface {
-	Pair(baseURL string, body PairRequestBody) (PairResponseBody, error)
+	Pair(baseURL, requestID string, body PairRequestBody) (PairResponseBody, error)
 }
 
 // PairRequestBody is a peer's signed pairing bundle.
