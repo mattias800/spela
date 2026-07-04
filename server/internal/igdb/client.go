@@ -24,6 +24,26 @@ var ErrRateLimit = errors.New("igdb: rate limit")
 // unbounded body (#1321). 16 MB is far above any real IGDB JSON payload.
 const maxIGDBResponseBytes = 16 << 20
 
+const (
+	IGDBCategoryMainGame            = 0
+	IGDBCategoryDLC                 = 1
+	IGDBCategoryExpansion           = 2
+	IGDBCategoryBundle              = 3
+	IGDBCategoryStandaloneExpansion = 4
+	IGDBCategoryMod                 = 5
+	IGDBCategoryEpisode             = 6
+	IGDBCategorySeason              = 7
+	IGDBCategoryRemake              = 8
+	IGDBCategoryRemaster            = 9
+	IGDBCategoryExpandedGame        = 10
+	IGDBCategoryPort                = 11
+	IGDBCategoryFork                = 12
+	IGDBCategoryPack                = 13
+	IGDBCategoryUpdate              = 14
+)
+
+const gameFields = "name,summary,storyline,cover.image_id,screenshots.image_id,genres.name,involved_companies.company.name,involved_companies.company.logo.image_id,involved_companies.developer,involved_companies.publisher,first_release_date,aggregated_rating,total_rating,total_rating_count,rating,rating_count,game_modes.name,release_dates.date,release_dates.region,release_dates.platform.name,release_dates.human,parent_game,version_parent,category"
+
 // API base URLs (variables for testability).
 var (
 	twitchTokenURL = "https://id.twitch.tv/oauth2/token"
@@ -409,6 +429,9 @@ type Game struct {
 	GameModes         []GameMode        `json:"game_modes"`
 	ReleaseDates      []ReleaseDate     `json:"release_dates"`
 	TimeToBeat        *TimeToBeat       `json:"time_to_beat"`
+	ParentGameID      *int              `json:"parent_game"`
+	VersionParentID   *int              `json:"version_parent"`
+	Category          *int              `json:"category"`
 }
 
 // TimeToBeat represents IGDB time-to-beat data in seconds.
@@ -516,8 +539,8 @@ func (c *Client) SearchGame(name string, platformIDs []int) ([]Game, error) {
 	<-c.rateLimiter
 
 	query := fmt.Sprintf(
-		`search "%s"; fields name,summary,storyline,cover.image_id,screenshots.image_id,genres.name,involved_companies.company.name,involved_companies.company.logo.image_id,involved_companies.developer,involved_companies.publisher,first_release_date,aggregated_rating,total_rating,total_rating_count,rating,rating_count,game_modes.name,release_dates.date,release_dates.region,release_dates.platform.name,release_dates.human; where platforms = %s; limit 5;`,
-		escapeQuery(name), formatPlatformList(platformIDs),
+		`search "%s"; fields %s; where platforms = %s; limit 5;`,
+		escapeQuery(name), gameFields, formatPlatformList(platformIDs),
 	)
 
 	slog.Info("IGDB search request", "name", name, "platformIDs", platformIDs, "query", query)
@@ -583,8 +606,8 @@ func (c *Client) SearchGameExact(name string, platformIDs []int) ([]Game, error)
 
 	// Case-insensitive exact match using ~ operator over name + alt names.
 	query := fmt.Sprintf(
-		`fields name,summary,storyline,cover.image_id,screenshots.image_id,genres.name,involved_companies.company.name,involved_companies.company.logo.image_id,involved_companies.developer,involved_companies.publisher,first_release_date,aggregated_rating,total_rating,total_rating_count,rating,rating_count,game_modes.name,release_dates.date,release_dates.region,release_dates.platform.name,release_dates.human; where %s & platforms = %s; limit 5;`,
-		whereNames, formatPlatformList(platformIDs),
+		`fields %s; where %s & platforms = %s; limit 5;`,
+		gameFields, whereNames, formatPlatformList(platformIDs),
 	)
 
 	slog.Info("IGDB exact search request", "name", name, "variants", variants, "platformIDs", platformIDs, "query", query)
@@ -640,8 +663,8 @@ func (c *Client) GetGameByID(igdbID int) (*Game, error) {
 	<-c.rateLimiter
 
 	query := fmt.Sprintf(
-		`fields name,summary,storyline,cover.image_id,screenshots.image_id,genres.name,involved_companies.company.name,involved_companies.company.logo.image_id,involved_companies.developer,involved_companies.publisher,first_release_date,aggregated_rating,total_rating,total_rating_count,rating,rating_count,game_modes.name,release_dates.date,release_dates.region,release_dates.platform.name,release_dates.human; where id = %d; limit 1;`,
-		igdbID,
+		`fields %s; where id = %d; limit 1;`,
+		gameFields, igdbID,
 	)
 
 	slog.Info("IGDB get game by ID request", "igdbID", igdbID, "query", query)

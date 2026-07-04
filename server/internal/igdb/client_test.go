@@ -2,6 +2,7 @@ package igdb
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"sync/atomic"
@@ -189,13 +190,23 @@ func TestSearchGame_Success(t *testing.T) {
 		assert.Equal(t, "/v4/games", r.URL.Path)
 		assert.Equal(t, "myid", r.Header.Get("Client-ID"))
 		assert.Equal(t, "Bearer test-token", r.Header.Get("Authorization"))
+		body, err := io.ReadAll(r.Body)
+		require.NoError(t, err)
+		query := string(body)
+		assert.Contains(t, query, "parent_game")
+		assert.Contains(t, query, "version_parent")
+		assert.Contains(t, query, "category")
 
+		category := IGDBCategoryPort
+		parentID := 4321
 		json.NewEncoder(w).Encode([]Game{
 			{
-				ID:      1234,
-				Name:    "Super Mario Bros.",
-				Summary: "A classic platformer",
-				Cover:   &Image{ID: 1, ImageID: "co1234"},
+				ID:           1234,
+				Name:         "Super Mario Bros.",
+				Summary:      "A classic platformer",
+				Cover:        &Image{ID: 1, ImageID: "co1234"},
+				ParentGameID: &parentID,
+				Category:     &category,
 				Screenshots: []Image{
 					{ID: 2, ImageID: "sc5678"},
 				},
@@ -253,6 +264,10 @@ func TestSearchGame_Success(t *testing.T) {
 	assert.Equal(t, int64(496800000), game.FirstReleaseDate)
 	assert.InDelta(t, 85.5, game.AggregatedRating, 0.01)
 	assert.Len(t, game.GameModes, 2)
+	require.NotNil(t, game.ParentGameID)
+	assert.Equal(t, 4321, *game.ParentGameID)
+	require.NotNil(t, game.Category)
+	assert.Equal(t, IGDBCategoryPort, *game.Category)
 }
 
 func TestSearchGame_APIError(t *testing.T) {
@@ -630,13 +645,20 @@ func TestGetGameByID_Success(t *testing.T) {
 		assert.Equal(t, "/v4/games", r.URL.Path)
 		assert.Equal(t, "myid", r.Header.Get("Client-ID"))
 		assert.Equal(t, "Bearer test-token", r.Header.Get("Authorization"))
+		body, err := io.ReadAll(r.Body)
+		require.NoError(t, err)
+		assert.Contains(t, string(body), "version_parent")
 
+		category := IGDBCategoryRemaster
+		versionParentID := 99
 		json.NewEncoder(w).Encode([]Game{
 			{
-				ID:      1234,
-				Name:    "Disney's Aladdin",
-				Summary: "A platformer based on the Disney film",
-				Cover:   &Image{ID: 1, ImageID: "co5555"},
+				ID:              1234,
+				Name:            "Disney's Aladdin",
+				Summary:         "A platformer based on the Disney film",
+				Cover:           &Image{ID: 1, ImageID: "co5555"},
+				VersionParentID: &versionParentID,
+				Category:        &category,
 				Screenshots: []Image{
 					{ID: 2, ImageID: "sc6666"},
 				},
@@ -692,6 +714,52 @@ func TestGetGameByID_Success(t *testing.T) {
 	assert.Equal(t, int64(753926400), game.FirstReleaseDate)
 	assert.InDelta(t, 78.0, game.AggregatedRating, 0.01)
 	assert.Len(t, game.GameModes, 1)
+	require.NotNil(t, game.VersionParentID)
+	assert.Equal(t, 99, *game.VersionParentID)
+	require.NotNil(t, game.Category)
+	assert.Equal(t, IGDBCategoryRemaster, *game.Category)
+}
+
+func TestSearchGameExactIncludesTitleRelationshipFields(t *testing.T) {
+	tokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"access_token": "test-token",
+			"expires_in":   3600,
+			"token_type":   "bearer",
+		})
+	}))
+	defer tokenServer.Close()
+
+	var capturedQuery string
+	igdbServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, err := io.ReadAll(r.Body)
+		require.NoError(t, err)
+		capturedQuery = string(body)
+		json.NewEncoder(w).Encode([]Game{})
+	}))
+	defer igdbServer.Close()
+
+	origTokenURL := twitchTokenURL
+	origAPIBase := igdbAPIBase
+	twitchTokenURL = tokenServer.URL
+	igdbAPIBase = igdbServer.URL + "/v4"
+	defer func() {
+		twitchTokenURL = origTokenURL
+		igdbAPIBase = origAPIBase
+	}()
+
+	c := &Client{
+		ClientID:     "myid",
+		ClientSecret: "mysecret",
+		HTTPClient:   &http.Client{Timeout: 5 * time.Second},
+		rateLimiter:  time.Tick(time.Millisecond),
+	}
+
+	_, err := c.SearchGameExact("Resident Evil 2", []int{4})
+	require.NoError(t, err)
+	assert.Contains(t, capturedQuery, "parent_game")
+	assert.Contains(t, capturedQuery, "version_parent")
+	assert.Contains(t, capturedQuery, "category")
 }
 
 func TestGetGameByID_NotFound(t *testing.T) {

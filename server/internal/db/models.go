@@ -243,6 +243,10 @@ type Game struct {
 	CoverManuallySet     bool           `gorm:"default:false" json:"-"`
 	ScrapeAttempts       int            `json:"scrapeAttempts"`
 	ScraperID            string         `gorm:"size:128" json:"scraperId"`
+	IGDBParentGameID     *uint          `gorm:"index:idx_game_igdb_parent_game" json:"igdbParentGameId"`
+	IGDBVersionParentID  *uint          `gorm:"index:idx_game_igdb_version_parent" json:"igdbVersionParentId"`
+	IGDBCategory         *int           `json:"igdbCategory"`
+	TitleRootIGDBID      *uint          `gorm:"index:idx_game_title_root_igdb" json:"titleRootIgdbId"`
 	AchievementsWarning  string         `gorm:"size:512" json:"achievementsWarning"`
 	VerificationStatus   string         `gorm:"size:32" json:"verificationStatus"`
 	VerificationTag      string         `gorm:"size:128" json:"verificationTag"`

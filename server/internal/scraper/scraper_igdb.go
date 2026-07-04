@@ -63,6 +63,10 @@ func (s *Scraper) ScrapeGame(game *db.Game) error {
 		game.TotalRatingCount = 0
 		game.IGDBUserRating = 0
 		game.IGDBUserRatingCount = 0
+		game.IGDBParentGameID = nil
+		game.IGDBVersionParentID = nil
+		game.IGDBCategory = nil
+		game.TitleRootIGDBID = nil
 		game.TimeToBeatHastily = 0
 		game.TimeToBeatNormally = 0
 		game.TimeToBeatCompletely = 0
@@ -417,6 +421,10 @@ func (s *Scraper) scrapeIGDB(game *db.Game, console db.Console, gameIDStr string
 func (s *Scraper) applyIGDBMatch(game *db.Game, console db.Console, match igdb.Game, gameIDStr string, forceTitle bool) {
 	// Set scraper ID
 	game.ScraperID = fmt.Sprintf("igdb:%d", match.ID)
+	game.IGDBParentGameID = uintPtrFromOptionalInt(match.ParentGameID)
+	game.IGDBVersionParentID = uintPtrFromOptionalInt(match.VersionParentID)
+	game.IGDBCategory = intPtrCopy(match.Category)
+	game.TitleRootIGDBID = s.resolveTitleRootIGDBID(match)
 
 	// Populate metadata — don't overwrite existing non-empty fields with empty values.
 	if match.Name != "" && forceTitle {
@@ -669,6 +677,10 @@ func (s *Scraper) ScrapeGameWithIGDBMatch(game *db.Game, igdbID int) error {
 	game.TotalRatingCount = 0
 	game.IGDBUserRating = 0
 	game.IGDBUserRatingCount = 0
+	game.IGDBParentGameID = nil
+	game.IGDBVersionParentID = nil
+	game.IGDBCategory = nil
+	game.TitleRootIGDBID = nil
 	game.TimeToBeatHastily = 0
 	game.TimeToBeatNormally = 0
 	game.TimeToBeatCompletely = 0
