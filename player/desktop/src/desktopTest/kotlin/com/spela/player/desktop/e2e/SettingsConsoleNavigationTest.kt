@@ -215,6 +215,55 @@ class SettingsConsoleNavigationTest {
     }
 
     /**
+     * Input-layer calibration (#1341): the user can pick a target position,
+     * press the physical control that should mean that position, then the live
+     * tester reflects the corrected position. Reset returns to defaults.
+     */
+    @Test
+    fun controllerDetailCalibratesButtonPositionAndResets() = runComposeUiTest {
+        val harness = createLoggedInHarness()
+        harness.gamepadPortManager.connectDevice(500, "Test Pad", ControllerStyle.Xbox)
+
+        setContent { harness.App() }
+        navigateToSettings(harness)
+        openControlsCategory(harness)
+        onNodeWithTag("controller_row_500").performClick()
+        advanceQuick(harness)
+
+        onNodeWithTag("controller_calibration_SOUTH").performScrollTo().performClick()
+        advanceQuick(harness)
+        onNodeWithTag("input_calibration_capture").assertExists()
+        onNodeWithTag("dialog_confirm").assertDoesNotExist()
+        onNodeWithTag("dialog_dismiss").assertExists().assertIsFocused()
+
+        harness.gamepadPortManager.reportInputCalibrationPosition(
+            deviceId = 500,
+            rawPosition = GamepadPosition.EAST,
+            pressed = true,
+        )
+        advanceQuick(harness)
+
+        onNodeWithTag("input_calibration_capture").assertDoesNotExist()
+        onNodeWithTag("controller_calibration_SOUTH")
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Using Right button"))
+
+        activateInputTester(harness)
+        harness.gamepadPortManager.reportPositionInput(500, GamepadPosition.EAST, pressed = true)
+        advanceQuick(harness)
+        onNodeWithTag("schematic_SOUTH", useUnmergedTree = true)
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Active"))
+        onNodeWithTag("schematic_EAST", useUnmergedTree = true)
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Inactive"))
+
+        harness.gamepadPortManager.reportPositionInput(500, GamepadPosition.EAST, pressed = false)
+        onNodeWithTag("controller_calibration_reset").performScrollTo().performClick()
+        advanceQuick(harness)
+
+        onNodeWithTag("controller_calibration_SOUTH")
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Default"))
+    }
+
+    /**
      * The tester stops only after the confirm button is *held* for the full
      * duration and then released (#1448): a brief press keeps it running (so the
      * confirm button is testable and an accidental press doesn't exit), while a

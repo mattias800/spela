@@ -91,6 +91,7 @@ val commonModule = module {
     single<OnboardingRepository> { OnboardingRepositoryImpl(get()) }
     single<ControllerStyleOverrideRepository> { ControllerStyleOverrideRepositoryImpl(get()) }
     single<ControllerAssignmentRepository> { ControllerAssignmentRepositoryImpl(get()) }
+    single<ControllerInputCalibrationRepository> { ControllerInputCalibrationRepositoryImpl(get()) }
     single<GamepadMappingRepository> { GamepadMappingRepositoryImpl(get()) }
     single<SessionRepository> { SessionRepositoryImpl(get(), get()) }
     single<ExploreRepository> { ExploreRepositoryImpl(get()) }
@@ -102,6 +103,7 @@ val commonModule = module {
             get(),
             gamepadMappingRepository = get(),
             controllerAssignmentRepository = get(),
+            controllerInputCalibrationRepository = get(),
         )
     }
 

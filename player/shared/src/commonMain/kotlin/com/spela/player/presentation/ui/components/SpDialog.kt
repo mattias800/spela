@@ -45,6 +45,7 @@ fun SpDialog(
     onConfirm: () -> Unit = {},
     isDestructive: Boolean = false,
     isLoading: Boolean = false,
+    showConfirmButton: Boolean = true,
     // When true, anchor d-pad/keyboard focus on the Cancel button when the
     // dialog opens so it's navigable with a gamepad (no mouse) — e.g. Steam
     // Deck Gaming Mode. Cancel is the safe default for destructive prompts.
@@ -105,14 +106,16 @@ fun SpDialog(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
             ) {
-                SpButton(
-                    text = confirmText,
-                    onClick = onConfirm,
-                    style = if (isDestructive) SpButtonStyle.Secondary else SpButtonStyle.Primary,
-                    modifier = Modifier.fillMaxWidth().testTag("dialog_confirm"),
-                    isLoading = isLoading,
-                    enabled = !isLoading,
-                )
+                if (showConfirmButton) {
+                    SpButton(
+                        text = confirmText,
+                        onClick = onConfirm,
+                        style = if (isDestructive) SpButtonStyle.Secondary else SpButtonStyle.Primary,
+                        modifier = Modifier.fillMaxWidth().testTag("dialog_confirm"),
+                        isLoading = isLoading,
+                        enabled = !isLoading,
+                    )
+                }
                 SpButton(
                     text = dismissText,
                     onClick = onDismiss,

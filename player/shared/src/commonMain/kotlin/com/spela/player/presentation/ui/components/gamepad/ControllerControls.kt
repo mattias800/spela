@@ -44,7 +44,9 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.ControllerStyle
+import com.spela.player.domain.model.GamepadPosition
 import com.spela.player.libretro.GamepadPortManager
+import com.spela.player.libretro.InputCalibrationCapture
 import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.components.SpScreen
 import com.spela.player.presentation.ui.components.SpScreenTopSpacer
@@ -115,6 +117,12 @@ fun ControllerDetailScreen(
                     onAssignSlot = { slot -> onIntent(GamepadConfigIntent.AssignPlayer(deviceId, slot)) },
                     onClear = { onIntent(GamepadConfigIntent.ClearPlayer(deviceId)) },
                     onTestActiveChange = { active -> onIntent(GamepadConfigIntent.SetInputTestActive(deviceId, active)) },
+                    calibrationCapture = state.inputCalibrationCapture,
+                    onStartCalibration = { target ->
+                        onIntent(GamepadConfigIntent.StartInputCalibration(deviceId, target))
+                    },
+                    onClearCalibration = { onIntent(GamepadConfigIntent.ClearInputCalibration(deviceId)) },
+                    onCancelCalibration = { onIntent(GamepadConfigIntent.CancelInputCalibration) },
                 )
             }
 
@@ -234,6 +242,10 @@ internal fun ControllerDetail(
     onAssignSlot: (Int) -> Unit,
     onClear: () -> Unit,
     onTestActiveChange: (Boolean) -> Unit,
+    calibrationCapture: InputCalibrationCapture?,
+    onStartCalibration: (GamepadPosition) -> Unit,
+    onClearCalibration: () -> Unit,
+    onCancelCalibration: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var showStylePicker by remember { mutableStateOf(false) }
@@ -316,6 +328,21 @@ internal fun ControllerDetail(
             onActiveChange = onTestActiveChange,
             sticks = sticks,
         )
+
+        Spacer(Modifier.height(SpSpacing.Large))
+
+        DetailSectionLabel("Calibrate buttons")
+        Text(
+            text = "Use this only when the tester lights up the wrong physical position.",
+            style = SpTypography.BodySmall,
+            color = SpColor.OnBackgroundSecondary,
+            modifier = Modifier.padding(bottom = SpSpacing.Small),
+        )
+        InputCalibrationSection(
+            calibration = controller.inputCalibration,
+            onStartCalibration = onStartCalibration,
+            onClearCalibration = onClearCalibration,
+        )
     }
 
     if (showStylePicker) {
@@ -337,6 +364,93 @@ internal fun ControllerDetail(
                 showSlotPicker = false
             },
             onDismiss = { showSlotPicker = false },
+        )
+    }
+    if (calibrationCapture?.deviceId == controller.deviceId) {
+        InputCalibrationCaptureDialog(
+            targetPosition = calibrationCapture.targetPosition,
+            onDismiss = onCancelCalibration,
+        )
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun InputCalibrationSection(
+    calibration: Map<GamepadPosition, GamepadPosition>,
+    onStartCalibration: (GamepadPosition) -> Unit,
+    onClearCalibration: () -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(SpSpacing.Small)) {
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+            verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+        ) {
+            for (target in GamepadPosition.entries) {
+                CalibrationChip(
+                    target = target,
+                    raw = rawForTarget(calibration, target),
+                    onClick = { onStartCalibration(target) },
+                )
+            }
+        }
+        if (calibration.isNotEmpty()) {
+            SpButton(
+                text = "Reset calibration",
+                onClick = onClearCalibration,
+                style = SpButtonStyle.Ghost,
+                modifier = Modifier.testTag("controller_calibration_reset"),
+            )
+        }
+    }
+}
+
+@Composable
+private fun CalibrationChip(
+    target: GamepadPosition,
+    raw: GamepadPosition?,
+    onClick: () -> Unit,
+) {
+    val label = if (raw == null || raw == target) {
+        target.shortCalibrationLabel()
+    } else {
+        "${target.shortCalibrationLabel()} <- ${raw.shortCalibrationLabel()}"
+    }
+    SpButton(
+        text = label,
+        onClick = onClick,
+        style = if (raw == null || raw == target) SpButtonStyle.Secondary else SpButtonStyle.Primary,
+        modifier = Modifier
+            .testTag("controller_calibration_${target.name}")
+            .semantics {
+                contentDescription = "Calibrate ${target.displayName}"
+                stateDescription = if (raw == null || raw == target) {
+                    "Default"
+                } else {
+                    "Using ${raw.displayName}"
+                }
+            },
+    )
+}
+
+@Composable
+private fun InputCalibrationCaptureDialog(
+    targetPosition: GamepadPosition,
+    onDismiss: () -> Unit,
+) {
+    com.spela.player.presentation.ui.components.SpDialog(
+        title = "Calibrate ${targetPosition.shortCalibrationLabel()}",
+        onDismiss = onDismiss,
+        dismissText = "Cancel",
+        showConfirmButton = false,
+        autoFocusDismiss = true,
+        modifier = Modifier.testTag("input_calibration_capture"),
+    ) {
+        Text(
+            text = "Press the physical control that should act as ${targetPosition.displayName}.",
+            style = SpTypography.BodyMedium,
+            color = SpColor.OnCard,
         )
     }
 }
@@ -487,3 +601,28 @@ private fun controllerIdentity(controller: ControllerUi): String =
     if (controller.style == ControllerStyle.Generic) controller.deviceName else controller.style.displayName
 
 private fun playerLabel(slot: Int): String = "Player ${slot + 1}"
+
+private fun rawForTarget(
+    calibration: Map<GamepadPosition, GamepadPosition>,
+    target: GamepadPosition,
+): GamepadPosition? =
+    calibration.entries.firstOrNull { it.value == target }?.key
+
+private fun GamepadPosition.shortCalibrationLabel(): String = when (this) {
+    GamepadPosition.SOUTH -> "Bottom"
+    GamepadPosition.EAST -> "Right"
+    GamepadPosition.WEST -> "Left"
+    GamepadPosition.NORTH -> "Top"
+    GamepadPosition.DPAD_UP -> "D-pad Up"
+    GamepadPosition.DPAD_DOWN -> "D-pad Down"
+    GamepadPosition.DPAD_LEFT -> "D-pad Left"
+    GamepadPosition.DPAD_RIGHT -> "D-pad Right"
+    GamepadPosition.L1 -> "L1"
+    GamepadPosition.R1 -> "R1"
+    GamepadPosition.L2 -> "L2"
+    GamepadPosition.R2 -> "R2"
+    GamepadPosition.L3 -> "L3"
+    GamepadPosition.R3 -> "R3"
+    GamepadPosition.START -> "Start"
+    GamepadPosition.SELECT -> "Select"
+}

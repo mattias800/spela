@@ -6,6 +6,7 @@ import com.spela.player.domain.model.KeyMappingProfile
 import com.spela.player.domain.repository.KeyMappingRepository
 import kotlinx.coroutines.test.runTest
 import com.spela.player.presentation.viewmodel.LibretroAnalog
+import com.spela.player.presentation.viewmodel.LibretroButtons
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -597,12 +598,110 @@ class GamepadPortManagerTest {
         assertEquals(-1, m.connectDevice(101, "Xbox", stableKey = "key-xbox"))
     }
 
+    // ── Input-layer calibration (#1341) ─────────────────────────────────────
+
+    @Test
+    fun persistedInputCalibrationAppliesBeforeAndroidKeyMapping() {
+        val calibrationRepo = FakeControllerInputCalibrationRepo().apply {
+            put(
+                "key-pad",
+                mapOf(
+                    GamepadPosition.EAST to GamepadPosition.SOUTH,
+                    GamepadPosition.SOUTH to GamepadPosition.EAST,
+                ),
+            )
+        }
+        val m = GamepadPortManager(fakeRepo, controllerInputCalibrationRepository = calibrationRepo)
+        m.connectDevice(100, "Pad", stableKey = "key-pad")
+
+        // Android BUTTON_B reports EAST. Calibration makes it SOUTH, then the
+        // default positional mapping routes SOUTH -> RetroPad B.
+        assertEquals(LibretroButtons.B, m.mapGamepadKeyToLibretro(0, 97, deviceId = 100))
+        // Android BUTTON_A reports SOUTH. The paired calibration swap routes it
+        // as EAST -> RetroPad A.
+        assertEquals(LibretroButtons.A, m.mapGamepadKeyToLibretro(0, 96, deviceId = 100))
+    }
+
+    @Test
+    fun inputTesterReportsCalibratedPositions() {
+        val m = GamepadPortManager(fakeRepo)
+        m.connectDevice(100, "Pad", stableKey = "key-pad")
+        m.setInputCalibration(100, GamepadPosition.EAST, GamepadPosition.SOUTH)
+        m.setTestCaptureDevice(100)
+
+        m.reportPositionInput(100, GamepadPosition.EAST, pressed = true)
+
+        assertEquals(setOf(GamepadPosition.SOUTH), m.pressedPositions.value)
+    }
+
+    @Test
+    fun setInputCalibrationKeepsTargetsExclusive() {
+        val m = GamepadPortManager(fakeRepo)
+        m.connectDevice(100, "Pad", stableKey = "key-pad")
+
+        m.setInputCalibration(100, GamepadPosition.EAST, GamepadPosition.SOUTH)
+
+        val controller = m.connectedControllers.value.single()
+        assertEquals(GamepadPosition.SOUTH, controller.inputCalibration[GamepadPosition.EAST])
+        assertEquals(GamepadPosition.EAST, controller.inputCalibration[GamepadPosition.SOUTH])
+    }
+
+    @Test
+    fun clearInputCalibrationRestoresDefaults() {
+        val m = GamepadPortManager(fakeRepo)
+        m.connectDevice(100, "Pad", stableKey = "key-pad")
+        m.setInputCalibration(100, GamepadPosition.EAST, GamepadPosition.SOUTH)
+
+        m.clearInputCalibration(100)
+
+        assertTrue(m.connectedControllers.value.single().inputCalibration.isEmpty())
+        assertEquals(LibretroButtons.A, m.mapGamepadKeyToLibretro(0, 97, deviceId = 100))
+    }
+
+    @Test
+    fun disconnectClearsActiveInputCalibrationCapture() {
+        val m = GamepadPortManager(fakeRepo)
+        m.connectDevice(100, "Pad", stableKey = "key-pad")
+        m.startInputCalibrationCapture(100, GamepadPosition.SOUTH)
+
+        m.disconnectDevice(100)
+
+        assertNull(m.inputCalibrationCapture.value)
+        assertNull(m.inputCalibrationCapturedPosition.value)
+        assertFalse(m.reportInputCalibrationPosition(100, GamepadPosition.EAST, pressed = true))
+    }
+
+    @Test
+    fun activeInputCalibrationCaptureConsumesTesterInput() {
+        val m = GamepadPortManager(fakeRepo)
+        m.connectDevice(100, "Pad", stableKey = "key-pad")
+        m.setTestCaptureDevice(100)
+        m.startInputCalibrationCapture(100, GamepadPosition.SOUTH)
+
+        m.reportPositionInput(100, GamepadPosition.EAST, pressed = true)
+
+        assertEquals(GamepadPosition.EAST, m.inputCalibrationCapturedPosition.value)
+        assertTrue(m.pressedPositions.value.isEmpty())
+    }
+
     private class FakeControllerAssignmentRepo :
         com.spela.player.domain.repository.ControllerAssignmentRepository {
         private val store = mutableMapOf<String, Int?>()
         override fun getAll(): Map<String, Int?> = store.toMap()
         override fun put(stableKey: String, slot: Int?) {
             store[stableKey] = slot
+        }
+    }
+
+    private class FakeControllerInputCalibrationRepo :
+        com.spela.player.domain.repository.ControllerInputCalibrationRepository {
+        private val store = mutableMapOf<String, Map<GamepadPosition, GamepadPosition>>()
+        override fun get(stableKey: String): Map<GamepadPosition, GamepadPosition> = store[stableKey].orEmpty()
+        override fun put(stableKey: String, calibration: Map<GamepadPosition, GamepadPosition>) {
+            if (calibration.isEmpty()) store.remove(stableKey) else store[stableKey] = calibration.toMap()
+        }
+        override fun clear(stableKey: String) {
+            store.remove(stableKey)
         }
     }
 

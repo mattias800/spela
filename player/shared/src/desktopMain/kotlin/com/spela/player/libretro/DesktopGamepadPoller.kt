@@ -1,6 +1,5 @@
 package com.spela.player.libretro
 
-import com.spela.player.domain.model.DefaultGamepadMapping
 import com.spela.player.domain.model.GamepadPosition
 import com.spela.player.domain.model.controllerStyleFromSdlType
 import com.spela.player.presentation.navigation.NavigationEventBus
@@ -14,6 +13,34 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlin.math.abs
+
+internal class CalibrationInputMask {
+    private val maskedControllers = mutableSetOf<Int>()
+
+    fun update(
+        controllerId: Int,
+        rawPressedPositions: Set<GamepadPosition>,
+        consumedByCalibration: Boolean,
+    ): Boolean {
+        if (consumedByCalibration && rawPressedPositions.isNotEmpty()) {
+            maskedControllers += controllerId
+        }
+        if (rawPressedPositions.isEmpty()) {
+            maskedControllers -= controllerId
+        }
+        return controllerId in maskedControllers
+    }
+
+    fun isMasked(controllerId: Int): Boolean = controllerId in maskedControllers
+
+    fun clear(controllerId: Int) {
+        maskedControllers -= controllerId
+    }
+
+    fun clear() {
+        maskedControllers.clear()
+    }
+}
 
 /**
  * Polls connected gamepads via SDL2 (JNI) and routes their input
@@ -73,6 +100,7 @@ class DesktopGamepadPoller(
                 r2Pressed = r2Raw > TRIGGER_THRESHOLD,
             )
         }
+
     }
 
     private var pollJob: Job? = null
@@ -101,6 +129,7 @@ class DesktopGamepadPoller(
 
     private val analogTriggerRouteTracker = AnalogTriggerRouteTracker(GamepadPortManager.MAX_PORTS)
     private val routedPortsByController = mutableMapOf<Int, Int>()
+    private val calibrationInputMask = CalibrationInputMask()
 
     fun start(scope: CoroutineScope) {
         if (pollJob != null) return
@@ -129,6 +158,7 @@ class DesktopGamepadPoller(
             }
         }
         routedPortsByController.clear()
+        calibrationInputMask.clear()
         if (initialized) {
             jni.nativeGamepadShutdown()
             initialized = false
@@ -178,6 +208,20 @@ class DesktopGamepadPoller(
                 positionPressed[GamepadPosition.L2.ordinal] = state.axes[4] > TRIGGER_THRESHOLD
                 positionPressed[GamepadPosition.R2.ordinal] = state.axes[5] > TRIGGER_THRESHOLD
             }
+            val rawPressedPositions = GamepadPosition.entries.filterTo(mutableSetOf()) {
+                positionPressed[it.ordinal]
+            }
+
+            // Input-layer calibration capture (#1341): while the prompt is active,
+            // raw positions feed calibration and are masked from both gameplay and
+            // UI navigation.
+            val isCalibrationCapturing =
+                gamepadPortManager.reportInputCalibrationPressedPositions(state.controllerId, rawPressedPositions)
+            val isCalibrationMasked = calibrationInputMask.update(
+                state.controllerId,
+                rawPressedPositions,
+                isCalibrationCapturing,
+            )
 
             // Live input tester (#1355/#1359/#1448): only for the controller
             // currently under test, report every pressed position — INCLUDING the
@@ -190,7 +234,7 @@ class DesktopGamepadPoller(
             if (gamepadPortManager.testCaptureDeviceId.value == state.controllerId) {
                 gamepadPortManager.reportPressedPositions(
                     state.controllerId,
-                    GamepadPosition.entries.filterTo(mutableSetOf()) { positionPressed[it.ordinal] },
+                    rawPressedPositions,
                 )
                 gamepadPortManager.reportTestConfirmHeld(state.controllerId, positionPressed[confirmPos.ordinal])
                 if (state.axes.size >= NUM_AXES) {
@@ -210,9 +254,7 @@ class DesktopGamepadPoller(
             if (gamepadPortManager.bindCaptureActive.value) {
                 gamepadPortManager.reportBindPressedPositions(
                     state.controllerId,
-                    GamepadPosition.entries.filterTo(mutableSetOf()) {
-                        positionPressed[it.ordinal]
-                    },
+                    rawPressedPositions,
                 )
             }
 
@@ -240,14 +282,14 @@ class DesktopGamepadPoller(
                 routedPortsByController.remove(state.controllerId)
                 continue
             }
+            if (isCalibrationCapturing || isCalibrationMasked) continue
             routedPortsByController[state.controllerId] = port
 
             var hasInput = false
 
             // Apply the configurable mapping layer (position -> RetroPad), with
             // fan-in handled so a released position can't clobber another's press.
-            val mapping = gamepadPortManager.getGamepadMapping(port)
-                ?: DefaultGamepadMapping.POSITION_TO_RETRO
+            val mapping = gamepadPortManager.getCalibratedGamepadMapping(port, state.controllerId)
             val retroPressed = GamepadButtonResolver.resolve(positionPressed, mapping)
             for (retroId in retroPressed.indices) {
                 desktopController.setButton(port, retroId, retroPressed[retroId])
@@ -298,6 +340,7 @@ class DesktopGamepadPoller(
         // confirm press to activate happens while testTarget is still null). Only
         // the controller under test is masked; any other pad still navigates.
         val testTarget = gamepadPortManager.testCaptureDeviceId.value
+        val calibrationTarget = gamepadPortManager.inputCalibrationCapture.value?.deviceId
         val navStates = when {
             // During a hold-to-bind session every press (incl. D-pad) feeds the
             // binder, so mask ALL buttons on ALL controllers from navigation — a
@@ -306,11 +349,13 @@ class DesktopGamepadPoller(
                 val st = states[idx]
                 st.copy(buttons = BooleanArray(st.buttons.size))
             }
-            testTarget != null -> Array(states.size) { idx ->
+            else -> Array(states.size) { idx ->
                 val st = states[idx]
-                if (st.controllerId != testTarget) st else st.copy(buttons = BooleanArray(st.buttons.size))
+                val shouldMask = st.controllerId == testTarget ||
+                    st.controllerId == calibrationTarget ||
+                    calibrationInputMask.isMasked(st.controllerId)
+                if (shouldMask) st.copy(buttons = BooleanArray(st.buttons.size)) else st
             }
-            else -> states
         }
         uiNavigator.handle(navStates)
 
@@ -322,6 +367,7 @@ class DesktopGamepadPoller(
                 clearAnalogTriggerPort(desktopController, port)
             }
             knownControllers.remove(id)
+            calibrationInputMask.clear(id)
             gamepadPortManager.disconnectDevice(id)
         }
     }
