@@ -1154,7 +1154,7 @@ func (h *GameHandler) HumaScanGames(_ context.Context, in *ScanGamesInput) (*Sca
 				Pluck("id", &gameIDs)
 
 			if len(gameIDs) > 0 {
-				activeJob, _ := h.Scraper.Queue.GetActiveJob()
+				activeJob, _ := h.Scraper.Queue.GetActiveScrapeJob()
 				if activeJob != nil {
 					added, mergeErr := h.Scraper.Queue.MergeGames(activeJob.ID, gameIDs)
 					if mergeErr != nil {

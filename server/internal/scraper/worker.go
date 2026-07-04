@@ -95,16 +95,14 @@ func (w *ScrapeWorker) processItem(ctx context.Context, item *db.ScrapeQueueItem
 	// the Type field was added (they have Type="" due to GORM zero-value).
 	itemType := item.Type
 	if itemType == "" {
-		itemType = "scrape"
+		itemType = scrapeQueueTypeScrape
 	}
 
-	// Only "scrape" items represent user-visible scrape activity. "ra_fetch"
-	// is background achievement-metadata polling — not a scrape. The UI's
-	// scrape-status indicator should not fire for it (otherwise a polling
-	// achievements query looks like the game is being rescraped over and
-	// over). Both still go through MarkCompleted / MarkFailed for queue
-	// bookkeeping; only the WS broadcast is gated.
-	broadcastStatus := itemType == "scrape"
+	// Only "scrape" items represent user-visible scrape activity.
+	// Maintenance items still go through MarkCompleted / MarkFailed for
+	// queue bookkeeping, but should not light up scrape-status or progress UI.
+	broadcastStatus := itemType == scrapeQueueTypeScrape
+	broadcastProgress := itemType == scrapeQueueTypeScrape || itemType == scrapeQueueTypeRAFetch
 
 	var game db.Game
 	if err := w.db.Preload("Console").First(&game, item.GameID).Error; err != nil {
@@ -121,15 +119,31 @@ func (w *ScrapeWorker) processItem(ctx context.Context, item *db.ScrapeQueueItem
 	}
 
 	switch itemType {
-	case "ra_fetch":
+	case scrapeQueueTypeRAFetch:
 		if err := w.scraper.FetchRAAchievements(&game); err != nil {
 			slog.Warn("scrape worker: RA fetch failed", "game", game.Title, "error", err)
 			jobDone, _ := w.queue.MarkFailed(item, err.Error())
-			w.broadcastProgress(item, &game, false, jobDone)
+			if broadcastProgress {
+				w.broadcastProgress(item, &game, false, jobDone)
+			}
 			return
 		}
 
-	default: // "scrape" — full metadata scrape
+	case scrapeQueueTypeTitleRootBackfill:
+		if err := w.scraper.BackfillTitleRootForGame(&game); err != nil {
+			slog.Warn("scrape worker: title-root backfill failed", "game", game.Title, "error", err)
+			jobDone, _ := w.queue.MarkFailed(item, err.Error())
+			if broadcastProgress {
+				w.broadcastProgress(item, &game, false, jobDone)
+			}
+			if errors.Is(err, igdb.ErrRateLimit) {
+				w.backoffIGDBRateLimit(ctx)
+			}
+			return
+		}
+
+	case scrapeQueueTypeScrape:
+		// Full metadata scrape.
 		// Variant group propagation for 'new' mode jobs
 		propagated := false
 		if item.JobID != nil {
@@ -158,17 +172,15 @@ func (w *ScrapeWorker) processItem(ctx context.Context, item *db.ScrapeQueueItem
 					})
 				}
 				jobDone, _ := w.queue.MarkFailed(item, err.Error())
-				w.broadcastProgress(item, &game, false, jobDone)
+				if broadcastProgress {
+					w.broadcastProgress(item, &game, false, jobDone)
+				}
 				w.broadcastScrapeStatus(game.ID, "idle")
 				// On IGDB rate-limit, sleep before processing the next item
 				// so the rate-limit window can reset. Without this, a 429
 				// storm fast-fails every remaining item in the queue.
 				if errors.Is(err, igdb.ErrRateLimit) {
-					slog.Warn("scrape worker: IGDB rate limit hit, backing off", "duration", igdbRateLimitBackoff)
-					select {
-					case <-ctx.Done():
-					case <-time.After(igdbRateLimitBackoff):
-					}
+					w.backoffIGDBRateLimit(ctx)
 				}
 				return
 			}
@@ -179,18 +191,37 @@ func (w *ScrapeWorker) processItem(ctx context.Context, item *db.ScrapeQueueItem
 				w.scraper.propagateToGroup(&game)
 			}
 		}
+
+	default:
+		errMsg := fmt.Sprintf("unknown scrape queue item type: %s", itemType)
+		slog.Warn("scrape worker: unknown queue item type", "game", game.Title, "type", itemType)
+		jobDone, _ := w.queue.MarkFailed(item, errMsg)
+		if broadcastProgress {
+			w.broadcastProgress(item, &game, false, jobDone)
+		}
+		return
 	}
 
 	verified := game.VerificationStatus == "verified"
-	if verified && item.JobID != nil {
+	if itemType == scrapeQueueTypeScrape && verified && item.JobID != nil {
 		w.db.Model(&db.ScrapeJob{}).Where("id = ?", *item.JobID).
 			Update("verified_items", gorm.Expr("verified_items + 1"))
 	}
 
 	jobDone, _ := w.queue.MarkCompleted(item)
-	w.broadcastProgress(item, &game, verified, jobDone)
+	if broadcastProgress {
+		w.broadcastProgress(item, &game, verified, jobDone)
+	}
 	if broadcastStatus {
 		w.broadcastScrapeStatus(game.ID, "idle")
+	}
+}
+
+func (w *ScrapeWorker) backoffIGDBRateLimit(ctx context.Context) {
+	slog.Warn("scrape worker: IGDB rate limit hit, backing off", "duration", igdbRateLimitBackoff)
+	select {
+	case <-ctx.Done():
+	case <-time.After(igdbRateLimitBackoff):
 	}
 }
 

@@ -33,7 +33,7 @@ func (q *ScrapeQueue) SetHub(hub *ws.Hub) {
 // only user-visible scrape activity belongs in the scrape-status feed
 // (mirrors the broadcastStatus gate in worker.go::processItem).
 func (q *ScrapeQueue) broadcastQueued(gameID uint, itemType string) {
-	if q.hub == nil || itemType != "scrape" {
+	if q.hub == nil || itemType != scrapeQueueTypeScrape {
 		return
 	}
 	q.hub.Broadcast(ws.Event{
@@ -76,6 +76,22 @@ func (q *ScrapeQueue) GetActiveJob() (*db.ScrapeJob, error) {
 	return &job, nil
 }
 
+// GetActiveScrapeJob returns the running user-visible scrape job, or nil if
+// only maintenance jobs are running.
+func (q *ScrapeQueue) GetActiveScrapeJob() (*db.ScrapeJob, error) {
+	var job db.ScrapeJob
+	err := q.db.
+		Where("status = ? AND mode NOT IN ?", "running", maintenanceScrapeJobModes()).
+		First(&job).Error
+	if err == gorm.ErrRecordNotFound {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("querying active scrape job: %w", err)
+	}
+	return &job, nil
+}
+
 // EnqueueGames bulk-inserts queue items for the given game IDs.
 // Items default to Type="scrape", so each enqueued game also broadcasts a
 // "queued" scrape-status event so the UI can show "Scrape queued" before
@@ -97,7 +113,7 @@ func (q *ScrapeQueue) EnqueueGames(jobID uint, gameIDs []uint, priority int) err
 		return fmt.Errorf("enqueuing %d games: %w", len(gameIDs), err)
 	}
 	for _, gid := range gameIDs {
-		q.broadcastQueued(gid, "scrape")
+		q.broadcastQueued(gid, scrapeQueueTypeScrape)
 	}
 	return nil
 }
@@ -137,7 +153,7 @@ func (q *ScrapeQueue) EnqueueGame(gameID uint, jobID *uint, priority int) error 
 	if err := q.db.Create(item).Error; err != nil {
 		return fmt.Errorf("enqueuing game %d: %w", gameID, err)
 	}
-	q.broadcastQueued(gameID, "scrape")
+	q.broadcastQueued(gameID, scrapeQueueTypeScrape)
 	return nil
 }
 
@@ -151,7 +167,9 @@ func (q *ScrapeQueue) IsGameQueued(gameID uint) (bool, error) {
 }
 
 // EnqueueGameWithType adds a single game to the queue with a specific type.
-// Type determines what the worker does: "scrape" for full metadata, "ra_fetch" for RA achievements only.
+// Type determines what the worker does: "scrape" for full metadata,
+// "ra_fetch" for RA achievements only, and "title_root_backfill" for
+// metadata-only IGDB title-root repair.
 func (q *ScrapeQueue) EnqueueGameWithType(gameID uint, jobID *uint, priority int, itemType string) error {
 	item := &db.ScrapeQueueItem{
 		JobID:    jobID,
@@ -265,6 +283,11 @@ func (q *ScrapeQueue) finishItem(item *db.ScrapeQueueItem, status, errMsg string
 				"completed_at": &now,
 			}).Error; err != nil {
 				return err
+			}
+			if job.Mode == scrapeJobModeTitleRootBackfill && job.FailedItems == 0 {
+				if err := recordTitleRootBackfillDone(tx); err != nil {
+					return err
+				}
 			}
 			jobDone = true
 		}
