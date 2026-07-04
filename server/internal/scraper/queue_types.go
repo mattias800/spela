@@ -1,0 +1,11 @@
+package scraper
+
+const (
+	scrapeQueueTypeScrape            = "scrape"
+	scrapeQueueTypeRAFetch           = "ra_fetch"
+	scrapeQueueTypeTitleRootBackfill = "title_root_backfill"
+
+	scrapeJobModeTitleRootBackfill = "title_root_backfill"
+
+	backfillTitleRootIGDBFlag = "backfill_title_root_igdb_v1"
+)

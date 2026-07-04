@@ -393,6 +393,14 @@ func main() {
 		}
 	}()
 
+	if !testMode {
+		go func() {
+			if err := metaScraper.BackfillTitleRoots(); err != nil {
+				slog.Warn("title-root backfill failed", "error", err)
+			}
+		}()
+	}
+
 	// Rebuild variant groups from scratch on startup. This is idempotent —
 	// the result depends only on filenames and IGDB IDs, not on existing
 	// group state. Fixes any corruption from previous runs.
