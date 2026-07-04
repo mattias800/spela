@@ -171,7 +171,7 @@ func (h *ExploreHandler) HumaGetTrending(ctx context.Context, _ *GetTrendingInpu
 		gameMap[g.ID] = g
 	}
 
-	userData := loadUserGameData(h.DB, userID, gameIDs)
+	userData := loadGameResponseData(h.DB, userID, games)
 
 	result := make([]TrendingGameResponse, 0, len(rows))
 	for _, r := range rows {
@@ -238,7 +238,7 @@ func (h *ExploreHandler) HumaGetCommunityTop(ctx context.Context, _ *GetCommunit
 		gameMap[g.ID] = g
 	}
 
-	userData := loadUserGameData(h.DB, userID, gameIDs)
+	userData := loadGameResponseData(h.DB, userID, games)
 
 	result := make([]CommunityTopGame, 0, len(rows))
 	for _, r := range rows {
@@ -306,7 +306,7 @@ func (h *ExploreHandler) HumaGetCultClassics(ctx context.Context, _ *GetCultClas
 		gameMap[g.ID] = g
 	}
 
-	userData := loadUserGameData(h.DB, userID, gameIDs)
+	userData := loadGameResponseData(h.DB, userID, games)
 
 	result := make([]CultClassicGame, 0, len(rows))
 	for _, r := range rows {
@@ -379,7 +379,7 @@ func (h *ExploreHandler) HumaGetRecentlyReviewed(ctx context.Context, _ *GetRece
 		gameMap[g.ID] = g
 	}
 
-	userData := loadUserGameData(h.DB, userID, gameIDs)
+	userData := loadGameResponseData(h.DB, userID, games)
 
 	result := make([]RecentReviewItem, 0, len(rows))
 	for _, r := range rows {
@@ -470,8 +470,6 @@ func (h *ExploreHandler) HumaGetActiveNow(ctx context.Context, _ *GetActiveNowIn
 		return nil, huma.Error500InternalServerError("failed to load active games")
 	}
 
-	userData := loadUserGameData(h.DB, userID, gameIDs)
-
 	type sortItem struct {
 		game  db.Game
 		info  *activeInfo
@@ -493,6 +491,12 @@ func (h *ExploreHandler) HumaGetActiveNow(ctx context.Context, _ *GetActiveNowIn
 	if len(sorted) > 20 {
 		sorted = sorted[:20]
 	}
+
+	responseGames := make([]db.Game, 0, len(sorted))
+	for _, s := range sorted {
+		responseGames = append(responseGames, s.game)
+	}
+	userData := loadGameResponseData(h.DB, userID, responseGames)
 
 	result := make([]ActiveNowItem, 0, len(sorted))
 	for _, s := range sorted {

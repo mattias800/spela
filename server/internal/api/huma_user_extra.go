@@ -378,13 +378,13 @@ func (h *UserHandler) HumaGetRecentGames(ctx context.Context, _ *GetRecentGamesI
 		return nil, huma.Error500InternalServerError("failed to fetch recent games")
 	}
 
-	gameIDs := make([]uint, 0, len(history))
+	responseGames := make([]db.Game, 0, len(history))
 	for _, ph := range history {
 		if ph.Game.ID != 0 {
-			gameIDs = append(gameIDs, ph.Game.ID)
+			responseGames = append(responseGames, ph.Game)
 		}
 	}
-	data := loadUserGameData(h.DB, uid, gameIDs)
+	data := loadGameResponseData(h.DB, uid, responseGames)
 
 	games := make([]GameResponse, 0, len(history))
 	for _, ph := range history {

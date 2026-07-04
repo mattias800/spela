@@ -7105,6 +7105,12 @@ export interface components {
             /** Format: int64 */
             gameId: number;
         };
+        GamePlatformResponse: {
+            consoleId: string;
+            consoleName: string;
+            gameId: string;
+            isPreferred: boolean;
+        };
         GameRatingResponse: {
             /**
              * Format: uri
@@ -7174,6 +7180,7 @@ export interface components {
             logoUrl: string;
             parentGame?: components["schemas"]["ParentGameResponse"];
             partyInfo: string;
+            platforms: components["schemas"]["GamePlatformResponse"][];
             playable: boolean;
             /** Format: int64 */
             players: number;

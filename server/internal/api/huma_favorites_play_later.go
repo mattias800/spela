@@ -190,13 +190,13 @@ func (h *UserHandler) HumaListFavorites(ctx context.Context, _ *ListFavoritesInp
 		return nil, huma.Error500InternalServerError("failed to fetch favorites")
 	}
 
-	gameIDs := make([]uint, 0, len(favorites))
+	responseGames := make([]db.Game, 0, len(favorites))
 	for _, fav := range favorites {
 		if fav.Game.ID != 0 {
-			gameIDs = append(gameIDs, fav.Game.ID)
+			responseGames = append(responseGames, fav.Game)
 		}
 	}
-	data := loadUserGameData(h.DB, uid, gameIDs)
+	data := loadGameResponseData(h.DB, uid, responseGames)
 
 	games := make([]GameResponse, 0, len(favorites))
 	for _, fav := range favorites {

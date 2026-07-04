@@ -213,7 +213,7 @@ func (h *ExploreHandler) HumaGetEasyToComplete(ctx context.Context, _ *GetEasyTo
 		}
 	}
 
-	userData := loadUserGameData(h.DB, userID, gameIDs)
+	userData := loadGameResponseData(h.DB, userID, games)
 
 	result := make([]AchievementGameResponse, 0, len(rows))
 	for _, r := range rows {
@@ -322,7 +322,7 @@ func (h *ExploreHandler) HumaGetHardestGames(ctx context.Context, _ *GetHardestG
 		}
 	}
 
-	userData := loadUserGameData(h.DB, userID, gameIDs)
+	userData := loadGameResponseData(h.DB, userID, games)
 
 	result := make([]AchievementGameResponse, 0, len(rows))
 	for _, r := range rows {
@@ -415,7 +415,7 @@ func (h *ExploreHandler) HumaGetAlmostDone(ctx context.Context, _ *GetAlmostDone
 		gameMap[g.ID] = g
 	}
 
-	userData := loadUserGameData(h.DB, userID, gameIDs)
+	userData := loadGameResponseData(h.DB, userID, games)
 
 	result := make([]AlmostDoneGame, 0, len(filtered))
 	for _, r := range filtered {
@@ -498,7 +498,7 @@ func (h *ExploreHandler) HumaGetFreshChallenges(ctx context.Context, _ *GetFresh
 		gameMap[g.ID] = g
 	}
 
-	userData := loadUserGameData(h.DB, userID, gameIDs)
+	userData := loadGameResponseData(h.DB, userID, games)
 
 	result := make([]FreshChallengeGame, 0, len(rows))
 	for _, r := range rows {

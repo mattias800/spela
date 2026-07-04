@@ -108,11 +108,12 @@ type DiscResponse struct {
 
 // GameResponse is the enriched API response for a game.
 type GameResponse struct {
-	ID          string    `json:"id"`
-	CreatedAt   time.Time `json:"createdAt"`
-	UpdatedAt   time.Time `json:"updatedAt"`
-	ConsoleID   string    `json:"consoleId"`
-	ConsoleName string    `json:"consoleName"`
+	ID          string                 `json:"id"`
+	CreatedAt   time.Time              `json:"createdAt"`
+	UpdatedAt   time.Time              `json:"updatedAt"`
+	ConsoleID   string                 `json:"consoleId"`
+	ConsoleName string                 `json:"consoleName"`
+	Platforms   []GamePlatformResponse `json:"platforms"`
 	// Save-state size tier of the game's console — drives the in-game
 	// overlay's first-launch prompt and slot/quota UX. One of "small"
 	// | "medium" | "large". Inherited from Console.SaveStatePolicy
@@ -185,6 +186,14 @@ type GameResponse struct {
 	AverageRating float64               `json:"averageRating"`
 	RatingCount   int64                 `json:"ratingCount"`
 	UserRating    *int                  `json:"userRating"`
+}
+
+// GamePlatformResponse is a platform release for the same logical title.
+type GamePlatformResponse struct {
+	GameID      string `json:"gameId"`
+	ConsoleID   string `json:"consoleId"`
+	ConsoleName string `json:"consoleName"`
+	IsPreferred bool   `json:"isPreferred"`
 }
 
 // ReleaseDateResponse represents a regional release date in the API response.
@@ -350,6 +359,7 @@ type userGameData struct {
 	userRatings map[uint]int             // gameID -> user's rating (1-5)
 	ratingAggs  map[uint]ratingAggregate // gameID -> aggregate rating data
 	artworks    map[uint]*db.GameArtwork // gameID -> artwork (hero, logo, etc.)
+	platforms   map[uint][]GamePlatformResponse
 }
 
 // loadUserGameData batch-loads favorites, play later, play history, ratings, and
@@ -429,6 +439,25 @@ func loadUserGameData(database *gorm.DB, userID uint, gameIDs []uint) userGameDa
 	return data
 }
 
+func loadGameResponseData(database *gorm.DB, userID uint, games []db.Game) userGameData {
+	gameIDs := make([]uint, 0, len(games))
+	seen := make(map[uint]struct{}, len(games))
+	for _, game := range games {
+		if game.ID == 0 {
+			continue
+		}
+		if _, ok := seen[game.ID]; ok {
+			continue
+		}
+		seen[game.ID] = struct{}{}
+		gameIDs = append(gameIDs, game.ID)
+	}
+
+	data := loadUserGameData(database, userID, gameIDs)
+	data.platforms = loadGamePlatforms(database, games)
+	return data
+}
+
 // toGameResponseWithData converts a db.Game using pre-loaded enrichment data.
 func toGameResponseWithData(g db.Game, data *userGameData) GameResponse {
 	// Build screenshot URLs from the normalized GameScreenshot table.
@@ -484,6 +513,7 @@ func toGameResponseWithData(g db.Game, data *userGameData) GameResponse {
 		UpdatedAt:              g.UpdatedAt,
 		ConsoleID:              consoleAbbr,
 		ConsoleName:            consoleName,
+		Platforms:              []GamePlatformResponse{toGamePlatformResponse(g, true)},
 		ConsoleSaveStatePolicy: consoleSaveStatePolicy,
 		CoverAspectRatio:       coverAspectRatio,
 		Title:                  g.Title,
@@ -567,6 +597,9 @@ func toGameResponseWithData(g db.Game, data *userGameData) GameResponse {
 	}
 
 	if data != nil {
+		if platforms := data.platforms[g.ID]; len(platforms) > 0 {
+			resp.Platforms = platforms
+		}
 		resp.IsFavorite = data.favorites[g.ID]
 		resp.IsInPlayLater = data.playLater[g.ID]
 		if ph, ok := data.playHistory[g.ID]; ok {
@@ -590,21 +623,17 @@ func toGameResponseWithData(g db.Game, data *userGameData) GameResponse {
 }
 
 // ToGameResponse converts a single db.Game to its enriched API response.
-// For single-game lookups this runs 2 queries. For batch conversions use ToGameResponses.
+// For single-game lookups this runs a small fixed set of enrichment queries.
+// For batch conversions use ToGameResponses.
 func ToGameResponse(g db.Game, database *gorm.DB, userID uint) GameResponse {
-	data := loadUserGameData(database, userID, []uint{g.ID})
+	data := loadGameResponseData(database, userID, []db.Game{g})
 	return toGameResponseWithData(g, &data)
 }
 
 // ToGameResponses converts a slice of db.Game to API responses.
-// Batch-loads favorites and play history in 2 queries total.
+// Batch-loads user enrichment and title-platform data in fixed query sets.
 func ToGameResponses(games []db.Game, database *gorm.DB, userID uint) []GameResponse {
-	gameIDs := make([]uint, len(games))
-	for i, g := range games {
-		gameIDs[i] = g.ID
-	}
-
-	data := loadUserGameData(database, userID, gameIDs)
+	data := loadGameResponseData(database, userID, games)
 
 	// Batch-load variant counts for all games in the page.
 	// Group by (console_id, group_key) to count how many games share each key.

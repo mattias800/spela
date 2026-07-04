@@ -182,13 +182,11 @@ func (h *ExploreHandler) HumaGetOnThisDay(ctx context.Context, _ *GetOnThisDayIn
 	}
 
 	games := make([]db.Game, len(matched))
-	gameIDs := make([]uint, len(matched))
 	for i, m := range matched {
 		games[i] = m.game
-		gameIDs[i] = m.game.ID
 	}
 
-	userData := loadUserGameData(h.DB, userID, gameIDs)
+	userData := loadGameResponseData(h.DB, userID, games)
 	result := make([]GameResponse, len(games))
 	for i, g := range games {
 		result[i] = toGameResponseWithData(g, &userData)
@@ -316,7 +314,7 @@ func (h *ExploreHandler) HumaGetYourAnniversaries(ctx context.Context, _ *GetYou
 		gameMap[g.ID] = g
 	}
 
-	userData := loadUserGameData(h.DB, userID, gameIDs)
+	userData := loadGameResponseData(h.DB, userID, games)
 
 	result := make([]AnniversaryItem, 0, len(allAnniversaries))
 	for _, a := range allAnniversaries {

@@ -133,6 +133,7 @@ export type GameCoversResponse = Schemas["GameCoversResponse"];
 export type GameFranchiseResponse = Schemas["GameFranchiseResponse"];
 export type GameHeroesResponse = Schemas["GameHeroesResponse"];
 export type GameKeyMappingResponse = Schemas["GameKeyMappingResponse"];
+export type GamePlatformResponse = Schemas["GamePlatformResponse"];
 export type GameRatingResponse = Schemas["GameRatingResponse"];
 export type GameResponse = Schemas["GameResponse"];
 export type GameSeriesResponse = Schemas["GameSeriesResponse"];
