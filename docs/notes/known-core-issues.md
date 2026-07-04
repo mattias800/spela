@@ -48,6 +48,7 @@ Use the existing logs before adding temporary instrumentation:
 ### ScummVM: Maniac Mansion PC Speaker Note Timing
 
 - **Issue:** #862
+- **Manual verification:** #1641
 - **Status:** suspected upstream ScummVM/libretro-scummvm timing issue; not yet
   proven.
 - **Symptom:** Maniac Mansion with PC speaker has uneven note lengths. Notes are

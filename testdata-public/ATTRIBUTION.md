@@ -42,7 +42,9 @@ What they explicitly do NOT cover:
 - DAT/CRC-based metadata enrichment (no bytes to checksum)
 - Save-state or actual gameplay tests
 
-Sourcing real PD ROMs for these platforms is tracked under #1159.
+The remaining Sharp X68000 real boot fixture is tracked under #1640 because
+`px68k` also requires operator-supplied BIOS files before boot verification is
+meaningful.
 Titles are intentionally **fictional and Spela-branded** to avoid
 any ambiguity about whether a real third-party ROM is implied; you
 will not find `Spela Rainbow Quest` on any other emulation site.
