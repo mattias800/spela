@@ -53,6 +53,7 @@ import { TimeToBeatCard } from "@/features/game-detail/components/time-to-beat-c
 import { GameVariantsSection } from "@/features/game-detail/components/game-variants-section";
 import { BasedOnLink } from "@/features/game-detail/components/based-on-link";
 import { StandaloneRomHacksSection } from "@/features/game-detail/components/standalone-rom-hacks-section";
+import { AlsoOnPlatformsSection } from "@/features/game-detail/components/also-on-platforms-section";
 import { UserRating } from "@/features/game-detail/components/user-rating";
 import { MetaItem } from "@/components/meta-item";
 import {
@@ -443,6 +444,8 @@ export function GameDetailPage() {
           ))}
         </div>
       )}
+
+      <AlsoOnPlatformsSection game={game} />
 
       {!isDemo && <GameSessions gameId={game.id} gameTitle={game.title} />}
 

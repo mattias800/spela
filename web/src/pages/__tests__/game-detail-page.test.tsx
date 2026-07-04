@@ -1,7 +1,8 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { GameDetailPage } from "../game-detail-page";
 
 const mockScrapeIfNeededMutate = vi.hoisted(() => vi.fn());
@@ -162,6 +163,14 @@ const mockGame = {
   title: "Super Mario World",
   consoleId: "snes",
   consoleName: "SNES",
+  platforms: [
+    {
+      gameId: "g1",
+      consoleId: "snes",
+      consoleName: "SNES",
+      isPreferred: true,
+    },
+  ],
   coverUrl: "",
   fileName: "smw.sfc",
   scraperId: "igdb",
@@ -178,10 +187,16 @@ function createQueryClient() {
   });
 }
 
+function LocationProbe() {
+  const location = useLocation();
+  return <div data-testid="location">{location.pathname}</div>;
+}
+
 function renderPageElement(gameId = "g1", queryClient = createQueryClient()) {
   return (
     <QueryClientProvider client={queryClient}>
       <MemoryRouter initialEntries={[`/games/${gameId}`]}>
+        <LocationProbe />
         <Routes>
           <Route path="games/:id" element={<GameDetailPage />} />
         </Routes>
@@ -265,6 +280,89 @@ describe("GameDetailPage - scrape-if-needed", () => {
     renderPage();
 
     expect(mockScrapeIfNeededMutate).not.toHaveBeenCalled();
+  });
+});
+
+describe("GameDetailPage - Also on platforms", () => {
+  const multiPlatformGame = {
+    ...mockGame,
+    id: "game-nes",
+    title: "Mega Adventure",
+    consoleId: "nes",
+    consoleName: "Nintendo Entertainment System",
+    platforms: [
+      {
+        gameId: "game-nes",
+        consoleId: "nes",
+        consoleName: "Nintendo Entertainment System",
+        isPreferred: true,
+      },
+      {
+        gameId: "game-snes",
+        consoleId: "snes",
+        consoleName: "Super Nintendo",
+        isPreferred: false,
+      },
+    ],
+  };
+
+  it("renders current and alternate platform targets", () => {
+    mockUseGame.mockReturnValue({
+      data: multiPlatformGame,
+      isLoading: false,
+    });
+
+    renderPage("game-nes");
+
+    const section = screen.getByTestId("also-on-platforms-section");
+    expect(
+      within(section).getByRole("heading", { name: "Also on" }),
+    ).toBeInTheDocument();
+
+    const currentPlatform = within(section).getByText("Current").closest("li");
+    expect(currentPlatform).not.toBeNull();
+    expect(
+      within(currentPlatform as HTMLElement).getByText(
+        "Nintendo Entertainment System",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(currentPlatform as HTMLElement).queryByRole("link"),
+    ).not.toBeInTheDocument();
+
+    expect(
+      within(section).getByRole("link", {
+        name: "Open Mega Adventure on Super Nintendo",
+      }),
+    ).toHaveAttribute("href", "/games/game-snes");
+  });
+
+  it("omits the section for a single-platform game", () => {
+    renderPage();
+
+    expect(
+      screen.queryByTestId("also-on-platforms-section"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("navigates to an alternate platform game detail page", async () => {
+    const user = userEvent.setup();
+    mockUseGame.mockReturnValue({
+      data: multiPlatformGame,
+      isLoading: false,
+    });
+
+    renderPage("game-nes");
+
+    await user.click(
+      screen.getByRole("link", {
+        name: "Open Mega Adventure on Super Nintendo",
+      }),
+    );
+
+    expect(screen.getByTestId("location")).toHaveTextContent(
+      "/games/game-snes",
+    );
   });
 });
 
