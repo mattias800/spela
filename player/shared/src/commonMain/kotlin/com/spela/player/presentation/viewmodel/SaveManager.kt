@@ -385,7 +385,11 @@ class SaveManager(
                 val ok = libretroController.unserializeFromFile(tempPath)
                 runCatching { fileStorage.deleteFile(tempPath) }
                 println("[SaveManager] autoLoadSaveState: unserialize result=$ok")
-                AutoLoadResult.Loaded
+                if (ok) {
+                    AutoLoadResult.Loaded
+                } else {
+                    AutoLoadResult.Error("Save state could not be loaded by the core")
+                }
             },
             onFailure = { e ->
                 runCatching { fileStorage.deleteFile(tempPath) }

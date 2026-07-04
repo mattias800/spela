@@ -57,6 +57,11 @@ class EmulationViewModelSharedSessionAndBiosTest {
 
         assertTrue(builder.libretroController.unserializeCallCount >= 1)
         assertTrue(builder.libretroController.lastUnserializeData.contentEquals(saveData))
+        val calls = builder.libretroController.calls
+        assertTrue(
+            calls.indexOf("unserialize") > calls.indexOf("start"),
+            "shared-session restore must run after core start; calls=$calls",
+        )
     }
 
     @Test

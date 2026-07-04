@@ -109,6 +109,7 @@ open class StubLibretroController : LibretroController {
     var stopCallCount = 0; private set
     var serializeCallCount = 0; private set
     var unserializeCallCount = 0; private set
+    var unserializeFromFileCallCount = 0; private set
     var setFastForwardCallCount = 0; private set
     var refreshPausedVideoCallCount = 0; private set
     var getSRAMCallCount = 0; private set
@@ -124,6 +125,7 @@ open class StubLibretroController : LibretroController {
     var lastFastForwardEnabled: Boolean? = null; private set
     var lastWidescreenMode: WidescreenMode? = null; private set
     var lastUnserializeData: ByteArray? = null; private set
+    var lastUnserializeFromFilePath: String? = null; private set
     var lastSetSRAMData: ByteArray? = null; private set
 
     var supportsSaveStatesResult = true
@@ -133,6 +135,8 @@ open class StubLibretroController : LibretroController {
      *  in-progress flag when staging blows up (#803). */
     var serializeThrows: Boolean = false
     var unserializeResult = true
+    var unserializeFromFileResult = true
+    var firstFrameRunResult = true
     var isHwRenderEnabledResult = false
     var getSRAMResult: ByteArray? = byteArrayOf(1, 2, 3)
     var setSRAMResult = true
@@ -151,7 +155,10 @@ open class StubLibretroController : LibretroController {
         calls += "loadGame"
     }
 
-    override fun start() { startCallCount++ }
+    override fun start() {
+        startCallCount++
+        calls += "start"
+    }
     override fun pause() { pauseCallCount++ }
     override fun resume() { resumeCallCount++ }
     override fun stop() { stopCallCount++ }
@@ -161,7 +168,19 @@ open class StubLibretroController : LibretroController {
         if (serializeThrows) throw RuntimeException("test: native serialize threw")
         return serializeResult
     }
-    override fun unserialize(data: ByteArray): Boolean { unserializeCallCount++; lastUnserializeData = data; return unserializeResult }
+    override fun unserialize(data: ByteArray): Boolean {
+        unserializeCallCount++
+        lastUnserializeData = data
+        calls += "unserialize"
+        return unserializeResult
+    }
+    override fun unserializeFromFile(path: String): Boolean {
+        unserializeFromFileCallCount++
+        lastUnserializeFromFilePath = path
+        calls += "unserializeFromFile"
+        return unserializeFromFileResult
+    }
+    override fun firstFrameRun(): Boolean = firstFrameRunResult
     override fun setFastForward(enabled: Boolean) { setFastForwardCallCount++; lastFastForwardEnabled = enabled }
     override fun setWidescreenMode(mode: WidescreenMode) {
         lastWidescreenMode = mode

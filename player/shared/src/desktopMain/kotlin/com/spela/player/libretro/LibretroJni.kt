@@ -25,7 +25,12 @@ class LibretroJni {
     /* Save state */
     external fun nativeSerializeSize(): Long
     external fun nativeSerialize(): ByteArray?
+    external fun nativeUnserializeFromFile(path: String): Boolean
     external fun nativeUnserialize(data: ByteArray): Boolean
+    /** True once retro_run() has returned at least once for the
+     * currently-loaded game. Used to gate post-launch operations
+     * (save-state probe, deferred auto-load) — see #737/#1302. */
+    external fun nativeFirstFrameRun(): Boolean
 
     /* Video */
     external fun nativeGetVideoFrame(): ByteArray?
