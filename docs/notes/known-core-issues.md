@@ -24,6 +24,25 @@ If the issue reproduces in standalone or RetroArch, document the upstream
 tracker link and keep the Spela issue as a reference. If it only reproduces in
 Spela, treat it as a frontend integration bug.
 
+## Spela Diagnostic Signals
+
+Use the existing logs before adding temporary instrumentation:
+
+- **Core AV timing:** the native bridge logs the core-reported video and audio
+  timing immediately after `retro_load_game`:
+  `Game loaded: ... @ <fps> fps, audio <sample_rate> Hz`. On Android this is
+  under the `SpelaLibretro` logcat tag. On desktop it is printed to stderr and
+  written to the bridge log file in the process temp directory as
+  `spela_bridge.log`.
+- **Aggregate frame timing:** desktop emulation currently prints
+  `[Emulation] FPS: ... frameTime: ...ms` once per second. Android exposes the
+  same aggregate FPS/frame-time values through the in-game performance overlay
+  when enabled in Settings.
+- **Sub-stage timing:** stock builds do not continuously split frame time into
+  `retro_run`, render/present, audio, and sleep components. If attribution needs
+  that level of detail, add temporary instrumentation around the run loop for
+  the specific investigation and remove it once the evidence is captured.
+
 ## Open Investigations
 
 ### ScummVM: Maniac Mansion PC Speaker Note Timing
@@ -42,7 +61,10 @@ Spela, treat it as a frontend integration bug.
   at least one other PC-speaker game.
 - **Spela-side cheap checks:** log the requested core sample rate and compare
   `retro_run` timing for Maniac Mansion PC speaker, Maniac Mansion AdLib, and a
-  known-good MT-32 game.
+  known-good MT-32 game. Start with the existing `Game loaded: ... audio ... Hz`
+  bridge log to rule out unusual core sample rates. Aggregate FPS/frame-time is
+  already visible, but true `retro_run` sub-timing still requires temporary
+  run-loop instrumentation.
 
 ### PSP: PPSSPP FMV-Heavy Menu Stutter
 
