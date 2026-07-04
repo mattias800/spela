@@ -79,7 +79,7 @@ func (h *FederationHandler) HumaAcceptInvite(_ context.Context, in *AcceptInvite
 	}
 	resp, err := client.Pair(inv.BaseURL, reqID, bundle)
 	if err != nil {
-		federation.RecordExchange(h.DB, federation.ExchangeRecord{
+		h.recordExchange(federation.ExchangeRecord{
 			RequestID: reqID, PeerFingerprint: inv.Fingerprint, PeerName: in.Body.Name,
 			Direction: db.ExchangeOutbound, Operation: "pair", Status: db.ExchangeError,
 			StartedAt: started, Error: err.Error(),
@@ -94,7 +94,7 @@ func (h *FederationHandler) HumaAcceptInvite(_ context.Context, in *AcceptInvite
 	// misconfigured remote must not be able to inject a different peer's
 	// identity. Mismatch => abort.
 	if resp.Fingerprint != inv.Fingerprint {
-		federation.RecordExchange(h.DB, federation.ExchangeRecord{
+		h.recordExchange(federation.ExchangeRecord{
 			RequestID: reqID, PeerFingerprint: inv.Fingerprint, PeerName: in.Body.Name,
 			Direction: db.ExchangeOutbound, Operation: "pair", Status: db.ExchangeRejected,
 			StartedAt: started, Error: "remote returned a mismatched fingerprint",
@@ -108,7 +108,7 @@ func (h *FederationHandler) HumaAcceptInvite(_ context.Context, in *AcceptInvite
 	}); err != nil {
 		return nil, huma.Error500InternalServerError("failed to store peer")
 	}
-	federation.RecordExchange(h.DB, federation.ExchangeRecord{
+	h.recordExchange(federation.ExchangeRecord{
 		RequestID: reqID, PeerFingerprint: inv.Fingerprint, PeerName: in.Body.Name,
 		Direction: db.ExchangeOutbound, Operation: "pair", Status: db.ExchangeOK, StartedAt: started,
 	})
@@ -255,7 +255,7 @@ func (h *FederationHandler) HumaTestPeer(_ context.Context, in *TestPeerInput) (
 	if !res.Reachable {
 		status = db.ExchangeError
 	}
-	federation.RecordExchange(h.DB, federation.ExchangeRecord{
+	h.recordExchange(federation.ExchangeRecord{
 		RequestID: reqID, PeerFingerprint: peer.Fingerprint, PeerName: peer.Name,
 		Direction: db.ExchangeOutbound, Operation: "ping", Status: status,
 		StartedAt: started, Error: res.Error,
@@ -334,7 +334,7 @@ func (h *FederationHandler) ginPing(c *gin.Context) {
 	if peer, ok := federationPeerFromGin(c); ok {
 		fp, name = peer.Fingerprint, peer.Name
 	}
-	federation.RecordExchange(h.DB, federation.ExchangeRecord{
+	h.recordExchange(federation.ExchangeRecord{
 		RequestID: reqID, PeerFingerprint: fp, PeerName: name,
 		Direction: db.ExchangeInbound, Operation: "ping", Status: db.ExchangeOK,
 	})

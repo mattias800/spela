@@ -127,7 +127,7 @@ func (h *FederationHandler) ginExportStats(c *gin.Context) {
 	}
 	entries := append(local, cached...)
 
-	federation.RecordExchange(h.DB, federation.ExchangeRecord{
+	h.recordExchange(federation.ExchangeRecord{
 		RequestID: reqID, PeerFingerprint: peer.Fingerprint, PeerName: peer.Name,
 		Direction: db.ExchangeInbound, Operation: "stats_export", MaxHops: maxHops,
 		DataClass: string(federation.DataClassStats), Status: db.ExchangeOK, ItemCount: len(entries),
@@ -166,7 +166,7 @@ func (h *FederationHandler) RefreshFederationStats() (int, int) {
 		started := time.Now()
 		raw, ferr := client.FetchStats(peer.BaseURL, reqID, h.Identity, peer.Fingerprint, federation.MaxFederationHops-1)
 		if ferr != nil {
-			federation.RecordExchange(h.DB, federation.ExchangeRecord{
+			h.recordExchange(federation.ExchangeRecord{
 				RequestID: reqID, PeerFingerprint: peer.Fingerprint, PeerName: peer.Name,
 				Direction: db.ExchangeOutbound, Operation: "stats_pull",
 				DataClass: string(federation.DataClassStats), Status: db.ExchangeError,
@@ -180,7 +180,7 @@ func (h *FederationHandler) RefreshFederationStats() (int, int) {
 			cleaned[i].Hops++ // distance from us = distance from the friend + 1
 		}
 		if err := h.Snapshots.ReplacePeerSnapshot(peer.Fingerprint, cleaned, time.Now()); err != nil {
-			federation.RecordExchange(h.DB, federation.ExchangeRecord{
+			h.recordExchange(federation.ExchangeRecord{
 				RequestID: reqID, PeerFingerprint: peer.Fingerprint, PeerName: peer.Name,
 				Direction: db.ExchangeOutbound, Operation: "stats_pull",
 				DataClass: string(federation.DataClassStats), Status: db.ExchangeError,
@@ -189,7 +189,7 @@ func (h *FederationHandler) RefreshFederationStats() (int, int) {
 			failed++
 			continue
 		}
-		federation.RecordExchange(h.DB, federation.ExchangeRecord{
+		h.recordExchange(federation.ExchangeRecord{
 			RequestID: reqID, PeerFingerprint: peer.Fingerprint, PeerName: peer.Name,
 			Direction: db.ExchangeOutbound, Operation: "stats_pull",
 			DataClass: string(federation.DataClassStats), Status: db.ExchangeOK,

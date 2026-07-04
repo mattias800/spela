@@ -41,11 +41,20 @@ type ExchangeRecord struct {
 	Error           string
 }
 
+// ExchangeResult reports which observability records were successfully written
+// so callers can mirror them to live admin channels without inventing state.
+type ExchangeResult struct {
+	Exchange          db.FederationExchange
+	ExchangePersisted bool
+	Peer              db.FederationPeer
+	PeerUpdated       bool
+}
+
 // RecordExchange persists one ledger row and emits a structured slog line. It
 // also updates the peer's health (last contact/success/error, reachability) so
 // the admin peers view reflects reality. Best-effort: a DB failure is logged but
 // never blocks the caller — observability must not break federation.
-func RecordExchange(database *gorm.DB, rec ExchangeRecord) {
+func RecordExchange(database *gorm.DB, rec ExchangeRecord) ExchangeResult {
 	if rec.FinishedAt.IsZero() {
 		rec.FinishedAt = time.Now()
 	}
@@ -75,9 +84,16 @@ func RecordExchange(database *gorm.DB, rec ExchangeRecord) {
 	}
 	if err := database.Create(&row).Error; err != nil {
 		slog.Warn("federation: failed to persist exchange", "request_id", rec.RequestID, "error", err)
+		row = db.FederationExchange{}
 	}
 
-	updatePeerHealth(database, rec)
+	peer, peerUpdated := updatePeerHealth(database, rec)
+	return ExchangeResult{
+		Exchange:          row,
+		ExchangePersisted: row.ID != 0,
+		Peer:              peer,
+		PeerUpdated:       peerUpdated,
+	}
 }
 
 // PruneExpiredExchanges deletes ledger rows older than ExchangeRetentionWindow.
@@ -87,10 +103,11 @@ func PruneExpiredExchanges(database *gorm.DB, now time.Time) int64 {
 	return result.RowsAffected
 }
 
-// updatePeerHealth folds the exchange outcome into the peer's health columns.
-func updatePeerHealth(database *gorm.DB, rec ExchangeRecord) {
+// updatePeerHealth folds the exchange outcome into the peer's health columns
+// and returns the refreshed peer row when one was updated.
+func updatePeerHealth(database *gorm.DB, rec ExchangeRecord) (db.FederationPeer, bool) {
 	if rec.PeerFingerprint == "" {
-		return
+		return db.FederationPeer{}, false
 	}
 	now := rec.FinishedAt
 	updates := map[string]any{"last_contact_at": now}
@@ -111,11 +128,22 @@ func updatePeerHealth(database *gorm.DB, rec ExchangeRecord) {
 		updates["reachable"] = false
 	}
 	// Best-effort; only touches an existing peer row.
-	if err := database.Model(&db.FederationPeer{}).
+	result := database.Model(&db.FederationPeer{}).
 		Where("fingerprint = ?", rec.PeerFingerprint).
-		Updates(updates).Error; err != nil {
-		slog.Warn("federation: failed to update peer health", "peer", ShortFingerprint(rec.PeerFingerprint), "error", err)
+		Updates(updates)
+	if result.Error != nil {
+		slog.Warn("federation: failed to update peer health", "peer", ShortFingerprint(rec.PeerFingerprint), "error", result.Error)
+		return db.FederationPeer{}, false
 	}
+	if result.RowsAffected == 0 {
+		return db.FederationPeer{}, false
+	}
+	var peer db.FederationPeer
+	if err := database.Where("fingerprint = ?", rec.PeerFingerprint).First(&peer).Error; err != nil {
+		slog.Warn("federation: failed to read peer health", "peer", ShortFingerprint(rec.PeerFingerprint), "error", err)
+		return db.FederationPeer{}, false
+	}
+	return peer, true
 }
 
 func logExchange(rec ExchangeRecord, durationMs int64) {

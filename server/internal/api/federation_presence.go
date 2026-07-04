@@ -119,7 +119,7 @@ func (h *FederationHandler) ginExportPresence(c *gin.Context) {
 		return
 	}
 
-	federation.RecordExchange(h.DB, federation.ExchangeRecord{
+	h.recordExchange(federation.ExchangeRecord{
 		RequestID: reqID, PeerFingerprint: peer.Fingerprint, PeerName: peer.Name,
 		Direction: db.ExchangeInbound, Operation: "presence_export",
 		DataClass: string(federation.DataClassPresence), Status: db.ExchangeOK, ItemCount: len(local),
@@ -194,7 +194,7 @@ func (h *FederationHandler) HumaAggregatedPresence(_ context.Context, _ *Aggrega
 	for i, peer := range consumable {
 		r := results[i]
 		if r.err != nil {
-			federation.RecordExchange(h.DB, federation.ExchangeRecord{
+			h.recordExchange(federation.ExchangeRecord{
 				RequestID: r.reqID, PeerFingerprint: peer.Fingerprint, PeerName: peer.Name,
 				Direction: db.ExchangeOutbound, Operation: "presence_pull",
 				DataClass: string(federation.DataClassPresence), Status: db.ExchangeError,
@@ -208,7 +208,7 @@ func (h *FederationHandler) HumaAggregatedPresence(_ context.Context, _ *Aggrega
 			cleaned[j].ServerName = peer.Name
 		}
 		all = append(all, cleaned...)
-		federation.RecordExchange(h.DB, federation.ExchangeRecord{
+		h.recordExchange(federation.ExchangeRecord{
 			RequestID: r.reqID, PeerFingerprint: peer.Fingerprint, PeerName: peer.Name,
 			Direction: db.ExchangeOutbound, Operation: "presence_pull",
 			DataClass: string(federation.DataClassPresence), Status: db.ExchangeOK,

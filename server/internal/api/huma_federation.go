@@ -54,8 +54,9 @@ type FederationHandler struct {
 	// when nil; overridden in tests.
 	DownloadClient downloadClient
 	// Hub is the websocket hub whose active sessions power cross-mesh presence
-	// (#1349). Nil = no local presence (the export/aggregate serve empty).
-	Hub *ws.Hub
+	// (#1349) and whose live events power admin federation observability
+	// (#1350). Nil = no local presence or live feed.
+	Hub federationHub
 	// PresenceClient fetches a connected server's live presence. Defaults to
 	// httpPresenceClient when nil; overridden in tests.
 	PresenceClient presenceClient
@@ -66,6 +67,11 @@ type FederationHandler struct {
 	// periodic ticker and an admin trigger can't race the snapshot stores.
 	refreshMu        sync.Mutex
 	catalogRefreshMu sync.Mutex
+}
+
+type federationHub interface {
+	PlayingNow() []ws.PlayingSession
+	TryBroadcast(ws.Event) bool
 }
 
 // pairClient performs the outbound pairing callback to a friend.
@@ -158,7 +164,7 @@ func (h *FederationHandler) HumaPair(_ context.Context, in *PairInput) (*PairOut
 		return nil, fail(huma.Error500InternalServerError("failed to store peer"))
 	}
 
-	federation.RecordExchange(h.DB, federation.ExchangeRecord{
+	h.recordExchange(federation.ExchangeRecord{
 		RequestID: reqID, PeerFingerprint: b.Fingerprint, Direction: db.ExchangeInbound,
 		Operation: "pair", Status: db.ExchangeOK, StartedAt: started,
 	})
