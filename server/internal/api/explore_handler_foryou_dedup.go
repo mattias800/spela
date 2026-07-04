@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/spela/server/internal/db"
+	"gorm.io/gorm"
 )
 
 // --- Cross-platform title dedupe for the For-You + players-like-you shelves.
@@ -176,6 +177,10 @@ func dedupeGamesByTitle(games []db.Game, mostPlayedByTitle map[string]uint) []db
 	return result
 }
 
+func dedupeGamesByTitleForUser(games []db.Game, database *gorm.DB, userID uint) []db.Game {
+	return dedupeGamesByTitle(games, fetchMostPlayedTitleMap(database, userID))
+}
+
 // pickWinnerForTitle applies the tiebreak rules documented on
 // [dedupeGamesByTitle] to choose one game from a group sharing the same
 // title key.
@@ -222,7 +227,11 @@ func pickWinnerForTitle(key string, games []db.Game, mostPlayedByTitle map[strin
 // is request-scoped (no caching) so it always reflects current play
 // history.
 func (h *ExploreHandler) fetchMostPlayedTitleMap(userID uint) map[string]uint {
-	if userID == 0 {
+	return fetchMostPlayedTitleMap(h.DB, userID)
+}
+
+func fetchMostPlayedTitleMap(database *gorm.DB, userID uint) map[string]uint {
+	if database == nil || userID == 0 {
 		return nil
 	}
 	type row struct {
@@ -232,7 +241,7 @@ func (h *ExploreHandler) fetchMostPlayedTitleMap(userID uint) map[string]uint {
 		PlayTime        int64
 	}
 	var rows []row
-	if err := h.DB.Table("play_histories").
+	if err := database.Table("play_histories").
 		Select("play_histories.game_id, games.title, games.title_root_igdb_id, play_histories.play_time").
 		Joins("JOIN games ON games.id = play_histories.game_id AND games.deleted_at IS NULL").
 		Where("play_histories.user_id = ? AND play_histories.play_time > 0", userID).

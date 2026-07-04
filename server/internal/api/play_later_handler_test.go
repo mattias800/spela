@@ -254,6 +254,47 @@ func TestListPlayLater_OrderedByPosition(t *testing.T) {
 	assert.Equal(t, "Third PL Game", games[2]["title"])
 }
 
+func TestListPlayLaterDedupesTitleRootPlatforms(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	token := registerAndGetToken(t, router)
+
+	snes := mustFindConsole(t, database, "SNES")
+	gba := mustFindConsole(t, database, "GBA")
+	rootID := uint(5151)
+	snesGame := db.Game{ConsoleID: snes.ID, Title: "Play Later Root", FileName: "pl-root.sfc", FilePath: "/tmp/pl-root.sfc", FileSize: 100, TitleRootIGDBID: &rootID}
+	gbaGame := db.Game{ConsoleID: gba.ID, Title: "Play Later Root Advance", FileName: "pl-root.gba", FilePath: "/tmp/pl-root.gba", FileSize: 100, TitleRootIGDBID: &rootID}
+	other := db.Game{ConsoleID: snes.ID, Title: "Another Play Later", FileName: "other.sfc", FilePath: "/tmp/other.sfc", FileSize: 100}
+	require.NoError(t, database.Create(&snesGame).Error)
+	require.NoError(t, database.Create(&gbaGame).Error)
+	require.NoError(t, database.Create(&other).Error)
+
+	for _, game := range []db.Game{gbaGame, snesGame, other} {
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest("POST", fmt.Sprintf("/api/user/play-later/%d", game.ID), nil)
+		req.Header.Set("Authorization", "Bearer "+token)
+		router.ServeHTTP(w, req)
+		require.Equal(t, http.StatusCreated, w.Code)
+	}
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/user/play-later", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var games []GameResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &games))
+	require.Len(t, games, 2)
+	assert.Equal(t, strconvID(snesGame.ID), games[0].ID)
+	assert.Equal(t, strconvID(other.ID), games[1].ID)
+	require.Len(t, games[0].Platforms, 2)
+	assert.Equal(t, []string{"snes", "gba"}, platformConsoleIDs(games[0].Platforms))
+	assert.Equal(t, []string{strconvID(snesGame.ID), strconvID(gbaGame.ID)}, platformGameIDs(games[0].Platforms))
+	assert.True(t, games[0].IsInPlayLater)
+}
+
 func TestListPlayLater_ReturnsEnrichedGameResponse(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	router, cleanup := NewRouter(*cfg)

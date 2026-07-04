@@ -196,19 +196,7 @@ func (h *UserHandler) HumaListFavorites(ctx context.Context, _ *ListFavoritesInp
 			responseGames = append(responseGames, fav.Game)
 		}
 	}
-	data := loadGameResponseData(h.DB, uid, responseGames)
-
-	games := make([]GameResponse, 0, len(favorites))
-	for _, fav := range favorites {
-		if fav.Game.ID == 0 {
-			continue
-		}
-		resp := toGameResponseWithData(fav.Game, &data)
-		resp.IsFavorite = true
-		games = append(games, resp)
-	}
-
-	return &ListFavoritesOutput{Body: games}, nil
+	return &ListFavoritesOutput{Body: toTitleDedupedGameResponses(responseGames, h.DB, uid)}, nil
 }
 
 // HumaAddFavorite is the huma handler for POST /api/user/favorites/{gameId}.
@@ -288,7 +276,7 @@ func (h *PlayLaterHandler) HumaListPlayLater(ctx context.Context, _ *ListPlayLat
 		}
 	}
 
-	return &ListPlayLaterOutput{Body: ToGameResponses(games, h.DB, uid)}, nil
+	return &ListPlayLaterOutput{Body: toTitleDedupedGameResponses(games, h.DB, uid)}, nil
 }
 
 // HumaAddToPlayLater is the huma handler for POST /api/user/play-later/{gameId}.
