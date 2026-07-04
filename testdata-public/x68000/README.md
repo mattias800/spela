@@ -1,6 +1,14 @@
-# Sharp X68000 PD test ROM
+# Sharp X68000 PD test ROMs
 
-**Status:** placeholder — folder exists but no ROM shipped yet.
+**Status:** zero-byte filename stubs only. No launchable X68000 test ROM
+ships yet.
+
+## Filename stubs
+
+The files currently in this folder are zero-byte fictional Spela-branded
+stubs. They exist only so scanner/library UI flows can index X68000-like
+titles in fresh installs and CI. They are not launchable ROMs and do not
+exercise the `px68k` core.
 
 ## What's needed
 
@@ -13,7 +21,7 @@ Unlike most other platforms in this directory, X68000 emulation also
 needs the system BIOS files (`IPLROM30.DAT`, `CGROM.DAT`). Without
 them, no cart loads — including this PD test ROM. The BIOS is
 **not** redistributable and must be supplied by the operator. CI
-will skip the X68000 scan path until the BIOS is provisioned.
+cannot boot-test X68000 until the BIOS is provisioned.
 
 ## Sourcing
 
