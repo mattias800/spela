@@ -288,6 +288,15 @@ tasks.withType<Test> {
     // keep their tuned defaults. (#1279)
     val defaultForks = (Runtime.getRuntime().availableProcessors() / 2).coerceAtLeast(2)
     maxParallelForks = (project.findProperty("desktopTestForks") as String?)?.toIntOrNull() ?: defaultForks
+    // Recycle each test JVM every N test classes. Compose Desktop UI tests
+    // accumulate per-class native state (Skia/AWT surfaces, GL contexts); a
+    // single fork running the whole ~131-class suite eventually exhausts it and
+    // deadlocks in waitForIdle — the full *unsharded* `:desktop:desktopTest`
+    // hangs to the task timeout with zero completed results, while a fork that
+    // runs only a handful of classes finishes in seconds. CI never hit this
+    // because it shards to ~16 classes/shard; recycling the JVM makes the
+    // unsharded local run (run-desktop-tests.sh) reliable too. (#1565)
+    forkEvery = (project.findProperty("desktopTestForkEvery") as String?)?.toLongOrNull() ?: 15L
     jvmArgs("-Xmx1024m")
     // Fail individual tests that hang instead of blocking the entire suite.
     // Per-test timeout: 30 seconds. Per-class (suite) timeout: 120 seconds.
