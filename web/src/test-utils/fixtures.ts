@@ -9,11 +9,15 @@
 import type { Game, Console, CompanyInfo } from "@/types/api";
 
 export function makeGame(overrides: Partial<Game> = {}): Game {
-  return {
-    id: "game-1",
+  const id = overrides.id ?? "game-1";
+  const consoleId = overrides.consoleId ?? "nes";
+  const consoleName = overrides.consoleName ?? "NES";
+
+  const game: Game = {
+    id,
     title: "Test Game",
-    consoleId: "nes",
-    consoleName: "NES",
+    consoleId,
+    consoleName,
     consoleSaveStatePolicy: "small",
     fileName: "test.nes",
     fileSize: 1024,
@@ -59,11 +63,11 @@ export function makeGame(overrides: Partial<Game> = {}): Game {
     variants: [],
     parentGame: { id: "", title: "", coverUrl: "" },
     romHacks: [],
-    platforms: [
+    platforms: overrides.platforms ?? [
       {
-        gameId: "game-1",
-        consoleId: "nes",
-        consoleName: "NES",
+        gameId: id,
+        consoleId,
+        consoleName,
         isPreferred: true,
       },
     ],
@@ -79,7 +83,15 @@ export function makeGame(overrides: Partial<Game> = {}): Game {
     totalPlayTime: 0,
     createdAt: "2025-01-01T00:00:00Z",
     updatedAt: "2025-01-01T00:00:00Z",
+  };
+
+  return {
+    ...game,
     ...overrides,
+    id,
+    consoleId,
+    consoleName,
+    platforms: overrides.platforms ?? game.platforms,
   };
 }
 
