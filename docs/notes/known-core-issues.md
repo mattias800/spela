@@ -71,6 +71,35 @@ Spela, treat it as a frontend integration bug.
   struct/table write path.
 - **Related tooling:** `player/native/CORE_HOST.md`.
 
+## Confirmed Upstream/Core Issues
+
+Move entries here when the issue reproduces outside Spela, but the upstream fix
+or workaround has not landed. Keep the Spela issue open if it still affects
+users or if we need to track a core pin, workaround, or verification pass.
+
+### Play!: PS2 Audio Under-Delivery And EE/GS Freezes
+
+- **Issue:** #1297
+- **Status:** confirmed Play! core issues; remaining symptoms reproduce in
+  stock RetroArch with the same core.
+- **Game/context:** Final Fantasy X on Windows desktop during the Play! core
+  investigation.
+- **Symptoms:**
+  - scene-dependent audio under-delivery, roughly 67% of real-time in affected
+    scenes, causing 6-8 output underruns per second;
+  - periodic multi-second EE/GS stalls where the core produces no frames or
+    audio, eventually becoming a permanent graphics freeze.
+- **Spela-side work already ruled out/fixed:** core build recipe, frame limiter,
+  libretro audio append behavior, and desktop audio-thread decoupling.
+- **Signal:** instrumentation showed regular audio enqueue timing with too few
+  samples delivered by the core, plus `retro_run`/GS waits of about 2.6 seconds.
+  The same remaining behavior reproduced in RetroArch, so the player frontend
+  cannot repair it directly.
+- **Next evidence needed:** upstream Play! investigation of SPU sample
+  production versus GS flip cadence under `PREF_PS2_LIMIT_FRAMERATE`, and
+  EE-thread/GS-mailbox interaction in the non-threaded `ProcessSingleFrame`
+  drain.
+
 ## Proven Integration Bugs
 
 Move entries here only after the root cause is known and the Spela-side fix has
