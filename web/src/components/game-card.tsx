@@ -3,15 +3,10 @@ import { Heart, Clock, Loader2 } from "lucide-react";
 import { RatingDisplay } from "@/components/rating-display";
 import { cn } from "@/lib/cn";
 import { ConsoleBadge } from "@/components/console-badge";
+import { GamePlatformPills } from "@/components/game-platform-pills";
 import { useAutoScrape } from "@/hooks/use-auto-scrape";
 import { getReleaseYear } from "@/lib/date-utils";
 import type { Game } from "@/types/api";
-
-type GamePlatform = Game["platforms"][number];
-
-const COMPACT_LABEL_MAX_LENGTH = 12;
-const COMPACT_ID_MIN_LENGTH = 2;
-const COMPACT_ID_MAX_LENGTH = 6;
 
 interface GameCardProps {
   game: Game;
@@ -35,7 +30,6 @@ export function GameCard({
   onTogglePlayLater,
 }: GameCardProps) {
   const { ref, isScraping } = useAutoScrape(game);
-  const platformTargets = getPlatformTargets(game);
 
   return (
     <div
@@ -217,81 +211,16 @@ export function GameCard({
             </p>
           )}
         </div>
-        {platformTargets.length > 1 && (
-          <div
-            className="flex flex-wrap gap-1.5 pt-0.5"
-            data-testid={`game-platform-pills-${game.id}`}
-          >
-            {platformTargets.map((platform) => {
-              const isCurrent =
-                platform.gameId === game.id || platform.isPreferred;
-              const label = compactPlatformLabel(platform);
-              if (isCurrent) {
-                return (
-                  <span
-                    key={platform.gameId}
-                    aria-label={`Current platform ${platform.consoleName}`}
-                  >
-                    <ConsoleBadge
-                      code={platform.consoleId}
-                      label={label}
-                      className="text-[10px]"
-                    />
-                  </span>
-                );
-              }
-
-              return (
-                <Link
-                  key={platform.gameId}
-                  to={`/games/${platform.gameId}`}
-                  className="rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-950"
-                  aria-label={`Open ${game.title} on ${platform.consoleName}`}
-                >
-                  <ConsoleBadge
-                    code={platform.consoleId}
-                    label={label}
-                    className="text-[10px] transition-colors hover:border-white/60"
-                  />
-                </Link>
-              );
-            })}
-          </div>
-        )}
+        <GamePlatformPills
+          gameId={game.id}
+          title={game.title}
+          consoleId={game.consoleId}
+          consoleName={game.consoleName}
+          platforms={game.platforms}
+          className="pt-0.5"
+          testId={`game-platform-pills-${game.id}`}
+        />
       </div>
     </div>
   );
-}
-
-function getPlatformTargets(game: Game): GamePlatform[] {
-  const fallback: GamePlatform = {
-    gameId: game.id,
-    consoleId: game.consoleId,
-    consoleName: game.consoleName,
-    isPreferred: true,
-  };
-  const source = game.platforms.length > 0 ? game.platforms : [fallback];
-  const seen = new Set<string>();
-  return source.reduce<GamePlatform[]>((targets, platform) => {
-    if (seen.has(platform.gameId)) return targets;
-    seen.add(platform.gameId);
-    targets.push(
-      platform.gameId === game.id && !platform.isPreferred
-        ? { ...platform, isPreferred: true }
-        : platform,
-    );
-    return targets;
-  }, []);
-}
-
-function compactPlatformLabel(platform: GamePlatform): string {
-  const name = platform.consoleName || platform.consoleId.toUpperCase();
-  if (name.length <= COMPACT_LABEL_MAX_LENGTH) return name;
-
-  const id = platform.consoleId.toUpperCase();
-  const compactId =
-    id.length >= COMPACT_ID_MIN_LENGTH &&
-    id.length <= COMPACT_ID_MAX_LENGTH &&
-    /^[A-Z0-9-]+$/.test(id);
-  return compactId ? id : name;
 }

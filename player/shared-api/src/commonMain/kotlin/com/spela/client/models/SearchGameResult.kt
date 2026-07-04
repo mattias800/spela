@@ -15,6 +15,7 @@
 
 package com.spela.client.models
 
+import com.spela.client.models.GamePlatformResponse
 
 import kotlinx.serialization.*
 import kotlinx.serialization.descriptors.*
@@ -30,6 +31,7 @@ import kotlinx.serialization.encoding.*
  * @param developer 
  * @param genre 
  * @param id 
+ * @param platforms
  * @param title 
  */
 @Serializable
@@ -50,10 +52,11 @@ data class SearchGameResult (
 
     @SerialName(value = "id") @Required val id: kotlin.String,
 
+    @SerialName(value = "platforms") val platforms: kotlin.collections.List<GamePlatformResponse> = emptyList(),
+
     @SerialName(value = "title") @Required val title: kotlin.String
 
 ) {
 
 
 }
-

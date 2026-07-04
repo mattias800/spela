@@ -108,6 +108,10 @@ func TestSearch_MultiTypeResults(t *testing.T) {
 			assert.NotEmpty(t, g.ID)
 			assert.Equal(t, "snes", g.ConsoleID)
 			assert.Equal(t, "Super Nintendo", g.ConsoleName)
+			require.Len(t, g.Platforms, 1)
+			assert.Equal(t, g.ID, g.Platforms[0].GameID)
+			assert.Equal(t, "snes", g.Platforms[0].ConsoleID)
+			assert.True(t, g.Platforms[0].IsPreferred)
 			assert.Equal(t, "Nintendo", g.Developer)
 			assert.Equal(t, "Platformer", g.Genre)
 			break
@@ -474,12 +478,115 @@ func TestSearch_PlatformCodeHintBoostsMatchingConsole(t *testing.T) {
 			code, resp := searchGet(t, router, token,
 				"/api/search?q="+url.QueryEscape(tc.query))
 			require.Equal(t, http.StatusOK, code)
-			require.GreaterOrEqual(t, len(resp.Games.Results), 3,
-				"all three platform variants should still be in the result set (hint priortises, doesn't filter)")
+			require.Equal(t, 1, resp.Games.Total)
+			require.Len(t, resp.Games.Results, 1,
+				"platform variants should fold into one logical-title result")
 			assert.Equal(t, tc.expect, resp.Games.Results[0].ConsoleID,
 				"first result should be on the hinted console")
+			assert.Equal(t, tc.expect, resp.Games.Results[0].Platforms[0].ConsoleID,
+				"hinted console should be the preferred platform")
+			assert.True(t, resp.Games.Results[0].Platforms[0].IsPreferred)
+			assert.ElementsMatch(t, []string{"snes", "nes", "gba"}, platformConsoleIDs(resp.Games.Results[0].Platforms),
+				"all platform variants should still be exposed through platforms")
 		})
 	}
+}
+
+func TestSearch_GamesFoldTitleRootPlatforms(t *testing.T) {
+	database, router, token := setupSearchEnv(t)
+
+	var snes, gba, nes db.Console
+	require.NoError(t, database.Where("abbreviation = ?", "SNES").First(&snes).Error)
+	require.NoError(t, database.Where("abbreviation = ?", "GBA").First(&gba).Error)
+	require.NoError(t, database.Where("abbreviation = ?", "NES").First(&nes).Error)
+
+	rootID := uint(1234)
+	otherRootID := uint(5678)
+	games := []db.Game{
+		{ConsoleID: snes.ID, Title: "Final Fantasy VI", FileName: "ff6.smc", FilePath: "/roms/snes/ff6.smc", TitleRootIGDBID: &rootID, IGDBCriticsRating: 92},
+		{ConsoleID: gba.ID, Title: "Final Fantasy III Advance", FileName: "ff3.gba", FilePath: "/roms/gba/ff3.gba", TitleRootIGDBID: &rootID, IGDBCriticsRating: 85},
+		{ConsoleID: nes.ID, Title: "Final Fantasy III", FileName: "ff3.nes", FilePath: "/roms/nes/ff3.nes", TitleRootIGDBID: &otherRootID, IGDBCriticsRating: 80},
+	}
+	for i := range games {
+		require.NoError(t, database.Create(&games[i]).Error)
+	}
+
+	code, resp := searchGet(t, router, token, "/api/search?q="+url.QueryEscape("Final Fantasy"))
+	require.Equal(t, http.StatusOK, code)
+	require.Equal(t, 2, resp.Games.Total)
+	require.Len(t, resp.Games.Results, 2)
+
+	var rooted SearchGameResult
+	var other SearchGameResult
+	for _, result := range resp.Games.Results {
+		if len(result.Platforms) == 2 {
+			rooted = result
+		} else {
+			other = result
+		}
+	}
+	require.Len(t, rooted.Platforms, 2)
+	assert.Equal(t, "snes", rooted.ConsoleID)
+	assert.Equal(t, []string{"snes", "gba"}, platformConsoleIDs(rooted.Platforms))
+	assert.Equal(t, []string{strconvID(games[0].ID), strconvID(games[1].ID)}, platformGameIDs(rooted.Platforms))
+	assert.True(t, rooted.Platforms[0].IsPreferred)
+
+	require.Len(t, other.Platforms, 1)
+	assert.Equal(t, "nes", other.ConsoleID)
+	assert.Equal(t, strconvID(games[2].ID), other.Platforms[0].GameID)
+}
+
+func TestSearch_GamesFoldNormalizedTitleFallbackPlatforms(t *testing.T) {
+	database, router, token := setupSearchEnv(t)
+
+	var snes, gba db.Console
+	require.NoError(t, database.Where("abbreviation = ?", "SNES").First(&snes).Error)
+	require.NoError(t, database.Where("abbreviation = ?", "GBA").First(&gba).Error)
+
+	games := []db.Game{
+		{ConsoleID: snes.ID, Title: "Street Fighter II (USA)", FileName: "sf2.smc", FilePath: "/roms/snes/sf2.smc", IGDBCriticsRating: 90},
+		{ConsoleID: gba.ID, Title: "Street Fighter II [Europe]", FileName: "sf2.gba", FilePath: "/roms/gba/sf2.gba", IGDBCriticsRating: 80},
+	}
+	for i := range games {
+		require.NoError(t, database.Create(&games[i]).Error)
+	}
+
+	code, resp := searchGet(t, router, token, "/api/search?q="+url.QueryEscape("Street Fighter II"))
+	require.Equal(t, http.StatusOK, code)
+	require.Equal(t, 1, resp.Games.Total)
+	require.Len(t, resp.Games.Results, 1)
+
+	result := resp.Games.Results[0]
+	assert.Equal(t, "snes", result.ConsoleID)
+	require.Len(t, result.Platforms, 2)
+	assert.Equal(t, []string{"snes", "gba"}, platformConsoleIDs(result.Platforms))
+	assert.Equal(t, []string{strconvID(games[0].ID), strconvID(games[1].ID)}, platformGameIDs(result.Platforms))
+	assert.True(t, result.Platforms[0].IsPreferred)
+}
+
+func TestSearch_GamesLimitAppliesAfterTitleFolding(t *testing.T) {
+	database, router, token := setupSearchEnv(t)
+
+	var snes, gba db.Console
+	require.NoError(t, database.Where("abbreviation = ?", "SNES").First(&snes).Error)
+	require.NoError(t, database.Where("abbreviation = ?", "GBA").First(&gba).Error)
+
+	games := []db.Game{
+		{ConsoleID: snes.ID, Title: "Fold Limit Alpha (USA)", FileName: "alpha.smc", FilePath: "/roms/snes/alpha.smc"},
+		{ConsoleID: gba.ID, Title: "Fold Limit Alpha [Europe]", FileName: "alpha.gba", FilePath: "/roms/gba/alpha.gba"},
+		{ConsoleID: snes.ID, Title: "Fold Limit Beta", FileName: "beta.smc", FilePath: "/roms/snes/beta.smc"},
+		{ConsoleID: gba.ID, Title: "Fold Limit Gamma", FileName: "gamma.gba", FilePath: "/roms/gba/gamma.gba"},
+	}
+	for i := range games {
+		require.NoError(t, database.Create(&games[i]).Error)
+	}
+
+	code, resp := searchGet(t, router, token, "/api/search?q="+url.QueryEscape("Fold Limit")+"&limit=2")
+	require.Equal(t, http.StatusOK, code)
+	require.Equal(t, 3, resp.Games.Total)
+	require.Len(t, resp.Games.Results, 2)
+	require.Len(t, resp.Games.Results[0].Platforms, 2)
+	assert.Equal(t, []string{"snes", "gba"}, platformConsoleIDs(resp.Games.Results[0].Platforms))
 }
 
 // TestSearch_PlatformCodeHintSingleTokenStillSearchesEverything verifies
@@ -529,8 +636,10 @@ func TestSearch_PlatformCodeHintDoesNotFilterOtherConsoles(t *testing.T) {
 	code, resp := searchGet(t, router, token,
 		"/api/search?q="+url.QueryEscape("final fantasy nes"))
 	require.Equal(t, http.StatusOK, code)
-	assert.Equal(t, 2, len(resp.Games.Results),
+	require.Equal(t, 1, resp.Games.Total)
+	require.Len(t, resp.Games.Results, 1,
 		"NES hint must not filter out SNES + GBA results when no NES title matches")
+	assert.ElementsMatch(t, []string{"snes", "gba"}, platformConsoleIDs(resp.Games.Results[0].Platforms))
 }
 
 // TestSearch_MultiWordNonAdjacent covers #1310: a multi-word query must
@@ -607,4 +716,11 @@ func TestSearch_LimitDefaultsAndBounds(t *testing.T) {
 	code, resp = searchGet(t, router, token, "/api/search?q="+url.QueryEscape("Limit Test")+"&limit=10")
 	assert.Equal(t, http.StatusOK, code)
 	assert.Len(t, resp.Games.Results, 10)
+}
+
+func TestSearch_GameMaterializationLimitBounds(t *testing.T) {
+	assert.Equal(t, searchGameMaterializationMin, searchGameMaterializationLimit(5))
+	assert.Equal(t, 200, searchGameMaterializationLimit(10))
+	assert.Equal(t, searchGameMaterializationMax, searchGameMaterializationLimit(50))
+	assert.Equal(t, searchGameMaterializationMin, searchGameMaterializationLimit(0))
 }

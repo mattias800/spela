@@ -8521,6 +8521,7 @@ export interface components {
             developer: string;
             genre: string;
             id: string;
+            platforms: components["schemas"]["GamePlatformResponse"][];
             title: string;
         };
         SearchResponse: {

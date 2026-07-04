@@ -33,6 +33,7 @@ data class SearchGameResult(
     val developer: String? = null,
     val genre: String? = null,
     val coverAspectRatio: Float = 0.75f,
+    val platforms: List<GamePlatform> = emptyList(),
 )
 
 data class SearchConsoleResult(
