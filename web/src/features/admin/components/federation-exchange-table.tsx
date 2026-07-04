@@ -8,7 +8,7 @@ interface FederationExchangeTableProps {
   isLoading: boolean;
 }
 
-const HEADERS = ["Time", "Server", "Direction", "Operation", "Status", "Items"];
+const HEADERS = ["Started", "Server", "Direction", "Operation", "Status", "Items"];
 
 function statusVariant(status: string): "success" | "danger" | "warning" | "default" {
   switch (status) {
@@ -75,7 +75,7 @@ export function FederationExchangeTable({
                   title={ex.error || undefined}
                 >
                   <td className="px-5 py-3 text-sm text-surface-400 whitespace-nowrap">
-                    {formatDate(ex.createdAt)}
+                    {formatDate(ex.startedAt)}
                   </td>
                   <td className="px-5 py-3 text-sm text-surface-300">
                     {ex.peerName || `${ex.peerFingerprint.slice(0, 12)}…`}

@@ -1,6 +1,6 @@
 import { useMemo } from "react";
-import { Search, X } from "lucide-react";
-import { Button, FilterChip, Input } from "@/components/ui";
+import { Search } from "lucide-react";
+import { FilterChip, FilterPanel, Input } from "@/components/ui";
 import { SYSTEM_EVENT_META } from "./system-event-meta";
 import type {
   SystemEventType,
@@ -64,8 +64,7 @@ export function SystemEventsFilters({
   }
 
   const filteredEventTypes = useMemo(() => {
-    if (!typeInfos)
-      return Object.keys(SYSTEM_EVENT_META) as SystemEventType[];
+    if (!typeInfos) return Object.keys(SYSTEM_EVENT_META) as SystemEventType[];
     const filtered = category
       ? typeInfos.filter((ti) => ti.category === category)
       : typeInfos;
@@ -81,19 +80,11 @@ export function SystemEventsFilters({
     since !== DEFAULT_SYSTEM_EVENTS_SINCE;
 
   return (
-    <div data-comp="SystemEventsFilters" className="space-y-4 rounded-2xl border border-surface-800/50 bg-surface-900/50 p-5">
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-surface-400">
-          Filters
-        </h2>
-        {hasFilters && (
-          <Button variant="ghost" size="sm" onClick={onClear}>
-            <X className="h-3.5 w-3.5 mr-1" />
-            Clear
-          </Button>
-        )}
-      </div>
-
+    <FilterPanel
+      data-comp="SystemEventsFilters"
+      hasFilters={hasFilters}
+      onClear={onClear}
+    >
       {/* Category row */}
       <div>
         <p className="mb-2 text-xs font-medium text-surface-500">Category</p>
@@ -171,6 +162,6 @@ export function SystemEventsFilters({
           ))}
         </div>
       </div>
-    </div>
+    </FilterPanel>
   );
 }

@@ -240,20 +240,64 @@ func TestListExchanges_ReturnsAndFiltersLedger(t *testing.T) {
 	database := openAPIFedTestDB(t)
 	selfID, _ := federation.GenerateIdentity()
 	h := &FederationHandler{DB: database, Identity: selfID, Peers: federation.PeerStore{DB: database}, BaseURL: "https://self"}
+	base := time.Date(2026, 7, 4, 12, 0, 0, 0, time.UTC)
 
 	federation.RecordExchange(database, federation.ExchangeRecord{
 		RequestID: "a", PeerFingerprint: "p1", Direction: db.ExchangeOutbound, Operation: "ping", Status: db.ExchangeOK,
+		StartedAt: base.Add(-2 * time.Hour), FinishedAt: base.Add(-2*time.Hour + time.Second),
 	})
 	federation.RecordExchange(database, federation.ExchangeRecord{
 		RequestID: "b", PeerFingerprint: "p2", Direction: db.ExchangeInbound, Operation: "pair", Status: db.ExchangeRejected,
+		StartedAt: base.Add(-30 * time.Minute), FinishedAt: base.Add(-30*time.Minute + time.Second),
+	})
+	federation.RecordExchange(database, federation.ExchangeRecord{
+		RequestID: "c", PeerFingerprint: "p3", Direction: db.ExchangeOutbound, Operation: "stats_pull", Status: db.ExchangeOK,
+		StartedAt: base.Add(30 * time.Minute), FinishedAt: base.Add(30*time.Minute + time.Second),
 	})
 
 	all, err := h.HumaListExchanges(context.Background(), &ListExchangesInput{})
 	require.NoError(t, err)
-	assert.Len(t, all.Body.Exchanges, 2)
+	assert.Len(t, all.Body.Exchanges, 3)
 
 	rejected, err := h.HumaListExchanges(context.Background(), &ListExchangesInput{Status: db.ExchangeRejected})
 	require.NoError(t, err)
 	require.Len(t, rejected.Body.Exchanges, 1)
 	assert.Equal(t, "p2", rejected.Body.Exchanges[0].PeerFingerprint)
+
+	statsPull, err := h.HumaListExchanges(context.Background(), &ListExchangesInput{Operation: "stats_pull"})
+	require.NoError(t, err)
+	require.Len(t, statsPull.Body.Exchanges, 1)
+	assert.Equal(t, "p3", statsPull.Body.Exchanges[0].PeerFingerprint)
+
+	recent, err := h.HumaListExchanges(context.Background(), &ListExchangesInput{
+		StartedAfter: base.Add(-time.Hour).Format(time.RFC3339),
+	})
+	require.NoError(t, err)
+	require.Len(t, recent.Body.Exchanges, 2)
+	assert.ElementsMatch(t, []string{"p2", "p3"}, []string{
+		recent.Body.Exchanges[0].PeerFingerprint,
+		recent.Body.Exchanges[1].PeerFingerprint,
+	})
+
+	before, err := h.HumaListExchanges(context.Background(), &ListExchangesInput{
+		StartedBefore: base.Format(time.RFC3339),
+	})
+	require.NoError(t, err)
+	require.Len(t, before.Body.Exchanges, 2)
+	assert.ElementsMatch(t, []string{"p1", "p2"}, []string{
+		before.Body.Exchanges[0].PeerFingerprint,
+		before.Body.Exchanges[1].PeerFingerprint,
+	})
+
+	combined, err := h.HumaListExchanges(context.Background(), &ListExchangesInput{
+		Direction:    db.ExchangeOutbound,
+		Operation:    "stats_pull",
+		StartedAfter: base.Format(time.RFC3339),
+	})
+	require.NoError(t, err)
+	require.Len(t, combined.Body.Exchanges, 1)
+	assert.Equal(t, "p3", combined.Body.Exchanges[0].PeerFingerprint)
+
+	_, err = h.HumaListExchanges(context.Background(), &ListExchangesInput{StartedAfter: "not-a-time"})
+	assert.Error(t, err)
 }

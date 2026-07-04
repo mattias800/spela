@@ -9954,7 +9954,10 @@ export interface operations {
             query?: {
                 peer?: string;
                 direction?: string;
+                operation?: string;
                 status?: string;
+                startedAfter?: string;
+                startedBefore?: string;
                 limit?: number;
             };
             header?: never;

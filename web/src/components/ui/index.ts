@@ -28,6 +28,7 @@ export { LeaderboardSkeleton } from "./leaderboard-skeleton";
 export { ConfirmDeleteModal } from "./confirm-delete-modal";
 export { LeaderboardRow } from "./leaderboard-row";
 export { FilterChip } from "./filter-chip";
+export { FilterPanel } from "./filter-panel";
 export { Chip, ChipPicker } from "./chip";
 export type { ChipPickerOption } from "./chip";
 export { SegmentedControl } from "./segmented-control";

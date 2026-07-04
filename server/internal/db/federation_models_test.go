@@ -52,3 +52,17 @@ func TestFederationExchange_Persists(t *testing.T) {
 	assert.Equal(t, ExchangeOutbound, got.Direction)
 	assert.Equal(t, ExchangeOK, got.Status)
 }
+
+func TestFederationExchange_StartedAtIndexed(t *testing.T) {
+	database := openFederationModelTestDB(t)
+
+	var count int64
+	require.NoError(t, database.Raw(`
+		SELECT count(1)
+		FROM sqlite_master
+		WHERE type = 'index'
+			AND tbl_name = 'federation_exchanges'
+			AND sql LIKE '%started_at%'
+	`).Scan(&count).Error)
+	assert.Equal(t, int64(1), count)
+}
