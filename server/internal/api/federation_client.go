@@ -8,7 +8,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
@@ -17,6 +19,8 @@ import (
 
 // federationHTTPTimeout bounds outbound federation calls.
 const federationHTTPTimeout = 15 * time.Second
+
+const federationDebugQueryMaxBytes = 256
 
 func fedHTTPClient() *http.Client { return &http.Client{Timeout: federationHTTPTimeout} }
 
@@ -38,14 +42,15 @@ func signedFederationHeaders(id federation.Identity, method, path, requestID str
 // httpPairClient is the production pairClient: POST {baseURL}/api/federation/pair.
 type httpPairClient struct{}
 
-func (httpPairClient) Pair(baseURL string, body PairRequestBody) (PairResponseBody, error) {
+func (httpPairClient) Pair(baseURL, requestID string, body PairRequestBody) (PairResponseBody, error) {
 	reqBody, _ := json.Marshal(body)
 	req, err := http.NewRequest(http.MethodPost, baseURL+"/api/federation/pair", bytes.NewReader(reqBody))
 	if err != nil {
 		return PairResponseBody{}, err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	resp, err := fedHTTPClient().Do(req)
+	req.Header.Set(headerFedRequestID, requestID)
+	resp, err := doFederationRequest(fedHTTPClient(), req, "")
 	if err != nil {
 		return PairResponseBody{}, err
 	}
@@ -88,7 +93,7 @@ func (httpPeerPinger) Ping(baseURL, requestID string, id federation.Identity, ex
 		req.Header.Set(k, v)
 	}
 	start := time.Now()
-	resp, err := fedHTTPClient().Do(req)
+	resp, err := doFederationRequest(fedHTTPClient(), req, expectFingerprint)
 	if err != nil {
 		return PingResult{Error: err.Error()}
 	}
@@ -113,4 +118,51 @@ func (httpPeerPinger) Ping(baseURL, requestID string, id federation.Identity, ex
 		ClockSkewSeconds: time.Now().Unix() - pong.UnixTime,
 		LatencyMs:        latency,
 	}
+}
+
+func doFederationRequest(client *http.Client, req *http.Request, peerFingerprint string) (*http.Response, error) {
+	if os.Getenv("SPELA_FEDERATION_DEBUG") != "1" {
+		return client.Do(req)
+	}
+
+	start := time.Now()
+	requestID := req.Header.Get(headerFedRequestID)
+	query, queryTruncated := boundedFederationDebugValue(req.URL.RawQuery, federationDebugQueryMaxBytes)
+	attrs := []any{
+		"component", "federation",
+		"request_id", requestID,
+		"peer", federation.ShortFingerprint(peerFingerprint),
+		"method", req.Method,
+		"scheme", req.URL.Scheme,
+		"host", req.URL.Host,
+		"path", req.URL.Path,
+		"query", query,
+		"query_truncated", queryTruncated,
+		"content_length", req.ContentLength,
+		"signed", req.Header.Get(headerFedSignature) != "",
+	}
+	slog.Info("federation-http-request", attrs...)
+
+	resp, err := client.Do(req)
+	durationMs := time.Since(start).Milliseconds()
+	if err != nil {
+		slog.Warn("federation-http-response",
+			append(attrs, "duration_ms", durationMs, "error", err.Error())...)
+		return nil, err
+	}
+	slog.Info("federation-http-response",
+		append(attrs,
+			"duration_ms", durationMs,
+			"status", resp.StatusCode,
+			"response_content_length", resp.ContentLength,
+			"response_content_type", resp.Header.Get("Content-Type"),
+		)...)
+	return resp, nil
+}
+
+func boundedFederationDebugValue(value string, maxBytes int) (string, bool) {
+	if len(value) <= maxBytes {
+		return value, false
+	}
+	return value[:maxBytes], true
 }

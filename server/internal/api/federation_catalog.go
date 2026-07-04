@@ -35,7 +35,7 @@ func (httpCatalogClient) FetchCatalog(baseURL, requestID string, id federation.I
 	for k, v := range signedFederationHeaders(id, http.MethodGet, path, requestID, nil, peerFingerprint) {
 		req.Header.Set(k, v)
 	}
-	resp, err := fedHTTPClient().Do(req)
+	resp, err := doFederationRequest(fedHTTPClient(), req, peerFingerprint)
 	if err != nil {
 		return nil, err
 	}

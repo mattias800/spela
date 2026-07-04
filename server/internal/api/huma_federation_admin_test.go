@@ -18,10 +18,12 @@ type fakePairClient struct {
 	remote          federation.Identity
 	respFingerprint string
 	called          bool
+	requestID       string
 }
 
-func (f *fakePairClient) Pair(baseURL string, _ PairRequestBody) (PairResponseBody, error) {
+func (f *fakePairClient) Pair(baseURL, requestID string, _ PairRequestBody) (PairResponseBody, error) {
 	f.called = true
+	f.requestID = requestID
 	fp := f.remote.Fingerprint()
 	if f.respFingerprint != "" {
 		fp = f.respFingerprint
@@ -73,6 +75,7 @@ func TestAcceptInvite_PairsAndStoresPeer(t *testing.T) {
 	})
 	require.NoError(t, err)
 	assert.True(t, fake.called, "accept must call the friend back")
+	assert.NotEmpty(t, fake.requestID, "pair callback must carry the exchange request id")
 	assert.Equal(t, db.PeerStatusActive, out.Body.Status)
 
 	stored, err := h.Peers.GetByFingerprint(remoteID.Fingerprint())
