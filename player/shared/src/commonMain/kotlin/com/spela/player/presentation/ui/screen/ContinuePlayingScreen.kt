@@ -102,6 +102,7 @@ fun ContinuePlayingScreen(
                                     GameGridItem(
                                         game = game,
                                         onClick = { onGameSelected(game.id) },
+                                        onPlatformSelected = onGameSelected,
                                         onRequestScrape = { viewModel.requestScrapeIfNeeded(it) },
                                         modifier = Modifier.focusRestoreItem(
                                             key = "continue_playing_screen_${game.id}",

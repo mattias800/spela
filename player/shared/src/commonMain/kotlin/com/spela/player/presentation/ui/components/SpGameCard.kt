@@ -70,6 +70,7 @@ fun SpGameCard(
     variantCount: Int = 0,
     testTag: String? = null,
     coverBadge: (@Composable () -> Unit)? = null,
+    platformContent: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     // In carousel mode, compute width from the cover height and actual image ratio.
@@ -143,6 +144,11 @@ fun SpGameCard(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
+                }
+
+                if (platformContent != null) {
+                    Spacer(Modifier.height(SpSpacing.XSmall))
+                    platformContent()
                 }
 
                 // Rating (third line — always shown for uniform card height)

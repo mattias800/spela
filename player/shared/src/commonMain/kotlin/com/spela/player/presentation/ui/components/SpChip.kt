@@ -3,7 +3,6 @@ package com.spela.player.presentation.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Box
@@ -20,7 +19,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import com.spela.player.presentation.ui.gamepad.gamepadFocusable
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -63,19 +69,42 @@ fun SpChip(
         isSelected -> SpColor.OnBackgroundSecondary
         else -> SpColor.OnBackgroundSecondary
     }
+    val interactiveModifier = if (onClick != null) {
+        Modifier
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                role = Role.Button,
+                onClick = onClick,
+            )
+            .onPreviewKeyEvent { event ->
+                if (event.type == KeyEventType.KeyDown) {
+                    when (event.key) {
+                        Key.Enter, Key.Spacebar, Key.DirectionCenter -> {
+                            onClick()
+                            true
+                        }
+                        else -> false
+                    }
+                } else {
+                    false
+                }
+            }
+            .gamepadFocusable(
+                shape = shape,
+                interactionSource = interactionSource,
+                addFocusable = false,
+            )
+    } else {
+        Modifier
+    }
 
     Box(
         modifier = modifier
             .clip(shape)
             .background(backgroundColor)
             .border(if (isFocused) 2.dp else 1.dp, borderColor, shape)
-            .then(
-                if (onClick != null) Modifier.clickable(
-                    interactionSource = interactionSource,
-                    indication = null,
-                    onClick = onClick,
-                ).focusable(interactionSource = interactionSource) else Modifier
-            )
+            .then(interactiveModifier)
             .padding(horizontal = SpSpacing.Small, vertical = SpSpacing.XSmall),
         contentAlignment = Alignment.Center,
     ) {
@@ -106,12 +135,15 @@ fun SpConsoleChip(
     consoleColor: Color,
     modifier: Modifier = Modifier,
     onGradient: Boolean = false,
+    isSelected: Boolean = true,
+    onClick: (() -> Unit)? = null,
 ) {
     SpChip(
         text = consoleName,
         color = consoleColor,
-        isSelected = true,
+        isSelected = isSelected,
         modifier = modifier,
+        onClick = onClick,
         onGradient = onGradient,
     )
 }

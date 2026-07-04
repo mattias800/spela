@@ -26,6 +26,7 @@ import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpGameGrid
 import com.spela.player.presentation.ui.components.SpGridGameCard
+import com.spela.player.presentation.ui.components.gamePlatformPillContent
 import com.spela.player.presentation.ui.components.SpEmptyState
 import com.spela.player.presentation.ui.components.SpSectionList
 import com.spela.player.presentation.ui.components.SpSnackbar
@@ -196,6 +197,7 @@ fun ExplorePublisherScreen(
                                                         rating = game.communityRating,
                                                         isFavorite = game.isFavorite,
                                                         isInPlayLater = game.isInPlayLater,
+                                                        platformContent = gamePlatformPillContent(game, onGameSelected),
                                                     )
                                                 }
                                             }

@@ -19,12 +19,15 @@ import androidx.compose.foundation.lazy.layout.PrefetchRequest
 import androidx.compose.foundation.lazy.layout.PrefetchScheduler
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.onFocusChanged
@@ -68,6 +71,8 @@ internal val CarouselNoPrefetchStrategy = object : LazyListPrefetchStrategy {
 
     override fun NestedPrefetchScope.onNestedPrefetch(firstVisibleItemIndex: Int) {}
 }
+
+internal val LocalCarouselChildHorizontalFocusReporter = staticCompositionLocalOf<((Boolean) -> Unit)?> { null }
 
 /**
  * Horizontal carousel with explicit per-item focus management and
@@ -132,6 +137,10 @@ fun SpCarousel(
     // keeping it in sync if focus moved without a key event (mouse
     // click, focus restoration, etc.).
     val focusCursor = remember { intArrayOf(0) }
+    var childOwnsHorizontalFocus by remember { mutableStateOf(false) }
+    val reportChildHorizontalFocus = remember {
+        { hasFocus: Boolean -> childOwnsHorizontalFocus = hasFocus }
+    }
 
     // The latest "please move focus here" request from the key handler.
     // Driven via state (not a coroutine.launch per key) so a burst of
@@ -323,76 +332,81 @@ fun SpCarousel(
         focusCursor[0] = targetIndex
     }
 
-    LazyRow(
-        state = listState,
-        modifier = modifier
-            .focusGroup()
-            .onPreviewKeyEvent { event ->
-                if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
-                val delta = when (event.key) {
-                    Key.DirectionLeft -> -1
-                    Key.DirectionRight -> +1
-                    else -> return@onPreviewKeyEvent false
-                }
-                val target = focusCursor[0] + delta
-                if (target < 0 || target >= itemCount) return@onPreviewKeyEvent true
-                focusCursor[0] = target
-                pendingTarget = target
-                true
-            },
-        contentPadding = PaddingValues(horizontal = SpSpacing.ScreenHorizontal),
-        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+    CompositionLocalProvider(
+        LocalCarouselChildHorizontalFocusReporter provides reportChildHorizontalFocus,
     ) {
-        // Pre-compute keys so we can verify uniqueness — duplicate
-        // keys crash LazyRow with "Key '<x>' was already used". Most
-        // shelf data is naturally unique-by-id but social shelves
-        // ("recently reviewed" etc.) can show the same game multiple
-        // times. When we detect a collision we fall back to positional
-        // keys (null), which loses cross-recomposition item identity
-        // but keeps the screen alive. The call site should fix its
-        // itemKey to be properly unique (composite); the fallback is
-        // just a "don't crash production" safety net.
-        val keys: List<Any>? = if (itemKey != null) {
-            val list = ArrayList<Any>(itemCount)
-            for (i in 0 until itemCount) list.add(itemKey(i))
-            if (list.toSet().size == list.size) list else null
-        } else null
-
-        items(
-            count = itemCount,
-            key = if (keys != null) { i -> keys[i] } else null,
-        ) { i ->
-            val restoreKey = if (memoryKey != null && itemKey != null) {
-                "$memoryKey/${itemKey(i)}"
+        LazyRow(
+            state = listState,
+            modifier = modifier
+                .focusGroup()
+                .onPreviewKeyEvent { event ->
+                    if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                    val delta = when (event.key) {
+                        Key.DirectionLeft -> -1
+                        Key.DirectionRight -> +1
+                        else -> return@onPreviewKeyEvent false
+                    }
+                    if (childOwnsHorizontalFocus) return@onPreviewKeyEvent false
+                    val target = focusCursor[0] + delta
+                    if (target < 0 || target >= itemCount) return@onPreviewKeyEvent true
+                    focusCursor[0] = target
+                    pendingTarget = target
+                    true
+                },
+            contentPadding = PaddingValues(horizontal = SpSpacing.ScreenHorizontal),
+            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+        ) {
+            // Pre-compute keys so we can verify uniqueness — duplicate
+            // keys crash LazyRow with "Key '<x>' was already used". Most
+            // shelf data is naturally unique-by-id but social shelves
+            // ("recently reviewed" etc.) can show the same game multiple
+            // times. When we detect a collision we fall back to positional
+            // keys (null), which loses cross-recomposition item identity
+            // but keeps the screen alive. The call site should fix its
+            // itemKey to be properly unique (composite); the fallback is
+            // just a "don't crash production" safety net.
+            val keys: List<Any>? = if (itemKey != null) {
+                val list = ArrayList<Any>(itemCount)
+                for (i in 0 until itemCount) list.add(itemKey(i))
+                if (list.toSet().size == list.size) list else null
             } else null
 
-            Box(
-                modifier = Modifier
-                    .onFocusChanged { state ->
-                        if (state.hasFocus) {
-                            focusCursor[0] = i
+            items(
+                count = itemCount,
+                key = if (keys != null) { i -> keys[i] } else null,
+            ) { i ->
+                val restoreKey = if (memoryKey != null && itemKey != null) {
+                    "$memoryKey/${itemKey(i)}"
+                } else null
+
+                Box(
+                    modifier = Modifier
+                        .onFocusChanged { state ->
+                            if (state.hasFocus) {
+                                focusCursor[0] = i
+                            }
                         }
-                    }
-                    .let { base ->
-                        if (restoreKey != null) {
-                            // The per-item FocusRequester is attached by the
-                            // content lambda below to the inner focusable
-                            // target. focusRestoreItem owns its own requester
-                            // on this outer Box; calling requestFocus there
-                            // propagates down to the first focusable
-                            // descendant (the card). Don't share requesters[i]
-                            // here, which would attach the same requester to
-                            // two layout nodes and break the propagation.
-                            base.focusRestoreItem(
-                                key = restoreKey,
-                                isDefault = isDefaultFocusGroup && i == 0,
-                            )
-                        } else {
-                            base
-                        }
-                    },
-            ) {
-                content(i, requesters[i])
+                        .let { base ->
+                            if (restoreKey != null) {
+                                // The per-item FocusRequester is attached by the
+                                // content lambda below to the inner focusable
+                                // target. focusRestoreItem owns its own requester
+                                // on this outer Box; calling requestFocus there
+                                // propagates down to the first focusable
+                                // descendant (the card). Don't share requesters[i]
+                                // here, which would attach the same requester to
+                                // two layout nodes and break the propagation.
+                                base.focusRestoreItem(
+                                    key = restoreKey,
+                                    isDefault = isDefaultFocusGroup && i == 0,
+                                )
+                            } else {
+                                base
+                            }
+                        },
+                ) {
+                    content(i, requesters[i])
+                }
             }
         }
     }
@@ -432,5 +446,3 @@ private fun centerDelta(
     val viewportCenter = info.viewportStartOffset + viewportSize / 2f
     return itemCenter - viewportCenter
 }
-
-

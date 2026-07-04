@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.focus.focusRequester
 import com.spela.player.presentation.ui.components.SpCarousel
 import com.spela.player.presentation.ui.components.SpCarouselGameCard
+import com.spela.player.presentation.ui.components.gamePlatformPillContent
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpGameCardSkeleton
 import com.spela.player.presentation.ui.components.SpShimmer
@@ -105,6 +106,7 @@ private fun ForYouRowSection(
                 ForYouGameCard(
                     game = row.games[index],
                     onClick = { onGameSelected(row.games[index].id) },
+                    onPlatformSelected = onGameSelected,
                 )
             }
         }
@@ -116,6 +118,7 @@ private fun ForYouRowSection(
 private fun ForYouGameCard(
     game: Game,
     onClick: () -> Unit,
+    onPlatformSelected: ((String) -> Unit)? = null,
 ) {
     SpCarouselGameCard(
         title = game.title,
@@ -126,6 +129,7 @@ private fun ForYouGameCard(
         isFavorite = game.isFavorite,
         isInPlayLater = game.isInPlayLater,
         testTag = "for_you_game_${game.id}",
+        platformContent = gamePlatformPillContent(game, onPlatformSelected),
     )
 }
 

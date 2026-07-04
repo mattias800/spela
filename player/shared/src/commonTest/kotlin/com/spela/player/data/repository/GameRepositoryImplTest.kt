@@ -22,9 +22,10 @@ private fun testGameResponse(
     isInPlayLater: Boolean = false,
     lastPlayedAt: kotlin.time.Instant? = null,
     totalPlayTime: Long = 0,
+    platforms: List<com.spela.client.models.GamePlatformResponse>? = null,
 ): com.spela.client.models.GameResponse {
     val now = kotlin.time.Instant.fromEpochSeconds(0)
-    val platforms = listOf(
+    val responsePlatforms = platforms ?: listOf(
         com.spela.client.models.GamePlatformResponse(
             consoleId = consoleId,
             consoleName = consoleName,
@@ -76,7 +77,7 @@ private fun testGameResponse(
         logoUrl = "",
         parentGame = com.spela.client.models.ParentGameResponse(id = "", title = "", coverUrl = ""),
         partyInfo = "",
-        platforms = platforms,
+        platforms = responsePlatforms,
         region = "",
         releaseDates = emptyList(),
         revision = "",
@@ -600,6 +601,36 @@ class GameRepositoryImplTest {
 
         assertEquals("Zelda", game.title)
         assertTrue(game.isFavorite)
+    }
+
+    @Test
+    fun gameResponseMapsPlatformTargets() {
+        val dto = testGameResponse(
+            "nes-game",
+            "Mega Adventure",
+            "nes",
+            consoleName = "NES",
+            platforms = listOf(
+                com.spela.client.models.GamePlatformResponse(
+                    consoleId = "nes",
+                    consoleName = "NES",
+                    gameId = "nes-game",
+                    isPreferred = true,
+                ),
+                com.spela.client.models.GamePlatformResponse(
+                    consoleId = "snes",
+                    consoleName = "SNES",
+                    gameId = "snes-game",
+                    isPreferred = false,
+                ),
+            ),
+        )
+
+        val game = dto.toDomain()
+
+        assertEquals(listOf("nes-game", "snes-game"), game.platforms.map { it.gameId })
+        assertEquals("SNES", game.platforms[1].consoleName)
+        assertFalse(game.platforms[1].isPreferred)
     }
 
     @Test

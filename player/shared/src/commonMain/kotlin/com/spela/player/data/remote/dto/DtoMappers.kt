@@ -81,6 +81,13 @@ fun GameDiscDto.toDomain(): GameDisc = GameDisc(
     fileSize = fileSize,
 )
 
+fun com.spela.client.models.GamePlatformResponse.toDomain(): GamePlatform = GamePlatform(
+    gameId = gameId,
+    consoleId = consoleId,
+    consoleName = consoleName,
+    isPreferred = isPreferred,
+)
+
 /** Maps the enriched GameResponse DTO to domain Game.
  *
  * The generated GameResponse has several fields server-marked @Required
@@ -132,6 +139,16 @@ fun GameDto.toDomain(): Game = Game(
     timeToBeatNormally = timeToBeatNormally.toInt(),
     timeToBeatCompletely = timeToBeatCompletely.toInt(),
     partyInfo = partyInfo.orEmpty(),
+    platforms = platforms.map { it.toDomain() }.ifEmpty {
+        listOf(
+            GamePlatform(
+                gameId = id,
+                consoleId = consoleId,
+                consoleName = consoleName,
+                isPreferred = true,
+            ),
+        )
+    },
 )
 
 fun GameVariantDto.toDomain(): GameVariant = GameVariant(

@@ -110,6 +110,7 @@ fun FavoritesScreen(
                                     GameGridItem(
                                         game = game,
                                         onClick = { onGameSelected(game.id) },
+                                        onPlatformSelected = onGameSelected,
                                         onRequestScrape = { viewModel.requestScrapeIfNeeded(it) },
                                         modifier = Modifier.focusRestoreItem(
                                             key = "favorites_screen_${game.id}",
