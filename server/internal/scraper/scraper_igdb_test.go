@@ -67,6 +67,7 @@ func TestScrapeGame_IGDBMetadata(t *testing.T) {
 	defer tokenServer.Close()
 
 	igdbServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		category := igdb.IGDBCategoryMainGame
 		json.NewEncoder(w).Encode([]igdb.Game{
 			{
 				ID:      42,
@@ -87,6 +88,7 @@ func TestScrapeGame_IGDBMetadata(t *testing.T) {
 				},
 				FirstReleaseDate: 496800000,
 				AggregatedRating: 85.5,
+				Category:         &category,
 				GameModes: []igdb.GameMode{
 					{ID: 1, Name: "Single player"},
 					{ID: 2, Name: "Multiplayer"},
@@ -156,6 +158,12 @@ func TestScrapeGame_IGDBMetadata(t *testing.T) {
 	assert.InDelta(t, 85.5, game.IGDBCriticsRating, 0.01)
 	assert.Equal(t, 2, game.Players)
 	assert.Equal(t, "igdb:42", game.ScraperID)
+	assert.Nil(t, game.IGDBParentGameID)
+	assert.Nil(t, game.IGDBVersionParentID)
+	require.NotNil(t, game.IGDBCategory)
+	assert.Equal(t, igdb.IGDBCategoryMainGame, *game.IGDBCategory)
+	require.NotNil(t, game.TitleRootIGDBID)
+	assert.Equal(t, uint(42), *game.TitleRootIGDBID)
 
 	// Verify cover was downloaded
 	assert.NotEmpty(t, game.CoverURL)
@@ -243,6 +251,32 @@ func TestScrapeGame_IGDBStoresRatings1to1(t *testing.T) {
 	assert.InDelta(t, 88.5, game.TotalRating, 0.01)
 	assert.Equal(t, 200, game.TotalRatingCount)
 	assert.InDelta(t, 90.0, game.IGDBUserRating, 0.01)
+}
+
+func TestApplyIGDBMatchStoresRelationshipFields(t *testing.T) {
+	parentID := 100
+	versionParentID := 200
+	category := igdb.IGDBCategoryRemake
+
+	game := db.Game{ID: 1, Title: "Resident Evil 2"}
+	console := db.Console{Abbreviation: "N64", Name: "Nintendo 64"}
+	s := &Scraper{}
+
+	s.applyIGDBMatch(&game, console, igdb.Game{
+		ID:              300,
+		Name:            "Resident Evil 2",
+		ParentGameID:    &parentID,
+		VersionParentID: &versionParentID,
+		Category:        &category,
+	}, "1", true)
+
+	require.NotNil(t, game.IGDBParentGameID)
+	assert.Equal(t, uint(100), *game.IGDBParentGameID)
+	require.NotNil(t, game.IGDBVersionParentID)
+	assert.Equal(t, uint(200), *game.IGDBVersionParentID)
+	require.NotNil(t, game.IGDBCategory)
+	assert.Equal(t, igdb.IGDBCategoryRemake, *game.IGDBCategory)
+	assert.Nil(t, game.TitleRootIGDBID)
 }
 
 func TestScrapeGame_IGDBNoResults_FallsBackToLibRetro(t *testing.T) {
@@ -709,6 +743,7 @@ func TestScrapeGameWithIGDBMatch_Success(t *testing.T) {
 	defer tokenServer.Close()
 
 	igdbServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		category := igdb.IGDBCategoryPort
 		json.NewEncoder(w).Encode([]igdb.Game{
 			{
 				ID:      999,
@@ -727,6 +762,7 @@ func TestScrapeGameWithIGDBMatch_Success(t *testing.T) {
 				},
 				FirstReleaseDate: 753926400,
 				AggregatedRating: 82.0,
+				Category:         &category,
 				GameModes: []igdb.GameMode{
 					{ID: 1, Name: "Single player"},
 				},
@@ -761,19 +797,19 @@ func TestScrapeGameWithIGDBMatch_Success(t *testing.T) {
 
 	// Create a game that was previously scraped with the wrong IGDB match
 	game := db.Game{
-		ConsoleID:      console.ID,
-		Console:        console,
-		Title:          "Aladdin 2000",
-		FileName:       "Aladdin (USA).sfc",
-		Description:    "Wrong description from bootleg",
-		Developer:      "Bootleg Corp",
-		Publisher:      "Bootleg Corp",
-		Genre:          "Action",
+		ConsoleID:         console.ID,
+		Console:           console,
+		Title:             "Aladdin 2000",
+		FileName:          "Aladdin (USA).sfc",
+		Description:       "Wrong description from bootleg",
+		Developer:         "Bootleg Corp",
+		Publisher:         "Bootleg Corp",
+		Genre:             "Action",
 		IGDBCriticsRating: 10.0,
-		Players:        1,
-		ReleaseDate:    "2000-01-01",
-		ScraperID:      "igdb:555",
-		ScrapeAttempts: 1,
+		Players:           1,
+		ReleaseDate:       "2000-01-01",
+		ScraperID:         "igdb:555",
+		ScrapeAttempts:    1,
 	}
 	require.NoError(t, database.Create(&game).Error)
 
@@ -805,6 +841,12 @@ func TestScrapeGameWithIGDBMatch_Success(t *testing.T) {
 	assert.InDelta(t, 82.0, game.IGDBCriticsRating, 0.01)
 	assert.Equal(t, 1, game.Players)
 	assert.Equal(t, "igdb:999", game.ScraperID)
+	assert.Nil(t, game.IGDBParentGameID)
+	assert.Nil(t, game.IGDBVersionParentID)
+	require.NotNil(t, game.IGDBCategory)
+	assert.Equal(t, igdb.IGDBCategoryPort, *game.IGDBCategory)
+	require.NotNil(t, game.TitleRootIGDBID)
+	assert.Equal(t, uint(999), *game.TitleRootIGDBID)
 	assert.Equal(t, 2, game.ScrapeAttempts)
 
 	// Verify cover was downloaded
@@ -950,14 +992,14 @@ func TestScrapeGame_RescrapesClearsStaleImages(t *testing.T) {
 
 func TestEarliestPlatformReleaseDate(t *testing.T) {
 	tests := []struct {
-		name       string
-		dates      []igdb.ReleaseDate
+		name        string
+		dates       []igdb.ReleaseDate
 		platformIDs []int
 		want        int64
 	}{
 		{
-			name:       "no dates",
-			dates:      nil,
+			name:        "no dates",
+			dates:       nil,
 			platformIDs: []int{19},
 			want:        0,
 		},
@@ -1036,9 +1078,9 @@ func TestScrapeGame_UsesPlatformSpecificReleaseDate(t *testing.T) {
 				FirstReleaseDate: 567993600, // 1987-12-15 (Atari ST)
 				Cover:            &igdb.Image{ID: 1, ImageID: "co9999"},
 				ReleaseDates: []igdb.ReleaseDate{
-					{ID: 1, Date: 567993600, Region: 1, Platform: &igdb.ReleasePlatform{ID: 63, Name: "Atari ST/STE"}},       // 1987
-					{ID: 2, Date: 694224000, Region: 5, Platform: &igdb.ReleasePlatform{ID: 19, Name: "Super Nintendo"}},      // 1992-01-01 Japan
-					{ID: 3, Date: 701913600, Region: 2, Platform: &igdb.ReleasePlatform{ID: 19, Name: "Super Nintendo"}},      // 1992-03-27 NA
+					{ID: 1, Date: 567993600, Region: 1, Platform: &igdb.ReleasePlatform{ID: 63, Name: "Atari ST/STE"}},   // 1987
+					{ID: 2, Date: 694224000, Region: 5, Platform: &igdb.ReleasePlatform{ID: 19, Name: "Super Nintendo"}}, // 1992-01-01 Japan
+					{ID: 3, Date: 701913600, Region: 2, Platform: &igdb.ReleasePlatform{ID: 19, Name: "Super Nintendo"}}, // 1992-03-27 NA
 				},
 			},
 		})
@@ -1343,4 +1385,3 @@ func TestScrapeGame_AlternativeNameAndSeparatorVariant(t *testing.T) {
 		"IGDB rating should be populated from the Broken Sword response")
 	assert.Equal(t, "igdb:616", game.ScraperID)
 }
-
