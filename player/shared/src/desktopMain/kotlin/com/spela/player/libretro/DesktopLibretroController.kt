@@ -284,7 +284,7 @@ class DesktopLibretroController(
         jni.nativeGetAudioBuffer()
     }
 
-    fun setButton(port: Int, buttonId: Int, pressed: Boolean) {
+    override fun setButton(port: Int, buttonId: Int, pressed: Boolean) {
         jni.nativeSetInputButton(port, buttonId, pressed)
         // Also update netplay-side button state (avoids JNI feedback loop)
         if (port == netplayLocalPort && netplayTransport != null) {

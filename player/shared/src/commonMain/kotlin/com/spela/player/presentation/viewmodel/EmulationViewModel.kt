@@ -2217,6 +2217,9 @@ interface LibretroController {
     /** Set pointer/touch state for the given port (used for DS touch screen). */
     fun setPointer(port: Int, x: Int, y: Int, pressed: Boolean) {}
 
+    /** Set digital joypad button state. */
+    fun setButton(port: Int, buttonId: Int, pressed: Boolean) {}
+
     /** Set mouse relative movement and button state. */
     fun setMouse(port: Int, dx: Short, dy: Short, left: Boolean, right: Boolean) {}
 

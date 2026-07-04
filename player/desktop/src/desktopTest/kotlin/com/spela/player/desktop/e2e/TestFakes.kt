@@ -772,9 +772,17 @@ class FakeLibretroController : LibretroController {
     var lastMouseDy: Short = 0
     var lastMouseLeft: Boolean = false
     var lastMouseRight: Boolean = false
+    val buttonEvents = mutableListOf<ButtonEvent>()
+    val pointerEvents = mutableListOf<PointerEvent>()
     val keyboardState = mutableMapOf<Int, Boolean>()
     var lastPortDevice: Pair<Int, Int>? = null
 
+    override fun setButton(port: Int, buttonId: Int, pressed: Boolean) {
+        buttonEvents.add(ButtonEvent(port, buttonId, pressed))
+    }
+    override fun setPointer(port: Int, x: Int, y: Int, pressed: Boolean) {
+        pointerEvents.add(PointerEvent(port, x, y, pressed))
+    }
     override fun setMouse(port: Int, dx: Short, dy: Short, left: Boolean, right: Boolean) {
         lastMouseDx = dx; lastMouseDy = dy; lastMouseLeft = left; lastMouseRight = right
     }
@@ -784,6 +792,9 @@ class FakeLibretroController : LibretroController {
     override fun setControllerPortDevice(port: Int, device: Int) {
         lastPortDevice = port to device
     }
+
+    data class ButtonEvent(val port: Int, val buttonId: Int, val pressed: Boolean)
+    data class PointerEvent(val port: Int, val x: Int, val y: Int, val pressed: Boolean)
 }
 
 class FakeFileStorage : FileStorage {

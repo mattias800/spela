@@ -395,7 +395,7 @@ class AndroidLibretroController(
     /**
      * Set button state from the platform input system.
      */
-    fun setButton(port: Int, buttonId: Int, pressed: Boolean) {
+    override fun setButton(port: Int, buttonId: Int, pressed: Boolean) {
         jni.nativeSetInputButton(port, buttonId, pressed)
     }
 
