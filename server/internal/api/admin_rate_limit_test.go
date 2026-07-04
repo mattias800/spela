@@ -22,7 +22,6 @@ func TestGetUserRateLimit_NoAttempts(t *testing.T) {
 
 	user := db.User{
 		Username:     "testuser",
-		Email:        "test@test.com",
 		PasswordHash: "unused",
 		Role:         "user",
 	}
@@ -50,7 +49,6 @@ func TestGetUserRateLimit_WithFailedAttempts(t *testing.T) {
 
 	user := db.User{
 		Username:     "testuser",
-		Email:        "test@test.com",
 		PasswordHash: "unused",
 		Role:         "user",
 	}
@@ -85,7 +83,6 @@ func TestGetUserRateLimit_LockedOut(t *testing.T) {
 
 	user := db.User{
 		Username:     "testuser",
-		Email:        "test@test.com",
 		PasswordHash: "unused",
 		Role:         "user",
 	}
@@ -123,7 +120,6 @@ func TestGetUserRateLimit_ExpiredLockout(t *testing.T) {
 
 	user := db.User{
 		Username:     "testuser",
-		Email:        "test@test.com",
 		PasswordHash: "unused",
 		Role:         "user",
 	}
@@ -173,7 +169,6 @@ func TestGetUserRateLimit_NonAdmin_Returns403(t *testing.T) {
 
 	user := db.User{
 		Username:     "regular",
-		Email:        "regular@test.com",
 		PasswordHash: "unused",
 		Role:         "user",
 	}
@@ -197,7 +192,6 @@ func TestResetUserRateLimit_ClearsAttempts(t *testing.T) {
 
 	user := db.User{
 		Username:     "testuser",
-		Email:        "test@test.com",
 		PasswordHash: "unused",
 		Role:         "user",
 	}
@@ -256,7 +250,6 @@ func TestResetUserRateLimit_NonAdmin_Returns403(t *testing.T) {
 
 	user := db.User{
 		Username:     "regular",
-		Email:        "regular@test.com",
 		PasswordHash: "unused",
 		Role:         "user",
 	}
@@ -280,7 +273,6 @@ func TestResetUserRateLimit_NoExistingAttempts(t *testing.T) {
 
 	user := db.User{
 		Username:     "testuser",
-		Email:        "test@test.com",
 		PasswordHash: "unused",
 		Role:         "user",
 	}

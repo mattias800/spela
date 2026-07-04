@@ -22,8 +22,8 @@ func TestSearchUsers_EmptyQuery_ReturnsAllUsers(t *testing.T) {
 	ownerToken := registerAndGetToken(t, router) // creates "apitest" user
 
 	// Create additional users
-	createNonOwnerUser(t, router, ownerToken, "alice", "alice@test.com", "SecureTestPass!2024")
-	createNonOwnerUser(t, router, ownerToken, "bob", "bob@test.com", "SecureTestPass!2024")
+	createNonOwnerUser(t, router, ownerToken, "alice", "SecureTestPass!2024")
+	createNonOwnerUser(t, router, ownerToken, "bob", "SecureTestPass!2024")
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/api/users/search", nil)
@@ -67,9 +67,9 @@ func TestSearchUsers_WithQuery_MatchesByPrefix(t *testing.T) {
 	defer cleanup()
 	ownerToken := registerAndGetToken(t, router)
 
-	createNonOwnerUser(t, router, ownerToken, "alice", "alice@test.com", "SecureTestPass!2024")
-	createNonOwnerUser(t, router, ownerToken, "bob", "bob@test.com", "SecureTestPass!2024")
-	createNonOwnerUser(t, router, ownerToken, "alex", "alex@test.com", "SecureTestPass!2024")
+	createNonOwnerUser(t, router, ownerToken, "alice", "SecureTestPass!2024")
+	createNonOwnerUser(t, router, ownerToken, "bob", "SecureTestPass!2024")
+	createNonOwnerUser(t, router, ownerToken, "alex", "SecureTestPass!2024")
 
 	// Search with single character
 	w := httptest.NewRecorder()
@@ -105,7 +105,6 @@ func TestSearchUsers_Pagination(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		createNonOwnerUser(t, router, ownerToken,
 			fmt.Sprintf("user%02d", i),
-			fmt.Sprintf("user%02d@test.com", i),
 			"SecureTestPass!2024",
 		)
 	}
@@ -232,8 +231,8 @@ func TestRecentPartners_NetplayPartners(t *testing.T) {
 	ownerToken := registerAndGetToken(t, router)
 
 	// Create users
-	createNonOwnerUser(t, router, ownerToken, "alice", "alice@test.com", "SecureTestPass!2024")
-	createNonOwnerUser(t, router, ownerToken, "bob", "bob@test.com", "SecureTestPass!2024")
+	createNonOwnerUser(t, router, ownerToken, "alice", "SecureTestPass!2024")
+	createNonOwnerUser(t, router, ownerToken, "bob", "SecureTestPass!2024")
 
 	var owner, alice, bob db.User
 	database.Where("username = ?", "apitest").First(&owner)
@@ -293,7 +292,7 @@ func TestRecentPartners_SharedSessionPartners(t *testing.T) {
 	defer cleanup()
 	ownerToken := registerAndGetToken(t, router)
 
-	createNonOwnerUser(t, router, ownerToken, "carol", "carol@test.com", "SecureTestPass!2024")
+	createNonOwnerUser(t, router, ownerToken, "carol", "SecureTestPass!2024")
 
 	var owner, carol db.User
 	database.Where("username = ?", "apitest").First(&owner)
@@ -345,7 +344,7 @@ func TestRecentPartners_ExcludesDisabledUsers(t *testing.T) {
 	defer cleanup()
 	ownerToken := registerAndGetToken(t, router)
 
-	createNonOwnerUser(t, router, ownerToken, "disabled_user", "disabled@test.com", "SecureTestPass!2024")
+	createNonOwnerUser(t, router, ownerToken, "disabled_user", "SecureTestPass!2024")
 
 	var owner, disabled db.User
 	database.Where("username = ?", "apitest").First(&owner)
@@ -387,7 +386,7 @@ func TestRecentPartners_ExcludesOldSessions(t *testing.T) {
 	defer cleanup()
 	ownerToken := registerAndGetToken(t, router)
 
-	createNonOwnerUser(t, router, ownerToken, "old_partner", "old@test.com", "SecureTestPass!2024")
+	createNonOwnerUser(t, router, ownerToken, "old_partner", "SecureTestPass!2024")
 
 	var owner, oldPartner db.User
 	database.Where("username = ?", "apitest").First(&owner)
@@ -431,8 +430,8 @@ func TestRecentPartners_SortedByMostRecent(t *testing.T) {
 	defer cleanup()
 	ownerToken := registerAndGetToken(t, router)
 
-	createNonOwnerUser(t, router, ownerToken, "first", "first@test.com", "SecureTestPass!2024")
-	createNonOwnerUser(t, router, ownerToken, "second", "second@test.com", "SecureTestPass!2024")
+	createNonOwnerUser(t, router, ownerToken, "first", "SecureTestPass!2024")
+	createNonOwnerUser(t, router, ownerToken, "second", "SecureTestPass!2024")
 
 	var owner, first, second db.User
 	database.Where("username = ?", "apitest").First(&owner)
@@ -541,7 +540,7 @@ func TestRecentPartners_MaxTenResults(t *testing.T) {
 	// Create 12 partners via netplay
 	for i := 0; i < 12; i++ {
 		username := fmt.Sprintf("partner%02d", i)
-		createNonOwnerUser(t, router, ownerToken, username, fmt.Sprintf("%s@test.com", username), "SecureTestPass!2024")
+		createNonOwnerUser(t, router, ownerToken, username, "SecureTestPass!2024")
 
 		var partner db.User
 		database.Where("username = ?", username).First(&partner)
@@ -575,8 +574,8 @@ func TestRecentPartners_CombinesNetplayAndSharedSessions(t *testing.T) {
 	defer cleanup()
 	ownerToken := registerAndGetToken(t, router)
 
-	createNonOwnerUser(t, router, ownerToken, "netplay_friend", "nf@test.com", "SecureTestPass!2024")
-	createNonOwnerUser(t, router, ownerToken, "shared_friend", "sf@test.com", "SecureTestPass!2024")
+	createNonOwnerUser(t, router, ownerToken, "netplay_friend", "SecureTestPass!2024")
+	createNonOwnerUser(t, router, ownerToken, "shared_friend", "SecureTestPass!2024")
 
 	var owner, netplayFriend, sharedFriend db.User
 	database.Where("username = ?", "apitest").First(&owner)

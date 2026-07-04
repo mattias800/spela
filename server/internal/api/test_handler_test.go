@@ -52,13 +52,13 @@ func TestResetEndpoint_DeletesExtraUsers(t *testing.T) {
 
 	// Create the seed users
 	adminHash, _ := auth.HashPassword("admin123")
-	database.Create(&db.User{Username: "admin", Email: "admin@spela.local", PasswordHash: adminHash, Role: "owner"})
+	database.Create(&db.User{Username: "admin", PasswordHash: adminHash, Role: "owner"})
 	playerHash, _ := auth.HashPassword("player123")
-	database.Create(&db.User{Username: "player", Email: "player@spela.local", PasswordHash: playerHash, Role: "user"})
+	database.Create(&db.User{Username: "player", PasswordHash: playerHash, Role: "user"})
 
 	// Create extra users
-	database.Create(&db.User{Username: "extra1", Email: "extra1@test.com", PasswordHash: "hash", Role: "user"})
-	database.Create(&db.User{Username: "extra2", Email: "extra2@test.com", PasswordHash: "hash", Role: "user"})
+	database.Create(&db.User{Username: "extra1", PasswordHash: "hash", Role: "user"})
+	database.Create(&db.User{Username: "extra2", PasswordHash: "hash", Role: "user"})
 
 	var countBefore int64
 	database.Model(&db.User{}).Count(&countBefore)
@@ -94,7 +94,6 @@ func TestResetEndpoint_ResetsUserPreferences(t *testing.T) {
 	adminHash, _ := auth.HashPassword("admin123")
 	database.Create(&db.User{
 		Username:        "admin",
-		Email:           "admin@spela.local",
 		PasswordHash:    adminHash,
 		Role:            "owner",
 		SelectedShader:  "crt",
@@ -106,7 +105,6 @@ func TestResetEndpoint_ResetsUserPreferences(t *testing.T) {
 	playerHash, _ := auth.HashPassword("player123")
 	database.Create(&db.User{
 		Username:     "player",
-		Email:        "player@spela.local",
 		PasswordHash: playerHash,
 		Role:         "user",
 	})
@@ -134,9 +132,9 @@ func TestResetEndpoint_ClearsTransientData(t *testing.T) {
 
 	// Create seed users
 	adminHash, _ := auth.HashPassword("admin123")
-	database.Create(&db.User{Username: "admin", Email: "admin@spela.local", PasswordHash: adminHash, Role: "owner"})
+	database.Create(&db.User{Username: "admin", PasswordHash: adminHash, Role: "owner"})
 	playerHash, _ := auth.HashPassword("player123")
-	database.Create(&db.User{Username: "player", Email: "player@spela.local", PasswordHash: playerHash, Role: "user"})
+	database.Create(&db.User{Username: "player", PasswordHash: playerHash, Role: "user"})
 
 	// Create some transient data
 	database.Create(&db.Favorite{UserID: 1, GameID: 1})
@@ -173,9 +171,9 @@ func TestResetEndpoint_PreservesConsolesAndCores(t *testing.T) {
 
 	// Create seed users
 	adminHash, _ := auth.HashPassword("admin123")
-	database.Create(&db.User{Username: "admin", Email: "admin@spela.local", PasswordHash: adminHash, Role: "owner"})
+	database.Create(&db.User{Username: "admin", PasswordHash: adminHash, Role: "owner"})
 	playerHash, _ := auth.HashPassword("player123")
-	database.Create(&db.User{Username: "player", Email: "player@spela.local", PasswordHash: playerHash, Role: "user"})
+	database.Create(&db.User{Username: "player", PasswordHash: playerHash, Role: "user"})
 
 	var consolesBefore, coresBefore int64
 	database.Model(&db.Console{}).Count(&consolesBefore)
@@ -204,9 +202,9 @@ func TestResetEndpoint_PreservesGames(t *testing.T) {
 
 	// Create seed users
 	adminHash, _ := auth.HashPassword("admin123")
-	database.Create(&db.User{Username: "admin", Email: "admin@spela.local", PasswordHash: adminHash, Role: "owner"})
+	database.Create(&db.User{Username: "admin", PasswordHash: adminHash, Role: "owner"})
 	playerHash, _ := auth.HashPassword("player123")
-	database.Create(&db.User{Username: "player", Email: "player@spela.local", PasswordHash: playerHash, Role: "user"})
+	database.Create(&db.User{Username: "player", PasswordHash: playerHash, Role: "user"})
 
 	// Create a game (simulating a scan)
 	var nes db.Console
@@ -232,7 +230,7 @@ func TestResetEndpoint_AdminCanLoginAfterReset(t *testing.T) {
 
 	// Create the seed users
 	adminHash, _ := auth.HashPassword("admin123")
-	database.Create(&db.User{Username: "admin", Email: "admin@spela.local", PasswordHash: adminHash, Role: "owner"})
+	database.Create(&db.User{Username: "admin", PasswordHash: adminHash, Role: "owner"})
 
 	router, cleanup := NewRouter(*cfg)
 	defer cleanup()

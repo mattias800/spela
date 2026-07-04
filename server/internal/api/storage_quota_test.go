@@ -25,7 +25,7 @@ func TestCheckStorageQuota_CountsAllArtifactTypes(t *testing.T) {
 	t.Setenv("SPELA_MAX_SAVE_STORAGE_MB", "1")
 	const quota = int64(1) << 20
 
-	user := db.User{Username: "quota-user", Email: "quota@example.com", PasswordHash: "x"}
+	user := db.User{Username: "quota-user", PasswordHash: "x"}
 	require.NoError(t, database.Create(&user).Error)
 
 	game := db.Game{Title: "Game", ConsoleID: 1, FilePath: "g.rom"}
@@ -61,8 +61,8 @@ func TestCheckStorageQuota_ScopedPerUser(t *testing.T) {
 	database, _ := setupTestEnv(t)
 	t.Setenv("SPELA_MAX_SAVE_STORAGE_MB", "1")
 
-	u1 := db.User{Username: "u1", Email: "u1@example.com", PasswordHash: "x"}
-	u2 := db.User{Username: "u2", Email: "u2@example.com", PasswordHash: "x"}
+	u1 := db.User{Username: "u1", PasswordHash: "x"}
+	u2 := db.User{Username: "u2", PasswordHash: "x"}
 	require.NoError(t, database.Create(&u1).Error)
 	require.NoError(t, database.Create(&u2).Error)
 

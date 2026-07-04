@@ -11,7 +11,7 @@ import (
 )
 
 // TestAdminCreateUser_ValidationBounds verifies the huma-level validation
-// tags on AdminCreateUserRequest — username/email/password length checks
+// tags on AdminCreateUserRequest — username/password length checks
 // run before the handler body, returning 422 with huma's error shape.
 //
 // The admin endpoint does NOT enforce the public self-signup pattern
@@ -43,7 +43,6 @@ func TestAdminCreateUser_ValidationBounds(t *testing.T) {
 			name: "valid request succeeds",
 			body: map[string]string{
 				"username": "valid_user_01",
-				"email":    "valid@example.com",
 				"password": "SecureTestPass!2024",
 				"role":     "user",
 			},
@@ -53,7 +52,6 @@ func TestAdminCreateUser_ValidationBounds(t *testing.T) {
 			name: "username too short (<3)",
 			body: map[string]string{
 				"username": "ab",
-				"email":    "x@example.com",
 				"password": "SecureTestPass!2024",
 				"role":     "user",
 			},
@@ -63,7 +61,6 @@ func TestAdminCreateUser_ValidationBounds(t *testing.T) {
 			name: "username too long (>64)",
 			body: map[string]string{
 				"username": "a234567890123456789012345678901234567890123456789012345678901234X",
-				"email":    "x@example.com",
 				"password": "SecureTestPass!2024",
 				"role":     "user",
 			},
@@ -73,18 +70,15 @@ func TestAdminCreateUser_ValidationBounds(t *testing.T) {
 			name: "password too short (<8)",
 			body: map[string]string{
 				"username": "new_user_pw",
-				"email":    "x@example.com",
 				"password": "short",
 				"role":     "user",
 			},
 			expect: http.StatusUnprocessableEntity,
 		},
 		{
-			name: "empty email",
+			name: "missing password",
 			body: map[string]string{
 				"username": "new_user_em",
-				"email":    "",
-				"password": "SecureTestPass!2024",
 				"role":     "user",
 			},
 			expect: http.StatusUnprocessableEntity,
@@ -93,7 +87,6 @@ func TestAdminCreateUser_ValidationBounds(t *testing.T) {
 			name: "admin can create username with underscores (not allowed on public signup)",
 			body: map[string]string{
 				"username": "migrated_user_123",
-				"email":    "migrated@example.com",
 				"password": "SecureTestPass!2024",
 				"role":     "user",
 			},

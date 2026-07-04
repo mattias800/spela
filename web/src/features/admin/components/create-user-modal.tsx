@@ -13,16 +13,14 @@ export function CreateUserModal({ open, onClose }: CreateUserModalProps) {
   const { toast } = useToast();
 
   const [newUsername, setNewUsername] = useState("");
-  const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [newRole, setNewRole] = useState<"admin" | "user">("user");
 
   function handleCreateUser() {
-    if (!newUsername || !newEmail || !newPassword) return;
+    if (!newUsername || !newPassword) return;
     createUser.mutate(
       {
         username: newUsername,
-        email: newEmail,
         password: newPassword,
         role: newRole,
       },
@@ -31,7 +29,6 @@ export function CreateUserModal({ open, onClose }: CreateUserModalProps) {
           toast("success", "User created");
           onClose();
           setNewUsername("");
-          setNewEmail("");
           setNewPassword("");
           setNewRole("user");
         },
@@ -48,13 +45,6 @@ export function CreateUserModal({ open, onClose }: CreateUserModalProps) {
           placeholder="Username (min 3 characters)"
           value={newUsername}
           onChange={(e) => setNewUsername(e.target.value)}
-        />
-        <Input
-          label="Email"
-          type="email"
-          placeholder="user@example.com"
-          value={newEmail}
-          onChange={(e) => setNewEmail(e.target.value)}
         />
         <Input
           label="Password"

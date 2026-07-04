@@ -36,7 +36,6 @@ func setupRomHackTestEnv(t *testing.T) *romHackTestEnv {
 	// Create admin user
 	user := db.User{
 		Username:     "romhackadmin",
-		Email:        "romhackadmin@test.com",
 		PasswordHash: "unused",
 		Role:         "owner",
 	}
@@ -69,7 +68,7 @@ func setupRomHackTestEnv(t *testing.T) *romHackTestEnv {
 		Developer:   "Nintendo",
 		Publisher:   "Nintendo",
 		Genre:       "Platformer",
-		GroupKey:     "super mario bros",
+		GroupKey:    "super mario bros",
 		IsPrimary:   true,
 		Region:      "USA",
 	}
@@ -169,8 +168,8 @@ func TestCreateRomHack_VariantMode(t *testing.T) {
 
 	req := createRomHackRequest(t, env.adminToken, map[string]string{
 		"baseGameId": strconv.FormatUint(uint64(env.baseGame.ID), 10),
-		"mode":         "variant",
-		"label":        "English Translation",
+		"mode":       "variant",
+		"label":      "English Translation",
 	}, "translation.ips", patch)
 
 	w := httptest.NewRecorder()
@@ -218,8 +217,8 @@ func TestCreateRomHack_StandaloneMode(t *testing.T) {
 
 	req := createRomHackRequest(t, env.adminToken, map[string]string{
 		"baseGameId": strconv.FormatUint(uint64(env.baseGame.ID), 10),
-		"mode":         "standalone",
-		"title":        "My Cool ROM Hack",
+		"mode":       "standalone",
+		"title":      "My Cool ROM Hack",
 	}, "hack.ips", patch)
 
 	w := httptest.NewRecorder()
@@ -268,8 +267,8 @@ func TestCreateRomHack_BPSPatch(t *testing.T) {
 
 	req := createRomHackRequest(t, env.adminToken, map[string]string{
 		"baseGameId": strconv.FormatUint(uint64(env.baseGame.ID), 10),
-		"mode":         "standalone",
-		"title":        "BPS Hack",
+		"mode":       "standalone",
+		"title":      "BPS Hack",
 	}, "hack.bps", patch)
 
 	w := httptest.NewRecorder()
@@ -317,7 +316,7 @@ func TestCreateRomHack_InvalidMode(t *testing.T) {
 
 	req := createRomHackRequest(t, env.adminToken, map[string]string{
 		"baseGameId": strconv.FormatUint(uint64(env.baseGame.ID), 10),
-		"mode":         "invalid",
+		"mode":       "invalid",
 	}, "patch.ips", patch)
 
 	w := httptest.NewRecorder()
@@ -335,7 +334,7 @@ func TestCreateRomHack_MissingLabel(t *testing.T) {
 
 	req := createRomHackRequest(t, env.adminToken, map[string]string{
 		"baseGameId": strconv.FormatUint(uint64(env.baseGame.ID), 10),
-		"mode":         "variant",
+		"mode":       "variant",
 	}, "patch.ips", patch)
 
 	w := httptest.NewRecorder()
@@ -353,7 +352,7 @@ func TestCreateRomHack_MissingTitle(t *testing.T) {
 
 	req := createRomHackRequest(t, env.adminToken, map[string]string{
 		"baseGameId": strconv.FormatUint(uint64(env.baseGame.ID), 10),
-		"mode":         "standalone",
+		"mode":       "standalone",
 	}, "patch.ips", patch)
 
 	w := httptest.NewRecorder()
@@ -369,8 +368,8 @@ func TestCreateRomHack_UnsupportedFormat(t *testing.T) {
 
 	req := createRomHackRequest(t, env.adminToken, map[string]string{
 		"baseGameId": strconv.FormatUint(uint64(env.baseGame.ID), 10),
-		"mode":         "standalone",
-		"title":        "Test",
+		"mode":       "standalone",
+		"title":      "Test",
 	}, "patch.xyz", []byte("data"))
 
 	w := httptest.NewRecorder()
@@ -388,8 +387,8 @@ func TestCreateRomHack_BaseGameNotFound(t *testing.T) {
 
 	req := createRomHackRequest(t, env.adminToken, map[string]string{
 		"baseGameId": "99999",
-		"mode":         "standalone",
-		"title":        "Test",
+		"mode":       "standalone",
+		"title":      "Test",
 	}, "patch.ips", patch)
 
 	w := httptest.NewRecorder()
@@ -405,7 +404,6 @@ func TestCreateRomHack_NonAdminDenied(t *testing.T) {
 	// Create a regular user
 	user := db.User{
 		Username:     "regularuser",
-		Email:        "regular@test.com",
 		PasswordHash: "unused",
 		Role:         "user",
 	}
@@ -417,8 +415,8 @@ func TestCreateRomHack_NonAdminDenied(t *testing.T) {
 
 	req := createRomHackRequest(t, userToken, map[string]string{
 		"baseGameId": strconv.FormatUint(uint64(env.baseGame.ID), 10),
-		"mode":         "standalone",
-		"title":        "Test",
+		"mode":       "standalone",
+		"title":      "Test",
 	}, "patch.ips", patch)
 
 	w := httptest.NewRecorder()
@@ -443,7 +441,7 @@ func TestGetGame_ParentGameAndRomHacks(t *testing.T) {
 		FileName:     "hack.nes",
 		FilePath:     filepath.Join(console.FolderName, "hack.nes"),
 		FileSize:     100,
-		GroupKey:      "hack game",
+		GroupKey:     "hack game",
 		ParentGameID: &parentID,
 		IsPrimary:    true,
 		CoverURL:     "covers/hack.png",
@@ -501,7 +499,7 @@ func TestGetGame_DeletedParentGraceful(t *testing.T) {
 		FileName:     "orphan.nes",
 		FilePath:     filepath.Join(console.FolderName, "orphan.nes"),
 		FileSize:     100,
-		GroupKey:      "orphan hack",
+		GroupKey:     "orphan hack",
 		ParentGameID: &nonExistentID,
 		IsPrimary:    true,
 	}

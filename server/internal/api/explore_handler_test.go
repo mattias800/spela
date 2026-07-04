@@ -42,13 +42,13 @@ func createExploreGame(t *testing.T, database *gorm.DB, consoleAbbr, title strin
 	var console db.Console
 	require.NoError(t, database.Where("abbreviation = ?", consoleAbbr).First(&console).Error)
 	game := db.Game{
-		ConsoleID: console.ID,
-		Title:     title,
-		FileName:  title + ".rom",
-		FilePath:  consoleAbbr + "/" + title + ".rom",
+		ConsoleID:         console.ID,
+		Title:             title,
+		FileName:          title + ".rom",
+		FilePath:          consoleAbbr + "/" + title + ".rom",
 		IGDBCriticsRating: rating,
-		Genre:     "Action",
-		IsPrimary: true,
+		Genre:             "Action",
+		IsPrimary:         true,
 	}
 	require.NoError(t, database.Create(&game).Error)
 	return game
@@ -60,13 +60,13 @@ func createExploreGameWithTime(t *testing.T, database *gorm.DB, consoleAbbr, tit
 	var console db.Console
 	require.NoError(t, database.Where("abbreviation = ?", consoleAbbr).First(&console).Error)
 	game := db.Game{
-		ConsoleID: console.ID,
-		Title:     title,
-		FileName:  title + ".rom",
-		FilePath:  consoleAbbr + "/" + title + ".rom",
+		ConsoleID:         console.ID,
+		Title:             title,
+		FileName:          title + ".rom",
+		FilePath:          consoleAbbr + "/" + title + ".rom",
 		IGDBCriticsRating: rating,
-		Genre:     "Action",
-		IsPrimary: true,
+		Genre:             "Action",
+		IsPrimary:         true,
 	}
 	require.NoError(t, database.Create(&game).Error)
 	// Update created_at directly
@@ -497,7 +497,7 @@ func TestGetExploreRows_MostPlayed_AggregatesAcrossUsers(t *testing.T) {
 
 	// Create a second user
 	ownerToken := env.token
-	user2Token := createNonOwnerUser(t, env.router, ownerToken, "player2", "player2@example.com", "SecureTestPass!2024")
+	user2Token := createNonOwnerUser(t, env.router, ownerToken, "player2", "SecureTestPass!2024")
 	_ = user2Token
 	var user2 db.User
 	require.NoError(t, env.database.Where("username = ?", "player2").First(&user2).Error)
@@ -1056,7 +1056,6 @@ func TestGetExploreFeaturedSeries_Limit20(t *testing.T) {
 	assert.Len(t, resp, 20, "should be limited to 20 series")
 }
 
-
 // --- Helper: create game with custom genre and players ---
 
 func createExploreGameWithGenre(t *testing.T, database *gorm.DB, consoleAbbr, title string, rating float64, genre string, players int) db.Game {
@@ -1064,14 +1063,14 @@ func createExploreGameWithGenre(t *testing.T, database *gorm.DB, consoleAbbr, ti
 	var console db.Console
 	require.NoError(t, database.Where("abbreviation = ?", consoleAbbr).First(&console).Error)
 	game := db.Game{
-		ConsoleID: console.ID,
-		Title:     title,
-		FileName:  title + ".rom",
-		FilePath:  consoleAbbr + "/" + title + ".rom",
+		ConsoleID:         console.ID,
+		Title:             title,
+		FileName:          title + ".rom",
+		FilePath:          consoleAbbr + "/" + title + ".rom",
 		IGDBCriticsRating: rating,
-		Genre:     genre,
-		Players:   players,
-		IsPrimary: true,
+		Genre:             genre,
+		Players:           players,
+		IsPrimary:         true,
 	}
 	require.NoError(t, database.Create(&game).Error)
 	return game
@@ -1083,14 +1082,14 @@ func createExploreGameWithCover(t *testing.T, database *gorm.DB, consoleAbbr, ti
 	var console db.Console
 	require.NoError(t, database.Where("abbreviation = ?", consoleAbbr).First(&console).Error)
 	game := db.Game{
-		ConsoleID: console.ID,
-		Title:     title,
-		FileName:  title + ".rom",
-		FilePath:  consoleAbbr + "/" + title + ".rom",
+		ConsoleID:         console.ID,
+		Title:             title,
+		FileName:          title + ".rom",
+		FilePath:          consoleAbbr + "/" + title + ".rom",
 		IGDBCriticsRating: rating,
-		Genre:     "Action",
-		CoverURL:  "https://images.igdb.com/cover/" + title + ".jpg",
-		IsPrimary: true,
+		Genre:             "Action",
+		CoverURL:          "https://images.igdb.com/cover/" + title + ".jpg",
+		IsPrimary:         true,
 	}
 	require.NoError(t, database.Create(&game).Error)
 	return game
@@ -1426,7 +1425,7 @@ func TestGetSurpriseGame_NoGames(t *testing.T) {
 	env := setupExploreTestEnv(t)
 
 	// No games with rating > 70 and cover art
-	createExploreGame(t, env.database, "NES", "Low Rated", 50)          // low rating
+	createExploreGame(t, env.database, "NES", "Low Rated", 50)           // low rating
 	createExploreGame(t, env.database, "NES", "High Rated No Cover", 90) // no cover
 
 	w := httptest.NewRecorder()
@@ -1936,7 +1935,7 @@ func TestGetPlayersLikeYou(t *testing.T) {
 	env.database.Create(&db.Favorite{UserID: user.ID, GameID: game2.ID}) // Zelda
 
 	// Create similar user2: favorites Mario, Zelda, Metroid (overlap: 2)
-	user2Token := createNonOwnerUser(t, env.router, env.token, "user2", "user2@test.com", "SecureTestPass!2024")
+	user2Token := createNonOwnerUser(t, env.router, env.token, "user2", "SecureTestPass!2024")
 	_ = user2Token
 	var user2 db.User
 	require.NoError(t, env.database.Where("username = ?", "user2").First(&user2).Error)
@@ -1945,7 +1944,7 @@ func TestGetPlayersLikeYou(t *testing.T) {
 	env.database.Create(&db.Favorite{UserID: user2.ID, GameID: game3.ID}) // Metroid
 
 	// Create user3: favorites Mario, Castlevania, Mega Man (overlap: 1)
-	user3Token := createNonOwnerUser(t, env.router, env.token, "user3", "user3@test.com", "SecureTestPass!2024")
+	user3Token := createNonOwnerUser(t, env.router, env.token, "user3", "SecureTestPass!2024")
 	_ = user3Token
 	var user3 db.User
 	require.NoError(t, env.database.Where("username = ?", "user3").First(&user3).Error)
@@ -2038,15 +2037,15 @@ func createExploreGameWithDev(t *testing.T, database *gorm.DB, consoleAbbr, titl
 	var console db.Console
 	require.NoError(t, database.Where("abbreviation = ?", consoleAbbr).First(&console).Error)
 	game := db.Game{
-		ConsoleID: console.ID,
-		Title:     title,
-		FileName:  title + ".rom",
-		FilePath:  consoleAbbr + "/" + title + ".rom",
+		ConsoleID:         console.ID,
+		Title:             title,
+		FileName:          title + ".rom",
+		FilePath:          consoleAbbr + "/" + title + ".rom",
 		IGDBCriticsRating: rating,
-		Genre:     "Action",
-		Developer: developer,
-		Publisher: publisher,
-		IsPrimary: true,
+		Genre:             "Action",
+		Developer:         developer,
+		Publisher:         publisher,
+		IsPrimary:         true,
 	}
 	require.NoError(t, database.Create(&game).Error)
 	return game
@@ -2310,15 +2309,15 @@ func createExploreGameFull(t *testing.T, database *gorm.DB, consoleAbbr, title s
 	var console db.Console
 	require.NoError(t, database.Where("abbreviation = ?", consoleAbbr).First(&console).Error)
 	game := db.Game{
-		ConsoleID: console.ID,
-		Title:     title,
-		FileName:  title + ".rom",
-		FilePath:  consoleAbbr + "/" + title + ".rom",
+		ConsoleID:         console.ID,
+		Title:             title,
+		FileName:          title + ".rom",
+		FilePath:          consoleAbbr + "/" + title + ".rom",
 		IGDBCriticsRating: rating,
-		Genre:     genre,
-		Developer: developer,
-		Publisher: publisher,
-		IsPrimary: true,
+		Genre:             genre,
+		Developer:         developer,
+		Publisher:         publisher,
+		IsPrimary:         true,
 	}
 	require.NoError(t, database.Create(&game).Error)
 	return game
@@ -2934,7 +2933,7 @@ func TestGetTrending_ReturnsGamesByPlayerCount(t *testing.T) {
 	var user1 db.User
 	require.NoError(t, env.database.First(&user1).Error)
 
-	user2Token := createNonOwnerUser(t, env.router, env.token, "trending_player", "trending@example.com", "SecureTestPass!2024")
+	user2Token := createNonOwnerUser(t, env.router, env.token, "trending_player", "SecureTestPass!2024")
 	_ = user2Token
 	var user2 db.User
 	require.NoError(t, env.database.Where("username = ?", "trending_player").First(&user2).Error)
@@ -3025,7 +3024,7 @@ func TestGetCommunityTop_ReturnsRankedGames(t *testing.T) {
 
 	var user1 db.User
 	require.NoError(t, env.database.First(&user1).Error)
-	user2Token := createNonOwnerUser(t, env.router, env.token, "rater2", "rater2@example.com", "SecureTestPass!2024")
+	user2Token := createNonOwnerUser(t, env.router, env.token, "rater2", "SecureTestPass!2024")
 	_ = user2Token
 	var user2 db.User
 	require.NoError(t, env.database.Where("username = ?", "rater2").First(&user2).Error)
@@ -3061,7 +3060,7 @@ func TestGetCultClassics_ReturnsHighCommunityLowIGDB(t *testing.T) {
 
 	var user1 db.User
 	require.NoError(t, env.database.First(&user1).Error)
-	user2Token := createNonOwnerUser(t, env.router, env.token, "cult_rater", "cult@example.com", "SecureTestPass!2024")
+	user2Token := createNonOwnerUser(t, env.router, env.token, "cult_rater", "SecureTestPass!2024")
 	_ = user2Token
 	var user2 db.User
 	require.NoError(t, env.database.Where("username = ?", "cult_rater").First(&user2).Error)
@@ -3112,7 +3111,7 @@ func TestGetRecentlyReviewed_ReturnsReviewsWithText(t *testing.T) {
 	env.database.Create(&db.GameRating{UserID: user.ID, GameID: game.ID, Rating: 4, Review: "Great classic RPG!"})
 	// Rating without review text — should NOT appear
 	game2 := createExploreGame(t, env.database, "NES", "No Review Game", 70.0)
-	user2Token := createNonOwnerUser(t, env.router, env.token, "reviewer2", "reviewer2@example.com", "SecureTestPass!2024")
+	user2Token := createNonOwnerUser(t, env.router, env.token, "reviewer2", "SecureTestPass!2024")
 	_ = user2Token
 	var user2 db.User
 	require.NoError(t, env.database.Where("username = ?", "reviewer2").First(&user2).Error)
@@ -3191,14 +3190,14 @@ func createExploreGameWithRelease(t *testing.T, database *gorm.DB, consoleAbbr, 
 	var console db.Console
 	require.NoError(t, database.Where("abbreviation = ?", consoleAbbr).First(&console).Error)
 	game := db.Game{
-		ConsoleID:   console.ID,
-		Title:       title,
-		FileName:    title + ".rom",
-		FilePath:    consoleAbbr + "/" + title + ".rom",
+		ConsoleID:         console.ID,
+		Title:             title,
+		FileName:          title + ".rom",
+		FilePath:          consoleAbbr + "/" + title + ".rom",
 		IGDBCriticsRating: rating,
-		Genre:       "Action",
-		ReleaseDate: releaseDate,
-		IsPrimary:   true,
+		Genre:             "Action",
+		ReleaseDate:       releaseDate,
+		IsPrimary:         true,
 	}
 	require.NoError(t, database.Create(&game).Error)
 	return game
@@ -3748,7 +3747,7 @@ func TestGetHardestGames_WithData(t *testing.T) {
 	require.NoError(t, env.database.First(&user1).Error)
 
 	// Create a second user
-	user2Token := createNonOwnerUser(t, env.router, env.token, "hardplayer", "hard@example.com", "SecureTestPass!2024")
+	user2Token := createNonOwnerUser(t, env.router, env.token, "hardplayer", "SecureTestPass!2024")
 	_ = user2Token
 	var user2 db.User
 	require.NoError(t, env.database.Where("username = ?", "hardplayer").First(&user2).Error)
@@ -4073,15 +4072,15 @@ func TestGetActiveChallenges_WithData(t *testing.T) {
 	require.NoError(t, env.database.First(&user).Error)
 
 	env.database.Create(&db.Challenge{
-		CreatorID:    user.ID,
-		GameID:       game.ID,
-		Name:         "Speed Run Challenge",
-		Description:  "Beat the game fast",
-		Type:         "speedrun",
-		Difficulty:   "hard",
-		Status:       "active",
-		SaveFilePath: "/tmp/test.sav",
-		AttemptCount: 5,
+		CreatorID:       user.ID,
+		GameID:          game.ID,
+		Name:            "Speed Run Challenge",
+		Description:     "Beat the game fast",
+		Type:            "speedrun",
+		Difficulty:      "hard",
+		Status:          "active",
+		SaveFilePath:    "/tmp/test.sav",
+		AttemptCount:    5,
 		CompletionCount: 2,
 	})
 
@@ -4783,16 +4782,16 @@ func createExploreGameComplete(t *testing.T, database *gorm.DB, consoleAbbr, tit
 	var console db.Console
 	require.NoError(t, database.Where("abbreviation = ?", consoleAbbr).First(&console).Error)
 	game := db.Game{
-		ConsoleID:   console.ID,
-		Title:       title,
-		FileName:    title + ".rom",
-		FilePath:    consoleAbbr + "/" + title + ".rom",
+		ConsoleID:         console.ID,
+		Title:             title,
+		FileName:          title + ".rom",
+		FilePath:          consoleAbbr + "/" + title + ".rom",
 		IGDBCriticsRating: rating,
-		Genre:       genre,
-		Developer:   developer,
-		Publisher:   publisher,
-		ReleaseDate: releaseDate,
-		IsPrimary:   true,
+		Genre:             genre,
+		Developer:         developer,
+		Publisher:         publisher,
+		ReleaseDate:       releaseDate,
+		IsPrimary:         true,
 	}
 	require.NoError(t, database.Create(&game).Error)
 	return game
@@ -4953,8 +4952,8 @@ func TestGetDeveloperDetail_RatingDistribution_BoundaryValues(t *testing.T) {
 
 	assert.Equal(t, 1, resp.RatingDistribution.Excellent) // 90 is in excellent
 	assert.Equal(t, 1, resp.RatingDistribution.Good)      // 70 is in good
-	assert.Equal(t, 1, resp.RatingDistribution.Average)    // 50 is in average
-	assert.Equal(t, 1, resp.RatingDistribution.Poor)       // 49 is in poor
+	assert.Equal(t, 1, resp.RatingDistribution.Average)   // 50 is in average
+	assert.Equal(t, 1, resp.RatingDistribution.Poor)      // 49 is in poor
 	assert.Equal(t, 0, resp.RatingDistribution.Unrated)
 }
 
@@ -5490,27 +5489,27 @@ func TestConsoleShowcase_OnlyPrimaryGames(t *testing.T) {
 
 	// Create a primary game
 	primary := db.Game{
-		ConsoleID: console.ID,
-		Title:     "Super Mario World (USA)",
-		FileName:  "Super Mario World (USA).sfc",
-		FilePath:  "SNES/Super Mario World (USA).sfc",
+		ConsoleID:         console.ID,
+		Title:             "Super Mario World (USA)",
+		FileName:          "Super Mario World (USA).sfc",
+		FilePath:          "SNES/Super Mario World (USA).sfc",
 		IGDBCriticsRating: 92,
-		Genre:     "Platformer",
-		IsPrimary: true,
-		GroupKey:   "snes:super-mario-world",
+		Genre:             "Platformer",
+		IsPrimary:         true,
+		GroupKey:          "snes:super-mario-world",
 	}
 	require.NoError(t, env.database.Create(&primary).Error)
 
 	// Create a non-primary variant of the same game
 	variant := db.Game{
-		ConsoleID: console.ID,
-		Title:     "Super Mario World (Europe)",
-		FileName:  "Super Mario World (Europe).sfc",
-		FilePath:  "SNES/Super Mario World (Europe).sfc",
+		ConsoleID:         console.ID,
+		Title:             "Super Mario World (Europe)",
+		FileName:          "Super Mario World (Europe).sfc",
+		FilePath:          "SNES/Super Mario World (Europe).sfc",
 		IGDBCriticsRating: 92,
-		Genre:     "Platformer",
-		IsPrimary: false,
-		GroupKey:   "snes:super-mario-world",
+		Genre:             "Platformer",
+		IsPrimary:         false,
+		GroupKey:          "snes:super-mario-world",
 	}
 	require.NoError(t, env.database.Create(&variant).Error)
 

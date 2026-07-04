@@ -26,7 +26,6 @@ import kotlinx.serialization.encoding.*
  * @param password New account password (8-72 characters).
  * @param username New account username (3-64 alphanumeric characters).
  * @param dollarSchema A URL to the JSON Schema for this object.
- * @param email Optional new account email (RFC 5321 cap).
  */
 @Serializable
 
@@ -39,10 +38,7 @@ data class AuthRegisterRequest (
     @SerialName(value = "username") @Required val username: kotlin.String,
 
     /* A URL to the JSON Schema for this object. */
-    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null,
-
-    /* Optional new account email (RFC 5321 cap). */
-    @SerialName(value = "email") val email: kotlin.String? = null
+    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null
 
 ) {
 

@@ -365,7 +365,7 @@ open class AdminApi : ApiClient {
 
     /**
      * Update a user
-     * Admin-only. Updates role, email, password, disabled or pendingApproval fields. Owner role is protected from changes.
+     * Admin-only. Updates role, password, disabled or pendingApproval fields. Owner role is protected from changes.
      * @param id User ID.
      * @param adminUpdateUserRequest 
      * @return UserResponse

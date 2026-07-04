@@ -168,15 +168,18 @@ fun OnboardingWizardScreen(
                 OnboardingWizardChrome(
                     stepIndex = stepIndex,
                     stepCount = MILESTONE_COUNT,
-                    title = "Sign in",
-                    subtitle = "Use your Spela account on this server.",
+                    title = if (loginState.isRegisterMode) "Create account" else "Sign in",
+                    subtitle = if (loginState.isRegisterMode) {
+                        "Create your Spela account on this server."
+                    } else {
+                        "Use your Spela account on this server."
+                    },
                     onBack = backOrNull,
                 ) {
                     SignInStepContent(
                         state = loginState,
                         serverUrl = serverUrl,
                         onUsernameChange = { loginViewModel.onIntent(LoginIntent.SetUsername(it)) },
-                        onEmailChange = { loginViewModel.onIntent(LoginIntent.SetEmail(it)) },
                         onPasswordChange = { loginViewModel.onIntent(LoginIntent.SetPassword(it)) },
                         onSubmit = { loginViewModel.onIntent(LoginIntent.Submit) },
                         onToggleRegister = { loginViewModel.onIntent(LoginIntent.ToggleRegisterMode) },

@@ -25,7 +25,7 @@ func TestBlockRoutes_BasicLifecycle(t *testing.T) {
 
 	// Create a second user directly via the DB (bypassing register, which
 	// uses fixed credentials in registerAndGetToken).
-	target := db.User{Username: "harasser", Email: "harasser@example.com", PasswordHash: "x"}
+	target := db.User{Username: "harasser", PasswordHash: "x"}
 	require.NoError(t, database.Create(&target).Error)
 	targetID := fmt.Sprintf("%d", target.ID)
 

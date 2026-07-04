@@ -56,7 +56,7 @@ func presenceHandler(database *gorm.DB, selfID federation.Identity, hub *ws.Hub,
 // the user as currently playing it in the hub. Returns the game's cross-key.
 func seedPresenceSession(t *testing.T, database *gorm.DB, hub *ws.Hub, username, scraperID string) string {
 	t.Helper()
-	u := db.User{Username: username, Email: username + "@x.test", PasswordHash: "h", ProfileVisibility: "public"}
+	u := db.User{Username: username, PasswordHash: "h", ProfileVisibility: "public"}
 	require.NoError(t, database.Create(&u).Error)
 	g := db.Game{Title: "Game " + scraperID, ScraperID: scraperID, FilePath: "/g-" + scraperID, ConsoleID: 1}
 	require.NoError(t, database.Create(&g).Error)

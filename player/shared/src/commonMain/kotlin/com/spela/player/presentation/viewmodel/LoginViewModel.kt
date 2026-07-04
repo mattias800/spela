@@ -41,7 +41,6 @@ class LoginViewModel(
         when (intent) {
             is LoginIntent.SetServerUrl -> _state.update { it.copy(serverUrl = intent.url) }
             is LoginIntent.SetUsername -> _state.update { it.copy(username = intent.username) }
-            is LoginIntent.SetEmail -> _state.update { it.copy(email = intent.email) }
             is LoginIntent.SetPassword -> _state.update { it.copy(password = intent.password) }
             LoginIntent.ToggleRegisterMode -> _state.update { it.copy(isRegisterMode = !it.isRegisterMode) }
             LoginIntent.DismissError -> _state.update { it.copy(error = null) }
@@ -66,7 +65,7 @@ class LoginViewModel(
 
         scope.launch(dispatchers.io) {
             val result = if (current.isRegisterMode) {
-                registerUseCase(current.serverUrl, current.username, current.email, current.password)
+                registerUseCase(current.serverUrl, current.username, current.password)
             } else {
                 loginUseCase(current.serverUrl, current.username, current.password)
             }

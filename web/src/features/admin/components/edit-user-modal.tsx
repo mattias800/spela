@@ -16,7 +16,12 @@ export function EditUserModal({
   onClose,
 }: EditUserModalProps) {
   return (
-    <Modal open={!!user} onClose={onClose} title="Edit User" size="sm">
+    <Modal
+      open={!!user}
+      onClose={onClose}
+      title={user ? `Edit ${user.username}` : "Edit User"}
+      size="sm"
+    >
       {user && (
         <EditUserForm
           key={user.id}
@@ -41,7 +46,6 @@ function EditUserForm({
   const updateUser = useUpdateUser();
   const { toast } = useToast();
 
-  const [editEmail, setEditEmail] = useState(user.email);
   const [editPassword, setEditPassword] = useState("");
   const [editRole, setEditRole] = useState<string>(user.role);
   const [editDisabled, setEditDisabled] = useState(user.disabled);
@@ -52,12 +56,10 @@ function EditUserForm({
   function handleSaveUser() {
     const data: {
       role?: string;
-      email?: string;
       password?: string;
       disabled?: boolean;
       canImportGames?: boolean;
     } = {};
-    if (editEmail !== user.email) data.email = editEmail;
     if (editPassword) data.password = editPassword;
     if (editRole !== user.role) data.role = editRole;
     if (editDisabled !== user.disabled) data.disabled = editDisabled;
@@ -78,12 +80,6 @@ function EditUserForm({
 
   return (
     <div data-comp="EditUserForm" className="space-y-4">
-      <Input
-        label="Email"
-        type="email"
-        value={editEmail}
-        onChange={(e) => setEditEmail(e.target.value)}
-      />
       <Input
         label="Password"
         type="password"

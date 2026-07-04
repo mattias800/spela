@@ -44,7 +44,7 @@ func TestMigratePreserveOpenRegistration_FreshInstallLeavesClosed(t *testing.T) 
 // open-registration behaviour by seeding the flag to "true".
 func TestMigratePreserveOpenRegistration_ExistingInstallStaysOpen(t *testing.T) {
 	database := openRegistrationTestDB(t)
-	require.NoError(t, database.Create(&User{Username: "owner", Email: "o@example.com", PasswordHash: "x"}).Error)
+	require.NoError(t, database.Create(&User{Username: "owner", PasswordHash: "x"}).Error)
 
 	require.NoError(t, MigratePreserveOpenRegistration(database))
 
@@ -57,7 +57,7 @@ func TestMigratePreserveOpenRegistration_ExistingInstallStaysOpen(t *testing.T) 
 // migration is idempotent.
 func TestMigratePreserveOpenRegistration_RespectsExplicitSetting(t *testing.T) {
 	database := openRegistrationTestDB(t)
-	require.NoError(t, database.Create(&User{Username: "owner", Email: "o@example.com", PasswordHash: "x"}).Error)
+	require.NoError(t, database.Create(&User{Username: "owner", PasswordHash: "x"}).Error)
 	require.NoError(t, database.Create(&ServerSetting{Key: "registration_enabled", Value: "false"}).Error)
 
 	require.NoError(t, MigratePreserveOpenRegistration(database))

@@ -26,7 +26,6 @@ import kotlinx.serialization.encoding.*
  * @param createdAt 
  * @param deletedAt 
  * @param disabled 
- * @param email 
  * @param id 
  * @param role 
  * @param username 
@@ -40,8 +39,6 @@ data class DeletedUserResponse (
     @SerialName(value = "deletedAt") @Required val deletedAt: kotlinx.datetime.Instant,
 
     @SerialName(value = "disabled") @Required val disabled: kotlin.Boolean,
-
-    @SerialName(value = "email") @Required val email: kotlin.String,
 
     @SerialName(value = "id") @Required val id: kotlin.String,
 

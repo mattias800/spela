@@ -121,7 +121,7 @@ func TestStartImport_PermissionGate(t *testing.T) {
 	svc, database, _, _ := importTestRig(t, "rom")
 	h := &FederationHandler{DB: database, Imports: svc}
 
-	user := db.User{Username: "u", Email: "u@example.com", PasswordHash: "x", Role: db.RoleUser}
+	user := db.User{Username: "u", PasswordHash: "x", Role: db.RoleUser}
 	require.NoError(t, database.Create(&user).Error)
 
 	in := &StartImportInput{}
@@ -142,7 +142,7 @@ func TestStartImport_PermissionGate(t *testing.T) {
 	assert.Equal(t, "pending", out.Body.Job.Status)
 
 	// An admin can import regardless of the flag.
-	admin := db.User{Username: "a", Email: "a@example.com", PasswordHash: "x", Role: db.RoleAdmin}
+	admin := db.User{Username: "a", PasswordHash: "x", Role: db.RoleAdmin}
 	require.NoError(t, database.Create(&admin).Error)
 	actx := context.WithValue(context.Background(), ctxKeyUserRole, db.RoleAdmin)
 	actx = context.WithValue(actx, ctxKeyUserID, admin.ID)
@@ -154,7 +154,7 @@ func TestListImports_PermissionGate(t *testing.T) {
 	svc, database, _, _ := importTestRig(t, "rom")
 	h := &FederationHandler{DB: database, Imports: svc}
 
-	user := db.User{Username: "u", Email: "u@example.com", PasswordHash: "x", Role: db.RoleUser}
+	user := db.User{Username: "u", PasswordHash: "x", Role: db.RoleUser}
 	require.NoError(t, database.Create(&user).Error)
 	ctx := context.WithValue(context.Background(), ctxKeyUserRole, db.RoleUser)
 	ctx = context.WithValue(ctx, ctxKeyUserID, user.ID)

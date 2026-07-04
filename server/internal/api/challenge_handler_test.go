@@ -27,7 +27,7 @@ type challengeTestEnv struct {
 	consoleID uint
 
 	// Secondary user for multi-user tests
-	token2 string
+	token2  string
 	userID2 uint
 
 	// Admin user
@@ -50,7 +50,6 @@ func setupChallengeTestWithRateLimit(t *testing.T, rateLimitSec int) *challengeT
 	w := httptest.NewRecorder()
 	body, _ := json.Marshal(map[string]string{
 		"username": "challenger1",
-		"email":    "challenger1@test.com",
 		"password": "SecureTestPass!2024",
 	})
 	req := httptest.NewRequest("POST", "/api/auth/register", bytes.NewReader(body))
@@ -66,7 +65,7 @@ func setupChallengeTestWithRateLimit(t *testing.T, rateLimitSec int) *challengeT
 	require.NoError(t, err)
 
 	// Create user 2
-	token2 := createNonOwnerUser(t, router, token1, "challenger2", "challenger2@test.com", "SecureTestPass!2024")
+	token2 := createNonOwnerUser(t, router, token1, "challenger2", "SecureTestPass!2024")
 
 	claims2, err := auth.ValidateAccessToken(token2, testJWTSecret)
 	require.NoError(t, err)
@@ -74,7 +73,6 @@ func setupChallengeTestWithRateLimit(t *testing.T, rateLimitSec int) *challengeT
 	// Create admin user
 	adminUser := db.User{
 		Username:     "admin_user",
-		Email:        "admin@test.com",
 		PasswordHash: "$2a$10$dummy",
 		Role:         "admin",
 	}
@@ -796,12 +794,11 @@ func TestLazyExpiration(t *testing.T) {
 	t.Run("expired challenge shown as expired", func(t *testing.T) {
 		database, cfg := setupTestEnv(t)
 		router, cleanup := NewRouter(*cfg)
-	defer cleanup()
+		defer cleanup()
 
 		// Register a user
 		body, _ := json.Marshal(map[string]string{
 			"username": "expuser",
-			"email":    "expuser@test.com",
 			"password": "SecureTestPass!2024",
 		})
 		rw := httptest.NewRecorder()

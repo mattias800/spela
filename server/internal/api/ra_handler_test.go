@@ -1016,7 +1016,7 @@ func TestGetAchievementLeaderboard_MultipleUsers(t *testing.T) {
 	})
 
 	// Create second user and give them 2 achievements
-	user2 := db.User{Username: "player2", Email: "p2@example.com", PasswordHash: "hash"}
+	user2 := db.User{Username: "player2", PasswordHash: "hash"}
 	cfg.DB.Create(&user2)
 	cfg.DB.Create(&db.UserAchievementProgress{
 		UserID:          user2.ID,

@@ -28,7 +28,6 @@ data class AuthTokens(
 data class User(
     val id: String,
     val username: String,
-    val email: String = "",
     val role: String,
     val avatarUrl: String? = null,
     // Admins/owners can always import federation games; this flag grants the

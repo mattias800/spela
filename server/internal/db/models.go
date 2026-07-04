@@ -36,7 +36,6 @@ type User struct {
 	UpdatedAt           time.Time      `json:"updatedAt"`
 	DeletedAt           gorm.DeletedAt `gorm:"index" json:"-"`
 	Username            string         `gorm:"uniqueIndex;size:64;not null" json:"username"`
-	Email               string         `gorm:"uniqueIndex;size:255;not null" json:"email"`
 	PasswordHash        string         `gorm:"not null" json:"-"`
 	Role                UserRole       `gorm:"size:16;default:user" json:"role"`
 	AvatarURL           string         `gorm:"size:512" json:"avatarUrl"`

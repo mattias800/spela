@@ -286,7 +286,7 @@ func TestGameKeyMapping_IsolatedPerUser(t *testing.T) {
 	token1 := registerAndGetToken(t, router)
 
 	// Register second user
-	token2 := createNonOwnerUser(t, router, token1, "user2", "user2@example.com", "SecureTestPass!2024")
+	token2 := createNonOwnerUser(t, router, token1, "user2", "SecureTestPass!2024")
 
 	// Create a game
 	game := db.Game{ConsoleID: 1, Title: "Test Game", FileName: "test.nes", FilePath: "/roms/test.nes"}

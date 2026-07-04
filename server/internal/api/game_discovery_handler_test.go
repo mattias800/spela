@@ -19,7 +19,6 @@ func discoveryAuthToken(t *testing.T, router http.Handler) string {
 	t.Helper()
 	body, _ := json.Marshal(map[string]string{
 		"username": "discoverytest",
-		"email":    "discoverytest@example.com",
 		"password": "SecureTestPass!2024",
 	})
 	w := httptest.NewRecorder()

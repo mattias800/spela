@@ -53,7 +53,7 @@ func achievementsHandler(database *gorm.DB, selfID federation.Identity, client a
 // seedAchievements creates a public+active user with `count` unlocked achievements.
 func seedAchievements(t *testing.T, database *gorm.DB, username string, count int) {
 	t.Helper()
-	u := db.User{Username: username, Email: username + "@x.test", PasswordHash: "h", ProfileVisibility: "public"}
+	u := db.User{Username: username, PasswordHash: "h", ProfileVisibility: "public"}
 	require.NoError(t, database.Create(&u).Error)
 	for i := 0; i < count; i++ {
 		require.NoError(t, database.Create(&db.UserAchievementProgress{

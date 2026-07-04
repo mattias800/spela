@@ -1,6 +1,7 @@
 package db
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -248,6 +249,9 @@ func Initialize(dbPath string) (*gorm.DB, error) {
 	)
 	if err != nil {
 		return nil, fmt.Errorf("running migrations: %w", err)
+	}
+	if err := MigrateDropUserEmail(db); err != nil {
+		return nil, fmt.Errorf("dropping users.email: %w", err)
 	}
 
 	// Seed system event categories (security, operational).
@@ -1057,6 +1061,128 @@ func MigratePreserveOpenRegistration(database *gorm.DB) error {
 		return nil // fresh install — leave closed-by-default
 	}
 	return database.Create(&ServerSetting{Key: "registration_enabled", Value: "true"}).Error
+}
+
+// MigrateDropUserEmail removes the legacy users.email column and its GORM
+// unique index. Spela accounts are username-based and the server never used
+// email for delivery or recovery, so keeping historical addresses around is
+// unnecessary data retention. Idempotent for fresh databases and repeat runs.
+func MigrateDropUserEmail(database *gorm.DB) error {
+	if !database.Migrator().HasTable(&User{}) {
+		return nil
+	}
+
+	hasEmail, err := sqliteTableHasColumn(database, "users", "email")
+	if err != nil {
+		return fmt.Errorf("checking users.email: %w", err)
+	}
+	if !hasEmail {
+		return nil
+	}
+
+	indexes, err := sqliteIndexesReferencingColumn(database, "users", "email")
+	if err != nil {
+		return fmt.Errorf("finding users.email indexes: %w", err)
+	}
+	for _, indexName := range indexes {
+		if err := database.Exec("DROP INDEX IF EXISTS " + quoteSQLiteIdentifier(indexName)).Error; err != nil {
+			return fmt.Errorf("dropping users.email index %q: %w", indexName, err)
+		}
+	}
+	if err := database.Exec("ALTER TABLE users DROP COLUMN email").Error; err != nil {
+		return fmt.Errorf("dropping users.email column: %w", err)
+	}
+	return nil
+}
+
+func sqliteIndexesReferencingColumn(database *gorm.DB, tableName string, columnName string) ([]string, error) {
+	rows, err := database.Raw(
+		`SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = ? AND sql IS NOT NULL`,
+		tableName,
+	).Rows()
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var indexNames []string
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return nil, err
+		}
+		indexNames = append(indexNames, name)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	var indexes []string
+	for _, name := range indexNames {
+		hasColumn, err := sqliteIndexHasColumn(database, name, columnName)
+		if err != nil {
+			return nil, err
+		}
+		if hasColumn {
+			indexes = append(indexes, name)
+		}
+	}
+	return indexes, nil
+}
+
+func sqliteIndexHasColumn(database *gorm.DB, indexName string, columnName string) (bool, error) {
+	rows, err := database.Raw("PRAGMA index_info(" + quoteSQLiteIdentifier(indexName) + ")").Rows()
+	if err != nil {
+		return false, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var seqno int
+		var cid int
+		var name sql.NullString
+		if err := rows.Scan(&seqno, &cid, &name); err != nil {
+			return false, err
+		}
+		if name.Valid && strings.EqualFold(name.String, columnName) {
+			return true, nil
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return false, err
+	}
+	return false, nil
+}
+
+func sqliteTableHasColumn(database *gorm.DB, tableName string, columnName string) (bool, error) {
+	rows, err := database.Raw("PRAGMA table_info(" + quoteSQLiteIdentifier(tableName) + ")").Rows()
+	if err != nil {
+		return false, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var cid int
+		var name string
+		var typ string
+		var notNull int
+		var defaultValue any
+		var pk int
+		if err := rows.Scan(&cid, &name, &typ, &notNull, &defaultValue, &pk); err != nil {
+			return false, err
+		}
+		if name == columnName {
+			return true, nil
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return false, err
+	}
+	return false, nil
+}
+
+func quoteSQLiteIdentifier(name string) string {
+	return `"` + strings.ReplaceAll(name, `"`, `""`) + `"`
 }
 
 func MigrateSharedSessions(database *gorm.DB) error {

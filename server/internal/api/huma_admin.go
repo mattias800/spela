@@ -167,7 +167,7 @@ func RegisterAdminRoutes(api huma.API, h *AdminHandler, jwtSecret string, databa
 		Method:      http.MethodPut,
 		Path:        "/api/admin/users/{id}",
 		Summary:     "Update a user",
-		Description: "Admin-only. Updates role, email, password, disabled or pendingApproval fields. Owner role is protected from changes.",
+		Description: "Admin-only. Updates role, password, disabled or pendingApproval fields. Owner role is protected from changes.",
 		Tags:        []string{"admin"},
 		Middlewares: mw,
 		Security:    sec,
@@ -272,9 +272,6 @@ func (h *AdminHandler) HumaAdminCreateUser(ctx context.Context, in *AdminCreateU
 	if req.Role != db.RoleAdmin && req.Role != db.RoleUser {
 		return nil, huma.Error400BadRequest("role must be 'admin' or 'user'")
 	}
-	if isGeneratedRegistrationEmailDomain(req.Email) {
-		return nil, huma.Error422UnprocessableEntity("email domain is reserved")
-	}
 
 	hash, err := auth.HashPassword(req.Password)
 	if err != nil {
@@ -286,7 +283,7 @@ func (h *AdminHandler) HumaAdminCreateUser(ctx context.Context, in *AdminCreateU
 	var conflict bool
 	if err := h.DB.Transaction(func(tx *gorm.DB) error {
 		var count int64
-		tx.Model(&db.User{}).Where("username = ? OR email = ?", req.Username, req.Email).Count(&count)
+		tx.Model(&db.User{}).Where("username = ?", req.Username).Count(&count)
 		if count > 0 {
 			conflict = true
 			return fmt.Errorf("duplicate")
@@ -294,14 +291,13 @@ func (h *AdminHandler) HumaAdminCreateUser(ctx context.Context, in *AdminCreateU
 
 		user = db.User{
 			Username:     req.Username,
-			Email:        req.Email,
 			PasswordHash: hash,
 			Role:         req.Role,
 		}
 		return tx.Create(&user).Error
 	}); err != nil {
 		if conflict {
-			return nil, huma.Error409Conflict("username or email already exists")
+			return nil, huma.Error409Conflict("username already exists")
 		}
 		return nil, huma.Error500InternalServerError("failed to create user")
 	}
@@ -348,20 +344,6 @@ func (h *AdminHandler) HumaAdminUpdateUser(ctx context.Context, in *AdminUpdateU
 			return nil, huma.Error400BadRequest("role must be 'admin' or 'user'")
 		}
 		user.Role = req.Role
-	}
-	if req.Email != "" {
-		if isGeneratedRegistrationEmailDomain(req.Email) {
-			return nil, huma.Error422UnprocessableEntity("email domain is reserved")
-		}
-		// Issue #1123: prevent collisions and overwrite of owner email.
-		if user.Role == db.RoleOwner && caller.Role != db.RoleOwner {
-			return nil, huma.Error403Forbidden("cannot change the owner's email")
-		}
-		var conflict db.User
-		if err := h.DB.Where("email = ? AND id != ?", req.Email, user.ID).First(&conflict).Error; err == nil {
-			return nil, huma.Error409Conflict("email already in use")
-		}
-		user.Email = req.Email
 	}
 	if req.Password != "" {
 		if user.Role == db.RoleOwner {

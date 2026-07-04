@@ -25,8 +25,6 @@ import kotlinx.serialization.encoding.*
  *
  * @param dollarSchema A URL to the JSON Schema for this object.
  * @param avatarUrl 
- * @param currentPassword 
- * @param email 
  */
 @Serializable
 
@@ -35,11 +33,7 @@ data class UpdateProfileRequest (
     /* A URL to the JSON Schema for this object. */
     @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null,
 
-    @SerialName(value = "avatarUrl") val avatarUrl: kotlin.String? = null,
-
-    @SerialName(value = "currentPassword") val currentPassword: kotlin.String? = null,
-
-    @SerialName(value = "email") val email: kotlin.String? = null
+    @SerialName(value = "avatarUrl") val avatarUrl: kotlin.String? = null
 
 ) {
 

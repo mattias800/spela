@@ -22,25 +22,25 @@ import kotlinx.serialization.descriptors.*
 import kotlinx.serialization.encoding.*
 
 /**
- * 
  *
- * @param autoLoadSaveEnabled 
- * @param autoSaveEnabled 
- * @param autoUpdateCoresEnabled 
- * @param consoleKeyMappings 
- * @param consoleSaveStatePolicies 
- * @param consoleShaders 
- * @param customKeyMapping 
- * @param defaultSecondScreenPage 
- * @param gameSaveStatePolicies 
- * @param preferredRegions 
- * @param raHardcoreEnabled 
- * @param raLinked 
- * @param raUsername 
- * @param selectedKeyMapping 
- * @param selectedShader 
- * @param selectedTheme 
- * @param showPerformanceOverlay 
+ *
+ * @param autoLoadSaveEnabled
+ * @param autoSaveEnabled
+ * @param autoUpdateCoresEnabled
+ * @param consoleKeyMappings
+ * @param consoleSaveStatePolicies
+ * @param consoleShaders
+ * @param customKeyMapping
+ * @param defaultSecondScreenPage
+ * @param gameSaveStatePolicies
+ * @param preferredRegions
+ * @param raHardcoreEnabled
+ * @param raLinked
+ * @param raUsername
+ * @param selectedKeyMapping
+ * @param selectedShader
+ * @param selectedTheme
+ * @param showPerformanceOverlay
  * @param dollarSchema A URL to the JSON Schema for this object.
  * @param consoleRenderScales
  */

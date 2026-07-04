@@ -40,7 +40,7 @@ func RegisterUserRoutes(api huma.API, h *UserHandler, jwtSecret string, database
 		Method:      http.MethodGet,
 		Path:        "/api/user/profile",
 		Summary:     "Get current user profile",
-		Description: "Returns the authenticated user's profile (username, email, role, avatar, timestamps).",
+		Description: "Returns the authenticated user's profile (username, role, avatar, timestamps).",
 		Tags:        []string{"user"},
 		Middlewares: mw,
 		Security:    sec,

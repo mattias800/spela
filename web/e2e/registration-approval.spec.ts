@@ -1,5 +1,27 @@
 import { test, expect, resetServer } from "./fixtures";
 
+const SERVER_URL = "http://localhost:8080";
+
+async function enableRegistration(): Promise<void> {
+  const loginRes = await fetch(`${SERVER_URL}/api/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username: "admin", password: "admin123" }),
+  });
+  expect(loginRes.ok).toBe(true);
+  const { accessToken } = await loginRes.json();
+
+  const settingsRes = await fetch(`${SERVER_URL}/api/admin/settings`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({ registration_enabled: "true" }),
+  });
+  expect(settingsRes.ok).toBe(true);
+}
+
 /**
  * E2E tests for the registration approval workflow.
  * New accounts require admin approval before they can log in.
@@ -11,8 +33,11 @@ import { test, expect, resetServer } from "./fixtures";
 test.describe("Registration Approval Flow", () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 
+  const testPassword = "ApprovalUser1531!";
+
   test.beforeEach(async () => {
     await resetServer();
+    await enableRegistration();
   });
 
   test("registration shows pending approval message instead of logging in", async ({
@@ -22,9 +47,8 @@ test.describe("Registration Approval Flow", () => {
 
     await page.goto("/register");
     await page.getByLabel("Username").fill(username);
-    await page.getByLabel("Email").fill(`${username}@test.com`);
-    await page.getByLabel("Password", { exact: true }).fill("password123");
-    await page.getByLabel("Confirm Password", { exact: true }).fill("password123");
+    await page.getByLabel("Password", { exact: true }).fill(testPassword);
+    await page.getByLabel("Confirm Password", { exact: true }).fill(testPassword);
     await page.getByRole("button", { name: /create account/i }).click();
 
     // Should NOT navigate to "/" — should show a pending message
@@ -39,25 +63,24 @@ test.describe("Registration Approval Flow", () => {
 
     // Register via API (bypass the UI to avoid waiting for the UI message test)
     await page.goto("/");
-    const regStatus = await page.evaluate(async (user: string) => {
+    const regStatus = await page.evaluate(async ({ user, password }) => {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           username: user,
-          email: `${user}@test.com`,
-          password: "password123",
+          password,
         }),
       });
       return res.status;
-    }, username);
+    }, { user: username, password: testPassword });
     // Should return 202 (pending), not 201 (auto-login)
     expect(regStatus).toBe(202);
 
     // Try to log in as the pending user
     await page.goto("/login");
     await page.getByLabel("Username").fill(username);
-    await page.getByLabel("Password").fill("password123");
+    await page.getByLabel("Password").fill(testPassword);
     await page.getByRole("button", { name: /sign in/i }).click();
 
     // Should see "pending approval" error, NOT navigate to "/"
@@ -83,19 +106,18 @@ test.describe("Registration Approval Flow", () => {
     await userPage.goto("/login");
 
     const regStatus = await userPage.evaluate(
-      async (uname: string) => {
+      async ({ uname, password }) => {
         const res = await fetch("/api/auth/register", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             username: uname,
-            email: `${uname}@test.com`,
-            password: "password123",
+            password,
           }),
         });
         return res.status;
       },
-      username,
+      { uname: username, password: testPassword },
     );
     expect(regStatus).toBe(202);
 
@@ -137,7 +159,7 @@ test.describe("Registration Approval Flow", () => {
     // Step 3: Now the user should be able to log in
     await userPage.goto("/login");
     await userPage.getByLabel("Username").fill(username);
-    await userPage.getByLabel("Password").fill("password123");
+    await userPage.getByLabel("Password").fill(testPassword);
     await userPage.getByRole("button", { name: /sign in/i }).click();
     await expect(userPage).toHaveURL("/", { timeout: 10_000 });
 

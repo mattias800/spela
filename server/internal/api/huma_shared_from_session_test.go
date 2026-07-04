@@ -129,7 +129,7 @@ func TestCreateSharedSession_FromSession_RejectsCrossUser(t *testing.T) {
 	// Two users.
 	tokenA := registerAndGetToken(t, router)
 	bodyB, _ := json.Marshal(map[string]string{
-		"username": "otheruser", "email": "other@example.com", "password": "SecureTestPass!2024",
+		"username": "otheruser", "password": "SecureTestPass!2024",
 	})
 	wB := httptest.NewRecorder()
 	reqB := httptest.NewRequest("POST", "/api/auth/register", bytes.NewReader(bodyB))

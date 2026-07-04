@@ -500,7 +500,6 @@ func TestRefreshCore_RequiresAdmin(t *testing.T) {
 	// Direct DB insert — mirrors the pattern in admin_deleted_users_test.go.
 	user := db.User{
 		Username:     "regular-core",
-		Email:        "regular-core@test.com",
 		PasswordHash: "unused",
 		Role:         "user",
 	}

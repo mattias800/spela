@@ -38,7 +38,6 @@ func consoleAuthToken(t *testing.T, router http.Handler) string {
 	t.Helper()
 	body, _ := json.Marshal(map[string]string{
 		"username": "consoletest",
-		"email":    "consoletest@example.com",
 		"password": "SecureTestPass!2024",
 	})
 	w := httptest.NewRecorder()

@@ -24,8 +24,8 @@ func openRollupTestDB(t *testing.T) *gorm.DB {
 func TestBuildLocalRollup_StampsGamesAndGatesPrivatePlayers(t *testing.T) {
 	database := openRollupTestDB(t)
 
-	pub := db.User{Username: "publicguy", Email: "a@x.test", PasswordHash: "h", ProfileVisibility: "public"}
-	priv := db.User{Username: "privateguy", Email: "b@x.test", PasswordHash: "h", ProfileVisibility: "private"}
+	pub := db.User{Username: "publicguy", PasswordHash: "h", ProfileVisibility: "public"}
+	priv := db.User{Username: "privateguy", PasswordHash: "h", ProfileVisibility: "private"}
 	require.NoError(t, database.Create(&pub).Error)
 	require.NoError(t, database.Create(&priv).Error)
 
@@ -63,8 +63,8 @@ func TestBuildLocalRollup_StampsGamesAndGatesPrivatePlayers(t *testing.T) {
 
 func TestBuildLocalRollup_ExcludesDisabledAndPendingUsers(t *testing.T) {
 	database := openRollupTestDB(t)
-	disabled := db.User{Username: "banned", Email: "d@x.test", PasswordHash: "h", ProfileVisibility: "public", Disabled: true}
-	pending := db.User{Username: "newbie", Email: "p@x.test", PasswordHash: "h", ProfileVisibility: "public", PendingApproval: true}
+	disabled := db.User{Username: "banned", PasswordHash: "h", ProfileVisibility: "public", Disabled: true}
+	pending := db.User{Username: "newbie", PasswordHash: "h", ProfileVisibility: "public", PendingApproval: true}
 	require.NoError(t, database.Create(&disabled).Error)
 	require.NoError(t, database.Create(&pending).Error)
 

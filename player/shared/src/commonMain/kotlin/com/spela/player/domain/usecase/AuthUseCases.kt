@@ -21,8 +21,8 @@ class RegisterUseCase(
     private val authRepository: AuthRepository,
     private val deviceManager: DeviceManager,
 ) {
-    suspend operator fun invoke(serverUrl: String, username: String, email: String, password: String): Result<AuthTokens> {
-        return authRepository.register(serverUrl, username, email, password).onSuccess {
+    suspend operator fun invoke(serverUrl: String, username: String, password: String): Result<AuthTokens> {
+        return authRepository.register(serverUrl, username, password).onSuccess {
             deviceManager.registerWithServer()
         }
     }

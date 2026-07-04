@@ -55,9 +55,9 @@ func TestSortAchievementEntries_ByCountDescThenName(t *testing.T) {
 func TestBuildLocalAchievements_CountsPerPublicActiveUser(t *testing.T) {
 	database := openAchievementsTestDB(t)
 
-	pub := db.User{Username: "publicguy", Email: "a@x.test", PasswordHash: "h", ProfileVisibility: "public"}
-	priv := db.User{Username: "privateguy", Email: "b@x.test", PasswordHash: "h", ProfileVisibility: "private"}
-	disabled := db.User{Username: "banned", Email: "c@x.test", PasswordHash: "h", ProfileVisibility: "public", Disabled: true}
+	pub := db.User{Username: "publicguy", PasswordHash: "h", ProfileVisibility: "public"}
+	priv := db.User{Username: "privateguy", PasswordHash: "h", ProfileVisibility: "private"}
+	disabled := db.User{Username: "banned", PasswordHash: "h", ProfileVisibility: "public", Disabled: true}
 	require.NoError(t, database.Create(&pub).Error)
 	require.NoError(t, database.Create(&priv).Error)
 	require.NoError(t, database.Create(&disabled).Error)

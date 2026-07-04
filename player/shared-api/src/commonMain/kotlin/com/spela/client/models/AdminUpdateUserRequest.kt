@@ -26,7 +26,6 @@ import kotlinx.serialization.encoding.*
  * @param dollarSchema A URL to the JSON Schema for this object.
  * @param canImportGames 
  * @param disabled 
- * @param email 
  * @param password 
  * @param pendingApproval 
  * @param role 
@@ -41,8 +40,6 @@ data class AdminUpdateUserRequest (
     @SerialName(value = "canImportGames") val canImportGames: kotlin.Boolean? = null,
 
     @SerialName(value = "disabled") val disabled: kotlin.Boolean? = null,
-
-    @SerialName(value = "email") val email: kotlin.String? = null,
 
     @SerialName(value = "password") val password: kotlin.String? = null,
 

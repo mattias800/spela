@@ -27,12 +27,10 @@ type AuthLoginRequest struct {
 }
 
 // AuthRegisterRequest is the body for POST /api/auth/register and /api/auth/setup.
-// Matches the original gin binding for username/password. Email is optional for
-// self-hosted servers; when blank, the handler stores an internal placeholder so
-// the DB's non-null unique email column stays satisfied.
+// Spela is self-hosted and signs users in by username, so account creation only
+// requires a username and password.
 type AuthRegisterRequest struct {
 	Username string `json:"username" minLength:"3" maxLength:"64" pattern:"^[a-zA-Z0-9]+$" doc:"New account username (3-64 alphanumeric characters)."`
-	Email    string `json:"email,omitempty" maxLength:"254" doc:"Optional new account email (RFC 5321 cap)."`
 	Password string `json:"password" minLength:"8" maxLength:"72" doc:"New account password (8-72 characters)."`
 }
 
@@ -49,12 +47,12 @@ type AuthRefreshRequest struct {
 // format exactly while keeping the OpenAPI spec a single response type.
 type AuthRegisterResponse struct {
 	// Pending-approval fields.
-	Pending bool   `json:"pending" doc:"True when the new account is awaiting admin approval. When true, no tokens are returned."`
-	Message string `json:"message" doc:"Human-readable status message (only set when pending)."`
+	Pending bool   `json:"pending,omitempty" doc:"True when the new account is awaiting admin approval. When true, no tokens are returned."`
+	Message string `json:"message,omitempty" doc:"Human-readable status message (only set when pending)."`
 
 	// Normal success fields (omitted when pending).
-	AccessToken  string        `json:"accessToken" doc:"Bearer access token."`
-	RefreshToken string        `json:"refreshToken" doc:"Refresh token (rotate via /api/auth/refresh)."`
+	AccessToken  string        `json:"accessToken,omitempty" doc:"Bearer access token."`
+	RefreshToken string        `json:"refreshToken,omitempty" doc:"Refresh token (rotate via /api/auth/refresh)."`
 	User         *UserResponse `json:"user,omitempty" doc:"Registered user profile."`
 }
 
@@ -409,10 +407,6 @@ func isRegistrationEnabled(database *gorm.DB) bool {
 // when the new account is awaiting admin approval — matching the raw gin shape.
 func (h *AuthHandler) HumaRegister(ctx context.Context, in *AuthRegisterInput) (*AuthRegisterOutput, error) {
 	req := in.Body
-	email, err := normalizeRegistrationEmail(req.Username, req.Email)
-	if err != nil {
-		return nil, huma.NewError(http.StatusUnprocessableEntity, "Email must be a valid email address.")
-	}
 
 	// Issue #1131(A): refuse the most-common / most-leaked passwords.
 	// Length already enforced via the schema tag.
@@ -437,12 +431,8 @@ func (h *AuthHandler) HumaRegister(ctx context.Context, in *AuthRegisterInput) (
 	var txErr error
 	_ = h.DB.Transaction(func(tx *gorm.DB) error {
 		var count int64
-		tx.Model(&db.User{}).Where("username = ? OR email = ?", req.Username, email).Count(&count)
+		tx.Model(&db.User{}).Where("username = ?", req.Username).Count(&count)
 		if count > 0 {
-			// Issue #1132: keep the response indistinguishable from
-			// any other unprocessable-registration error so an
-			// attacker can't probe whether a specific email is
-			// registered by submitting a junk username with it.
 			txErr = huma.NewError(http.StatusConflict, "Registration could not be completed.")
 			return fmt.Errorf("duplicate")
 		}
@@ -462,7 +452,6 @@ func (h *AuthHandler) HumaRegister(ctx context.Context, in *AuthRegisterInput) (
 
 		user = db.User{
 			Username:        req.Username,
-			Email:           email,
 			PasswordHash:    hash,
 			Role:            role,
 			PendingApproval: pendingApproval,
@@ -619,10 +608,6 @@ const setupCompletedKey = "setup_completed"
 // initial owner account; fails with 403 if a user already exists.
 func (h *AuthHandler) HumaSetup(_ context.Context, in *AuthSetupInput) (*AuthSetupOutput, error) {
 	req := in.Body
-	email, err := normalizeRegistrationEmail(req.Username, req.Email)
-	if err != nil {
-		return nil, huma.NewError(http.StatusUnprocessableEntity, "Email must be a valid email address.")
-	}
 
 	// Issue #1130: refuse setup outright if a previous successful setup
 	// left a marker, even if the users table is currently empty. An
@@ -650,7 +635,6 @@ func (h *AuthHandler) HumaSetup(_ context.Context, in *AuthSetupInput) (*AuthSet
 
 		user = db.User{
 			Username:     req.Username,
-			Email:        email,
 			PasswordHash: hash,
 			Role:         db.RoleOwner,
 		}

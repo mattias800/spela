@@ -19,7 +19,6 @@ func createAdminUser(t *testing.T, database *gorm.DB) (db.User, string) {
 	t.Helper()
 	user := db.User{
 		Username:     "admin",
-		Email:        "admin@test.com",
 		PasswordHash: "unused",
 		Role:         "owner",
 	}
@@ -179,11 +178,11 @@ func TestSetGameCover_MissingSource_Returns400(t *testing.T) {
 	var console db.Console
 	database.Where("abbreviation = ?", "NES").First(&console)
 	game := db.Game{
-		ConsoleID:    console.ID,
-		Title:        "Only LibRetro",
-		FileName:     "libretro-only.nes",
+		ConsoleID:        console.ID,
+		Title:            "Only LibRetro",
+		FileName:         "libretro-only.nes",
 		LibRetroCoverURL: "NES/3/boxart-libretro.png",
-		CoverURL:     "NES/3/boxart-libretro.png",
+		CoverURL:         "NES/3/boxart-libretro.png",
 	}
 	require.NoError(t, database.Create(&game).Error)
 
@@ -237,7 +236,6 @@ func TestGetGameCovers_NonAdmin_Returns403(t *testing.T) {
 
 	user := db.User{
 		Username:     "regular",
-		Email:        "regular@test.com",
 		PasswordHash: "unused",
 		Role:         "user",
 	}
@@ -348,7 +346,7 @@ func TestSetGameCover_RegionalRejectsUnknownLibRetroName(t *testing.T) {
 	// Attempt to set a libretro-regional cover with an arbitrary name
 	// that is not a known regional variant — should be rejected (SSRF prevention)
 	body, _ := json.Marshal(map[string]interface{}{
-		"source":      "libretro-regional",
+		"source":       "libretro-regional",
 		"libretroName": "../../etc/passwd",
 	})
 	req := httptest.NewRequest("PUT", "/api/admin/games/"+strconv.Itoa(int(game.ID))+"/covers", bytes.NewReader(body))

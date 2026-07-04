@@ -117,9 +117,6 @@ export function UserTable({
                 User
               </th>
               <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wider text-surface-400">
-                Email
-              </th>
-              <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wider text-surface-400">
                 Role
               </th>
               <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wider text-surface-400">
@@ -134,11 +131,11 @@ export function UserTable({
           <tbody>
             {isLoading ? (
               Array.from({ length: 3 }, (_, i) => (
-                <TableRowSkeleton key={i} columns={6} />
+                <TableRowSkeleton key={i} columns={5} />
               ))
             ) : !users || users.length === 0 ? (
               <tr>
-                <td colSpan={6}>
+                <td colSpan={5}>
                   <EmptyState
                     icon={Users}
                     title="No users"
@@ -174,9 +171,6 @@ export function UserTable({
                         )}
                       </div>
                     </div>
-                  </td>
-                  <td className="px-5 py-3 text-sm text-surface-400">
-                    {user.email}
                   </td>
                   <td className="px-5 py-3">{getRoleBadge(user.role)}</td>
                   <td className="px-5 py-3">

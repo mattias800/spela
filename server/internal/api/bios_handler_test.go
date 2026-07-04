@@ -41,7 +41,6 @@ func createBiosTestUser(t *testing.T, database *gorm.DB, role db.UserRole) strin
 	t.Helper()
 	user := db.User{
 		Username:     fmt.Sprintf("user-%s-%d", role, database.RowsAffected),
-		Email:        fmt.Sprintf("user-%s-%d@test.com", role, database.RowsAffected),
 		PasswordHash: "unused",
 		Role:         role,
 	}
@@ -585,8 +584,8 @@ func TestGetConsoleStatus(t *testing.T) {
 			wantStatus: "missing",
 		},
 		{
-			name:      "GBA with no files returns not_required (only optional BIOS)",
-			consoleID: "GBA",
+			name:       "GBA with no files returns not_required (only optional BIOS)",
+			consoleID:  "GBA",
 			setupFiles: func() {},
 			wantStatus: "not_required",
 		},
