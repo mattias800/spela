@@ -70,6 +70,7 @@ Use the existing logs before adding temporary instrumentation:
 ### PSP: PPSSPP FMV-Heavy Menu Stutter
 
 - **Issue:** #1292
+- **Manual/core verification:** #1644
 - **Status:** suspected PPSSPP media-engine decode regression or core-option
   issue; gameplay is otherwise smooth.
 - **Symptom:** PSP gameplay holds 60 fps, but FMV-heavy menus can drop to about
