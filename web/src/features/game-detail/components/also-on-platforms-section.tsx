@@ -56,6 +56,7 @@ export function AlsoOnPlatformsSection({
                     variant="ghost"
                     size="sm"
                     loading={isSaving}
+                    disabled={preference.isPending}
                     onClick={() => preference.mutate(target.gameId)}
                     className="h-7 px-2 text-xs"
                   >
@@ -92,6 +93,7 @@ export function AlsoOnPlatformsSection({
                   variant="ghost"
                   size="sm"
                   loading={isSaving}
+                  disabled={preference.isPending}
                   onClick={() => preference.mutate(target.gameId)}
                   className="h-7 px-2 text-xs"
                 >

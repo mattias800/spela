@@ -160,9 +160,11 @@ vi.mock("@/features/game-detail/components/standalone-rom-hacks-section", () => 
   StandaloneRomHacksSection: () => null,
 }));
 
-import { useGame } from "@/hooks/use-games";
+import { useGame, useSetTitlePlatformPreference } from "@/hooks/use-games";
 
 const mockUseGame = useGame as ReturnType<typeof vi.fn>;
+const mockUseSetTitlePlatformPreference =
+  useSetTitlePlatformPreference as ReturnType<typeof vi.fn>;
 const mockUseConsoles = useConsoles as ReturnType<typeof vi.fn>;
 
 const mockGame = {
@@ -220,6 +222,12 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockScrapeIfNeededMutate.mockClear();
   mockSetTitlePlatformPreferenceMutate.mockClear();
+  mockUseSetTitlePlatformPreference.mockReturnValue({
+    mutate: mockSetTitlePlatformPreferenceMutate,
+    isPending: false,
+    isError: false,
+    variables: undefined,
+  });
   mockUseGame.mockReturnValue({
     data: mockGame,
     isLoading: false,
@@ -407,6 +415,57 @@ describe("GameDetailPage - Also on platforms", () => {
     expect(mockSetTitlePlatformPreferenceMutate).toHaveBeenCalledWith(
       "game-nes",
     );
+  });
+
+  it("disables every preference action while one platform save is pending", async () => {
+    const user = userEvent.setup();
+    mockUseSetTitlePlatformPreference.mockReturnValue({
+      mutate: mockSetTitlePlatformPreferenceMutate,
+      isPending: true,
+      isError: false,
+      variables: "game-gba",
+    });
+    mockUseGame.mockReturnValue({
+      data: {
+        ...multiPlatformGame,
+        platforms: [
+          {
+            gameId: "game-nes",
+            consoleId: "nes",
+            consoleName: "Nintendo Entertainment System",
+            isPreferred: false,
+          },
+          {
+            gameId: "game-snes",
+            consoleId: "snes",
+            consoleName: "Super Nintendo",
+            isPreferred: true,
+          },
+          {
+            gameId: "game-gba",
+            consoleId: "gba",
+            consoleName: "Game Boy Advance",
+            isPreferred: false,
+          },
+        ],
+      },
+      isLoading: false,
+    });
+
+    renderPage("game-nes");
+
+    const section = screen.getByTestId("also-on-platforms-section");
+    const preferButtons = within(section).getAllByRole("button", {
+      name: "Prefer",
+    });
+    expect(preferButtons).toHaveLength(2);
+    preferButtons.forEach((button) => {
+      expect(button).toBeDisabled();
+    });
+
+    await user.click(preferButtons[0]);
+
+    expect(mockSetTitlePlatformPreferenceMutate).not.toHaveBeenCalled();
   });
 });
 
