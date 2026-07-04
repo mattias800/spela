@@ -49,6 +49,27 @@ class ScrollRestorationTest {
     // ── Scroll position preservation ──────────────────────────────────
 
     @Test
+    fun consoleListStartsAtTopOnForwardNavigation() = runComposeUiTest {
+        val harness = createHarnessWithManyConsoles()
+        setContent {
+            Box(modifier = Modifier.width(560.dp).height(260.dp)) {
+                harness.App()
+            }
+        }
+        advance(harness)
+
+        harness.navigationViewModel.onIntent(
+            NavigationIntent.NavigateTo(SpScreen.Consoles)
+        )
+        advance(harness)
+
+        onNodeWithContentDescription("Nintendo Entertainment System, 3 games")
+            .assertIsDisplayed()
+        onNodeWithContentDescription("Sega Saturn, 1 games")
+            .assertIsNotDisplayed()
+    }
+
+    @Test
     fun scrollPositionRestoredAfterManualScrollAndBack() = runComposeUiTest {
         val harness = createHarnessWithManyConsoles()
         setContent {
