@@ -115,7 +115,10 @@ func eventTypeShouldDedup(eventType string) bool {
 		SystemEventScraperRepeatedErrors,
 		SystemEventROMFileMissing,
 		SystemEventAPICredentialsInvalid,
-		SystemEventBIOSDownloadFailed:
+		SystemEventBIOSDownloadFailed,
+		SystemEventFederationHandshakeFailed,
+		SystemEventFederationPeerUnreachable,
+		SystemEventFederationAuthRejected:
 		return true
 	}
 	return false

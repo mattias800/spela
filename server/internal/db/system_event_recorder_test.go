@@ -28,6 +28,7 @@ func newRecorderTestDB(t *testing.T) *gorm.DB {
 	require.NoError(t, database.AutoMigrate(&db.SystemEventCategory{}, &db.SystemEvent{}))
 	database.Create(&db.SystemEventCategory{Code: db.CategorySecurity, Name: "Security"})
 	database.Create(&db.SystemEventCategory{Code: db.CategoryOperational, Name: "Operational"})
+	database.Create(&db.SystemEventCategory{Code: db.CategoryFederation, Name: "Federation"})
 	return database
 }
 
@@ -207,5 +208,55 @@ func TestRecordOperationalEvent_DedupWorks(t *testing.T) {
 	}
 	var count int64
 	database.Model(&db.SystemEvent{}).Count(&count)
+	assert.Equal(t, int64(1), count)
+}
+
+func TestRecordOperationalEvent_FederationEventsUseFederationCategory(t *testing.T) {
+	database := newRecorderTestDB(t)
+	db.ResetSystemEventDedupForTest()
+	db.ResetCategoryIDCacheForTest()
+
+	db.RecordOperationalEvent(database, db.SystemEventInput{
+		EventType: db.SystemEventFederationPeerPaired,
+		Metadata: db.FederationEventMetadata{
+			PeerFingerprint: "peer-fp",
+			PeerName:        "Bob",
+			RequestID:       "req-1",
+			Direction:       "outbound",
+			Operation:       "pair",
+		},
+	})
+
+	var row db.SystemEvent
+	require.NoError(t, database.Preload("Category").First(&row).Error)
+	assert.Equal(t, db.SystemEventFederationPeerPaired, row.EventType)
+	assert.Equal(t, db.CategoryFederation, row.Category.Code)
+	assert.Contains(t, row.Metadata, `"peerFingerprint":"peer-fp"`)
+	assert.Contains(t, row.Metadata, `"peerName":"Bob"`)
+	assert.Contains(t, row.Metadata, `"requestId":"req-1"`)
+}
+
+func TestRecordOperationalEvent_FederationFailureEventsDedup(t *testing.T) {
+	database := newRecorderTestDB(t)
+	db.ResetSystemEventDedupForTest()
+	db.ResetCategoryIDCacheForTest()
+
+	for i := 0; i < 5; i++ {
+		db.RecordOperationalEvent(database, db.SystemEventInput{
+			EventType: db.SystemEventFederationAuthRejected,
+			Reason:    "signature verification failed",
+			IP:        "203.0.113.10",
+			Path:      "/api/federation/stats",
+			Metadata: db.FederationEventMetadata{
+				PeerFingerprint: "peer-fp",
+				RequestID:       "req-1",
+			},
+		})
+	}
+
+	var count int64
+	database.Model(&db.SystemEvent{}).
+		Where("event_type = ?", db.SystemEventFederationAuthRejected).
+		Count(&count)
 	assert.Equal(t, int64(1), count)
 }

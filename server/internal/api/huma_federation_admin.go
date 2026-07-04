@@ -58,10 +58,24 @@ func (h *FederationHandler) HumaAcceptInvite(_ context.Context, in *AcceptInvite
 
 	inv, err := federation.DecodeInvite(in.Body.Invite)
 	if err != nil {
+		recordFederationSystemEvent(h.DB, db.SystemEventFederationHandshakeFailed, "invalid_invite", "", "", db.FederationEventMetadata{
+			RequestID: reqID,
+			Direction: db.ExchangeOutbound,
+			Operation: "pair",
+			Error:     err.Error(),
+		})
 		return nil, huma.Error400BadRequest("invalid invite")
 	}
 	ok, err := federation.VerifyInvite(inv, time.Now())
 	if err != nil || !ok {
+		recordFederationSystemEvent(h.DB, db.SystemEventFederationHandshakeFailed, federationFailureReason("invite_verification_failed", inv.Fingerprint), "", "", db.FederationEventMetadata{
+			PeerFingerprint: inv.Fingerprint,
+			PeerBaseURL:     inv.BaseURL,
+			RequestID:       reqID,
+			Direction:       db.ExchangeOutbound,
+			Operation:       "pair",
+			Error:           "invite failed verification",
+		})
 		return nil, huma.Error400BadRequest("invite failed verification")
 	}
 
@@ -79,6 +93,21 @@ func (h *FederationHandler) HumaAcceptInvite(_ context.Context, in *AcceptInvite
 	}
 	resp, err := client.Pair(inv.BaseURL, reqID, bundle)
 	if err != nil {
+		eventType := db.SystemEventFederationHandshakeFailed
+		reason := "pair_callback_failed"
+		if isFederationPeerUnreachableError(err.Error()) {
+			eventType = db.SystemEventFederationPeerUnreachable
+			reason = "pair_callback_unreachable"
+		}
+		recordFederationSystemEvent(h.DB, eventType, federationFailureReason(reason, inv.Fingerprint), "", "", db.FederationEventMetadata{
+			PeerFingerprint: inv.Fingerprint,
+			PeerName:        in.Body.Name,
+			PeerBaseURL:     inv.BaseURL,
+			RequestID:       reqID,
+			Direction:       db.ExchangeOutbound,
+			Operation:       "pair",
+			Error:           err.Error(),
+		})
 		h.recordExchange(federation.ExchangeRecord{
 			RequestID: reqID, PeerFingerprint: inv.Fingerprint, PeerName: in.Body.Name,
 			Direction: db.ExchangeOutbound, Operation: "pair", Status: db.ExchangeError,
@@ -94,6 +123,15 @@ func (h *FederationHandler) HumaAcceptInvite(_ context.Context, in *AcceptInvite
 	// misconfigured remote must not be able to inject a different peer's
 	// identity. Mismatch => abort.
 	if resp.Fingerprint != inv.Fingerprint {
+		recordFederationSystemEvent(h.DB, db.SystemEventFederationHandshakeFailed, federationFailureReason("pair_fingerprint_mismatch", inv.Fingerprint), "", "", db.FederationEventMetadata{
+			PeerFingerprint: inv.Fingerprint,
+			PeerName:        in.Body.Name,
+			PeerBaseURL:     inv.BaseURL,
+			RequestID:       reqID,
+			Direction:       db.ExchangeOutbound,
+			Operation:       "pair",
+			Error:           "remote returned a mismatched fingerprint",
+		})
 		h.recordExchange(federation.ExchangeRecord{
 			RequestID: reqID, PeerFingerprint: inv.Fingerprint, PeerName: in.Body.Name,
 			Direction: db.ExchangeOutbound, Operation: "pair", Status: db.ExchangeRejected,
@@ -111,6 +149,14 @@ func (h *FederationHandler) HumaAcceptInvite(_ context.Context, in *AcceptInvite
 	h.recordExchange(federation.ExchangeRecord{
 		RequestID: reqID, PeerFingerprint: inv.Fingerprint, PeerName: in.Body.Name,
 		Direction: db.ExchangeOutbound, Operation: "pair", Status: db.ExchangeOK, StartedAt: started,
+	})
+	recordFederationSystemEvent(h.DB, db.SystemEventFederationPeerPaired, "pair_accepted", "", "", db.FederationEventMetadata{
+		PeerFingerprint: inv.Fingerprint,
+		PeerName:        in.Body.Name,
+		PeerBaseURL:     inv.BaseURL,
+		RequestID:       reqID,
+		Direction:       db.ExchangeOutbound,
+		Operation:       "pair",
 	})
 	return &AcceptInviteOutput{Body: PairResponseBody{
 		Fingerprint: inv.Fingerprint, PublicKey: inv.PublicKey,
@@ -149,6 +195,7 @@ type RevokePeerOutput struct {
 }
 
 func (h *FederationHandler) HumaRevokePeer(_ context.Context, in *RevokePeerInput) (*RevokePeerOutput, error) {
+	peer, _ := h.Peers.GetByFingerprint(in.Fingerprint)
 	if err := h.Peers.Remove(in.Fingerprint); err != nil {
 		return nil, huma.Error500InternalServerError("failed to revoke peer")
 	}
@@ -164,6 +211,15 @@ func (h *FederationHandler) HumaRevokePeer(_ context.Context, in *RevokePeerInpu
 	}
 	slog.Info("federation: revoked peer", "component", "federation",
 		"peer", federation.ShortFingerprint(in.Fingerprint))
+	meta := db.FederationEventMetadata{
+		PeerFingerprint: in.Fingerprint,
+		Operation:       "revoke",
+	}
+	if peer != nil {
+		meta.PeerName = peer.Name
+		meta.PeerBaseURL = peer.BaseURL
+		recordFederationSystemEvent(h.DB, db.SystemEventFederationPeerRevoked, "peer_revoked", "", "", meta)
+	}
 	out := &RevokePeerOutput{}
 	out.Body.Revoked = true
 	return out, nil
@@ -244,6 +300,7 @@ func (h *FederationHandler) HumaTestPeer(_ context.Context, in *TestPeerInput) (
 	}
 	reqID := federation.NewRequestID()
 	started := time.Now()
+	wasReachable := peer.LastContactAt == nil || peer.Reachable
 
 	pinger := h.Pinger
 	if pinger == nil {
@@ -260,6 +317,23 @@ func (h *FederationHandler) HumaTestPeer(_ context.Context, in *TestPeerInput) (
 		Direction: db.ExchangeOutbound, Operation: "ping", Status: status,
 		StartedAt: started, Error: res.Error,
 	})
+	if wasReachable && !res.Reachable {
+		eventType := db.SystemEventFederationHandshakeFailed
+		reason := "diagnostic_failed"
+		if isFederationPeerUnreachableError(res.Error) {
+			eventType = db.SystemEventFederationPeerUnreachable
+			reason = "diagnostic_unreachable"
+		}
+		recordFederationSystemEvent(h.DB, eventType, federationFailureReason(reason, peer.Fingerprint), "", "", db.FederationEventMetadata{
+			PeerFingerprint: peer.Fingerprint,
+			PeerName:        peer.Name,
+			PeerBaseURL:     peer.BaseURL,
+			RequestID:       reqID,
+			Direction:       db.ExchangeOutbound,
+			Operation:       "ping",
+			Error:           res.Error,
+		})
+	}
 	return &TestPeerOutput{Body: res}, nil
 }
 

@@ -124,6 +124,7 @@ func setupTestEnv(t *testing.T) (*gorm.DB, *Config) {
 	// Seed system event categories for handler tests.
 	database.Create(&db.SystemEventCategory{Code: db.CategorySecurity, Name: "Security"})
 	database.Create(&db.SystemEventCategory{Code: db.CategoryOperational, Name: "Operational"})
+	database.Create(&db.SystemEventCategory{Code: db.CategoryFederation, Name: "Federation"})
 	db.ResetCategoryIDCacheForTest()
 
 	// Registration is closed-by-default since #1319. The handler tests model a

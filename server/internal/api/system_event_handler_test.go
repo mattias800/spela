@@ -332,9 +332,15 @@ func TestGetSystemEventTypes(t *testing.T) {
 	var resp SystemEventTypesResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 	assert.Len(t, resp.Types, len(db.AllSystemEventTypes))
+	foundFederationType := false
 	for _, ti := range resp.Types {
 		assert.NotEmpty(t, ti.Category)
+		if ti.Type == db.SystemEventFederationPeerPaired {
+			foundFederationType = true
+			assert.Equal(t, db.CategoryFederation, ti.Category)
+		}
 	}
+	assert.True(t, foundFederationType)
 }
 
 func TestGetSystemEventCategories(t *testing.T) {
@@ -354,10 +360,11 @@ func TestGetSystemEventCategories(t *testing.T) {
 		Name string `json:"name"`
 	}
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &cats))
-	assert.Len(t, cats, 2)
-	codes := []string{cats[0].Code, cats[1].Code}
+	assert.Len(t, cats, 3)
+	codes := []string{cats[0].Code, cats[1].Code, cats[2].Code}
 	assert.Contains(t, codes, "security")
 	assert.Contains(t, codes, "operational")
+	assert.Contains(t, codes, "federation")
 }
 
 func TestListSystemEvents_FilterByCategory(t *testing.T) {

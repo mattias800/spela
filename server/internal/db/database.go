@@ -1544,6 +1544,7 @@ func seedSystemEventCategories(database *gorm.DB) error {
 	categories := []SystemEventCategory{
 		{Code: CategorySecurity, Name: "Security"},
 		{Code: CategoryOperational, Name: "Operational"},
+		{Code: CategoryFederation, Name: "Federation"},
 	}
 	for _, cat := range categories {
 		if err := database.Where("code = ?", cat.Code).FirstOrCreate(&cat).Error; err != nil {

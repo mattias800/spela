@@ -67,11 +67,28 @@ export type OperationalEventType =
   | "core_updated"
   | "bios_download_failed";
 
-export type SystemEventType = SecurityEventType | OperationalEventType;
+export type FederationEventType =
+  | "federation_peer_paired"
+  | "federation_peer_revoked"
+  | "federation_handshake_failed"
+  | "federation_peer_unreachable"
+  | "federation_auth_rejected";
+
+export type SystemEventType =
+  | SecurityEventType
+  | OperationalEventType
+  | FederationEventType;
 
 export type SystemEventTypeLike = SystemEventType | (string & {});
 
-export type SystemEventCategoryCode = "security" | "operational";
+export type KnownSystemEventCategoryCode =
+  | "security"
+  | "operational"
+  | "federation";
+
+export type SystemEventCategoryCode =
+  | KnownSystemEventCategoryCode
+  | (string & {});
 
 // View-model narrowing — server emits categoryCode and eventType as plain
 // strings (huma flattens the Go enums) but the frontend wants the narrow
@@ -195,7 +212,8 @@ export type GameAchievements = Schemas["GameAchievementsResponse"];
 
 export type GameAchievementProgress = Schemas["RAProgressEntry"];
 
-export type GameAchievementProgressResponse = Schemas["GameAchievementProgressResponse"];
+export type GameAchievementProgressResponse =
+  Schemas["GameAchievementProgressResponse"];
 
 export type ShowcaseAchievement = Schemas["ShowcaseEntryResponse"];
 
@@ -219,7 +237,8 @@ export type OnlineUser = Schemas["OnlineUserResponse"];
 
 export type ActivityEvent = Schemas["ActivityEventResponse"];
 
-export type ActivityFeedResponse = Schemas["PaginatedResponseActivityEventResponse"];
+export type ActivityFeedResponse =
+  Schemas["PaginatedResponseActivityEventResponse"];
 
 export type GameRating = Schemas["GameRatingResponse"];
 
@@ -285,7 +304,6 @@ export interface PaginatedFlat<T> {
   total: number;
 }
 
-
 export type NetplaySessionStatus = "waiting" | "in_progress" | "ended";
 export type NetplayEndReason =
   | "host_left"
@@ -322,14 +340,15 @@ export type NetplayInvitesResponse = PaginatedFlat<NetplayInvite>;
 export type BiosFile = Schemas["BiosFileResponse"];
 
 export type BiosFileStatus = "valid" | "present" | "invalid" | "missing";
-export type BiosConsoleStatus = "ready" | "missing" | "invalid" | "not_required";
+export type BiosConsoleStatus =
+  | "ready"
+  | "missing"
+  | "invalid"
+  | "not_required";
 
 // Both narrow the wire status to their literal union so the switch
 // statements in bios-console-card stay exhaustively checked.
-export type BiosConsoleFile = Omit<
-  Schemas["ConsoleFileStatus"],
-  "status"
-> & {
+export type BiosConsoleFile = Omit<Schemas["ConsoleFileStatus"], "status"> & {
   status: BiosFileStatus;
 };
 
@@ -408,7 +427,8 @@ export type ChallengeAttempt = Omit<
 
 export type ChallengeLeaderboardEntry = Schemas["ChallengeLeaderboardEntry"];
 
-export type ChallengeLeaderboardResponse = Schemas["PaginatedResponseChallengeLeaderboardEntry"];
+export type ChallengeLeaderboardResponse =
+  Schemas["PaginatedResponseChallengeLeaderboardEntry"];
 
 // StartAttemptResponse / CompleteAttemptResponse: the actual wire type is
 // ChallengeAttemptResponse — the useStartAttempt/useCompleteAttempt hooks now
@@ -576,4 +596,3 @@ export type ExplorerBadge = Schemas["ExplorerBadge"];
 export type CompletionistConsole = Schemas["CompletionistConsole"];
 
 export type StorageConsoleBreakdown = Schemas["SessionStorageConsoleBreakdown"];
-

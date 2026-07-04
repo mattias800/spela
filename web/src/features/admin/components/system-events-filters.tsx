@@ -5,6 +5,7 @@ import { SYSTEM_EVENT_META } from "./system-event-meta";
 import type {
   SystemEventType,
   SystemEventCategoryCode,
+  SystemEventCategoryResponse,
   SystemEventTypeInfo,
 } from "@/types/api";
 
@@ -22,6 +23,12 @@ const SINCE_LABELS: Record<SinceOption, string> = {
 
 const SINCE_OPTIONS: SinceOption[] = ["1h", "24h", "7d", "30d", "all"];
 
+const DEFAULT_CATEGORY_OPTIONS: SystemEventCategoryResponse[] = [
+  { code: "security", name: "Security" },
+  { code: "operational", name: "Operational" },
+  { code: "federation", name: "Federation" },
+];
+
 interface SystemEventsFiltersProps {
   eventTypes: SystemEventType[];
   category: SystemEventCategoryCode | null;
@@ -29,6 +36,7 @@ interface SystemEventsFiltersProps {
   ip: string;
   since: SinceOption;
   showDismissed: boolean;
+  categories: SystemEventCategoryResponse[] | undefined;
   typeInfos: SystemEventTypeInfo[] | undefined;
   onEventTypesChange: (types: SystemEventType[]) => void;
   onCategoryChange: (category: SystemEventCategoryCode | null) => void;
@@ -46,6 +54,7 @@ export function SystemEventsFilters({
   ip,
   since,
   showDismissed,
+  categories,
   typeInfos,
   onEventTypesChange,
   onCategoryChange,
@@ -71,6 +80,17 @@ export function SystemEventsFilters({
     return filtered.map((ti) => ti.type as SystemEventType);
   }, [typeInfos, category]);
 
+  const categoryOptions = useMemo(() => {
+    const source =
+      categories && categories.length > 0
+        ? categories
+        : DEFAULT_CATEGORY_OPTIONS;
+    return source.map((c) => ({
+      code: c.code as SystemEventCategoryCode,
+      name: c.name,
+    }));
+  }, [categories]);
+
   const hasFilters =
     eventTypes.length > 0 ||
     category !== null ||
@@ -94,16 +114,14 @@ export function SystemEventsFilters({
             isSelected={category === null}
             onClick={() => onCategoryChange(null)}
           />
-          <FilterChip
-            label="Security"
-            isSelected={category === "security"}
-            onClick={() => onCategoryChange("security")}
-          />
-          <FilterChip
-            label="Operational"
-            isSelected={category === "operational"}
-            onClick={() => onCategoryChange("operational")}
-          />
+          {categoryOptions.map((option) => (
+            <FilterChip
+              key={option.code}
+              label={option.name}
+              isSelected={category === option.code}
+              onClick={() => onCategoryChange(option.code)}
+            />
+          ))}
         </div>
       </div>
 

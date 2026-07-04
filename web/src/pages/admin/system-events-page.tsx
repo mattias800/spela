@@ -13,6 +13,7 @@ import { SystemEventsTable } from "@/features/admin/components/system-events-tab
 import { SystemEventDetailModal } from "@/features/admin/components/system-event-detail-modal";
 import {
   useSystemEvents,
+  useSystemEventCategories,
   useSystemEventTypes,
   useDismissSystemEvent,
 } from "@/hooks/use-system-events";
@@ -33,7 +34,8 @@ export function AdminSystemEventsPage() {
     () => searchParams.getAll("eventType") as SystemEventType[],
     [searchParams],
   );
-  const category = (searchParams.get("category") as SystemEventCategoryCode) ?? null;
+  const category =
+    (searchParams.get("category") as SystemEventCategoryCode) ?? null;
   const username = searchParams.get("username") ?? "";
   const ip = searchParams.get("ip") ?? "";
   const since = (searchParams.get("since") ?? DEFAULT_SINCE) as SinceOption;
@@ -54,6 +56,7 @@ export function AdminSystemEventsPage() {
   });
 
   const { data: typesData } = useSystemEventTypes();
+  const { data: categoriesData } = useSystemEventCategories();
   const dismissMutation = useDismissSystemEvent();
 
   const updateParams = useCallback(
@@ -62,7 +65,11 @@ export function AdminSystemEventsPage() {
       const isFilterChange = Object.keys(updates).some((k) => k !== "page");
       for (const [key, value] of Object.entries(updates)) {
         next.delete(key);
-        if (value === null || value === "" || (Array.isArray(value) && value.length === 0)) {
+        if (
+          value === null ||
+          value === "" ||
+          (Array.isArray(value) && value.length === 0)
+        ) {
           continue;
         }
         if (Array.isArray(value)) {
@@ -80,117 +87,125 @@ export function AdminSystemEventsPage() {
   return (
     <PageLayout
       title="System Events"
-      subtitle="Audit log of system events. Security events track authentication activity; operational events surface infrastructure issues like scraper failures and missing ROMs."
+      subtitle="Audit log of system events. Security events track authentication activity; operational events surface infrastructure issues; federation events track peer trust and connectivity."
     >
       <SectionList>
-      <SystemEventsFilters
-        eventTypes={eventTypes}
-        category={category}
-        username={username}
-        ip={ip}
-        since={since}
-        showDismissed={showDismissed}
-        typeInfos={(typesData?.types ?? undefined) as SystemEventTypeInfo[] | undefined}
-        onEventTypesChange={(t) => updateParams({ eventType: t })}
-        onCategoryChange={(c) => updateParams({ category: c })}
-        onUsernameChange={(v) => updateParams({ username: v })}
-        onIpChange={(v) => updateParams({ ip: v })}
-        onSinceChange={(v) =>
-          updateParams({ since: v === DEFAULT_SINCE ? null : v })
-        }
-        onShowDismissedChange={(v) =>
-          updateParams({ dismissed: v ? "true" : null })
-        }
-        onClear={() =>
-          updateParams({
-            eventType: [],
-            category: null,
-            username: null,
-            ip: null,
-            since: null,
-            dismissed: null,
-          })
-        }
-      />
+        <SystemEventsFilters
+          eventTypes={eventTypes}
+          category={category}
+          username={username}
+          ip={ip}
+          since={since}
+          showDismissed={showDismissed}
+          categories={categoriesData ?? undefined}
+          typeInfos={
+            (typesData?.types ?? undefined) as SystemEventTypeInfo[] | undefined
+          }
+          onEventTypesChange={(t) => updateParams({ eventType: t })}
+          onCategoryChange={(nextCategory) => {
+            if (nextCategory === category) {
+              return;
+            }
+            updateParams({ category: nextCategory, eventType: [] });
+          }}
+          onUsernameChange={(v) => updateParams({ username: v })}
+          onIpChange={(v) => updateParams({ ip: v })}
+          onSinceChange={(v) =>
+            updateParams({ since: v === DEFAULT_SINCE ? null : v })
+          }
+          onShowDismissedChange={(v) =>
+            updateParams({ dismissed: v ? "true" : null })
+          }
+          onClear={() =>
+            updateParams({
+              eventType: [],
+              category: null,
+              username: null,
+              ip: null,
+              since: null,
+              dismissed: null,
+            })
+          }
+        />
 
-      {isError ? (
-        <Section>
-          <div
-            data-testid="system-events-error"
-            className="flex flex-col items-center gap-3 px-6 py-10 text-center"
-          >
-            <AlertTriangle className="h-10 w-10 text-danger-500" />
-            <div>
-              <p className="text-sm font-semibold text-surface-100">
-                Failed to load system events
-              </p>
-              <p className="mt-1 text-sm text-surface-400">
-                {error instanceof Error
-                  ? error.message
-                  : "An unknown error occurred while fetching the audit log."}
-              </p>
+        {isError ? (
+          <Section>
+            <div
+              data-testid="system-events-error"
+              className="flex flex-col items-center gap-3 px-6 py-10 text-center"
+            >
+              <AlertTriangle className="h-10 w-10 text-danger-500" />
+              <div>
+                <p className="text-sm font-semibold text-surface-100">
+                  Failed to load system events
+                </p>
+                <p className="mt-1 text-sm text-surface-400">
+                  {error instanceof Error
+                    ? error.message
+                    : "An unknown error occurred while fetching the audit log."}
+                </p>
+              </div>
+              <Button variant="secondary" size="sm" onClick={() => refetch()}>
+                Try again
+              </Button>
             </div>
-            <Button variant="secondary" size="sm" onClick={() => refetch()}>
-              Try again
-            </Button>
-          </div>
-        </Section>
-      ) : (
-        <>
-          {data && data.total > 0 && (
-            <div className="flex items-center justify-between text-sm text-surface-400">
-              <span>
-                {data.total} event{data.total === 1 ? "" : "s"}
-                {data.total > PAGE_SIZE && (
-                  <>
-                    {" "}
-                    · Showing {(page - 1) * PAGE_SIZE + 1}–
-                    {Math.min(page * PAGE_SIZE, data.total)}
-                  </>
-                )}
-              </span>
-            </div>
-          )}
+          </Section>
+        ) : (
+          <>
+            {data && data.total > 0 && (
+              <div className="flex items-center justify-between text-sm text-surface-400">
+                <span>
+                  {data.total} event{data.total === 1 ? "" : "s"}
+                  {data.total > PAGE_SIZE && (
+                    <>
+                      {" "}
+                      · Showing {(page - 1) * PAGE_SIZE + 1}–
+                      {Math.min(page * PAGE_SIZE, data.total)}
+                    </>
+                  )}
+                </span>
+              </div>
+            )}
 
-          <SystemEventsTable
-            events={(data?.data ?? undefined) as SystemEvent[] | undefined}
-            isLoading={isLoading}
-            onRowClick={setDetailEvent}
-            onDismiss={(id) => dismissMutation.mutate(id)}
-          />
+            <SystemEventsTable
+              events={(data?.data ?? undefined) as SystemEvent[] | undefined}
+              isLoading={isLoading}
+              onRowClick={setDetailEvent}
+              onDismiss={(id) => dismissMutation.mutate(id)}
+            />
 
-          <Pagination
-            total={data?.total ?? 0}
-            pageSize={PAGE_SIZE}
-            currentPage={page}
-            onPageChange={(p) => updateParams({ page: String(p) })}
-          />
-        </>
-      )}
+            <Pagination
+              total={data?.total ?? 0}
+              pageSize={PAGE_SIZE}
+              currentPage={page}
+              onPageChange={(p) => updateParams({ page: String(p) })}
+            />
+          </>
+        )}
 
-      <SystemEventDetailModal
-        event={detailEvent}
-        onClose={() => setDetailEvent(null)}
-        onPivotToUsername={(u) => {
-          updateParams({
-            eventType: [],
-            username: u,
-            ip: null,
-            since: "all",
-          });
-          setDetailEvent(null);
-        }}
-        onPivotToIp={(addr) => {
-          updateParams({
-            eventType: [],
-            username: null,
-            ip: addr,
-            since: "all",
-          });
-          setDetailEvent(null);
-        }}
-      />
-    </SectionList>
+        <SystemEventDetailModal
+          event={detailEvent}
+          onClose={() => setDetailEvent(null)}
+          onPivotToUsername={(u) => {
+            updateParams({
+              eventType: [],
+              username: u,
+              ip: null,
+              since: "all",
+            });
+            setDetailEvent(null);
+          }}
+          onPivotToIp={(addr) => {
+            updateParams({
+              eventType: [],
+              username: null,
+              ip: addr,
+              since: "all",
+            });
+            setDetailEvent(null);
+          }}
+        />
+      </SectionList>
     </PageLayout>
   );
 }
