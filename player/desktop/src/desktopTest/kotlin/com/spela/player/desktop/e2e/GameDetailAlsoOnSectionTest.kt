@@ -10,13 +10,16 @@ import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.runComposeUiTest
+import com.spela.player.domain.model.Game
 import com.spela.player.domain.model.GamePlatform
+import com.spela.player.presentation.ui.feature.gamedetail.AlsoOnPlatformsSection
 import com.spela.player.presentation.navigation.NavigationIntent
 import com.spela.player.presentation.navigation.SpScreen
 import com.spela.player.presentation.ui.feature.gamedetail.GameDetailAlsoOnTestTags
@@ -103,6 +106,60 @@ class GameDetailAlsoOnSectionTest {
         advanceFully(harness)
 
         onNodeWithText("Chrono Trigger").assertIsDisplayed()
+    }
+
+    @Test
+    fun preferenceSaveShowsOnlyTargetAsSavingAndDisablesOtherPreferenceChips() = runComposeUiTest {
+        setContent {
+            AlsoOnPlatformsSection(
+                game = Game(
+                    id = "1",
+                    title = "Castlevania",
+                    consoleId = "nes",
+                    consoleName = "Nintendo Entertainment System",
+                    platforms = listOf(
+                        GamePlatform(
+                            gameId = "1",
+                            consoleId = "nes",
+                            consoleName = "Nintendo Entertainment System",
+                            isPreferred = false,
+                        ),
+                        GamePlatform(
+                            gameId = "4",
+                            consoleId = "snes",
+                            consoleName = "Super Nintendo",
+                            isPreferred = true,
+                        ),
+                        GamePlatform(
+                            gameId = "7",
+                            consoleId = "gba",
+                            consoleName = "Game Boy Advance",
+                            isPreferred = false,
+                        ),
+                    ),
+                ),
+                onPlatformSelected = {},
+                onSetPreferredPlatform = {},
+                settingPreferredPlatformGameId = "7",
+            )
+        }
+
+        onAllNodesWithText("Saving", useUnmergedTree = true)
+            .assertCountEquals(1)
+        onAllNodesWithText("Prefer", useUnmergedTree = true)
+            .assertCountEquals(1)
+        onNodeWithContentDescription(
+            "Saving preferred platform Game Boy Advance",
+            useUnmergedTree = true,
+        )
+            .assertIsDisplayed()
+            .assert(hasNoClickAction())
+        onNodeWithContentDescription(
+            "Set Nintendo Entertainment System as preferred platform",
+            useUnmergedTree = true,
+        )
+            .assertIsDisplayed()
+            .assert(hasNoClickAction())
     }
 
     private fun hasNoClickAction(): SemanticsMatcher =
