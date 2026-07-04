@@ -1151,7 +1151,10 @@ class SpelaApiClient(
         page: Int = 1,
         pageSize: Int = 20,
     ): com.spela.client.models.PaginatedResponseActivityEventResponse {
-        return socialApi.getActivityFeed(page = page.toLong(), pageSize = pageSize.toLong()).body()
+        return retryTransient("getActivityFeed") {
+            socialApi.getActivityFeed(page = page.toLong(), pageSize = pageSize.toLong())
+                .bodyDiagnostic("getActivityFeed", com.spela.client.models.PaginatedResponseActivityEventResponse.serializer())
+        }
     }
 
     suspend fun getPublicProfile(userId: String): com.spela.client.models.PublicProfileResponse {
