@@ -107,6 +107,18 @@ state.
 - **Keep the list truthful.** Merged PRs auto-delete their branch
   (`gh pr merge --delete-branch`). If you abandon a claim, delete the branch
   (`git push origin --delete <branch>`) so it doesn't block another agent.
+- **Branches are claims, not archives.** Do not leave a remote branch behind
+  merely to preserve history; merged PRs, issue comments, and commits already
+  do that. If a PR is closed without merge, delete its branch unless the issue
+  explicitly says the work is parked and still useful.
+- **Parked work must be labelled.** If a branch must remain because it is
+  intentionally paused, comment on the linked issue with the branch name,
+  owner/status, and the next unblock condition. Prefer a clear `parked/...`
+  branch name when the branch should not be treated as an active claim.
+- **When cleaning stale branches, be conservative.** Delete branches that are
+  provably merged, tied to a closed/abandoned PR, or explicitly released by the
+  owner. Leave no-PR branches alone unless the linked issue or owner confirms
+  they are obsolete.
 
 ## Updating Issues With Findings
 
