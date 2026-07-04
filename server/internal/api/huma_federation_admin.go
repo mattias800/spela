@@ -266,10 +266,13 @@ func (h *FederationHandler) HumaTestPeer(_ context.Context, in *TestPeerInput) (
 // --- List exchange ledger --------------------------------------------------
 
 type ListExchangesInput struct {
-	Peer      string `query:"peer"`
-	Direction string `query:"direction"`
-	Status    string `query:"status"`
-	Limit     int    `query:"limit"`
+	Peer          string `query:"peer"`
+	Direction     string `query:"direction"`
+	Operation     string `query:"operation"`
+	Status        string `query:"status"`
+	StartedAfter  string `query:"startedAfter"`
+	StartedBefore string `query:"startedBefore"`
+	Limit         int    `query:"limit"`
 }
 type ListExchangesOutput struct {
 	Body struct {
@@ -285,8 +288,25 @@ func (h *FederationHandler) HumaListExchanges(_ context.Context, in *ListExchang
 	if in.Direction != "" {
 		q = q.Where("direction = ?", in.Direction)
 	}
+	if in.Operation != "" {
+		q = q.Where("operation = ?", in.Operation)
+	}
 	if in.Status != "" {
 		q = q.Where("status = ?", in.Status)
+	}
+	if in.StartedAfter != "" {
+		startedAfter, err := time.Parse(time.RFC3339, in.StartedAfter)
+		if err != nil {
+			return nil, huma.Error400BadRequest("invalid startedAfter")
+		}
+		q = q.Where("started_at >= ?", startedAfter)
+	}
+	if in.StartedBefore != "" {
+		startedBefore, err := time.Parse(time.RFC3339, in.StartedBefore)
+		if err != nil {
+			return nil, huma.Error400BadRequest("invalid startedBefore")
+		}
+		q = q.Where("started_at <= ?", startedBefore)
 	}
 	limit := in.Limit
 	if limit <= 0 || limit > 500 {

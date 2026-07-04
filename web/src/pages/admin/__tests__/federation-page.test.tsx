@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -48,14 +48,14 @@ const mockRevokeMutate = vi.fn();
 const mockPolicyMutate = vi.fn();
 const mockUpdateSettingsMutate = vi.fn();
 
-function renderPage() {
+function renderPage(initialEntry = "/admin/federation") {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
   return render(
     <QueryClientProvider client={queryClient}>
       <ToastProvider>
-        <MemoryRouter>
+        <MemoryRouter initialEntries={[initialEntry]}>
           <AdminFederationPage />
         </MemoryRouter>
       </ToastProvider>
@@ -66,13 +66,18 @@ function renderPage() {
 beforeEach(() => {
   vi.clearAllMocks();
   mockUsePeers.mockReturnValue({ data: { peers: [] }, isLoading: false });
-  mockUseExchanges.mockReturnValue({ data: { exchanges: [] }, isLoading: false });
+  mockUseExchanges.mockReturnValue({
+    data: { exchanges: [] },
+    isLoading: false,
+  });
   mockUseTest.mockReturnValue({ mutate: mockTestMutate, isPending: false });
   mockUseIssue.mockReturnValue({ mutate: mockIssueMutate, isPending: false });
   mockUseAccept.mockReturnValue({ mutate: mockAcceptMutate, isPending: false });
   mockUseRevoke.mockReturnValue({ mutate: mockRevokeMutate, isPending: false });
   mockUsePolicy.mockReturnValue({ mutate: mockPolicyMutate, isPending: false });
-  mockUseSettings.mockReturnValue({ data: { federation_relay_enabled: "false" } });
+  mockUseSettings.mockReturnValue({
+    data: { federation_relay_enabled: "false" },
+  });
   mockUseUpdateSettings.mockReturnValue({
     mutate: mockUpdateSettingsMutate,
     isPending: false,
@@ -104,6 +109,7 @@ describe("AdminFederationPage", () => {
           {
             id: 1,
             createdAt: "2026-06-15T00:00:00Z",
+            startedAt: "2026-06-14T23:59:00Z",
             peerName: "Alice's Server",
             peerFingerprint: "abcdef1234567890xyz",
             direction: "outbound",
@@ -119,9 +125,13 @@ describe("AdminFederationPage", () => {
     renderPage();
 
     expect(screen.getByTestId("federation-peer-row")).toBeInTheDocument();
-    expect(screen.getByTestId("peer-status-badge")).toHaveTextContent("Reachable");
+    expect(screen.getByTestId("peer-status-badge")).toHaveTextContent(
+      "Reachable",
+    );
     expect(screen.getByTestId("federation-exchange-row")).toBeInTheDocument();
-    expect(screen.getByTestId("exchange-operation")).toHaveTextContent("Stats pull"); // humanized
+    expect(screen.getByTestId("exchange-operation")).toHaveTextContent(
+      "Stats pull",
+    ); // humanized
   });
 
   it("shows empty states when there are no peers or activity", () => {
@@ -129,6 +139,49 @@ describe("AdminFederationPage", () => {
 
     expect(screen.getByText("No connected servers")).toBeInTheDocument();
     expect(screen.getByText("No federation activity yet")).toBeInTheDocument();
+  });
+
+  it("passes URL exchange filters to the activity query", () => {
+    renderPage(
+      "/admin/federation?peer=abcdef1234567890xyz&direction=outbound&operation=stats_pull&status=ok&startedAfter=2026-07-04T12%3A00&startedBefore=2026-07-04T13%3A00",
+    );
+
+    expect(mockUseExchanges).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        limit: 50,
+        peer: "abcdef1234567890xyz",
+        direction: "outbound",
+        operation: "stats_pull",
+        status: "ok",
+        startedAfter: expect.any(String),
+        startedBefore: expect.any(String),
+      }),
+    );
+  });
+
+  it("updates exchange filters from the filter controls", async () => {
+    mockUsePeers.mockReturnValue(onePeer);
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.selectOptions(
+      screen.getByLabelText("Server"),
+      "abcdef1234567890xyz",
+    );
+    await user.selectOptions(screen.getByLabelText("Direction"), "outbound");
+    await user.selectOptions(screen.getByLabelText("Operation"), "stats_pull");
+    await user.selectOptions(screen.getByLabelText("Status"), "ok");
+
+    await waitFor(() =>
+      expect(mockUseExchanges).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          peer: "abcdef1234567890xyz",
+          direction: "outbound",
+          operation: "stats_pull",
+          status: "ok",
+        }),
+      ),
+    );
   });
 
   it("shows an error block with a working retry when the peers query fails", async () => {
@@ -148,7 +201,9 @@ describe("AdminFederationPage", () => {
     expect(errorBlock).toHaveTextContent("network down");
     expect(screen.queryByTestId("federation-peer-row")).not.toBeInTheDocument();
 
-    await userEvent.setup().click(screen.getByRole("button", { name: "Try again" }));
+    await userEvent
+      .setup()
+      .click(screen.getByRole("button", { name: "Try again" }));
     expect(refetchPeers).toHaveBeenCalled();
   });
 

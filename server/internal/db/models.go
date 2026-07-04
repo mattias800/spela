@@ -639,7 +639,7 @@ type FederationExchange struct {
 	ItemCount       int       `json:"itemCount"`
 	Bytes           int64     `json:"bytes"`
 	DurationMs      int64     `json:"durationMs"`
-	StartedAt       time.Time `json:"startedAt"`
+	StartedAt       time.Time `gorm:"index" json:"startedAt"`
 	FinishedAt      time.Time `json:"finishedAt"`
 	Error           string    `gorm:"size:512" json:"error"`
 }

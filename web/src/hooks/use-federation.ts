@@ -4,6 +4,16 @@ import { typedApi, unwrap } from "@/lib/api-client";
 // Poll federation data so health + activity stay live while the admin watches.
 const POLL_MS = 10000;
 
+export interface FederationExchangeFilters {
+  peer?: string;
+  direction?: string;
+  operation?: string;
+  status?: string;
+  startedAfter?: string;
+  startedBefore?: string;
+  limit?: number;
+}
+
 export function useFederationPeers() {
   return useQuery({
     queryKey: ["admin", "federation", "peers"],
@@ -13,13 +23,26 @@ export function useFederationPeers() {
   });
 }
 
-export function useFederationExchanges(limit = 50) {
+export function useFederationExchanges(
+  filters: FederationExchangeFilters = {},
+) {
+  const limit = filters.limit ?? 50;
+  const query = {
+    limit,
+    ...(filters.peer ? { peer: filters.peer } : {}),
+    ...(filters.direction ? { direction: filters.direction } : {}),
+    ...(filters.operation ? { operation: filters.operation } : {}),
+    ...(filters.status ? { status: filters.status } : {}),
+    ...(filters.startedAfter ? { startedAfter: filters.startedAfter } : {}),
+    ...(filters.startedBefore ? { startedBefore: filters.startedBefore } : {}),
+  };
+
   return useQuery({
-    queryKey: ["admin", "federation", "exchanges", limit],
+    queryKey: ["admin", "federation", "exchanges", query],
     queryFn: () =>
       unwrap(
         typedApi.GET("/api/admin/federation/exchanges", {
-          params: { query: { limit } },
+          params: { query },
         }),
       ),
     refetchInterval: POLL_MS,
@@ -37,8 +60,12 @@ export function useTestFederationPeer() {
         }),
       ),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "federation", "peers"] });
-      queryClient.invalidateQueries({ queryKey: ["admin", "federation", "exchanges"] });
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "federation", "peers"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "federation", "exchanges"],
+      });
     },
   });
 }
@@ -58,12 +85,14 @@ export function useAcceptFederationInvite() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (body: { invite: string; name: string }) =>
-      unwrap(
-        typedApi.POST("/api/admin/federation/peers/accept", { body }),
-      ),
+      unwrap(typedApi.POST("/api/admin/federation/peers/accept", { body })),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "federation", "peers"] });
-      queryClient.invalidateQueries({ queryKey: ["admin", "federation", "exchanges"] });
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "federation", "peers"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "federation", "exchanges"],
+      });
     },
   });
 }
@@ -80,8 +109,12 @@ export function useRevokeFederationPeer() {
         }),
       ),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "federation", "peers"] });
-      queryClient.invalidateQueries({ queryKey: ["admin", "federation", "exchanges"] });
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "federation", "peers"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "federation", "exchanges"],
+      });
     },
   });
 }
@@ -106,7 +139,9 @@ export function useUpdateFederationPolicy() {
         }),
       ),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "federation", "peers"] });
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "federation", "peers"],
+      });
     },
   });
 }
