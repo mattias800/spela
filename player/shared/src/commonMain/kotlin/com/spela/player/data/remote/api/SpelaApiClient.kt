@@ -597,12 +597,24 @@ class SpelaApiClient(
 
     /** Returns detail for a specific developer */
     suspend fun getDeveloperDetail(name: String): com.spela.client.models.DeveloperDetailResponse {
-        return exploreApi.getDeveloperDetail(name).body()
+        return retryTransient("getDeveloperDetail") {
+            exploreApi.getDeveloperDetail(name)
+                .bodyDiagnostic(
+                    "getDeveloperDetail",
+                    com.spela.client.models.DeveloperDetailResponse.serializer(),
+                )
+        }
     }
 
     /** Returns detail for a specific publisher. */
     suspend fun getPublisherDetail(name: String): com.spela.client.models.PublisherDetailResponse {
-        return exploreApi.getPublisherDetail(name).body()
+        return retryTransient("getPublisherDetail") {
+            exploreApi.getPublisherDetail(name)
+                .bodyDiagnostic(
+                    "getPublisherDetail",
+                    com.spela.client.models.PublisherDetailResponse.serializer(),
+                )
+        }
     }
 
     /** Returns developer spotlight for the Explore page */

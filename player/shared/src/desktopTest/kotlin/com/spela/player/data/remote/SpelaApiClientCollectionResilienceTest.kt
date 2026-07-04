@@ -17,13 +17,15 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
 /**
- * Cold-load resilience for the Collections screen (#1231).
+ * Cold-load resilience for the Collections and related entity-detail screens
+ * (#1231).
  *
  * A truncated / garbled 2xx body — connection contention while cores prefetch,
  * a proxy hiccup — used to surface as a hard JSON error even though a retry
  * would succeed. `SpelaApiClient.getMyCollections/getPublicCollections/
  * getCollection` now retry the transient failure modes (and log the raw body).
- * These tests pin that behaviour.
+ * The same symptom was seen on developer/publisher detail screens, so those
+ * read-only calls share the same retry path. These tests pin that behaviour.
  */
 class SpelaApiClientCollectionResilienceTest {
 
@@ -45,6 +47,36 @@ class SpelaApiClientCollectionResilienceTest {
 
     // A 2xx body that is cut off mid-object → SerializationException on decode.
     private val truncatedJson = """{"data":[{"id":"1","userId":"u1","""
+
+    private fun entityDetailJson(name: String, publisher: Boolean = false): String {
+        val relationshipKey = if (publisher) "developers" else "publishers"
+        val relatedKey = if (publisher) "relatedPublishers" else "relatedDevelopers"
+        return """
+            {
+              "activeYears": {"first": 1983, "last": 2026},
+              "avgRating": 4.5,
+              "companyInfo": {
+                "country": "", "description": "", "foundedYear": 1983,
+                "logoUrl": "", "websiteUrl": "", "wikipediaUrl": ""
+              },
+              "consoles": [],
+              "$relationshipKey": [],
+              "gameCount": 0,
+              "games": [],
+              "heroUrl": "",
+              "name": "$name",
+              "platformBreakdown": [],
+              "primaryGenre": "",
+              "ratingDistribution": {
+                "average": 0, "excellent": 0, "good": 0, "poor": 0, "unrated": 0
+              },
+              "$relatedKey": [],
+              "timeline": [],
+              "topGames": [],
+              "userStats": {"favoriteCount": 0, "gamesPlayed": 0, "totalPlayTime": 0}
+            }
+        """.trimIndent()
+    }
 
     private fun sequencedEngine(
         callCounter: IntArray,
@@ -99,5 +131,35 @@ class SpelaApiClientCollectionResilienceTest {
 
         assertFailsWith<Throwable> { apiClient.getMyCollections() }
         assertEquals(1, calls[0], "non-transient 4xx must not be retried")
+    }
+
+    @Test
+    fun getDeveloperDetailRetriesAndRecoversAfterTruncatedBody() = runTest {
+        val calls = intArrayOf(0)
+        val apiClient = client(
+            sequencedEngine(calls) { n ->
+                (if (n == 1) truncatedJson else entityDetailJson("Nintendo")) to HttpStatusCode.OK
+            },
+        )
+
+        val result = apiClient.getDeveloperDetail("Nintendo")
+
+        assertEquals(2, calls[0], "expected exactly one retry after the first truncated body")
+        assertEquals("Nintendo", result.name)
+    }
+
+    @Test
+    fun getPublisherDetailRetriesAndRecoversAfterTruncatedBody() = runTest {
+        val calls = intArrayOf(0)
+        val apiClient = client(
+            sequencedEngine(calls) { n ->
+                (if (n == 1) truncatedJson else entityDetailJson("Capcom", publisher = true)) to HttpStatusCode.OK
+            },
+        )
+
+        val result = apiClient.getPublisherDetail("Capcom")
+
+        assertEquals(2, calls[0], "expected exactly one retry after the first truncated body")
+        assertEquals("Capcom", result.name)
     }
 }
