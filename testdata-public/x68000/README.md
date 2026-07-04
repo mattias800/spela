@@ -15,6 +15,8 @@ exercise the `px68k` core.
 A small `.dim`, `.img`, `.d88`, or `.88d` file that boots the libretro
 `px68k` core and produces frames.
 
+Tracking issue: #1640.
+
 ## Caveat: BIOS required
 
 Unlike most other platforms in this directory, X68000 emulation also
