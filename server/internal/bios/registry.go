@@ -60,8 +60,8 @@ var registry = []Entry{
 	{ConsoleID: "psx", FileName: "scph5501.bin", Description: "PlayStation BIOS (North America)", MD5: "490f666e1afb15b7362b406ed1cea246", Required: true},
 	{ConsoleID: "psx", FileName: "scph5502.bin", Description: "PlayStation BIOS (Europe)", MD5: "32736f17079d0b2b7024407c39bd3050", Required: false},
 
-	// PlayStation 2 (PS2) — pcsx2_libretro.info
-	// PCSX2 auto-detects BIOS files; no strict filename or MD5 enforced by core.
+	// PlayStation 2 (PS2) — Play! core
+	// Spela accepts common PS2 BIOS names here; no strict filename or MD5 is enforced.
 	// Common BIOS models listed for user guidance.
 	{ConsoleID: "ps2", FileName: "SCPH-39001.bin", Description: "PS2 BIOS v7 (North America)", MD5: "", Required: true},
 	{ConsoleID: "ps2", FileName: "SCPH-70012.bin", Description: "PS2 BIOS v12 (North America)", MD5: "", Required: false},
