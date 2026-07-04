@@ -10,6 +10,9 @@ import (
 	"gorm.io/gorm"
 )
 
+// ExchangeRetentionWindow bounds the high-volume federation exchange ledger.
+const ExchangeRetentionWindow = 30 * 24 * time.Hour
+
 // NewRequestID returns a short random correlation id for one logical federation
 // operation. It is logged on both ends and propagated via X-Spela-Request-Id so
 // a single exchange can be traced across servers (#1350).
@@ -75,6 +78,13 @@ func RecordExchange(database *gorm.DB, rec ExchangeRecord) {
 	}
 
 	updatePeerHealth(database, rec)
+}
+
+// PruneExpiredExchanges deletes ledger rows older than ExchangeRetentionWindow.
+func PruneExpiredExchanges(database *gorm.DB, now time.Time) int64 {
+	result := database.Where("started_at < ?", now.Add(-ExchangeRetentionWindow)).
+		Delete(&db.FederationExchange{})
+	return result.RowsAffected
 }
 
 // updatePeerHealth folds the exchange outcome into the peer's health columns.

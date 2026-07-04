@@ -9,6 +9,7 @@ import (
 
 	"github.com/spela/server/internal/auth"
 	"github.com/spela/server/internal/db"
+	"github.com/spela/server/internal/federation"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -163,33 +164,41 @@ func pruneExpiredSystemEvents(database *gorm.DB) int64 {
 	return result.RowsAffected
 }
 
+func runDatabaseCleanup(database *gorm.DB) {
+	// Delete expired tokens and consumed tokens older than 7 days
+	// (consumed tokens are kept briefly for replay detection)
+	database.Where("consumed = ? AND created_at < ?", true, time.Now().Add(-7*24*time.Hour)).Delete(&db.RefreshToken{})
+	result := database.Where("expires_at < ?", time.Now()).Delete(&db.RefreshToken{})
+	if result.RowsAffected > 0 {
+		slog.Info("cleaned up expired refresh tokens", "count", result.RowsAffected)
+	}
+	// Clean up stale login attempt entries (lockout expired and counter reset)
+	laResult := database.Where("locked_until < ? AND failed_count = 0", time.Now()).Delete(&db.LoginAttempt{})
+	if laResult.RowsAffected > 0 {
+		slog.Info("cleaned up stale login attempts", "count", laResult.RowsAffected)
+	}
+	// Clean up expired token blacklist entries
+	blResult := database.Where("expires_at < ?", time.Now()).Delete(&db.TokenBlacklist{})
+	if blResult.RowsAffected > 0 {
+		slog.Info("cleaned up expired blacklist entries", "count", blResult.RowsAffected)
+	}
+	// Prune security events older than the retention window
+	if count := pruneExpiredSystemEvents(database); count > 0 {
+		slog.Info("pruned old system events", "count", count)
+	}
+	// Prune high-volume federation exchange ledger rows (#1350).
+	if count := federation.PruneExpiredExchanges(database, time.Now()); count > 0 {
+		slog.Info("pruned old federation exchanges", "count", count)
+	}
+}
+
 // StartTokenCleanup starts a background goroutine that periodically deletes
 // expired refresh tokens from the database to prevent unbounded growth.
 func StartTokenCleanup(database *gorm.DB, interval time.Duration) {
 	go func() {
 		for {
+			runDatabaseCleanup(database)
 			time.Sleep(interval)
-			// Delete expired tokens and consumed tokens older than 7 days
-			// (consumed tokens are kept briefly for replay detection)
-			database.Where("consumed = ? AND created_at < ?", true, time.Now().Add(-7*24*time.Hour)).Delete(&db.RefreshToken{})
-			result := database.Where("expires_at < ?", time.Now()).Delete(&db.RefreshToken{})
-			if result.RowsAffected > 0 {
-				slog.Info("cleaned up expired refresh tokens", "count", result.RowsAffected)
-			}
-			// Clean up stale login attempt entries (lockout expired and counter reset)
-			laResult := database.Where("locked_until < ? AND failed_count = 0", time.Now()).Delete(&db.LoginAttempt{})
-			if laResult.RowsAffected > 0 {
-				slog.Info("cleaned up stale login attempts", "count", laResult.RowsAffected)
-			}
-			// Clean up expired token blacklist entries
-			blResult := database.Where("expires_at < ?", time.Now()).Delete(&db.TokenBlacklist{})
-			if blResult.RowsAffected > 0 {
-				slog.Info("cleaned up expired blacklist entries", "count", blResult.RowsAffected)
-			}
-			// Prune security events older than the retention window
-			if count := pruneExpiredSystemEvents(database); count > 0 {
-				slog.Info("pruned old system events", "count", count)
-			}
 		}
 	}()
 }
@@ -209,4 +218,3 @@ func IsTokenBlacklisted(database *gorm.DB, token string) bool {
 		Take(&bl).Error
 	return err == nil
 }
-
