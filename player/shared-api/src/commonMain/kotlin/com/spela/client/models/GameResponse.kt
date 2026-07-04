@@ -17,6 +17,7 @@ package com.spela.client.models
 
 import com.spela.client.models.AgeRatingResponse
 import com.spela.client.models.DiscResponse
+import com.spela.client.models.GamePlatformResponse
 import com.spela.client.models.LanguageSupportResponse
 import com.spela.client.models.ParentGameResponse
 import com.spela.client.models.ReleaseDateResponse
@@ -63,6 +64,7 @@ import kotlinx.serialization.encoding.*
  * @param lastPlayedAt 
  * @param logoUrl 
  * @param partyInfo 
+ * @param platforms
  * @param playable 
  * @param players 
  * @param publisher 
@@ -162,6 +164,8 @@ data class GameResponse (
 
     @SerialName(value = "partyInfo") @Required val partyInfo: kotlin.String,
 
+    @SerialName(value = "platforms") @Required val platforms: kotlin.collections.List<GamePlatformResponse>,
+
     @SerialName(value = "playable") @Required val playable: kotlin.Boolean,
 
     @SerialName(value = "players") @Required val players: kotlin.Long,
@@ -227,4 +231,3 @@ data class GameResponse (
 
 
 }
-

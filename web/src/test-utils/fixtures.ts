@@ -59,6 +59,14 @@ export function makeGame(overrides: Partial<Game> = {}): Game {
     variants: [],
     parentGame: { id: "", title: "", coverUrl: "" },
     romHacks: [],
+    platforms: [
+      {
+        gameId: "game-1",
+        consoleId: "nes",
+        consoleName: "NES",
+        isPreferred: true,
+      },
+    ],
     coverAspectRatio: 0.75,
     playable: true,
     biosStatus: "not_required",

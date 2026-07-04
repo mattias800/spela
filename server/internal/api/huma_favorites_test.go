@@ -9,6 +9,7 @@ import (
 
 	"github.com/spela/server/internal/db"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // Re-favoriting a game that was previously favorited then unfavorited must
@@ -73,4 +74,39 @@ func TestFavoriteAlreadyActiveConflicts(t *testing.T) {
 
 	assert.Equal(t, http.StatusCreated, do("POST"), "initial favorite")
 	assert.Equal(t, http.StatusConflict, do("POST"), "re-adding an active favorite is a 409")
+}
+
+func TestListFavoritesIncludesTitlePlatforms(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	token := registerAndGetToken(t, router)
+
+	snes := mustFindConsole(t, database, "SNES")
+	gba := mustFindConsole(t, database, "GBA")
+	rootID := uint(8642)
+	selected := db.Game{ConsoleID: snes.ID, Title: "Platform Favorite", FileName: "fav.sfc", FilePath: "/tmp/fav.sfc", FileSize: 100, TitleRootIGDBID: &rootID}
+	sibling := db.Game{ConsoleID: gba.ID, Title: "Platform Favorite Advance", FileName: "fav.gba", FilePath: "/tmp/fav.gba", FileSize: 100, TitleRootIGDBID: &rootID}
+	require.NoError(t, database.Create(&selected).Error)
+	require.NoError(t, database.Create(&sibling).Error)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/user/favorites/"+fmt.Sprintf("%d", selected.ID), nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusCreated, w.Code)
+
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/user/favorites", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var games []GameResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &games))
+	require.Len(t, games, 1)
+	require.Len(t, games[0].Platforms, 2)
+	assert.Equal(t, []string{"snes", "gba"}, platformConsoleIDs(games[0].Platforms))
+	assert.Equal(t, []string{strconvID(selected.ID), strconvID(sibling.ID)}, platformGameIDs(games[0].Platforms))
+	assert.True(t, games[0].Platforms[0].IsPreferred)
 }

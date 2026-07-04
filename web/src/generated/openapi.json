@@ -4498,6 +4498,30 @@
         ],
         "type": "object"
       },
+      "GamePlatformResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "consoleId": {
+            "type": "string"
+          },
+          "consoleName": {
+            "type": "string"
+          },
+          "gameId": {
+            "type": "string"
+          },
+          "isPreferred": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "gameId",
+          "consoleId",
+          "consoleName",
+          "isPreferred"
+        ],
+        "type": "object"
+      },
       "GameRatingResponse": {
         "additionalProperties": false,
         "properties": {
@@ -4686,6 +4710,12 @@
           "partyInfo": {
             "type": "string"
           },
+          "platforms": {
+            "items": {
+              "$ref": "#/components/schemas/GamePlatformResponse"
+            },
+            "type": "array"
+          },
           "playable": {
             "type": "boolean"
           },
@@ -4807,6 +4837,7 @@
           "updatedAt",
           "consoleId",
           "consoleName",
+          "platforms",
           "consoleSaveStatePolicy",
           "coverAspectRatio",
           "title",

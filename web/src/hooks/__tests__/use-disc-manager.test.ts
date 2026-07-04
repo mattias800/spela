@@ -57,6 +57,14 @@ function createGame(overrides: Partial<Game> = {}): Game {
     lastPlayedAt: null,
     logoUrl: "",
     partyInfo: "",
+    platforms: [
+      {
+        gameId: "game-1",
+        consoleId: "psx",
+        consoleName: "PlayStation",
+        isPreferred: true,
+      },
+    ],
     playable: true,
     players: 1,
     publisher: "",

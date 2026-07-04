@@ -24,6 +24,14 @@ private fun testGameResponse(
     totalPlayTime: Long = 0,
 ): com.spela.client.models.GameResponse {
     val now = kotlin.time.Instant.fromEpochSeconds(0)
+    val platforms = listOf(
+        com.spela.client.models.GamePlatformResponse(
+            consoleId = consoleId,
+            consoleName = consoleName,
+            gameId = id,
+            isPreferred = true,
+        )
+    )
     return com.spela.client.models.GameResponse(
         averageRating = 0.0,
         consoleId = consoleId,
@@ -68,6 +76,7 @@ private fun testGameResponse(
         logoUrl = "",
         parentGame = com.spela.client.models.ParentGameResponse(id = "", title = "", coverUrl = ""),
         partyInfo = "",
+        platforms = platforms,
         region = "",
         releaseDates = emptyList(),
         revision = "",

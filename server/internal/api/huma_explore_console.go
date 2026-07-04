@@ -150,11 +150,7 @@ func (h *ExploreHandler) HumaGetConsoleShowcase(ctx context.Context, in *GetCons
 	allGames = append(allGames, launchGames...)
 	allGames = append(allGames, recentlyPlayed...)
 	allGames = append(allGames, recentlyAdded...)
-	allGameIDs := make([]uint, len(allGames))
-	for i, g := range allGames {
-		allGameIDs[i] = g.ID
-	}
-	userData := loadUserGameData(h.DB, userID, allGameIDs)
+	userData := loadGameResponseData(h.DB, userID, allGames)
 
 	toResponses := func(games []db.Game) []GameResponse {
 		result := make([]GameResponse, len(games))
@@ -218,11 +214,11 @@ func (h *ExploreHandler) HumaGetConsoleHighlights(ctx context.Context, _ *GetCon
 	if err := h.DB.Raw(`
 		SELECT console_id, game_id FROM (
 			SELECT games.console_id, games.id as game_id,
-				`+effectiveRatingPrefixed+` as eff_rating,
-				ROW_NUMBER() OVER (PARTITION BY games.console_id ORDER BY `+effectiveRatingPrefixed+` DESC) as rn
+				` + effectiveRatingPrefixed + ` as eff_rating,
+				ROW_NUMBER() OVER (PARTITION BY games.console_id ORDER BY ` + effectiveRatingPrefixed + ` DESC) as rn
 			FROM games
 			JOIN game_artworks ON game_artworks.game_id = games.id AND game_artworks.hero_url != ''
-			WHERE games.deleted_at IS NULL AND games.is_primary = true AND `+effectiveRatingPrefixed+` > 0
+			WHERE games.deleted_at IS NULL AND games.is_primary = true AND ` + effectiveRatingPrefixed + ` > 0
 		) ranked WHERE rn = 1
 	`).Scan(&topGameRows).Error; err != nil {
 		slog.Error("failed to fetch top games for console highlights", "error", err)

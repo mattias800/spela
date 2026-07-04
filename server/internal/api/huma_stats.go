@@ -92,7 +92,7 @@ func (h *StatsHandler) HumaMostPlayedGames(ctx context.Context, _ *MostPlayedInp
 	}
 
 	userID := UserIDFromContext(ctx)
-	data := loadUserGameData(h.DB, userID, gameIDs)
+	data := loadGameResponseData(h.DB, userID, games)
 
 	entries := make([]MostPlayedEntry, 0, len(rows))
 	for _, r := range rows {

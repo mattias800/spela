@@ -54,6 +54,7 @@ private fun gameJson(
         """"isFavorite":$isFavorite,"isInPlayLater":false,"isPreRelease":false,""" +
         """"languageSupports":[],"lastPlayedAt":$lastPlayed,"logoUrl":"",""" +
         """"parentGame":{"id":"","title":"","coverUrl":""},"partyInfo":"",""" +
+        """"platforms":[{"gameId":"$id","consoleId":"1","consoleName":"NES","isPreferred":true}],""" +
         """"playable":true,"players":1,"publisher":"Nintendo",""" +
         """"ratingCount":0,"region":"","releaseDate":"1985-09-13","releaseDates":[],""" +
         """"revision":"","romHacks":[],"scrapeAttempts":0,"scraperId":"",""" +
