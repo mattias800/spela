@@ -1784,6 +1784,55 @@ func TestGetForYou_CrossPlatformDedupe(t *testing.T) {
 	assert.True(t, sf2Seen, "Street Fighter II should appear at least once across the for-you rows")
 }
 
+func TestGetForYou_TitleRootDedupeCollapsesDifferentNames(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	playedGame := createExploreGameWithGenre(t, env.database, "SNES", "Chrono Trigger", 95, "RPG", 1)
+
+	rootID := uint(4242)
+	ff6 := createExploreGameWithGenre(t, env.database, "SNES", "Final Fantasy VI", 96, "RPG", 1)
+	ff6Advance := createExploreGameWithGenre(t, env.database, "GBA", "Final Fantasy VI Advance", 90, "RPG", 1)
+	require.NoError(t, env.database.Model(&ff6).Update("title_root_igdb_id", rootID).Error)
+	require.NoError(t, env.database.Model(&ff6Advance).Update("title_root_igdb_id", rootID).Error)
+	createExploreGameWithGenre(t, env.database, "SNES", "Earthbound", 88, "RPG", 1)
+
+	var user db.User
+	require.NoError(t, env.database.First(&user).Error)
+	require.NoError(t, env.database.Create(&db.PlayHistory{
+		UserID:     user.ID,
+		GameID:     playedGame.ID,
+		PlayTime:   18000,
+		LastPlayed: time.Now(),
+	}).Error)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/for-you", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	var resp ForYouResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	rootSeen := false
+	for _, row := range resp.Rows {
+		hasFF6 := false
+		hasFF6Advance := false
+		for _, g := range row.Games {
+			if g.Title == "Final Fantasy VI" {
+				hasFF6 = true
+				rootSeen = true
+			}
+			if g.Title == "Final Fantasy VI Advance" {
+				hasFF6Advance = true
+				rootSeen = true
+			}
+		}
+		assert.False(t, hasFF6 && hasFF6Advance, "row %q should only contain one game from the shared IGDB title root", row.Title)
+	}
+	assert.True(t, rootSeen, "one Final Fantasy VI platform should still be recommended")
+}
+
 func TestGetForYou_AuthRequired(t *testing.T) {
 	env := setupExploreTestEnv(t)
 
@@ -1975,6 +2024,81 @@ func TestGetPlayersLikeYou(t *testing.T) {
 
 	// Metroid should be recommended (favorited by user2 who has highest overlap)
 	assert.True(t, titles["Metroid"], "Metroid should be recommended (from most similar user)")
+}
+
+func TestGetPlayersLikeYou_JaccardUsesTitleRoots(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	rootID := uint(9001)
+	ff6Snes := createExploreGame(t, env.database, "SNES", "Final Fantasy VI", 96)
+	ff6Gba := createExploreGame(t, env.database, "GBA", "Final Fantasy VI Advance", 90)
+	metroid := createExploreGame(t, env.database, "GBA", "Metroid Fusion", 88)
+	require.NoError(t, env.database.Model(&ff6Snes).Update("title_root_igdb_id", rootID).Error)
+	require.NoError(t, env.database.Model(&ff6Gba).Update("title_root_igdb_id", rootID).Error)
+
+	var user db.User
+	require.NoError(t, env.database.First(&user).Error)
+	require.NoError(t, env.database.Create(&db.Favorite{UserID: user.ID, GameID: ff6Snes.ID}).Error)
+
+	user2Token := createNonOwnerUser(t, env.router, env.token, "rootmatch", "SecureTestPass!2024")
+	_ = user2Token
+	var user2 db.User
+	require.NoError(t, env.database.Where("username = ?", "rootmatch").First(&user2).Error)
+	require.NoError(t, env.database.Create(&db.Favorite{UserID: user2.ID, GameID: ff6Gba.ID}).Error)
+	require.NoError(t, env.database.Create(&db.Favorite{UserID: user2.ID, GameID: metroid.ID}).Error)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/players-like-you", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	var resp PlayersLikeYouResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	assert.Equal(t, 1, resp.SimilarUsersCount)
+	titles := make(map[string]bool)
+	for _, g := range resp.Games {
+		titles[g.Title] = true
+	}
+	assert.True(t, titles["Metroid Fusion"], "root-matched similar user should contribute non-owned recommendations")
+	assert.False(t, titles["Final Fantasy VI Advance"], "current user's title root should be excluded across platforms")
+}
+
+func TestGetPlayersLikeYou_JaccardUsesNormalizedFallbackForNoRootGames(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	sf2Snes := createExploreGame(t, env.database, "SNES", "Street Fighter II", 95)
+	sf2Genesis := createExploreGame(t, env.database, "GEN", "Street Fighter II (USA)", 90)
+	contra := createExploreGame(t, env.database, "NES", "Contra", 88)
+
+	var user db.User
+	require.NoError(t, env.database.First(&user).Error)
+	require.NoError(t, env.database.Create(&db.Favorite{UserID: user.ID, GameID: sf2Snes.ID}).Error)
+
+	user2Token := createNonOwnerUser(t, env.router, env.token, "fallbackmatch", "SecureTestPass!2024")
+	_ = user2Token
+	var user2 db.User
+	require.NoError(t, env.database.Where("username = ?", "fallbackmatch").First(&user2).Error)
+	require.NoError(t, env.database.Create(&db.Favorite{UserID: user2.ID, GameID: sf2Genesis.ID}).Error)
+	require.NoError(t, env.database.Create(&db.Favorite{UserID: user2.ID, GameID: contra.ID}).Error)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/players-like-you", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	var resp PlayersLikeYouResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	assert.Equal(t, 1, resp.SimilarUsersCount)
+	titles := make(map[string]bool)
+	for _, g := range resp.Games {
+		titles[g.Title] = true
+	}
+	assert.True(t, titles["Contra"], "normalized-title fallback should find similar users for no-root games")
+	assert.False(t, titles["Street Fighter II (USA)"], "current user's normalized title should be excluded across platforms")
 }
 
 func TestGetPlayersLikeYou_NoSimilarUsers(t *testing.T) {
