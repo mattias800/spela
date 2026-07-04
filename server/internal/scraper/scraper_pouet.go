@@ -200,7 +200,7 @@ func (s *Scraper) BackfillDemoConsoleMisscrapes() error {
 			"scraper_id":              "",
 			"cover_url":               "",
 			"screenshot_url":          "",
-			"libretro_cover_url":      "",
+			"lib_retro_cover_url":     "",
 			"igdb_cover_url":          "",
 			"description":             "",
 			"storyline":               "",
@@ -233,7 +233,7 @@ func (s *Scraper) BackfillDemoConsoleMisscrapes() error {
 	// Enqueue for a fresh Pouet scrape. Low priority so user-initiated
 	// scrapes still jump the queue.
 	if s.Queue != nil {
-		if err := s.Queue.EnqueueGames(0, ids, 10); err != nil {
+		if err := s.Queue.EnqueueStandaloneGames(ids, scrapeQueuePriorityMaintenance); err != nil {
 			slog.Warn("failed to enqueue demo-console misscrapes for re-scrape",
 				"count", len(ids), "error", err)
 		}

@@ -118,6 +118,31 @@ func (q *ScrapeQueue) EnqueueGames(jobID uint, gameIDs []uint, priority int) err
 	return nil
 }
 
+// EnqueueStandaloneGames bulk-inserts queue items that are not attached to a
+// scrape job. Use this for maintenance re-scrapes that should not update the
+// admin bulk-scrape progress counters.
+func (q *ScrapeQueue) EnqueueStandaloneGames(gameIDs []uint, priority int) error {
+	if len(gameIDs) == 0 {
+		return nil
+	}
+	items := make([]db.ScrapeQueueItem, len(gameIDs))
+	for i, gid := range gameIDs {
+		items[i] = db.ScrapeQueueItem{
+			GameID:   gid,
+			Priority: priority,
+			Status:   "pending",
+			Type:     scrapeQueueTypeScrape,
+		}
+	}
+	if err := q.db.CreateInBatches(items, 500).Error; err != nil {
+		return fmt.Errorf("enqueuing %d standalone games: %w", len(gameIDs), err)
+	}
+	for _, gid := range gameIDs {
+		q.broadcastQueued(gid, scrapeQueueTypeScrape)
+	}
+	return nil
+}
+
 // EnqueueGamesWithType inserts multiple queue items with a specific type.
 func (q *ScrapeQueue) EnqueueGamesWithType(jobID uint, gameIDs []uint, priority int, itemType string) error {
 	if len(gameIDs) == 0 {
