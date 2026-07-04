@@ -77,6 +77,8 @@ bool input_get_button(unsigned port, unsigned id);
 int16_t input_get_analog(unsigned port, unsigned index, unsigned id);
 void input_set_button(unsigned port, unsigned id, bool pressed);
 void input_set_analog(unsigned port, unsigned index, unsigned id, int16_t value);
+void input_set_analog_button(unsigned port, unsigned id, int16_t value);
+void input_clear_analog_button(unsigned port, unsigned id);
 void input_set_pointer(unsigned port, int16_t x, int16_t y, bool pressed);
 void input_set_mouse(unsigned port, int16_t dx, int16_t dy, bool left, bool right);
 void input_set_keyboard(unsigned key, bool pressed);

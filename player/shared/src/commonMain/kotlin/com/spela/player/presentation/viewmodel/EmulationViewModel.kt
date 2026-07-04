@@ -2220,6 +2220,12 @@ interface LibretroController {
     /** Set mouse relative movement and button state. */
     fun setMouse(port: Int, dx: Short, dy: Short, left: Boolean, right: Boolean) {}
 
+    /** Set analog button pressure for triggers (0 = released, 0x7FFF = full press). */
+    fun setAnalogButton(port: Int, buttonId: Int, value: Short) {}
+
+    /** Restore digital fallback for a button that no longer receives analog pressure. */
+    fun clearAnalogButton(port: Int, buttonId: Int) {}
+
     /** Set keyboard key state (RETROK_* constants). */
     fun setKeyboardKey(key: Int, pressed: Boolean) {}
 

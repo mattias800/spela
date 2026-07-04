@@ -301,6 +301,14 @@ class DesktopLibretroController(
         jni.nativeSetInputAnalog(port, stickIndex, axisId, value)
     }
 
+    override fun setAnalogButton(port: Int, buttonId: Int, value: Short) {
+        jni.nativeSetAnalogButton(port, buttonId, value)
+    }
+
+    override fun clearAnalogButton(port: Int, buttonId: Int) {
+        jni.nativeClearAnalogButton(port, buttonId)
+    }
+
     override fun setPointer(port: Int, x: Int, y: Int, pressed: Boolean) {
         jni.nativeSetInputPointer(port, x, y, pressed)
     }
