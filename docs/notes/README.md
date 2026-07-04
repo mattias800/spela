@@ -12,6 +12,7 @@ truth for current behaviour.
 | [`save-ideas.md`](save-ideas.md) | Brainstorm of save-state feature ideas (some shipped). |
 | [`social-features-history.md`](social-features-history.md) | Original social features brainstorm; some sections include an "Implementation History" once they shipped. |
 | [`hw-render-core-support.md`](hw-render-core-support.md) | Phase 4 status sheet for libretro hardware-render integration (per-core OpenGL/Vulkan support). |
+| [`known-core-issues.md`](known-core-issues.md) | Current suspected core/upstream issues, proven Spela integration bugs, and the evidence needed to classify future reports. |
 | [`n64-android.md`](n64-android.md) | N64 Vulkan HW render on Android — debugging status. |
 | [`n64-macos.md`](n64-macos.md) | N64 OpenGL HW render on macOS — investigation notes. |
 
