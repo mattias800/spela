@@ -103,7 +103,7 @@ func TestBackfillTitleRootsQueuesMissingIGDBGames(t *testing.T) {
 	require.NoError(t, database.First(&item).Error)
 	assert.Equal(t, missingRoot.ID, item.GameID)
 	assert.Equal(t, scrapeQueueTypeTitleRootBackfill, item.Type)
-	assert.Equal(t, 5, item.Priority)
+	assert.Equal(t, scrapeQueuePriorityMaintenance, item.Priority)
 	require.NotNil(t, item.JobID)
 	assert.Equal(t, job.ID, *item.JobID)
 

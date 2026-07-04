@@ -75,6 +75,25 @@ func TestGetActiveScrapeJobIgnoresMaintenanceJobs(t *testing.T) {
 	assert.Equal(t, maintenance.ID, anyActive.ID)
 }
 
+func TestDequeuePrioritizesUserScrapeOverMaintenance(t *testing.T) {
+	database := setupQueueTestDB(t)
+	q := NewScrapeQueue(database)
+
+	maintenanceJob, err := q.CreateJob(scrapeJobModeTitleRootBackfill, "igdb", "missing_title_root", "", 1)
+	require.NoError(t, err)
+	userJob, err := q.CreateJob("new", "", "", "", 1)
+	require.NoError(t, err)
+
+	require.NoError(t, q.EnqueueGamesWithType(maintenanceJob.ID, []uint{1}, scrapeQueuePriorityMaintenance, scrapeQueueTypeTitleRootBackfill))
+	require.NoError(t, q.EnqueueGames(userJob.ID, []uint{2}, 0))
+
+	item, err := q.Dequeue()
+	require.NoError(t, err)
+	require.NotNil(t, item)
+	assert.Equal(t, uint(2), item.GameID)
+	assert.Equal(t, scrapeQueueTypeScrape, item.Type)
+}
+
 func TestEnqueueGames(t *testing.T) {
 	database := setupQueueTestDB(t)
 	q := NewScrapeQueue(database)

@@ -5,6 +5,8 @@ const (
 	scrapeQueueTypeRAFetch           = "ra_fetch"
 	scrapeQueueTypeTitleRootBackfill = "title_root_backfill"
 
+	scrapeQueuePriorityMaintenance = -10
+
 	scrapeJobModeTitleRootBackfill = "title_root_backfill"
 
 	backfillTitleRootIGDBFlag = "backfill_title_root_igdb_v1"

@@ -54,7 +54,7 @@ func (s *Scraper) BackfillTitleRoots() error {
 	if err != nil {
 		return fmt.Errorf("creating title-root backfill job: %w", err)
 	}
-	if err := s.Queue.EnqueueGamesWithType(job.ID, gameIDs, 5, scrapeQueueTypeTitleRootBackfill); err != nil {
+	if err := s.Queue.EnqueueGamesWithType(job.ID, gameIDs, scrapeQueuePriorityMaintenance, scrapeQueueTypeTitleRootBackfill); err != nil {
 		if cancelErr := s.Queue.CancelJob(job.ID); cancelErr != nil {
 			slog.Warn("failed to cancel title-root backfill job after enqueue failure", "jobId", job.ID, "error", cancelErr)
 		}
