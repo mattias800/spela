@@ -226,8 +226,7 @@ test.describe("Shader Preview", () => {
     await expect(page.getByText("Click anywhere to close")).not.toBeVisible();
   });
 
-  // Skip: canvas stays hidden in headless Chrome (WebGL rendering issue)
-  test.skip("per-console preview button opens modal with correct console screenshot", async ({
+  test("per-console preview button opens modal with correct console screenshot", async ({
     page,
   }) => {
     // Intercept preview-screenshot requests
@@ -240,8 +239,8 @@ test.describe("Shader Preview", () => {
     await page.goto("/preferences");
     await page.getByRole("tab", { name: "Video Filters" }).click();
 
-    // Wait for the per-console table to render
-    const previewButtons = page.locator("table button");
+    // Wait for the per-console table to render.
+    const previewButtons = page.locator('table button[title="Preview shader"]');
     await expect(previewButtons.first()).toBeVisible({ timeout: 10_000 });
 
     const count = await previewButtons.count();
@@ -256,26 +255,35 @@ test.describe("Shader Preview", () => {
       .textContent();
     expect(firstRowConsoleName).toBeTruthy();
 
-    // Clear tracked requests before clicking
+    // Clear tracked requests before clicking. The global preview above may
+    // already have requested a screenshot for the first console.
     screenshotRequests.length = 0;
 
-    await previewButtons.first().click();
+    const targetIndex = count > 1 ? 1 : 0;
+    await previewButtons.nth(targetIndex).click();
     await expect(page.getByText("Click anywhere to close")).toBeVisible({
       timeout: 3_000,
     });
 
-    // The modal should have made a request for a specific console's preview
-    // (may reuse cached image, so check the modal canvas instead)
+    if (targetIndex > 0) {
+      await expect.poll(() => screenshotRequests.length).toBeGreaterThan(0);
+      expect(screenshotRequests[0]).toMatch(
+        /\/api\/consoles\/[a-z0-9-]+\/preview-screenshot/,
+      );
+    }
+
+    // The modal should render the selected console preview. A cached image may
+    // skip a network request, so the canvas is the user-visible assertion.
     const modalCanvas = page.locator(".fixed canvas");
     await expect(modalCanvas).toBeVisible();
 
     await page.keyboard.press("Escape");
     await expect(page.getByText("Click anywhere to close")).not.toBeVisible();
 
-    // Now click a different console's preview button if available
+    // Now click a different console's preview button if available.
     if (count > 1) {
       screenshotRequests.length = 0;
-      await previewButtons.nth(1).click();
+      await previewButtons.first().click();
       await expect(page.getByText("Click anywhere to close")).toBeVisible({
         timeout: 3_000,
       });
