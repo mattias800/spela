@@ -634,7 +634,16 @@ func ToGameResponse(g db.Game, database *gorm.DB, userID uint) GameResponse {
 // Batch-loads user enrichment and title-platform data in fixed query sets.
 func ToGameResponses(games []db.Game, database *gorm.DB, userID uint) []GameResponse {
 	data := loadGameResponseData(database, userID, games)
+	return toGameResponsesWithData(games, database, &data)
+}
 
+func toTitleDedupedGameResponses(games []db.Game, database *gorm.DB, userID uint) []GameResponse {
+	deduped := dedupeGamesByTitleForUser(games, database, userID)
+	data := loadGameResponseData(database, userID, games)
+	return toGameResponsesWithData(deduped, database, &data)
+}
+
+func toGameResponsesWithData(games []db.Game, database *gorm.DB, data *userGameData) []GameResponse {
 	// Batch-load variant counts for all games in the page.
 	// Group by (console_id, group_key) to count how many games share each key.
 	variantCounts := make(map[string]int) // "consoleID:groupKey" -> count
@@ -689,7 +698,7 @@ func ToGameResponses(games []db.Game, database *gorm.DB, userID uint) []GameResp
 
 	result := make([]GameResponse, len(games))
 	for i, g := range games {
-		result[i] = toGameResponseWithData(g, &data)
+		result[i] = toGameResponseWithData(g, data)
 		if g.GroupKey != "" {
 			key := fmt.Sprintf("%d:%s", g.ConsoleID, g.GroupKey)
 			if count, ok := variantCounts[key]; ok && count > 1 {

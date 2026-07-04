@@ -110,3 +110,76 @@ func TestListFavoritesIncludesTitlePlatforms(t *testing.T) {
 	assert.Equal(t, []string{strconvID(selected.ID), strconvID(sibling.ID)}, platformGameIDs(games[0].Platforms))
 	assert.True(t, games[0].Platforms[0].IsPreferred)
 }
+
+func TestListFavoritesDedupesTitleRootPlatforms(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	token := registerAndGetToken(t, router)
+
+	snes := mustFindConsole(t, database, "SNES")
+	gba := mustFindConsole(t, database, "GBA")
+	rootID := uint(4242)
+	snesGame := db.Game{ConsoleID: snes.ID, Title: "Favorite Root", FileName: "root.sfc", FilePath: "/tmp/root.sfc", FileSize: 100, TitleRootIGDBID: &rootID}
+	gbaGame := db.Game{ConsoleID: gba.ID, Title: "Favorite Root Advance", FileName: "root.gba", FilePath: "/tmp/root.gba", FileSize: 100, TitleRootIGDBID: &rootID}
+	require.NoError(t, database.Create(&snesGame).Error)
+	require.NoError(t, database.Create(&gbaGame).Error)
+
+	for _, game := range []db.Game{gbaGame, snesGame} {
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest("POST", "/api/user/favorites/"+fmt.Sprintf("%d", game.ID), nil)
+		req.Header.Set("Authorization", "Bearer "+token)
+		router.ServeHTTP(w, req)
+		require.Equal(t, http.StatusCreated, w.Code)
+	}
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/user/favorites", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var games []GameResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &games))
+	require.Len(t, games, 1)
+	assert.Equal(t, strconvID(snesGame.ID), games[0].ID)
+	require.Len(t, games[0].Platforms, 2)
+	assert.Equal(t, []string{"snes", "gba"}, platformConsoleIDs(games[0].Platforms))
+	assert.Equal(t, []string{strconvID(snesGame.ID), strconvID(gbaGame.ID)}, platformGameIDs(games[0].Platforms))
+	assert.True(t, games[0].IsFavorite)
+}
+
+func TestListFavoritesDedupesNoRootNormalizedFallback(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	token := registerAndGetToken(t, router)
+
+	snes := mustFindConsole(t, database, "SNES")
+	gba := mustFindConsole(t, database, "GBA")
+	snesGame := db.Game{ConsoleID: snes.ID, Title: "Street Fighter II", FileName: "sf2.sfc", FilePath: "/tmp/sf2.sfc", FileSize: 100}
+	gbaGame := db.Game{ConsoleID: gba.ID, Title: "Street Fighter II (USA)", FileName: "sf2.gba", FilePath: "/tmp/sf2.gba", FileSize: 100}
+	require.NoError(t, database.Create(&snesGame).Error)
+	require.NoError(t, database.Create(&gbaGame).Error)
+
+	for _, game := range []db.Game{snesGame, gbaGame} {
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest("POST", "/api/user/favorites/"+fmt.Sprintf("%d", game.ID), nil)
+		req.Header.Set("Authorization", "Bearer "+token)
+		router.ServeHTTP(w, req)
+		require.Equal(t, http.StatusCreated, w.Code)
+	}
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/user/favorites", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var games []GameResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &games))
+	require.Len(t, games, 1)
+	require.Len(t, games[0].Platforms, 2)
+	assert.Equal(t, []string{"snes", "gba"}, platformConsoleIDs(games[0].Platforms))
+	assert.Equal(t, []string{strconvID(snesGame.ID), strconvID(gbaGame.ID)}, platformGameIDs(games[0].Platforms))
+}
