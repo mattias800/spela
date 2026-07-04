@@ -7,8 +7,9 @@ clean license.
 Outputs:
   testdata-public/tic80/spela-hello.tic        — minimal TIC-80 cart
   testdata-public/zxspectrum/spela-hello.tap   — minimal ZX Spectrum tape
+  testdata-public/amstradcpc/spela-hello.dsk   — minimal Amstrad CPC disk
 
-Both files are authored by Spela contributors and dedicated to the
+All generated files are authored by Spela contributors and dedicated to the
 public domain (CC0); see testdata-public/ATTRIBUTION.md.
 
 Re-run this script after editing if you change the BASIC text or the
@@ -20,7 +21,6 @@ Usage:
     python3 scripts/build-testdata-roms.py
 """
 from __future__ import annotations
-import os
 import struct
 import sys
 from pathlib import Path
@@ -123,6 +123,102 @@ def build_zxs_tap() -> bytes:
     return _tap_block(0x00, header) + _tap_block(0xFF, program)
 
 
+# ── Amstrad CPC ────────────────────────────────────────────────────────
+#
+# We emit an extended CPC DSK with a single materialized Data-format
+# track. The extended header marks the remaining tracks as absent, keeping
+# the fixture tiny while still advertising the standard CPC geometry that
+# AMSDOS format detection expects.
+#
+# DSK reference: https://cpctech.cpcwiki.de/docs/dsk.html
+# CPC Data format: first sector 0xC1, 40 tracks, 9 sectors/track,
+# 512-byte sectors, no reserved tracks, 1 KiB blocks, 2 directory blocks.
+CPC_TRACK_SIZE = 0x1300
+CPC_SECTOR_SIZE = 512
+CPC_SECTORS_PER_TRACK = 9
+CPC_TRACKS = 40
+
+
+def _cpc_basic_line(line_no: int, body: bytes) -> bytes:
+    line = struct.pack("<H", line_no) + body + b"\x00"
+    return struct.pack("<H", len(line) + 2) + line
+
+
+def _cpc_basic_program() -> bytes:
+    return (
+        _cpc_basic_line(10, bytes([0xBF]) + b' "SPELA CPC OK"')
+        + b"\x00\x00"
+    )
+
+
+def _amsdos_basic_file(program: bytes) -> bytes:
+    header = bytearray(128)
+    header[0] = 0
+    header[1:9] = b"SPELA   "
+    header[9:12] = b"BAS"
+    header[18] = 0x00  # unprotected BASIC
+    header[21:23] = struct.pack("<H", 0x0170)
+    header[24:26] = struct.pack("<H", len(program))
+    header[26:28] = struct.pack("<H", 0x0000)
+    header[64:67] = bytes([len(program) & 0xFF, (len(program) >> 8) & 0xFF, 0])
+    checksum = sum(header[0:67]) & 0xFFFF
+    header[67:69] = struct.pack("<H", checksum)
+    return bytes(header) + program
+
+
+def _cpc_directory_entry(file_bytes: bytes) -> bytes:
+    entry = bytearray(32)
+    entry[0] = 0x00
+    entry[1:9] = b"SPELA   "
+    entry[9:12] = b"BAS"
+    entry[15] = (len(file_bytes) + 127) // 128
+    entry[16] = 0x02  # allocation block 2; blocks 0-1 hold the directory
+    return bytes(entry)
+
+
+def _build_cpc_track(file_bytes: bytes) -> bytes:
+    track = bytearray([0xE5] * CPC_TRACK_SIZE)
+    track[0:0x100] = bytes(0x100)
+    track[0:12] = b"Track-Info\r\n"
+    track[0x10] = 0
+    track[0x11] = 0
+    track[0x14] = 2  # 512-byte sectors
+    track[0x15] = CPC_SECTORS_PER_TRACK
+    track[0x16] = 0x2A
+    track[0x17] = 0xE5
+
+    for index in range(CPC_SECTORS_PER_TRACK):
+        offset = 0x18 + index * 8
+        track[offset + 0] = 0
+        track[offset + 1] = 0
+        track[offset + 2] = 0xC1 + index
+        track[offset + 3] = 2
+        track[offset + 4] = 0
+        track[offset + 5] = 0
+        track[offset + 6:offset + 8] = struct.pack("<H", CPC_SECTOR_SIZE)
+
+    sector_data = 0x100
+    directory_start = sector_data
+    track[directory_start:directory_start + 32] = _cpc_directory_entry(file_bytes)
+
+    file_start = sector_data + 4 * CPC_SECTOR_SIZE
+    if len(file_bytes) > 2 * CPC_SECTOR_SIZE:
+        raise ValueError("CPC BASIC fixture no longer fits in one allocation block")
+    track[file_start:file_start + len(file_bytes)] = file_bytes
+    return bytes(track)
+
+
+def build_cpc_dsk() -> bytes:
+    file_bytes = _amsdos_basic_file(_cpc_basic_program())
+    header = bytearray(0x100)
+    header[0:34] = b"EXTENDED CPC DSK File\r\nDisk-Info\r\n"
+    header[0x22:0x30] = b"Spela CI      "
+    header[0x30] = CPC_TRACKS
+    header[0x31] = 1
+    header[0x34] = CPC_TRACK_SIZE >> 8
+    return bytes(header) + _build_cpc_track(file_bytes)
+
+
 def write(path: Path, data: bytes) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(data)
@@ -133,6 +229,7 @@ def main() -> int:
     print("Building testdata-public ROMs:")
     write(TESTDATA / "tic80" / "spela-hello.tic", build_tic80())
     write(TESTDATA / "zxspectrum" / "spela-hello.tap", build_zxs_tap())
+    write(TESTDATA / "amstradcpc" / "spela-hello.dsk", build_cpc_dsk())
     return 0
 
 
