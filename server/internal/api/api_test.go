@@ -60,6 +60,7 @@ func setupTestEnv(t *testing.T) (*gorm.DB, *Config) {
 		&db.SystemEventCategory{},
 		&db.SystemEvent{},
 		&db.ServerSetting{}, &db.Core{}, &db.CorePlatformBinary{},
+		&db.UserTitlePlatformPreference{},
 		&db.ConsoleShaderPreference{},
 		&db.ConsoleRenderScalePreference{},
 		&db.ConsoleSaveStatePolicy{},

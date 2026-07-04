@@ -58,6 +58,7 @@ data class GameDetailState(
     val isScraping: Boolean = false,
     val isScrapeQueued: Boolean = false,
     val isSharing: Boolean = false,
+    val settingPreferredPlatformGameId: String? = null,
     val myRating: Int? = null,
     val ratingSummary: RatingSummary? = null,
     val isRating: Boolean = false,

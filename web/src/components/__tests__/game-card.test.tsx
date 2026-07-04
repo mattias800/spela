@@ -88,4 +88,35 @@ describe("GameCard", () => {
       "/games/game-snes",
     );
   });
+
+  it("links the card cover to the represented platform even when another platform is preferred", async () => {
+    const user = userEvent.setup();
+    const game = makeGame({
+      id: "game-nes",
+      title: "Mega Adventure",
+      consoleId: "nes",
+      consoleName: "Nintendo Entertainment System",
+      platforms: [
+        {
+          gameId: "game-nes",
+          consoleId: "nes",
+          consoleName: "Nintendo Entertainment System",
+          isPreferred: false,
+        },
+        {
+          gameId: "game-snes",
+          consoleId: "snes",
+          consoleName: "SNES",
+          isPreferred: true,
+        },
+      ],
+    });
+    renderCard(game);
+
+    await user.click(screen.getByRole("link", { name: "Open Mega Adventure" }));
+
+    expect(screen.getByTestId("location")).toHaveTextContent(
+      "/games/game-nes",
+    );
+  });
 });

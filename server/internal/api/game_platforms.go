@@ -19,7 +19,7 @@ const (
 // loadGamePlatforms returns the platform releases for each selected game,
 // grouped by IGDB title root when available and by the existing normalized
 // title fallback otherwise.
-func loadGamePlatforms(database *gorm.DB, games []db.Game) map[uint][]GamePlatformResponse {
+func loadGamePlatforms(database *gorm.DB, userID uint, games []db.Game) map[uint][]GamePlatformResponse {
 	result := make(map[uint][]GamePlatformResponse, len(games))
 	if len(games) == 0 {
 		return result
@@ -39,6 +39,8 @@ func loadGamePlatforms(database *gorm.DB, games []db.Game) map[uint][]GamePlatfo
 			rootIDs[*game.TitleRootIGDBID] = struct{}{}
 		}
 	}
+
+	preferredByTitle := fetchPreferredTitlePlatformMap(database, userID, wantedKeys)
 
 	grouped := make(map[string][]db.Game, len(wantedKeys))
 	if database != nil {
@@ -60,7 +62,31 @@ func loadGamePlatforms(database *gorm.DB, games []db.Game) map[uint][]GamePlatfo
 	}
 
 	for _, game := range games {
-		result[game.ID] = buildGamePlatformResponses(grouped[keyByGameID[game.ID]], game)
+		key := keyByGameID[game.ID]
+		result[game.ID] = buildGamePlatformResponses(grouped[key], game, preferredByTitle[key])
+	}
+	return result
+}
+
+func fetchPreferredTitlePlatformMap(database *gorm.DB, userID uint, keys map[string]struct{}) map[string]uint {
+	result := make(map[string]uint)
+	if database == nil || userID == 0 || len(keys) == 0 {
+		return result
+	}
+
+	titleKeys := make([]string, 0, len(keys))
+	for key := range keys {
+		titleKeys = append(titleKeys, key)
+	}
+	sort.Strings(titleKeys)
+
+	var prefs []db.UserTitlePlatformPreference
+	database.
+		Select("title_key", "preferred_game_id").
+		Where("user_id = ? AND title_key IN ?", userID, titleKeys).
+		Find(&prefs)
+	for _, pref := range prefs {
+		result[pref.TitleKey] = pref.PreferredGameID
 	}
 	return result
 }
@@ -104,34 +130,44 @@ func appendUniquePlatformGame(groups map[string][]db.Game, key string, game db.G
 	groups[key] = append(groups[key], game)
 }
 
-func buildGamePlatformResponses(games []db.Game, preferred db.Game) []GamePlatformResponse {
+func buildGamePlatformResponses(games []db.Game, current db.Game, savedPreferredID uint) []GamePlatformResponse {
 	if len(games) == 0 {
-		return []GamePlatformResponse{toGamePlatformResponse(preferred, true)}
+		return []GamePlatformResponse{toGamePlatformResponse(current, true)}
+	}
+
+	preferredID := current.ID
+	if savedPreferredID != 0 && containsPlatformGameID(games, savedPreferredID) {
+		preferredID = savedPreferredID
 	}
 
 	gamesByConsole := make(map[string]db.Game, len(games))
 	for _, game := range games {
 		key := gamePlatformConsoleKey(game)
-		if existing, ok := gamesByConsole[key]; !ok || shouldReplacePlatformCandidate(game, existing, preferred.ID) {
+		if existing, ok := gamesByConsole[key]; !ok || shouldReplacePlatformCandidate(game, existing, preferredID, current.ID) {
 			gamesByConsole[key] = game
 		}
 	}
 
 	deduped := make([]db.Game, 0, len(gamesByConsole))
-	preferredIncluded := false
+	currentIncluded := false
+	currentConsoleIncluded := false
+	currentConsoleKey := gamePlatformConsoleKey(current)
 	for _, game := range gamesByConsole {
-		if game.ID == preferred.ID {
-			preferredIncluded = true
+		if game.ID == current.ID {
+			currentIncluded = true
+		}
+		if currentConsoleKey != "" && gamePlatformConsoleKey(game) == currentConsoleKey {
+			currentConsoleIncluded = true
 		}
 		deduped = append(deduped, game)
 	}
-	if !preferredIncluded {
-		deduped = append(deduped, preferred)
+	if !currentIncluded && !currentConsoleIncluded && current.ID != 0 {
+		deduped = append(deduped, current)
 	}
 
 	sort.SliceStable(deduped, func(i, j int) bool {
-		leftPreferred := deduped[i].ID == preferred.ID
-		rightPreferred := deduped[j].ID == preferred.ID
+		leftPreferred := deduped[i].ID == preferredID
+		rightPreferred := deduped[j].ID == preferredID
 		if leftPreferred != rightPreferred {
 			return leftPreferred
 		}
@@ -157,19 +193,37 @@ func buildGamePlatformResponses(games []db.Game, preferred db.Game) []GamePlatfo
 
 	platforms := make([]GamePlatformResponse, 0, len(deduped))
 	for _, game := range deduped {
-		platforms = append(platforms, toGamePlatformResponse(game, game.ID == preferred.ID))
+		platforms = append(platforms, toGamePlatformResponse(game, game.ID == preferredID))
 	}
 	return platforms
 }
 
-func shouldReplacePlatformCandidate(candidate db.Game, existing db.Game, preferredID uint) bool {
-	if candidate.ID == preferredID {
-		return true
+func containsPlatformGameID(games []db.Game, gameID uint) bool {
+	for _, game := range games {
+		if game.ID == gameID {
+			return true
+		}
 	}
-	if existing.ID == preferredID {
-		return false
+	return false
+}
+
+func shouldReplacePlatformCandidate(candidate db.Game, existing db.Game, preferredID uint, currentID uint) bool {
+	candidatePriority := platformCandidatePriority(candidate.ID, preferredID, currentID)
+	existingPriority := platformCandidatePriority(existing.ID, preferredID, currentID)
+	if candidatePriority != existingPriority {
+		return candidatePriority < existingPriority
 	}
 	return candidate.ID < existing.ID
+}
+
+func platformCandidatePriority(gameID uint, preferredID uint, currentID uint) int {
+	if preferredID != 0 && gameID == preferredID {
+		return 0
+	}
+	if currentID != 0 && gameID == currentID {
+		return 1
+	}
+	return 2
 }
 
 func toGamePlatformResponse(game db.Game, preferred bool) GamePlatformResponse {

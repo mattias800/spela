@@ -27,6 +27,7 @@ import com.spela.client.models.PlayStatsEntry
 import com.spela.client.models.SavedSearchRequest
 import com.spela.client.models.SavedSearchResponse
 import com.spela.client.models.StorageUsageResponse
+import com.spela.client.models.TitlePlatformPreferenceResponse
 import com.spela.client.models.UpdateGameKeyMappingRequest
 import com.spela.client.models.UpdatePreferencesRequest
 import com.spela.client.models.UpdateProfileRequest
@@ -62,7 +63,7 @@ open class UserApi : ApiClient {
     /**
      * Change current user password
      * Verifies the current password, sets a new one, revokes existing refresh tokens and blacklists the current access token.
-     * @param changePasswordRequest 
+     * @param changePasswordRequest
      * @param authorization Bearer access token; used to blacklist the current access token after a successful change. (optional)
      * @return MessageResponse
      */
@@ -104,7 +105,7 @@ open class UserApi : ApiClient {
 
         val localVariableAuthNames = listOf<String>()
 
-        val localVariableBody = 
+        val localVariableBody =
             io.ktor.client.utils.EmptyContent
 
         val localVariableQuery = mutableMapOf<String, List<String>>()
@@ -129,7 +130,7 @@ open class UserApi : ApiClient {
     /**
      * Create a saved search
      * Persists a named search filter for the caller. Up to 50 saved searches per user.
-     * @param savedSearchRequest 
+     * @param savedSearchRequest
      * @return SavedSearchResponse
      */
     @Suppress("UNCHECKED_CAST")
@@ -170,7 +171,7 @@ open class UserApi : ApiClient {
 
         val localVariableAuthNames = listOf<String>()
 
-        val localVariableBody = 
+        val localVariableBody =
             io.ktor.client.utils.EmptyContent
 
         val localVariableQuery = mutableMapOf<String, List<String>>()
@@ -203,7 +204,7 @@ open class UserApi : ApiClient {
 
         val localVariableAuthNames = listOf<String>()
 
-        val localVariableBody = 
+        val localVariableBody =
             io.ktor.client.utils.EmptyContent
 
         val localVariableQuery = mutableMapOf<String, List<String>>()
@@ -236,7 +237,7 @@ open class UserApi : ApiClient {
 
         val localVariableAuthNames = listOf<String>()
 
-        val localVariableBody = 
+        val localVariableBody =
             io.ktor.client.utils.EmptyContent
 
         val localVariableQuery = mutableMapOf<String, List<String>>()
@@ -268,7 +269,7 @@ open class UserApi : ApiClient {
 
         val localVariableAuthNames = listOf<String>()
 
-        val localVariableBody = 
+        val localVariableBody =
             io.ktor.client.utils.EmptyContent
 
         val localVariableQuery = mutableMapOf<String, List<String>>()
@@ -309,7 +310,7 @@ open class UserApi : ApiClient {
 
         val localVariableAuthNames = listOf<String>()
 
-        val localVariableBody = 
+        val localVariableBody =
             io.ktor.client.utils.EmptyContent
 
         val localVariableQuery = mutableMapOf<String, List<String>>()
@@ -351,7 +352,7 @@ open class UserApi : ApiClient {
 
         val localVariableAuthNames = listOf<String>()
 
-        val localVariableBody = 
+        val localVariableBody =
             io.ktor.client.utils.EmptyContent
 
         val localVariableQuery = mutableMapOf<String, List<String>>()
@@ -392,7 +393,7 @@ open class UserApi : ApiClient {
 
         val localVariableAuthNames = listOf<String>()
 
-        val localVariableBody = 
+        val localVariableBody =
             io.ktor.client.utils.EmptyContent
 
         val localVariableQuery = mutableMapOf<String, List<String>>()
@@ -433,7 +434,7 @@ open class UserApi : ApiClient {
 
         val localVariableAuthNames = listOf<String>()
 
-        val localVariableBody = 
+        val localVariableBody =
             io.ktor.client.utils.EmptyContent
 
         val localVariableQuery = mutableMapOf<String, List<String>>()
@@ -465,7 +466,7 @@ open class UserApi : ApiClient {
 
         val localVariableAuthNames = listOf<String>()
 
-        val localVariableBody = 
+        val localVariableBody =
             io.ktor.client.utils.EmptyContent
 
         val localVariableQuery = mutableMapOf<String, List<String>>()
@@ -497,7 +498,7 @@ open class UserApi : ApiClient {
 
         val localVariableAuthNames = listOf<String>()
 
-        val localVariableBody = 
+        val localVariableBody =
             io.ktor.client.utils.EmptyContent
 
         val localVariableQuery = mutableMapOf<String, List<String>>()
@@ -529,7 +530,7 @@ open class UserApi : ApiClient {
 
         val localVariableAuthNames = listOf<String>()
 
-        val localVariableBody = 
+        val localVariableBody =
             io.ktor.client.utils.EmptyContent
 
         val localVariableQuery = mutableMapOf<String, List<String>>()
@@ -561,7 +562,7 @@ open class UserApi : ApiClient {
 
         val localVariableAuthNames = listOf<String>()
 
-        val localVariableBody = 
+        val localVariableBody =
             io.ktor.client.utils.EmptyContent
 
         val localVariableQuery = mutableMapOf<String, List<String>>()
@@ -593,10 +594,43 @@ open class UserApi : ApiClient {
     }
 
     /**
+     * Set preferred platform for a title
+     * Stores the authenticated user&#39;s preferred platform release for the logical title group containing the supplied game.
+     * @param gameId Game ID to prefer for this logical title.
+     * @return TitlePlatformPreferenceResponse
+     */
+    @Suppress("UNCHECKED_CAST")
+    open suspend fun setTitlePlatformPreference(gameId: kotlin.String): HttpResponse<TitlePlatformPreferenceResponse> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody =
+            io.ktor.client.utils.EmptyContent
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.PUT,
+            "/api/user/title-platform-preferences/{gameId}".replace("{" + "gameId" + "}", "$gameId"),
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return request(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+
+    /**
      * Set per-game key mapping
      * Upserts the caller&#39;s custom key mapping for a specific game.
      * @param gameId Game ID.
-     * @param updateGameKeyMappingRequest 
+     * @param updateGameKeyMappingRequest
      * @return GameKeyMappingResponse
      */
     @Suppress("UNCHECKED_CAST")
@@ -629,7 +663,7 @@ open class UserApi : ApiClient {
     /**
      * Update current user preferences
      * Partially updates the authenticated user&#39;s emulation preferences. Nil fields are left untouched. Also upserts per-console shader and key-mapping overrides.
-     * @param updatePreferencesRequest 
+     * @param updatePreferencesRequest
      * @return UserPreferencesResponse
      */
     @Suppress("UNCHECKED_CAST")
@@ -662,7 +696,7 @@ open class UserApi : ApiClient {
     /**
      * Update current user profile
      * Updates the authenticated user&#39;s avatar URL.
-     * @param updateProfileRequest 
+     * @param updateProfileRequest
      * @return UserResponse
      */
     @Suppress("UNCHECKED_CAST")

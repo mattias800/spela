@@ -492,6 +492,32 @@ func TestSearch_PlatformCodeHintBoostsMatchingConsole(t *testing.T) {
 	}
 }
 
+func TestSearch_PlatformCodeHintOverridesSavedPreferredPlatform(t *testing.T) {
+	database, router, token := setupSearchEnv(t)
+
+	var nes, gba db.Console
+	require.NoError(t, database.Where("abbreviation = ?", "NES").First(&nes).Error)
+	require.NoError(t, database.Where("abbreviation = ?", "GBA").First(&gba).Error)
+
+	nesGame := db.Game{ConsoleID: nes.ID, Title: "Jurassic Park", FileName: "jp.nes", FilePath: "/roms/nes/jp.nes"}
+	gbaGame := db.Game{ConsoleID: gba.ID, Title: "Jurassic Park", FileName: "jp.gba", FilePath: "/roms/gba/jp.gba"}
+	require.NoError(t, database.Create(&nesGame).Error)
+	require.NoError(t, database.Create(&gbaGame).Error)
+	setTitlePlatformPreference(t, router, token, gbaGame.ID)
+
+	code, resp := searchGet(t, router, token, "/api/search?q="+url.QueryEscape("jurassic park nes"))
+	require.Equal(t, http.StatusOK, code)
+	require.Len(t, resp.Games.Results, 1)
+
+	result := resp.Games.Results[0]
+	assert.Equal(t, strconvID(nesGame.ID), result.ID)
+	assert.Equal(t, "nes", result.ConsoleID)
+	require.Len(t, result.Platforms, 2)
+	assert.Equal(t, "nes", result.Platforms[0].ConsoleID)
+	assert.Equal(t, strconvID(nesGame.ID), result.Platforms[0].GameID)
+	assert.True(t, result.Platforms[0].IsPreferred)
+}
+
 func TestSearch_GamesFoldTitleRootPlatforms(t *testing.T) {
 	database, router, token := setupSearchEnv(t)
 

@@ -200,7 +200,7 @@ func titleLikeClauses(column, query string) (clause string, args []any) {
 //
 // When priorityAbbr is non-empty, games on that console float to the top
 // of the result list without filtering out other consoles' results.
-func (h *SearchHandler) searchGames(gameQuery string, limit int, priorityAbbr string) SearchCategoryResult[SearchGameResult] {
+func (h *SearchHandler) searchGames(gameQuery string, limit int, priorityAbbr string, userID uint) SearchCategoryResult[SearchGameResult] {
 	titleClause, titleArgs := titleLikeClauses("games.title", gameQuery)
 	likeClause := "(" + titleClause + ") AND games.deleted_at IS NULL"
 
@@ -250,7 +250,8 @@ func (h *SearchHandler) searchGames(gameQuery string, limit int, priorityAbbr st
 		return SearchCategoryResult[SearchGameResult]{Results: []SearchGameResult{}, Total: 0}
 	}
 
-	folded := foldSearchGamesByTitle(games, priorityAbbr)
+	preferredByTitle := fetchPreferredTitlePlatformMap(h.DB, userID, titleKeysForGames(games))
+	folded := foldSearchGamesByTitle(games, priorityAbbr, preferredByTitle)
 	total := len(folded)
 	if rawTotal > int64(len(games)) {
 		total = int(rawTotal)
@@ -259,13 +260,87 @@ func (h *SearchHandler) searchGames(gameQuery string, limit int, priorityAbbr st
 		folded = folded[:limit]
 	}
 
-	platformsByGameID := loadGamePlatforms(h.DB, games)
+	platformUserID := userID
+	if priorityAbbr != "" {
+		platformUserID = 0
+	}
+	platformsByGameID := loadGamePlatforms(h.DB, platformUserID, games)
+	gameByID := make(map[uint]db.Game, len(games))
+	for _, game := range games {
+		gameByID[game.ID] = game
+	}
+	preferredGames := map[uint]db.Game{}
+	if priorityAbbr == "" {
+		preferredGames = h.loadPreferredSearchResultGames(folded, platformsByGameID, gameByID)
+	}
+
 	results := make([]SearchGameResult, len(folded))
 	for i, game := range folded {
-		results[i] = toSearchGameResult(game, platformsByGameID[game.ID])
+		resultGame := game
+		if preferredGame, ok := preferredGames[game.ID]; ok {
+			resultGame = preferredGame
+		}
+		results[i] = toSearchGameResult(resultGame, platformsByGameID[game.ID])
 	}
 
 	return SearchCategoryResult[SearchGameResult]{Results: results, Total: total}
+}
+
+func (h *SearchHandler) loadPreferredSearchResultGames(folded []db.Game, platformsByGameID map[uint][]GamePlatformResponse, gameByID map[uint]db.Game) map[uint]db.Game {
+	result := make(map[uint]db.Game)
+	missingIDs := make(map[uint]struct{})
+
+	for _, game := range folded {
+		preferredID, ok := preferredPlatformGameID(platformsByGameID[game.ID])
+		if !ok || preferredID == game.ID {
+			continue
+		}
+		if preferredGame, ok := gameByID[preferredID]; ok {
+			result[game.ID] = preferredGame
+			continue
+		}
+		missingIDs[preferredID] = struct{}{}
+	}
+	if len(missingIDs) == 0 {
+		return result
+	}
+
+	ids := make([]uint, 0, len(missingIDs))
+	for id := range missingIDs {
+		ids = append(ids, id)
+	}
+	sort.Slice(ids, func(i, j int) bool { return ids[i] < ids[j] })
+
+	var loaded []db.Game
+	h.DB.Preload("Console").Where("id IN ?", ids).Find(&loaded)
+	for _, game := range loaded {
+		gameByID[game.ID] = game
+	}
+
+	for _, game := range folded {
+		preferredID, ok := preferredPlatformGameID(platformsByGameID[game.ID])
+		if !ok || preferredID == game.ID {
+			continue
+		}
+		if preferredGame, ok := gameByID[preferredID]; ok {
+			result[game.ID] = preferredGame
+		}
+	}
+	return result
+}
+
+func preferredPlatformGameID(platforms []GamePlatformResponse) (uint, bool) {
+	for _, platform := range platforms {
+		if !platform.IsPreferred {
+			continue
+		}
+		id, err := strconv.ParseUint(platform.GameID, 10, 64)
+		if err != nil {
+			return 0, false
+		}
+		return uint(id), true
+	}
+	return 0, false
 }
 
 func searchGameMaterializationLimit(limit int) int {
@@ -282,7 +357,7 @@ func searchGameMaterializationLimit(limit int) int {
 	return n
 }
 
-func foldSearchGamesByTitle(games []db.Game, priorityAbbr string) []db.Game {
+func foldSearchGamesByTitle(games []db.Game, priorityAbbr string, preferredByTitle map[string]uint) []db.Game {
 	type group struct {
 		key   string
 		games []db.Game
@@ -303,12 +378,12 @@ func foldSearchGamesByTitle(games []db.Game, priorityAbbr string) []db.Game {
 	folded := make([]db.Game, 0, len(orderedKeys))
 	for _, key := range orderedKeys {
 		grp := groups[key]
-		folded = append(folded, pickSearchResultForTitle(grp.key, grp.games, priorityAbbr))
+		folded = append(folded, pickSearchResultForTitle(grp.key, grp.games, priorityAbbr, preferredByTitle))
 	}
 	return folded
 }
 
-func pickSearchResultForTitle(key string, games []db.Game, priorityAbbr string) db.Game {
+func pickSearchResultForTitle(key string, games []db.Game, priorityAbbr string, preferredByTitle map[string]uint) db.Game {
 	if priorityAbbr != "" {
 		for _, game := range games {
 			if strings.EqualFold(game.Console.Abbreviation, priorityAbbr) {
@@ -316,7 +391,7 @@ func pickSearchResultForTitle(key string, games []db.Game, priorityAbbr string) 
 			}
 		}
 	}
-	return pickWinnerForTitle(key, games, nil)
+	return pickWinnerForTitle(key, games, titleWinnerHints{preferredByTitle: preferredByTitle})
 }
 
 func toSearchGameResult(game db.Game, platforms []GamePlatformResponse) SearchGameResult {

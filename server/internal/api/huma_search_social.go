@@ -137,7 +137,7 @@ func (h *SearchHandler) HumaSearch(ctx context.Context, in *SearchInput) (*Searc
 	escapedQuery := escapeLikePattern(query)
 	likePattern := "%" + escapedQuery + "%"
 
-	games := h.searchGames(gameQuery, limit, priorityAbbr)
+	games := h.searchGames(gameQuery, limit, priorityAbbr, userID)
 	consoles := h.searchConsoles(query, limit)
 	developers := h.searchDevelopers(likePattern, limit)
 	publishers := h.searchPublishers(likePattern, limit)

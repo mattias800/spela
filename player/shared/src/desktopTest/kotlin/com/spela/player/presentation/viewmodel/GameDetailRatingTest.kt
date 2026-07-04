@@ -172,11 +172,58 @@ class GameDetailRatingTest {
         assertNull(vm.state.value.gameSaveStatePolicy,
             "null choice means 'inherit from per-console policy' — UI shows the radio in the default position")
     }
+
+    @Test
+    fun setPreferredPlatformOptimisticallyMarksSelectedPlatformAndPersists() = runTest(testDispatcher) {
+        fakeGameRepo.game = fakeGameRepo.game.copy(
+            platforms = listOf(
+                GamePlatform(gameId = "1", consoleId = "nes", consoleName = "NES", isPreferred = true),
+                GamePlatform(gameId = "2", consoleId = "snes", consoleName = "SNES"),
+            ),
+        )
+        val vm = createViewModel()
+        vm.onIntent(GameDetailIntent.LoadGame("1"))
+        advanceUntilIdle()
+
+        vm.onIntent(GameDetailIntent.SetPreferredPlatform("2"))
+        advanceUntilIdle()
+
+        assertEquals("2", fakeGameRepo.preferredPlatformGameId)
+        val platforms = vm.state.value.gameDetail?.game?.platforms.orEmpty()
+        assertFalse(platforms.first { it.gameId == "1" }.isPreferred)
+        assertTrue(platforms.first { it.gameId == "2" }.isPreferred)
+        assertNull(vm.state.value.settingPreferredPlatformGameId)
+    }
+
+    @Test
+    fun setPreferredPlatformRollsBackOnFailure() = runTest(testDispatcher) {
+        fakeGameRepo.game = fakeGameRepo.game.copy(
+            platforms = listOf(
+                GamePlatform(gameId = "1", consoleId = "nes", consoleName = "NES", isPreferred = true),
+                GamePlatform(gameId = "2", consoleId = "snes", consoleName = "SNES"),
+            ),
+        )
+        fakeGameRepo.preferredPlatformResult = Result.failure(Exception("preference failed"))
+        val vm = createViewModel()
+        vm.onIntent(GameDetailIntent.LoadGame("1"))
+        advanceUntilIdle()
+
+        vm.onIntent(GameDetailIntent.SetPreferredPlatform("2"))
+        advanceUntilIdle()
+
+        val platforms = vm.state.value.gameDetail?.game?.platforms.orEmpty()
+        assertTrue(platforms.first { it.gameId == "1" }.isPreferred)
+        assertFalse(platforms.first { it.gameId == "2" }.isPreferred)
+        assertEquals("preference failed", vm.state.value.error)
+        assertNull(vm.state.value.settingPreferredPlatformGameId)
+    }
 }
 
 private class StubGameRepository : GameRepository {
     var userRating: Int? = null
-    private val game = Game(
+    var preferredPlatformGameId: String? = null
+    var preferredPlatformResult: Result<Unit> = Result.success(Unit)
+    var game = Game(
         id = "1",
         title = "Test Game",
         consoleId = "nes",
@@ -198,6 +245,10 @@ private class StubGameRepository : GameRepository {
     override suspend fun getPlayLaterGames(): Result<List<Game>> = Result.success(emptyList())
     override suspend fun addToPlayLater(gameId: String): Result<Unit> = Result.success(Unit)
     override suspend fun removeFromPlayLater(gameId: String): Result<Unit> = Result.success(Unit)
+    override suspend fun setTitlePlatformPreference(gameId: String): Result<Unit> {
+        preferredPlatformGameId = gameId
+        return preferredPlatformResult
+    }
     override suspend fun getTopRatedGames(consoleId: String): Result<List<TopRatedGame>> = Result.success(emptyList())
     override suspend fun getTopRatedGamesGlobal(): Result<List<TopRatedGame>> = Result.success(emptyList())
     override suspend fun getTopRatedAvailable(): Result<List<TopListGame>> = Result.success(emptyList())

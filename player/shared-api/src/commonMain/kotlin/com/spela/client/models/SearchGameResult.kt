@@ -22,17 +22,17 @@ import kotlinx.serialization.descriptors.*
 import kotlinx.serialization.encoding.*
 
 /**
- * 
  *
- * @param consoleId 
- * @param consoleName 
- * @param coverAspectRatio 
- * @param coverUrl 
- * @param developer 
- * @param genre 
- * @param id 
+ *
+ * @param consoleId
+ * @param consoleName
+ * @param coverAspectRatio
+ * @param coverUrl
+ * @param developer
+ * @param genre
+ * @param id
  * @param platforms
- * @param title 
+ * @param title
  */
 @Serializable
 
@@ -52,7 +52,7 @@ data class SearchGameResult (
 
     @SerialName(value = "id") @Required val id: kotlin.String,
 
-    @SerialName(value = "platforms") val platforms: kotlin.collections.List<GamePlatformResponse> = emptyList(),
+    @SerialName(value = "platforms") @Required val platforms: kotlin.collections.List<GamePlatformResponse>,
 
     @SerialName(value = "title") @Required val title: kotlin.String
 

@@ -10607,6 +10607,31 @@
         ],
         "type": "object"
       },
+      "TitlePlatformPreferenceResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/TitlePlatformPreferenceResponse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "preferredGameId": {
+            "type": "string"
+          },
+          "titleKey": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "titleKey",
+          "preferredGameId"
+        ],
+        "type": "object"
+      },
       "TopListGameResponse": {
         "additionalProperties": false,
         "properties": {
@@ -28701,6 +28726,57 @@
         "summary": "Get the caller's taste profile",
         "tags": [
           "profiles"
+        ]
+      }
+    },
+    "/api/user/title-platform-preferences/{gameId}": {
+      "put": {
+        "description": "Stores the authenticated user's preferred platform release for the logical title group containing the supplied game.",
+        "operationId": "setTitlePlatformPreference",
+        "parameters": [
+          {
+            "description": "Game ID to prefer for this logical title.",
+            "in": "path",
+            "name": "gameId",
+            "required": true,
+            "schema": {
+              "description": "Game ID to prefer for this logical title.",
+              "maxLength": 20,
+              "pattern": "^[0-9]+$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TitlePlatformPreferenceResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Set preferred platform for a title",
+        "tags": [
+          "user"
         ]
       }
     },

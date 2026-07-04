@@ -454,7 +454,7 @@ func loadGameResponseData(database *gorm.DB, userID uint, games []db.Game) userG
 	}
 
 	data := loadUserGameData(database, userID, gameIDs)
-	data.platforms = loadGamePlatforms(database, games)
+	data.platforms = loadGamePlatforms(database, userID, games)
 	return data
 }
 

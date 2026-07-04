@@ -734,6 +734,21 @@ type GameSaveStatePolicy struct {
 	Choice    ConsoleSaveStateChoice `gorm:"type:varchar(16);not null" json:"choice"`
 }
 
+// UserTitlePlatformPreference stores the user's preferred platform release for
+// a logical title group. TitleKey uses the same "igdb:<id>" / "title:<key>" /
+// "id:<gameID>" format as the API title-dedupe helpers, so the preference can
+// be applied consistently to game cards, search results, and platform lists.
+type UserTitlePlatformPreference struct {
+	ID              uint      `gorm:"primarykey" json:"id"`
+	CreatedAt       time.Time `json:"createdAt"`
+	UpdatedAt       time.Time `json:"updatedAt"`
+	UserID          uint      `gorm:"uniqueIndex:idx_user_title_platform_preference;not null" json:"userId"`
+	User            User      `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"-"`
+	TitleKey        string    `gorm:"uniqueIndex:idx_user_title_platform_preference;size:300;not null" json:"titleKey"`
+	PreferredGameID uint      `gorm:"index;not null" json:"preferredGameId"`
+	PreferredGame   Game      `gorm:"foreignKey:PreferredGameID;constraint:OnDelete:CASCADE" json:"-"`
+}
+
 // ConsoleShaderPreference stores a user's per-console shader override.
 type ConsoleShaderPreference struct {
 	ID        uint           `gorm:"primarykey" json:"id"`

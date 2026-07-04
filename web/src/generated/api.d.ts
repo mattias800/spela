@@ -5450,6 +5450,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/user/title-platform-preferences/{gameId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set preferred platform for a title
+         * @description Stores the authenticated user's preferred platform release for the logical title group containing the supplied game.
+         */
+        put: operations["setTitlePlatformPreference"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/users/recent-partners": {
         parameters: {
             query?: never;
@@ -9167,6 +9187,16 @@ export interface components {
             /** Format: double */
             igdbCriticsRating: number;
             title: string;
+        };
+        TitlePlatformPreferenceResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/TitlePlatformPreferenceResponse.json
+             */
+            readonly $schema?: string;
+            preferredGameId: string;
+            titleKey: string;
         };
         TopListGameResponse: {
             consoleId: string;
@@ -20076,6 +20106,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TasteProfileResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    setTitlePlatformPreference: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Game ID to prefer for this logical title. */
+                gameId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TitlePlatformPreferenceResponse"];
                 };
             };
             /** @description Error */
