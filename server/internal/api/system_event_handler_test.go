@@ -661,6 +661,27 @@ func TestPruneExpiredSystemEvents(t *testing.T) {
 	assert.Equal(t, "alice", remaining[0].Username)
 }
 
+func TestRunDatabaseCleanup_PrunesExpiredFederationExchanges(t *testing.T) {
+	database, _ := setupTestEnv(t)
+	require.NoError(t, database.AutoMigrate(&db.FederationExchange{}))
+
+	require.NoError(t, database.Create(&db.FederationExchange{
+		RequestID: "old", Direction: db.ExchangeOutbound, Operation: "stats_pull",
+		Status: db.ExchangeOK, StartedAt: time.Now().Add(-31 * 24 * time.Hour),
+	}).Error)
+	require.NoError(t, database.Create(&db.FederationExchange{
+		RequestID: "fresh", Direction: db.ExchangeOutbound, Operation: "stats_pull",
+		Status: db.ExchangeOK, StartedAt: time.Now().Add(-24 * time.Hour),
+	}).Error)
+
+	runDatabaseCleanup(database)
+
+	var rows []db.FederationExchange
+	require.NoError(t, database.Order("request_id").Find(&rows).Error)
+	require.Len(t, rows, 1)
+	assert.Equal(t, "fresh", rows[0].RequestID)
+}
+
 func TestLoginFailureRecordsSystemEvent(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	router, cleanup := NewRouter(*cfg)

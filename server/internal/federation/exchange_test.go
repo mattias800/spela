@@ -70,3 +70,27 @@ func TestRecordExchange_UpdatesPeerHealthOnError(t *testing.T) {
 	assert.Equal(t, "connection refused", got.LastError)
 	require.NotNil(t, got.LastErrorAt)
 }
+
+func TestPruneExpiredExchanges_RemovesOnlyRowsOutsideRetention(t *testing.T) {
+	database := openFedTestDB(t)
+	now := time.Date(2026, 7, 4, 12, 0, 0, 0, time.UTC)
+
+	old := db.FederationExchange{
+		RequestID: "old", Direction: db.ExchangeOutbound, Operation: "stats_pull",
+		Status: db.ExchangeOK, StartedAt: now.Add(-ExchangeRetentionWindow - time.Hour),
+	}
+	fresh := db.FederationExchange{
+		RequestID: "fresh", Direction: db.ExchangeOutbound, Operation: "stats_pull",
+		Status: db.ExchangeOK, StartedAt: now.Add(-ExchangeRetentionWindow + time.Hour),
+	}
+	require.NoError(t, database.Create(&old).Error)
+	require.NoError(t, database.Create(&fresh).Error)
+
+	assert.Equal(t, int64(1), PruneExpiredExchanges(database, now))
+	assert.Equal(t, int64(0), PruneExpiredExchanges(database, now), "pruning is idempotent")
+
+	var rows []db.FederationExchange
+	require.NoError(t, database.Order("request_id").Find(&rows).Error)
+	require.Len(t, rows, 1)
+	assert.Equal(t, "fresh", rows[0].RequestID)
+}
