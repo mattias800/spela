@@ -34,7 +34,7 @@ func (f *fakeStatsClient) FetchStats(baseURL, _ string, _ federation.Identity, _
 
 func seedLocalPlay(t *testing.T, database *gorm.DB, scraperID string, playTime int64) {
 	t.Helper()
-	u := db.User{Username: "localuser", Email: "l@x.test", PasswordHash: "h", ProfileVisibility: "public"}
+	u := db.User{Username: "localuser", PasswordHash: "h", ProfileVisibility: "public"}
 	require.NoError(t, database.Create(&u).Error)
 	g := db.Game{Title: "Local Game", ScraperID: scraperID, FilePath: "/lg", ConsoleID: 1}
 	require.NoError(t, database.Create(&g).Error)

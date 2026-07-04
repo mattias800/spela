@@ -529,7 +529,7 @@ class NavigationViewModelTest {
         private fun unsupported(): NotImplementedError = NotImplementedError("NoSessionAuthRepository: not used in this test")
         override suspend fun login(serverUrl: String, username: String, password: String): Result<AuthTokens> =
             Result.failure(unsupported())
-        override suspend fun register(serverUrl: String, username: String, email: String, password: String): Result<AuthTokens> =
+        override suspend fun register(serverUrl: String, username: String, password: String): Result<AuthTokens> =
             Result.failure(unsupported())
         override suspend fun refreshToken(serverUrl: String, refreshToken: String): Result<AuthTokens> =
             Result.failure(unsupported())

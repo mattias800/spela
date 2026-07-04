@@ -421,9 +421,9 @@ func TestNetplayInvite_AcceptExpireOthers(t *testing.T) {
 	router, cleanup := NewRouter(*cfg)
 	defer cleanup()
 	ownerToken := registerAndGetToken(t, router)
-	hostToken := registerUserAndGetToken(t, router, ownerToken, "host2", "host2@test.com")
-	client1Token := registerUserAndGetToken(t, router, ownerToken, "player1", "p1@test.com")
-	client2Token := registerUserAndGetToken(t, router, ownerToken, "player2", "p2@test.com")
+	hostToken := registerUserAndGetToken(t, router, ownerToken, "host2")
+	client1Token := registerUserAndGetToken(t, router, ownerToken, "player1")
+	client2Token := registerUserAndGetToken(t, router, ownerToken, "player2")
 
 	// Create session
 	body, _ := json.Marshal(map[string]interface{}{"gameId": "1"})

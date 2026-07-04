@@ -181,7 +181,7 @@ class SettingsViewModelSaveStatePolicyTest {
     private class StubAuthRepository : AuthRepository {
         override suspend fun login(serverUrl: String, username: String, password: String): Result<AuthTokens> =
             throw UnsupportedOperationException()
-        override suspend fun register(serverUrl: String, username: String, email: String, password: String): Result<AuthTokens> =
+        override suspend fun register(serverUrl: String, username: String, password: String): Result<AuthTokens> =
             throw UnsupportedOperationException()
         override suspend fun refreshToken(serverUrl: String, refreshToken: String): Result<AuthTokens> =
             throw UnsupportedOperationException()

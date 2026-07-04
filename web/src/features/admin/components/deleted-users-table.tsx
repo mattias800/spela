@@ -31,9 +31,6 @@ export function DeletedUsersTable({
                 User
               </th>
               <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wider text-surface-400">
-                Email
-              </th>
-              <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wider text-surface-400">
                 Role
               </th>
               <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wider text-surface-400">
@@ -45,11 +42,11 @@ export function DeletedUsersTable({
           <tbody>
             {isLoading ? (
               Array.from({ length: 3 }, (_, i) => (
-                <TableRowSkeleton key={i} columns={5} />
+                <TableRowSkeleton key={i} columns={4} />
               ))
             ) : !users || users.length === 0 ? (
               <tr>
-                <td colSpan={5}>
+                <td colSpan={4}>
                   <EmptyState
                     icon={Users}
                     title="No deleted users"
@@ -72,9 +69,6 @@ export function DeletedUsersTable({
                         {user.username}
                       </span>
                     </div>
-                  </td>
-                  <td className="px-5 py-3 text-sm text-surface-400">
-                    {user.email}
                   </td>
                   <td className="px-5 py-3">
                     <Badge variant="default">{user.role}</Badge>

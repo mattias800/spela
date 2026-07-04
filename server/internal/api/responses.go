@@ -675,7 +675,6 @@ func ToGameResponses(games []db.Game, database *gorm.DB, userID uint) []GameResp
 type UserResponse struct {
 	ID              string      `json:"id"`
 	Username        string      `json:"username"`
-	Email           string      `json:"email"`
 	Role            db.UserRole `json:"role"`
 	AvatarURL       string      `json:"avatarUrl"`
 	Disabled        bool        `json:"disabled"`
@@ -690,7 +689,6 @@ func ToUserResponse(u db.User) UserResponse {
 	return UserResponse{
 		ID:              strconv.FormatUint(uint64(u.ID), 10),
 		Username:        u.Username,
-		Email:           publicUserEmail(u.Email),
 		Role:            u.Role,
 		AvatarURL:       u.AvatarURL,
 		Disabled:        u.Disabled,
@@ -705,7 +703,6 @@ func ToUserResponse(u db.User) UserResponse {
 type DeletedUserResponse struct {
 	ID        string      `json:"id"`
 	Username  string      `json:"username"`
-	Email     string      `json:"email"`
 	Role      db.UserRole `json:"role"`
 	Disabled  bool        `json:"disabled"`
 	CreatedAt time.Time   `json:"createdAt"`
@@ -721,7 +718,6 @@ func ToDeletedUserResponse(u db.User) DeletedUserResponse {
 	return DeletedUserResponse{
 		ID:        strconv.FormatUint(uint64(u.ID), 10),
 		Username:  u.Username,
-		Email:     publicUserEmail(u.Email),
 		Role:      u.Role,
 		Disabled:  u.Disabled,
 		CreatedAt: u.CreatedAt,

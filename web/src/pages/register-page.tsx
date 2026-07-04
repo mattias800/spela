@@ -7,7 +7,6 @@ import { validatePasswords } from "@/lib/password-validation";
 
 export function RegisterPage() {
   const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
@@ -54,7 +53,7 @@ export function RegisterPage() {
 
     setLoading(true);
     try {
-      const result = await register(username, email, password);
+      const result = await register(username, password);
       if (result.pending) {
         setPendingApproval(true);
       } else {
@@ -96,17 +95,6 @@ export function RegisterPage() {
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           autoComplete="username"
-          required
-        />
-
-        <Input
-          id="email"
-          label="Email"
-          type="email"
-          placeholder="Enter your email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          autoComplete="email"
           required
         />
 

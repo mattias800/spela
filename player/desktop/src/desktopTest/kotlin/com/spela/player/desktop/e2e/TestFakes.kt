@@ -245,7 +245,6 @@ class FakeAuthRepository : AuthRepository {
     override suspend fun register(
         serverUrl: String,
         username: String,
-        email: String,
         password: String,
     ): Result<AuthTokens> {
         if (shouldFail) return Result.failure(Exception("Registration failed"))
@@ -264,7 +263,7 @@ class FakeAuthRepository : AuthRepository {
 
     override suspend fun getCurrentUser(): Result<User> {
         return if (tokens != null) {
-            Result.success(User("1", "player", "player@test.com", userRole))
+            Result.success(User("1", "player", userRole))
         } else {
             Result.failure(Exception("Not logged in"))
         }

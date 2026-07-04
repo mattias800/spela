@@ -41,11 +41,11 @@ class AuthRepositoryImpl(
         }
     }
 
-    override suspend fun register(serverUrl: String, username: String, email: String, password: String): Result<AuthTokens> {
+    override suspend fun register(serverUrl: String, username: String, password: String): Result<AuthTokens> {
         return runCatching {
             apiClient.setBaseUrl(serverUrl)
             val response = apiClient.register(
-                AuthRegisterRequest(username = username, email = email, password = password),
+                AuthRegisterRequest(username = username, password = password),
             )
             val tokens = response.toDomain()
             persistTokens(tokens)

@@ -23,7 +23,7 @@ func TestPublicShowcase_RespectsBlock(t *testing.T) {
 	var caller db.User
 	database.Where("username = ?", "apitest").First(&caller)
 
-	other := db.User{Username: "showcase_blocker", Email: "sb@example.com", PasswordHash: "hash", Role: "user"}
+	other := db.User{Username: "showcase_blocker", PasswordHash: "hash", Role: "user"}
 	database.Create(&other)
 	database.Create(&db.UserAchievementShowcase{UserID: other.ID, AchievementRAID: 1, RAGameID: 1, ShowcaseOrder: 0})
 	database.Create(&db.Block{UserID: other.ID, BlockedUserID: caller.ID})
@@ -41,7 +41,7 @@ func TestPublicShowcase_RespectsProfileVisibility(t *testing.T) {
 	defer cleanup()
 	token := registerAndGetToken(t, router)
 
-	other := db.User{Username: "showcase_private", Email: "sp@example.com", PasswordHash: "hash", Role: "user", ProfileVisibility: "private"}
+	other := db.User{Username: "showcase_private", PasswordHash: "hash", Role: "user", ProfileVisibility: "private"}
 	database.Create(&other)
 	database.Create(&db.UserAchievementShowcase{UserID: other.ID, AchievementRAID: 1, RAGameID: 1, ShowcaseOrder: 0})
 

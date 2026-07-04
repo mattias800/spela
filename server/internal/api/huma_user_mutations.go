@@ -74,7 +74,7 @@ func RegisterUserMutationRoutes(api huma.API, h *UserHandler, jwtSecret string, 
 		Method:      http.MethodPut,
 		Path:        "/api/user/profile",
 		Summary:     "Update current user profile",
-		Description: "Updates the authenticated user's email and/or avatar URL. Changing the email requires the current password to be supplied.",
+		Description: "Updates the authenticated user's avatar URL.",
 		Tags:        []string{"user"},
 		Middlewares: huma.Middlewares{requireAuth, rateLimit},
 		Security:    sec,
@@ -131,30 +131,6 @@ func (h *UserHandler) HumaUpdateProfile(ctx context.Context, in *UpdateProfileIn
 
 	req := in.Body
 
-	emailChanged := false
-	if req.Email != "" {
-		if isGeneratedRegistrationEmailDomain(req.Email) {
-			return nil, huma.Error422UnprocessableEntity("email domain is reserved")
-		}
-		if req.CurrentPassword == "" {
-			return nil, huma.Error400BadRequest("current password is required to change email")
-		}
-		if !auth.CheckPassword(req.CurrentPassword, user.PasswordHash) {
-			return nil, huma.Error401Unauthorized("incorrect password")
-		}
-		var existing db.User
-		if err := h.DB.Where("email = ? AND id != ?", req.Email, user.ID).First(&existing).Error; err == nil {
-			// Issue #1132: vague message so an authenticated
-			// attacker can't probe whether a specific email is
-			// registered by issuing PUT /api/user/profile against
-			// a long list of candidates.
-			return nil, huma.Error409Conflict("could not update profile")
-		}
-		if user.Email != req.Email {
-			emailChanged = true
-		}
-		user.Email = req.Email
-	}
 	if req.AvatarURL != "" {
 		parsed, err := url.Parse(req.AvatarURL)
 		if err != nil || (parsed.Scheme != "https" && parsed.Scheme != "http") {
@@ -169,23 +145,8 @@ func (h *UserHandler) HumaUpdateProfile(ctx context.Context, in *UpdateProfileIn
 		user.AvatarURL = req.AvatarURL
 	}
 
-	// Issue #1133: a successful email change is recovery-channel-class
-	// state — bump TokenVersion (invalidating other access tokens) and
-	// revoke all refresh tokens, mirroring HumaChangePassword. Without
-	// this, a thief who briefly held the password (now rotated by the
-	// real owner) could keep a stolen access token alive for its full
-	// TTL while pivoting recovery to their own email if email-based
-	// password reset ships later.
-	if emailChanged {
-		user.TokenVersion++
-	}
-
 	if err := h.DB.Save(&user).Error; err != nil {
 		return nil, huma.Error500InternalServerError("failed to update profile")
-	}
-
-	if emailChanged {
-		h.DB.Where("user_id = ?", user.ID).Delete(&db.RefreshToken{})
 	}
 
 	return &UpdateProfileOutput{Body: ToUserResponse(user)}, nil

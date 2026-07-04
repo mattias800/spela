@@ -167,7 +167,7 @@ func TestCloneSession_SharedSessionMemberAllowed(t *testing.T) {
 	defer cleanup()
 
 	token1 := registerAndGetToken(t, router)
-	token2 := createNonOwnerUser(t, router, token1, "cloner", "cloner@example.com", "SecureTestPass!2024")
+	token2 := createNonOwnerUser(t, router, token1, "cloner", "SecureTestPass!2024")
 
 	var console db.Console
 	database.First(&console)

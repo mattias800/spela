@@ -21,7 +21,7 @@ import kotlinx.serialization.descriptors.*
 import kotlinx.serialization.encoding.*
 
 /**
- * 
+ *
  *
  * @param dollarSchema A URL to the JSON Schema for this object.
  * @param clientReportId

@@ -179,7 +179,7 @@ func TestDeduplicateGames_KeepsBestMetadata(t *testing.T) {
 func TestDeduplicateGames_MergesFavorites(t *testing.T) {
 	database := setupTestDB(t)
 	console := seedNESConsole(t, database)
-	user := User{Username: "testuser", Email: "test@example.com", PasswordHash: "hash"}
+	user := User{Username: "testuser", PasswordHash: "hash"}
 	require.NoError(t, database.Create(&user).Error)
 
 	game1 := Game{ConsoleID: console.ID, Title: "G1", FileName: "g.nes", FilePath: "nes/g.nes", ScraperID: "igdb:1"}
@@ -204,7 +204,7 @@ func TestDeduplicateGames_MergesFavorites(t *testing.T) {
 func TestDeduplicateGames_MergesPlayHistory(t *testing.T) {
 	database := setupTestDB(t)
 	console := seedNESConsole(t, database)
-	user := User{Username: "testuser", Email: "test@example.com", PasswordHash: "hash"}
+	user := User{Username: "testuser", PasswordHash: "hash"}
 	require.NoError(t, database.Create(&user).Error)
 
 	game1 := Game{ConsoleID: console.ID, Title: "G1", FileName: "g.nes", FilePath: "nes/g.nes", ScraperID: "igdb:1"}
@@ -278,7 +278,7 @@ func TestDeduplicateGames_MergesMetadataFromDuplicate(t *testing.T) {
 func TestDeduplicateGames_DuplicateFavoriteSkipped(t *testing.T) {
 	database := setupTestDB(t)
 	console := seedNESConsole(t, database)
-	user := User{Username: "testuser", Email: "test@example.com", PasswordHash: "hash"}
+	user := User{Username: "testuser", PasswordHash: "hash"}
 	require.NoError(t, database.Create(&user).Error)
 
 	game1 := Game{ConsoleID: console.ID, Title: "G1", FileName: "g.nes", FilePath: "nes/g.nes", ScraperID: "igdb:1"}

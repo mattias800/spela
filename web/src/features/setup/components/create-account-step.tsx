@@ -9,7 +9,6 @@ interface CreateAccountStepProps {
 
 export function CreateAccountStep({ onNext }: CreateAccountStepProps) {
   const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
@@ -28,7 +27,7 @@ export function CreateAccountStep({ onNext }: CreateAccountStepProps) {
 
     setLoading(true);
     try {
-      await setup(username, email, password);
+      await setup(username, password);
       onNext();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Setup failed");
@@ -62,16 +61,6 @@ export function CreateAccountStep({ onNext }: CreateAccountStepProps) {
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           autoComplete="username"
-          required
-        />
-        <Input
-          id="email"
-          label="Email"
-          type="email"
-          placeholder="Enter your email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          autoComplete="email"
           required
         />
         <Input

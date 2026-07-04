@@ -120,7 +120,7 @@ func TestSearch_MultiTypeResults(t *testing.T) {
 	assert.GreaterOrEqual(t, len(resp.Series.Results), 1)
 	assert.Equal(t, "Super Mario Series", resp.Series.Results[0].Name)
 	assert.Equal(t, 3, resp.Series.Results[0].TotalGames)   // 3 entries
-	assert.Equal(t, 2, resp.Series.Results[0].LibraryGames)  // 2 are local
+	assert.Equal(t, 2, resp.Series.Results[0].LibraryGames) // 2 are local
 }
 
 func TestSearch_SingleTypeResults(t *testing.T) {
@@ -229,7 +229,7 @@ func TestSearch_LimitParameter(t *testing.T) {
 	code, resp = searchGet(t, router, token, "/api/search?q=Super&limit=1")
 	assert.Equal(t, http.StatusOK, code)
 	assert.Equal(t, 3, resp.Games.Total) // total is still 3
-	assert.Len(t, resp.Games.Results, 1)  // only 1 returned
+	assert.Len(t, resp.Games.Results, 1) // only 1 returned
 }
 
 func TestSearch_GamesExcludeSoftDeleted(t *testing.T) {
@@ -264,7 +264,7 @@ func TestSearch_Collections_PublicAndOwnPrivate(t *testing.T) {
 	require.NoError(t, database.First(&owner).Error)
 
 	// Create a second user
-	token2 := createNonOwnerUser(t, router, token, "user2", "user2@test.com", "SecureTestPass!2024")
+	token2 := createNonOwnerUser(t, router, token, "user2", "SecureTestPass!2024")
 	var user2 db.User
 	require.NoError(t, database.Where("username = ?", "user2").First(&user2).Error)
 
@@ -412,7 +412,7 @@ func TestSearch_Franchises(t *testing.T) {
 	assert.GreaterOrEqual(t, resp.Franchises.Total, 1)
 	assert.Equal(t, "Mario Franchise", resp.Franchises.Results[0].Name)
 	assert.Equal(t, 2, resp.Franchises.Results[0].TotalGames)   // 2 entries
-	assert.Equal(t, 1, resp.Franchises.Results[0].LibraryGames)  // 1 has local game
+	assert.Equal(t, 1, resp.Franchises.Results[0].LibraryGames) // 1 has local game
 }
 
 func TestSearch_RequiresAuth(t *testing.T) {

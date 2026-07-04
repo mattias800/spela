@@ -214,7 +214,7 @@ func TestUpdateDevice_Unauthorized(t *testing.T) {
 	token := registerAndGetToken(t, router)
 
 	// Create a device belonging to a different user
-	database.Create(&db.User{Username: "other", Email: "other@x.com", PasswordHash: "x", Role: "user"})
+	database.Create(&db.User{Username: "other", PasswordHash: "x", Role: "user"})
 	var otherUser db.User
 	database.Where("username = ?", "other").First(&otherUser)
 	database.Create(&db.Device{UserID: otherUser.ID, DeviceUUID: "other-uuid", Name: "Other Phone", Platform: "android"})
@@ -301,7 +301,7 @@ func TestDeleteDevice_Unauthorized(t *testing.T) {
 	token := registerAndGetToken(t, router)
 
 	// Create device owned by different user
-	database.Create(&db.User{Username: "other2", Email: "other2@x.com", PasswordHash: "x", Role: "user"})
+	database.Create(&db.User{Username: "other2", PasswordHash: "x", Role: "user"})
 	var otherUser db.User
 	database.Where("username = ?", "other2").First(&otherUser)
 	database.Create(&db.Device{UserID: otherUser.ID, DeviceUUID: "other-uuid-2", Name: "Other", Platform: "linux"})
@@ -368,7 +368,7 @@ func TestGetDevicePreferences_Unauthorized(t *testing.T) {
 	defer cleanup()
 	token := registerAndGetToken(t, router)
 
-	database.Create(&db.User{Username: "other3", Email: "other3@x.com", PasswordHash: "x", Role: "user"})
+	database.Create(&db.User{Username: "other3", PasswordHash: "x", Role: "user"})
 	var otherUser db.User
 	database.Where("username = ?", "other3").First(&otherUser)
 	database.Create(&db.Device{UserID: otherUser.ID, DeviceUUID: "other-uuid-3", Name: "Other", Platform: "linux"})
@@ -460,7 +460,7 @@ func TestUpdateDevicePreferences_Unauthorized(t *testing.T) {
 	defer cleanup()
 	token := registerAndGetToken(t, router)
 
-	database.Create(&db.User{Username: "other4", Email: "other4@x.com", PasswordHash: "x", Role: "user"})
+	database.Create(&db.User{Username: "other4", PasswordHash: "x", Role: "user"})
 	var otherUser db.User
 	database.Where("username = ?", "other4").First(&otherUser)
 	database.Create(&db.Device{UserID: otherUser.ID, DeviceUUID: "other-uuid-4", Name: "Other", Platform: "linux"})
@@ -521,7 +521,7 @@ func TestAdminGetUserDevices_NonAdmin(t *testing.T) {
 	ownerToken := registerAndGetToken(t, router)
 
 	// Register second user (regular user)
-	userToken := createNonOwnerUser(t, router, ownerToken, "regular", "regular@example.com", "SecureTestPass!2024")
+	userToken := createNonOwnerUser(t, router, ownerToken, "regular", "SecureTestPass!2024")
 
 	var adminUser db.User
 	database.Where("username = ?", "apitest").First(&adminUser)

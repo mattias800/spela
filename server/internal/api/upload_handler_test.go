@@ -37,7 +37,6 @@ func setupUploadTestEnv(t *testing.T) *uploadTestEnv {
 	// Create admin user
 	user := db.User{
 		Username:     "uploadadmin",
-		Email:        "uploadadmin@test.com",
 		PasswordHash: "unused",
 		Role:         "owner",
 	}
@@ -126,10 +125,10 @@ func TestUploadROMs_MultipleFiles(t *testing.T) {
 	defer cleanup()
 
 	files := map[string][]byte{
-		"Mario.nes":    []byte("nes rom"),
-		"Zelda.sfc":    []byte("snes rom"),
-		"readme.txt":   []byte("not a rom"),
-		"Pokemon.gba":  []byte("gba rom"),
+		"Mario.nes":   []byte("nes rom"),
+		"Zelda.sfc":   []byte("snes rom"),
+		"readme.txt":  []byte("not a rom"),
+		"Pokemon.gba": []byte("gba rom"),
 	}
 	w := uploadFiles(t, router, env.adminToken, files)
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -196,7 +195,7 @@ func TestUploadROMs_UnambiguousConsoleDetection(t *testing.T) {
 		t.Run(tt.filename, func(t *testing.T) {
 			env := setupUploadTestEnv(t)
 			router, cleanup := NewRouter(*env.cfg)
-	defer cleanup()
+			defer cleanup()
 
 			files := map[string][]byte{
 				tt.filename: []byte("rom data"),
@@ -588,7 +587,6 @@ func TestUploadROMs_NonAdmin_Forbidden(t *testing.T) {
 	// Create regular user
 	regularUser := db.User{
 		Username:     "regularuser",
-		Email:        "regular@test.com",
 		PasswordHash: "unused",
 		Role:         "user",
 	}
@@ -917,7 +915,7 @@ func TestUploadROMs_UnambiguousNewConsoleDetection(t *testing.T) {
 		t.Run(tt.filename, func(t *testing.T) {
 			env := setupUploadTestEnv(t)
 			router, cleanup := NewRouter(*env.cfg)
-	defer cleanup()
+			defer cleanup()
 
 			files := map[string][]byte{
 				tt.filename: []byte("rom data"),
@@ -1305,9 +1303,9 @@ func TestUploadROMs_ZipPathTraversal(t *testing.T) {
 
 	// Zip entries with path traversal attempts (Zip Slip / CVE-2018-1002200)
 	zipData := createZipBytes(t, map[string][]byte{
-		"../../etc/passwd.nes":      []byte("malicious nes rom"),
-		"../../../tmp/exploit.sfc":  []byte("malicious snes rom"),
-		"normal/Game.gba":           []byte("normal gba rom"),
+		"../../etc/passwd.nes":     []byte("malicious nes rom"),
+		"../../../tmp/exploit.sfc": []byte("malicious snes rom"),
+		"normal/Game.gba":          []byte("normal gba rom"),
 	})
 
 	w := uploadFiles(t, router, env.adminToken, map[string][]byte{
@@ -1364,9 +1362,9 @@ func TestUploadROMs_ZipWithNoROMs(t *testing.T) {
 	defer cleanup()
 
 	zipData := createZipBytes(t, map[string][]byte{
-		"readme.txt":  []byte("just a readme"),
-		"notes.nfo":   []byte("release notes"),
-		"cover.png":   []byte("fake image"),
+		"readme.txt": []byte("just a readme"),
+		"notes.nfo":  []byte("release notes"),
+		"cover.png":  []byte("fake image"),
 	})
 
 	w := uploadFiles(t, router, env.adminToken, map[string][]byte{

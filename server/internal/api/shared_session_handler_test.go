@@ -20,13 +20,13 @@ import (
 // registerSecondUser registers a second user and returns their access token.
 func registerSecondUser(t *testing.T, router http.Handler, ownerToken string) string {
 	t.Helper()
-	return createNonOwnerUser(t, router, ownerToken, "player2", "player2@example.com", "SecureTestPass!2024")
+	return createNonOwnerUser(t, router, ownerToken, "player2", "SecureTestPass!2024")
 }
 
 // registerNamedUser registers a user with the given username and returns their access token.
 func registerNamedUser(t *testing.T, router http.Handler, ownerToken, username string) string {
 	t.Helper()
-	return createNonOwnerUser(t, router, ownerToken, username, username+"@example.com", "SecureTestPass!2024")
+	return createNonOwnerUser(t, router, ownerToken, username, "SecureTestPass!2024")
 }
 
 // createSharedSession creates a shared session via API and returns the response map.
@@ -1728,7 +1728,7 @@ func TestSharedSession_MigrateSharedSessions(t *testing.T) {
 	// Create the owner user — pre-#971 the test could insert SharedSession
 	// with a synthetic OwnerID=1 because FK constraints weren't enforced.
 	// With foreign_keys=ON the user must exist for the FK to succeed.
-	owner := db.User{Username: "migrate-owner", Email: "owner@migrate.test", PasswordHash: "x", Role: "user"}
+	owner := db.User{Username: "migrate-owner", PasswordHash: "x", Role: "user"}
 	require.NoError(t, database.Create(&owner).Error)
 
 	// Manually create a shared session without a session (simulating pre-migration data)
@@ -1743,12 +1743,12 @@ func TestSharedSession_MigrateSharedSessions(t *testing.T) {
 
 	// Create a shared session save
 	ssSave := db.SharedSessionSave{
-		SharedSessionID:  ssModel.ID,
-		UserID:   owner.ID,
-		Name:     "Old Save",
-		FilePath: "/tmp/old-save.sav",
-		FileSize: 100,
-		IsAuto:   false,
+		SharedSessionID: ssModel.ID,
+		UserID:          owner.ID,
+		Name:            "Old Save",
+		FilePath:        "/tmp/old-save.sav",
+		FileSize:        100,
+		IsAuto:          false,
 	}
 	require.NoError(t, database.Create(&ssSave).Error)
 

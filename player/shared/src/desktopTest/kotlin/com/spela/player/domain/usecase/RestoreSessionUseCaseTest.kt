@@ -37,7 +37,6 @@ class RestoreSessionUseCaseTest {
     private val defaultUser = User(
         id = "user1",
         username = "testuser",
-        email = "test@example.com",
         role = "user",
     )
 
@@ -182,7 +181,7 @@ class RestoreSessionUseCaseTest {
 
         override suspend fun login(serverUrl: String, username: String, password: String): Result<AuthTokens> =
             throw UnsupportedOperationException()
-        override suspend fun register(serverUrl: String, username: String, email: String, password: String): Result<AuthTokens> =
+        override suspend fun register(serverUrl: String, username: String, password: String): Result<AuthTokens> =
             throw UnsupportedOperationException()
         override suspend fun refreshToken(serverUrl: String, refreshToken: String): Result<AuthTokens> =
             throw UnsupportedOperationException()

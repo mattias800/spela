@@ -122,7 +122,7 @@ Query params for `GET /api/games`: `search`, `consoleId`, `genre`, `sortBy` (tit
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/api/admin/users` | List all users |
-| PUT | `/api/admin/users/:id` | Update user role/email |
+| PUT | `/api/admin/users/:id` | Update user role/status/password |
 | GET | `/api/admin/settings` | Get server settings |
 | PUT | `/api/admin/settings` | Update server settings |
 | POST | `/api/admin/scrape` | Trigger metadata scrape |

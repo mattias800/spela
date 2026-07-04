@@ -38,7 +38,6 @@ func setupReplaceROMTestEnv(t *testing.T) *replaceROMTestEnv {
 	// Create admin user
 	user := db.User{
 		Username:     "replaceadmin",
-		Email:        "replaceadmin@test.com",
 		PasswordHash: "unused",
 		Role:         "owner",
 	}
@@ -332,7 +331,6 @@ func TestReplaceROM_RequiresAdmin(t *testing.T) {
 	// Create a non-admin user
 	user := db.User{
 		Username:     "regularuser",
-		Email:        "regular@test.com",
 		PasswordHash: "unused",
 		Role:         "user",
 	}

@@ -36,7 +36,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -68,7 +67,6 @@ object OnboardingTestTags {
     const val CONNECT_URL = "onboarding_connect_url"
     const val CONNECT_SUBMIT = "onboarding_connect_submit"
     const val SIGNIN_USERNAME = "onboarding_signin_username"
-    const val SIGNIN_EMAIL = "onboarding_signin_email"
     const val SIGNIN_PASSWORD = "onboarding_signin_password"
     const val SIGNIN_SUBMIT = "onboarding_signin_submit"
     const val NAME_DEVICE_INPUT = "onboarding_name_device_input"
@@ -144,7 +142,6 @@ fun SignInStepContent(
     state: LoginState,
     serverUrl: String,
     onUsernameChange: (String) -> Unit,
-    onEmailChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
     onSubmit: () -> Unit,
     onToggleRegister: () -> Unit,
@@ -160,28 +157,6 @@ fun SignInStepContent(
         enabled = !state.isLoading,
         modifier = Modifier.testTag(OnboardingTestTags.SIGNIN_USERNAME),
     )
-    // Email is optional for self-hosted servers; keep it available in register mode.
-    // No transition in test mode (LocalAnimationsEnabled=false) so an in-flight fade
-    // doesn't leave a coroutine active at runComposeUiTest teardown (#1448).
-    val emailAnims = com.spela.player.presentation.ui.components.LocalAnimationsEnabled.current
-    AnimatedVisibility(
-        visible = state.isRegisterMode,
-        enter = if (emailAnims) fadeIn() else EnterTransition.None,
-        exit = if (emailAnims) fadeOut() else ExitTransition.None,
-    ) {
-        Column {
-            Spacer(Modifier.height(SpSpacing.Default))
-            SpTextField(
-                value = state.email,
-                onValueChange = onEmailChange,
-                label = "Email (optional)",
-                placeholder = "you@example.com",
-                enabled = !state.isLoading,
-                keyboardType = KeyboardType.Email,
-                modifier = Modifier.testTag(OnboardingTestTags.SIGNIN_EMAIL),
-            )
-        }
-    }
     Spacer(Modifier.height(SpSpacing.Default))
     SpTextField(
         value = state.password,

@@ -67,8 +67,7 @@ test.describe("Admin Settings — Allow Registration", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           username: "blockeduser",
-          email: "blockeduser@test.com",
-          password: "password123",
+          password: "BlockedUser1531!",
         }),
       });
       return { status: res.status };

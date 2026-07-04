@@ -489,7 +489,7 @@ open class UserApi : ApiClient {
 
     /**
      * Get current user profile
-     * Returns the authenticated user&#39;s profile (username, email, role, avatar, timestamps).
+     * Returns the authenticated user&#39;s profile (username, role, avatar, timestamps).
      * @return UserResponse
      */
     @Suppress("UNCHECKED_CAST")
@@ -661,7 +661,7 @@ open class UserApi : ApiClient {
 
     /**
      * Update current user profile
-     * Updates the authenticated user&#39;s email and/or avatar URL. Changing the email requires the current password to be supplied.
+     * Updates the authenticated user&#39;s avatar URL.
      * @param updateProfileRequest 
      * @return UserResponse
      */

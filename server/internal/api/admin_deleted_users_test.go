@@ -15,11 +15,10 @@ import (
 	"gorm.io/gorm"
 )
 
-func softDeleteUser(t *testing.T, database *gorm.DB, username, email string) db.User {
+func softDeleteUser(t *testing.T, database *gorm.DB, username string) db.User {
 	t.Helper()
 	user := db.User{
 		Username:     username,
-		Email:        email,
 		PasswordHash: "unused",
 		Role:         "user",
 	}
@@ -37,14 +36,13 @@ func TestListDeletedUsers_ReturnsOnlySoftDeleted(t *testing.T) {
 	// Create an active user
 	activeUser := db.User{
 		Username:     "active",
-		Email:        "active@test.com",
 		PasswordHash: "unused",
 		Role:         "user",
 	}
 	require.NoError(t, database.Create(&activeUser).Error)
 
 	// Create and soft-delete a user
-	softDeleteUser(t, database, "deleted-user", "deleted@test.com")
+	softDeleteUser(t, database, "deleted-user")
 
 	req := httptest.NewRequest("GET", "/api/admin/users/deleted", nil)
 	req.Header.Set("Authorization", "Bearer "+adminToken)
@@ -58,7 +56,6 @@ func TestListDeletedUsers_ReturnsOnlySoftDeleted(t *testing.T) {
 
 	assert.Len(t, resp, 1)
 	assert.Equal(t, "deleted-user", resp[0].Username)
-	assert.Equal(t, "deleted@test.com", resp[0].Email)
 	assert.False(t, resp[0].DeletedAt.IsZero())
 }
 
@@ -87,7 +84,6 @@ func TestListDeletedUsers_NonAdmin_Returns403(t *testing.T) {
 
 	user := db.User{
 		Username:     "regular",
-		Email:        "regular@test.com",
 		PasswordHash: "unused",
 		Role:         "user",
 	}
@@ -109,7 +105,7 @@ func TestHardDeleteUser_PermanentlyRemovesUser(t *testing.T) {
 	defer cleanup()
 	_, adminToken := createAdminUser(t, database)
 
-	deleted := softDeleteUser(t, database, "to-purge", "purge@test.com")
+	deleted := softDeleteUser(t, database, "to-purge")
 
 	// Create some child records for this user
 	fav := db.Favorite{UserID: deleted.ID, GameID: 1}
@@ -144,7 +140,6 @@ func TestHardDeleteUser_RejectsNonSoftDeletedUser(t *testing.T) {
 
 	activeUser := db.User{
 		Username:     "still-active",
-		Email:        "active@test.com",
 		PasswordHash: "unused",
 		Role:         "user",
 	}
@@ -170,7 +165,6 @@ func TestHardDeleteUser_RejectsOwner(t *testing.T) {
 	// Create the owner
 	owner := db.User{
 		Username:     "owner",
-		Email:        "owner@test.com",
 		PasswordHash: "unused",
 		Role:         "owner",
 	}
@@ -179,7 +173,6 @@ func TestHardDeleteUser_RejectsOwner(t *testing.T) {
 	// Create a separate admin to make the request
 	admin := db.User{
 		Username:     "admin2",
-		Email:        "admin2@test.com",
 		PasswordHash: "unused",
 		Role:         "admin",
 	}
@@ -226,7 +219,6 @@ func TestUserFKCascadeOnRawDelete(t *testing.T) {
 
 	user := db.User{
 		Username:     "cascade-target",
-		Email:        "cascade@test.com",
 		PasswordHash: "unused",
 		Role:         "user",
 	}
@@ -266,7 +258,6 @@ func TestHardDeleteUser_NonAdmin_Returns403(t *testing.T) {
 
 	user := db.User{
 		Username:     "regular",
-		Email:        "regular@test.com",
 		PasswordHash: "unused",
 		Role:         "user",
 	}
@@ -274,7 +265,7 @@ func TestHardDeleteUser_NonAdmin_Returns403(t *testing.T) {
 	token, err := auth.GenerateAccessToken(user.ID, user.Username, string(user.Role), testJWTSecret)
 	require.NoError(t, err)
 
-	deleted := softDeleteUser(t, database, "deleted-user", "deleted@test.com")
+	deleted := softDeleteUser(t, database, "deleted-user")
 
 	req := httptest.NewRequest("DELETE", "/api/admin/users/"+strconv.Itoa(int(deleted.ID))+"/permanent", nil)
 	req.Header.Set("Authorization", "Bearer "+token)
@@ -291,7 +282,7 @@ func TestListDeletedUsers_IncludesDeletedAtTimestamp(t *testing.T) {
 	_, adminToken := createAdminUser(t, database)
 
 	beforeDelete := time.Now().Add(-time.Second)
-	softDeleteUser(t, database, "timed-delete", "timed@test.com")
+	softDeleteUser(t, database, "timed-delete")
 
 	req := httptest.NewRequest("GET", "/api/admin/users/deleted", nil)
 	req.Header.Set("Authorization", "Bearer "+adminToken)

@@ -17,7 +17,6 @@ func createSetupTestUser(t *testing.T, database *gorm.DB, role db.UserRole) stri
 	t.Helper()
 	user := db.User{
 		Username:     "setup-test-" + string(role),
-		Email:        "setup-test-" + string(role) + "@test.com",
 		PasswordHash: "unused",
 		Role:         role,
 	}
@@ -107,7 +106,6 @@ func TestDiagnostics_RegularUserForbidden(t *testing.T) {
 
 	regularUser := db.User{
 		Username:     "regular-user",
-		Email:        "regular@test.com",
 		PasswordHash: "unused",
 		Role:         "user",
 	}

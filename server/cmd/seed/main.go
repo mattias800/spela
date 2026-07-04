@@ -70,7 +70,6 @@ func main() {
 
 	admin := db.User{
 		Username:     "admin",
-		Email:        "admin@spela.local",
 		PasswordHash: adminHash,
 		Role:         "admin",
 	}
@@ -90,7 +89,6 @@ func main() {
 
 	player := db.User{
 		Username:     "player",
-		Email:        "player@spela.local",
 		PasswordHash: userHash,
 		Role:         "user",
 	}

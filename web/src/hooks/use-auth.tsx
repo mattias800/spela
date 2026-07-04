@@ -24,10 +24,9 @@ interface AuthContextValue {
   login: (username: string, password: string) => Promise<void>;
   register: (
     username: string,
-    email: string,
     password: string,
   ) => Promise<{ pending: boolean }>;
-  setup: (username: string, email: string, password: string) => Promise<void>;
+  setup: (username: string, password: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -134,12 +133,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = useCallback(
     async (
       username: string,
-      email: string,
       password: string,
     ): Promise<{ pending: boolean }> => {
       const wire: AuthRegisterResponse | undefined = await unwrap(
         typedApi.POST("/api/auth/register", {
-          body: { username, email, password },
+          body: { username, password },
         }),
       );
       if (!wire) throw new ApiError(500, "Registration returned no body");
@@ -148,6 +146,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       // AuthRegisterResponse shape matches AuthLoginResponse when not pending.
       if (!wire.user) throw new ApiError(500, "Registration returned no user");
+      if (!wire.accessToken || !wire.refreshToken) {
+        throw new ApiError(500, "Registration returned no tokens");
+      }
       const tokens: AuthTokens = {
         accessToken: wire.accessToken,
         refreshToken: wire.refreshToken,
@@ -161,10 +162,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const setup = useCallback(
-    async (username: string, email: string, password: string) => {
+    async (username: string, password: string) => {
       const wire = await unwrap(
         typedApi.POST("/api/auth/setup", {
-          body: { username, email, password },
+          body: { username, password },
         }),
       );
       if (!wire) throw new ApiError(500, "Setup returned no body");

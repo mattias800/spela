@@ -1135,7 +1135,7 @@ export interface paths {
         get?: never;
         /**
          * Update a user
-         * @description Admin-only. Updates role, email, password, disabled or pendingApproval fields. Owner role is protected from changes.
+         * @description Admin-only. Updates role, password, disabled or pendingApproval fields. Owner role is protected from changes.
          */
         put: operations["adminUpdateUser"];
         post?: never;
@@ -5127,12 +5127,12 @@ export interface paths {
         };
         /**
          * Get current user profile
-         * @description Returns the authenticated user's profile (username, email, role, avatar, timestamps).
+         * @description Returns the authenticated user's profile (username, role, avatar, timestamps).
          */
         get: operations["getUserProfile"];
         /**
          * Update current user profile
-         * @description Updates the authenticated user's email and/or avatar URL. Changing the email requires the current password to be supplied.
+         * @description Updates the authenticated user's avatar URL.
          */
         put: operations["updateUserProfile"];
         post?: never;
@@ -5718,11 +5718,6 @@ export interface components {
              * @example https://example.com/api/schemas/AdminCreateUserRequest.json
              */
             readonly $schema?: string;
-            /**
-             * Format: email
-             * @description New account email (RFC 5321 cap).
-             */
-            email: string;
             /** @description New account password (8-72 characters). */
             password: string;
             role?: string;
@@ -5764,8 +5759,6 @@ export interface components {
             readonly $schema?: string;
             canImportGames?: boolean;
             disabled?: boolean;
-            /** Format: email */
-            email?: string;
             password?: string;
             pendingApproval?: boolean;
             role?: string;
@@ -5932,11 +5925,6 @@ export interface components {
              * @example https://example.com/api/schemas/AuthRegisterRequest.json
              */
             readonly $schema?: string;
-            /**
-             * Format: email
-             * @description New account email (RFC 5321 cap).
-             */
-            email: string;
             /** @description New account password (8-72 characters). */
             password: string;
             /** @description New account username (3-64 alphanumeric characters). */
@@ -5950,13 +5938,13 @@ export interface components {
              */
             readonly $schema?: string;
             /** @description Bearer access token. */
-            accessToken: string;
+            accessToken?: string;
             /** @description Human-readable status message (only set when pending). */
-            message: string;
+            message?: string;
             /** @description True when the new account is awaiting admin approval. When true, no tokens are returned. */
-            pending: boolean;
+            pending?: boolean;
             /** @description Refresh token (rotate via /api/auth/refresh). */
-            refreshToken: string;
+            refreshToken?: string;
             /** @description Registered user profile. */
             user?: components["schemas"]["UserResponse"];
         };
@@ -6614,7 +6602,6 @@ export interface components {
             /** Format: date-time */
             deletedAt: string;
             disabled: boolean;
-            email: string;
             id: string;
             role: string;
             username: string;
@@ -9299,8 +9286,12 @@ export interface components {
              * @example https://example.com/api/schemas/UpdateGamePlayTimeRequest.json
              */
             readonly $schema?: string;
+            clientReportId?: string;
+            /** Format: date-time */
+            playedAt?: string;
             /** Format: int64 */
             seconds?: number;
+            updatePresence?: boolean;
         };
         UpdateGamePlayTimeResponse: {
             /**
@@ -9362,6 +9353,9 @@ export interface components {
             consoleKeyMappings?: {
                 [key: string]: components["schemas"]["ConsoleKeyMappingDTO"];
             };
+            consoleRenderScales?: {
+                [key: string]: string;
+            };
             consoleSaveStatePolicies?: {
                 [key: string]: string;
             };
@@ -9389,8 +9383,6 @@ export interface components {
              */
             readonly $schema?: string;
             avatarUrl?: string;
-            currentPassword?: string;
-            email?: string;
         };
         UpdateRASettingsRequest: {
             /**
@@ -9486,6 +9478,9 @@ export interface components {
             consoleKeyMappings: {
                 [key: string]: components["schemas"]["ConsoleKeyMappingDTO"];
             };
+            consoleRenderScales?: {
+                [key: string]: string;
+            };
             consoleSaveStatePolicies: {
                 [key: string]: string;
             };
@@ -9520,7 +9515,6 @@ export interface components {
             /** Format: date-time */
             createdAt: string;
             disabled: boolean;
-            email: string;
             id: string;
             pendingApproval: boolean;
             role: string;

@@ -66,8 +66,8 @@ func TestGetGameStats_WithPlayHistory(t *testing.T) {
 	database.Create(&game)
 
 	// Create two users with play history
-	user1 := db.User{Username: "alice", Email: "alice@example.com", PasswordHash: "hash", Role: "user"}
-	user2 := db.User{Username: "bob", Email: "bob@example.com", PasswordHash: "hash", Role: "user"}
+	user1 := db.User{Username: "alice", PasswordHash: "hash", Role: "user"}
+	user2 := db.User{Username: "bob", PasswordHash: "hash", Role: "user"}
 	database.Create(&user1)
 	database.Create(&user2)
 
@@ -133,8 +133,8 @@ func TestMostPlayedGames_WithData(t *testing.T) {
 	database.Create(&game1)
 	database.Create(&game2)
 
-	user1 := db.User{Username: "player1", Email: "p1@example.com", PasswordHash: "hash", Role: "user"}
-	user2 := db.User{Username: "player2", Email: "p2@example.com", PasswordHash: "hash", Role: "user"}
+	user1 := db.User{Username: "player1", PasswordHash: "hash", Role: "user"}
+	user2 := db.User{Username: "player2", PasswordHash: "hash", Role: "user"}
 	database.Create(&user1)
 	database.Create(&user2)
 
@@ -199,8 +199,8 @@ func TestMostActivePlayers_WithData(t *testing.T) {
 	database.Create(&game1)
 	database.Create(&game2)
 
-	user1 := db.User{Username: "active_alice", Email: "aa@example.com", PasswordHash: "hash", Role: "user", AvatarURL: "https://avatar.test/alice"}
-	user2 := db.User{Username: "active_bob", Email: "ab@example.com", PasswordHash: "hash", Role: "user"}
+	user1 := db.User{Username: "active_alice", PasswordHash: "hash", Role: "user", AvatarURL: "https://avatar.test/alice"}
+	user2 := db.User{Username: "active_bob", PasswordHash: "hash", Role: "user"}
 	database.Create(&user1)
 	database.Create(&user2)
 
@@ -310,7 +310,7 @@ func TestRecordDailyPlayActivity_Upsert(t *testing.T) {
 	database, _ := setupTestEnv(t)
 
 	// Create a test user
-	user := db.User{Username: "heatmap_user", Email: "heatmap@example.com", PasswordHash: "hash", Role: "user"}
+	user := db.User{Username: "heatmap_user", PasswordHash: "hash", Role: "user"}
 	database.Create(&user)
 
 	// First call creates a new record
@@ -387,7 +387,7 @@ func TestHeatmap_PublicEndpoint(t *testing.T) {
 	token := registerAndGetToken(t, router)
 
 	// Create another user with activity
-	otherUser := db.User{Username: "other_heatmap", Email: "other@example.com", PasswordHash: "hash", Role: "user"}
+	otherUser := db.User{Username: "other_heatmap", PasswordHash: "hash", Role: "user"}
 	database.Create(&otherUser)
 
 	today := time.Now().UTC().Truncate(24 * time.Hour)
@@ -416,7 +416,7 @@ func TestHeatmap_UserIsolation(t *testing.T) {
 	database.Where("username = ?", "apitest").First(&user)
 
 	// Create another user with activity
-	otherUser := db.User{Username: "isolated_user", Email: "isolated@example.com", PasswordHash: "hash", Role: "user"}
+	otherUser := db.User{Username: "isolated_user", PasswordHash: "hash", Role: "user"}
 	database.Create(&otherUser)
 
 	today := time.Now().UTC().Truncate(24 * time.Hour)
@@ -458,7 +458,7 @@ func TestHeatmap_PublicRespectsProfileVisibility(t *testing.T) {
 	defer cleanup()
 	token := registerAndGetToken(t, router)
 
-	otherUser := db.User{Username: "private_heatmap", Email: "ph@example.com", PasswordHash: "hash", Role: "user", ProfileVisibility: "private"}
+	otherUser := db.User{Username: "private_heatmap", PasswordHash: "hash", Role: "user", ProfileVisibility: "private"}
 	database.Create(&otherUser)
 	today := time.Now().UTC().Truncate(24 * time.Hour)
 	database.Create(&db.DailyPlayActivity{UserID: otherUser.ID, Date: today, PlayTime: 7200})
@@ -485,7 +485,7 @@ func TestHeatmap_PublicRespectsBlock(t *testing.T) {
 	var caller db.User
 	database.Where("username = ?", "apitest").First(&caller)
 
-	otherUser := db.User{Username: "blocker_heatmap", Email: "bh@example.com", PasswordHash: "hash", Role: "user"}
+	otherUser := db.User{Username: "blocker_heatmap", PasswordHash: "hash", Role: "user"}
 	database.Create(&otherUser)
 	today := time.Now().UTC().Truncate(24 * time.Hour)
 	database.Create(&db.DailyPlayActivity{UserID: otherUser.ID, Date: today, PlayTime: 7200})
@@ -501,11 +501,11 @@ func TestHeatmap_PublicRespectsBlock(t *testing.T) {
 
 func TestCalculateStreaks(t *testing.T) {
 	tests := []struct {
-		name            string
-		dates           []string // yyyy-mm-dd
-		today           string
-		wantCurrent     int
-		wantLongest     int
+		name        string
+		dates       []string // yyyy-mm-dd
+		today       string
+		wantCurrent int
+		wantLongest int
 	}{
 		{
 			name:        "no dates",

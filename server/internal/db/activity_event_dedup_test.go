@@ -15,7 +15,7 @@ import (
 func TestDedupeStartedPlayingEvents(t *testing.T) {
 	database := setupTestDB(t)
 
-	user := User{Username: "player", Email: "p@example.com", PasswordHash: "x", Role: RoleUser}
+	user := User{Username: "player", PasswordHash: "x", Role: RoleUser}
 	require.NoError(t, database.Create(&user).Error)
 	console := seedNESConsole(t, database)
 	gameA := Game{ConsoleID: console.ID, Title: "Game A", FileName: "a.nes", FilePath: "/tmp/a.nes", FileSize: 1}

@@ -15,9 +15,9 @@ import (
 
 // registerUserAndGetToken registers a non-owner user via the admin endpoint and returns the access token.
 // ownerToken must be a valid admin/owner token.
-func registerUserAndGetToken(t *testing.T, router http.Handler, ownerToken, username, email string) string {
+func registerUserAndGetToken(t *testing.T, router http.Handler, ownerToken, username string) string {
 	t.Helper()
-	return createNonOwnerUser(t, router, ownerToken, username, email, "SecureTestPass!2024")
+	return createNonOwnerUser(t, router, ownerToken, username, "SecureTestPass!2024")
 }
 
 // netplayTestCtx holds shared state for netplay tests.
@@ -45,8 +45,8 @@ func setupNetplayCtx(t *testing.T) netplayTestCtx {
 	// Register owner first (regular register, gets owner role)
 	ownerToken := registerAndGetToken(t, router)
 	// Create host and client as non-owner users via admin endpoint
-	hostToken := registerUserAndGetToken(t, router, ownerToken, "host", "host@test.com")
-	clientToken := registerUserAndGetToken(t, router, ownerToken, "client", "client@test.com")
+	hostToken := registerUserAndGetToken(t, router, ownerToken, "host")
+	clientToken := registerUserAndGetToken(t, router, ownerToken, "client")
 
 	return netplayTestCtx{
 		router:      router,
@@ -256,9 +256,9 @@ func TestNetplay_JoinFullSession(t *testing.T) {
 	router, cleanup := NewRouter(*cfg)
 	defer cleanup()
 	ownerToken := registerAndGetToken(t, router)
-	hostToken := registerUserAndGetToken(t, router, ownerToken, "fullhost", "fh@t.com")
-	p2Token := registerUserAndGetToken(t, router, ownerToken, "fullp2", "fp2@t.com")
-	p3Token := registerUserAndGetToken(t, router, ownerToken, "fullp3", "fp3@t.com")
+	hostToken := registerUserAndGetToken(t, router, ownerToken, "fullhost")
+	p2Token := registerUserAndGetToken(t, router, ownerToken, "fullp2")
+	p3Token := registerUserAndGetToken(t, router, ownerToken, "fullp3")
 
 	// Create
 	body, _ := json.Marshal(map[string]interface{}{"gameId": "1"})

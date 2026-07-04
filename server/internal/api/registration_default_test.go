@@ -23,10 +23,9 @@ func TestRegistration_ClosedByDefault(t *testing.T) {
 	// Remove the harness's convenience seed so we exercise the true default.
 	require.NoError(t, database.Where("key = ?", "registration_enabled").Delete(&db.ServerSetting{}).Error)
 
-	register := func(username, email string) *httptest.ResponseRecorder {
+	register := func(username string) *httptest.ResponseRecorder {
 		body, _ := json.Marshal(map[string]string{
 			"username": username,
-			"email":    email,
 			"password": "SecureTestPass!2024",
 		})
 		w := httptest.NewRecorder()
@@ -37,10 +36,10 @@ func TestRegistration_ClosedByDefault(t *testing.T) {
 	}
 
 	// First user becomes owner regardless of the flag.
-	require.Equal(t, http.StatusCreated, register("owner", "owner@example.com").Code)
+	require.Equal(t, http.StatusCreated, register("owner").Code)
 
 	// Second registration is denied because registration is closed by default.
-	w := register("intruder", "intruder@example.com")
+	w := register("intruder")
 	assert.Equal(t, http.StatusForbidden, w.Code, w.Body.String())
 }
 
@@ -51,10 +50,9 @@ func TestRegistration_EnabledAllowsSecondUser(t *testing.T) {
 	router, cleanup := NewRouter(*cfg)
 	defer cleanup()
 
-	register := func(username, email string) *httptest.ResponseRecorder {
+	register := func(username string) *httptest.ResponseRecorder {
 		body, _ := json.Marshal(map[string]string{
 			"username": username,
-			"email":    email,
 			"password": "SecureTestPass!2024",
 		})
 		w := httptest.NewRecorder()
@@ -64,9 +62,9 @@ func TestRegistration_EnabledAllowsSecondUser(t *testing.T) {
 		return w
 	}
 
-	require.Equal(t, http.StatusCreated, register("owner", "owner@example.com").Code)
+	require.Equal(t, http.StatusCreated, register("owner").Code)
 	// Non-owner registration is accepted (202, pending approval) when enabled.
-	w := register("member", "member@example.com")
+	w := register("member")
 	assert.Equal(t, http.StatusAccepted, w.Code, w.Body.String())
 	_ = database
 }

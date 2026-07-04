@@ -46,8 +46,8 @@ func TestCreateSavedSearch_Success(t *testing.T) {
 	_, router, token := setupSavedSearchEnv(t)
 
 	filters := map[string]interface{}{
-		"consoles": "SNES,NES",
-		"genres":   "Action,RPG",
+		"consoles":  "SNES,NES",
+		"genres":    "Action,RPG",
 		"ratingMin": 70,
 	}
 
@@ -169,7 +169,7 @@ func TestDeleteSavedSearch_NotOwned(t *testing.T) {
 	searchID := resp["id"].(string)
 
 	// Create a second user
-	token2 := createNonOwnerUser(t, router, token, "user2", "user2@example.com", "SecureTestPass!2024")
+	token2 := createNonOwnerUser(t, router, token, "user2", "SecureTestPass!2024")
 	_ = database // suppress unused
 
 	// Try to delete user1's search as user2

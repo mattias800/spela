@@ -671,7 +671,6 @@ func TestLoginFailureRecordsSystemEvent(t *testing.T) {
 
 	user := db.User{
 		Username:     "victim",
-		Email:        "victim@test.com",
 		PasswordHash: "$2a$10$AAAAAAAAAAAAAAAAAAAAAOYL5eXPeq3xFV2DdRbHeBwM8tCKZWfQO",
 		Role:         "user",
 	}

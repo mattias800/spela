@@ -459,13 +459,6 @@
             "readOnly": true,
             "type": "string"
           },
-          "email": {
-            "description": "New account email (RFC 5321 cap).",
-            "format": "email",
-            "maxLength": 254,
-            "minLength": 1,
-            "type": "string"
-          },
           "password": {
             "description": "New account password (8-72 characters).",
             "maxLength": 72,
@@ -484,7 +477,6 @@
         },
         "required": [
           "username",
-          "email",
           "password"
         ],
         "type": "object"
@@ -568,11 +560,6 @@
           },
           "disabled": {
             "type": "boolean"
-          },
-          "email": {
-            "format": "email",
-            "maxLength": 254,
-            "type": "string"
           },
           "password": {
             "maxLength": 72,
@@ -1025,11 +1012,6 @@
             "readOnly": true,
             "type": "string"
           },
-          "email": {
-            "description": "Optional new account email (RFC 5321 cap).",
-            "maxLength": 254,
-            "type": "string"
-          },
           "password": {
             "description": "New account password (8-72 characters).",
             "maxLength": 72,
@@ -1083,12 +1065,6 @@
             "description": "Registered user profile."
           }
         },
-        "required": [
-          "pending",
-          "message",
-          "accessToken",
-          "refreshToken"
-        ],
         "type": "object"
       },
       "AvailableGamesOutputBody": {
@@ -3014,9 +2990,6 @@
           "disabled": {
             "type": "boolean"
           },
-          "email": {
-            "type": "string"
-          },
           "id": {
             "type": "string"
           },
@@ -3030,7 +3003,6 @@
         "required": [
           "id",
           "username",
-          "email",
           "role",
           "disabled",
           "createdAt",
@@ -11129,12 +11101,6 @@
           },
           "avatarUrl": {
             "type": "string"
-          },
-          "currentPassword": {
-            "type": "string"
-          },
-          "email": {
-            "type": "string"
           }
         },
         "type": "object"
@@ -11459,9 +11425,6 @@
           "disabled": {
             "type": "boolean"
           },
-          "email": {
-            "type": "string"
-          },
           "id": {
             "type": "string"
           },
@@ -11482,7 +11445,6 @@
         "required": [
           "id",
           "username",
-          "email",
           "role",
           "avatarUrl",
           "disabled",
@@ -14906,7 +14868,7 @@
         ]
       },
       "put": {
-        "description": "Admin-only. Updates role, email, password, disabled or pendingApproval fields. Owner role is protected from changes.",
+        "description": "Admin-only. Updates role, password, disabled or pendingApproval fields. Owner role is protected from changes.",
         "operationId": "adminUpdateUser",
         "parameters": [
           {
@@ -27906,7 +27868,7 @@
     },
     "/api/user/profile": {
       "get": {
-        "description": "Returns the authenticated user's profile (username, email, role, avatar, timestamps).",
+        "description": "Returns the authenticated user's profile (username, role, avatar, timestamps).",
         "operationId": "getUserProfile",
         "responses": {
           "200": {
@@ -27941,7 +27903,7 @@
         ]
       },
       "put": {
-        "description": "Updates the authenticated user's email and/or avatar URL. Changing the email requires the current password to be supplied.",
+        "description": "Updates the authenticated user's avatar URL.",
         "operationId": "updateUserProfile",
         "requestBody": {
           "content": {

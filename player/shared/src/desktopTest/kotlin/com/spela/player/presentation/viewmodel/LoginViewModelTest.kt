@@ -73,7 +73,6 @@ class LoginViewModelTest {
         val state = vm.state.value
         assertEquals("", state.serverUrl)
         assertEquals("", state.username)
-        assertEquals("", state.email)
         assertEquals("", state.password)
         assertFalse(state.isLoading)
         assertFalse(state.isLoggedIn)
@@ -85,13 +84,11 @@ class LoginViewModelTest {
         val vm = createViewModel()
         vm.onIntent(LoginIntent.SetServerUrl("http://localhost:8080"))
         vm.onIntent(LoginIntent.SetUsername("testuser"))
-        vm.onIntent(LoginIntent.SetEmail("test@example.com"))
         vm.onIntent(LoginIntent.SetPassword("pass123"))
 
         val state = vm.state.value
         assertEquals("http://localhost:8080", state.serverUrl)
         assertEquals("testuser", state.username)
-        assertEquals("test@example.com", state.email)
         assertEquals("pass123", state.password)
     }
 
@@ -106,7 +103,7 @@ class LoginViewModelTest {
     }
 
     @Test
-    fun registerWithoutEmailSubmitsBlankEmail() = runTest(testDispatcher) {
+    fun registerSubmitsUsernameAndPassword() = runTest(testDispatcher) {
         fakeAuthRepository.shouldSucceed = true
         val vm = createViewModel()
         vm.onIntent(LoginIntent.SetServerUrl("http://localhost:8080"))
@@ -118,7 +115,8 @@ class LoginViewModelTest {
         advanceUntilIdle()
 
         assertTrue(vm.state.value.isLoggedIn)
-        assertEquals("", fakeAuthRepository.lastRegisterEmail)
+        assertEquals("testuser", fakeAuthRepository.lastRegisterUsername)
+        assertEquals("pass123", fakeAuthRepository.lastRegisterPassword)
     }
 
     @Test
@@ -165,7 +163,6 @@ class LoginViewModelTest {
         vm.onIntent(LoginIntent.ToggleRegisterMode)
         vm.onIntent(LoginIntent.SetServerUrl("http://localhost:8080"))
         vm.onIntent(LoginIntent.SetUsername("newuser"))
-        vm.onIntent(LoginIntent.SetEmail("new@example.com"))
         vm.onIntent(LoginIntent.SetPassword("pass123"))
         vm.onIntent(LoginIntent.Submit)
 
@@ -200,7 +197,8 @@ class LoginViewModelTest {
 /** Fake AuthRepository for testing */
 class FakeAuthRepository : AuthRepository {
     var shouldSucceed = true
-    var lastRegisterEmail: String? = null
+    var lastRegisterUsername: String? = null
+    var lastRegisterPassword: String? = null
 
     private val successTokens = AuthTokens(
         accessToken = "test-access-token",
@@ -219,8 +217,9 @@ class FakeAuthRepository : AuthRepository {
         }
     }
 
-    override suspend fun register(serverUrl: String, username: String, email: String, password: String): Result<AuthTokens> {
-        lastRegisterEmail = email
+    override suspend fun register(serverUrl: String, username: String, password: String): Result<AuthTokens> {
+        lastRegisterUsername = username
+        lastRegisterPassword = password
         return if (shouldSucceed) {
             loggedIn = true
             Result.success(successTokens)
@@ -234,7 +233,7 @@ class FakeAuthRepository : AuthRepository {
     }
 
     override suspend fun getCurrentUser(): Result<User> {
-        return Result.success(User("1", "testuser", "test@example.com", "user"))
+        return Result.success(User("1", "testuser", "user"))
     }
 
     override suspend fun getStoredTokens(): AuthTokens? = stored

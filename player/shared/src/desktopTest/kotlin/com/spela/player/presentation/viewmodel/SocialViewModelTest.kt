@@ -52,9 +52,9 @@ class SocialViewModelTest {
 
     private val fakeAuthRepo = object : AuthRepository {
         override suspend fun login(serverUrl: String, username: String, password: String) = Result.failure<AuthTokens>(Exception("Not implemented"))
-        override suspend fun register(serverUrl: String, username: String, email: String, password: String) = Result.failure<AuthTokens>(Exception("Not implemented"))
+        override suspend fun register(serverUrl: String, username: String, password: String) = Result.failure<AuthTokens>(Exception("Not implemented"))
         override suspend fun refreshToken(serverUrl: String, refreshToken: String) = Result.failure<AuthTokens>(Exception("Not implemented"))
-        override suspend fun getCurrentUser() = Result.success(User("1", "testuser", "", "user"))
+        override suspend fun getCurrentUser() = Result.success(User("1", "testuser", "user"))
         override suspend fun getStoredTokens(): AuthTokens? = null
         override suspend fun storeTokens(tokens: AuthTokens) {}
         override suspend fun clearTokens() {}

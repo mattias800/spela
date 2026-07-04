@@ -18,19 +18,18 @@ fun com.spela.client.models.AuthLoginResponse.extractUser(): User = user.toDomai
  * to a "pending approval" UX state if/when the domain model grows a variant.
  */
 fun com.spela.client.models.AuthRegisterResponse.toDomain(): AuthTokens {
-    if (pending) {
-        error(message.ifEmpty { "Registration pending admin approval" })
+    if (pending == true) {
+        error(message.orEmpty().ifEmpty { "Registration pending admin approval" })
     }
     return AuthTokens(
-        accessToken = accessToken,
-        refreshToken = refreshToken,
+        accessToken = accessToken ?: error("Registration response missing access token"),
+        refreshToken = refreshToken ?: error("Registration response missing refresh token"),
     )
 }
 
 fun UserDto.toDomain(): User = User(
     id = id,
     username = username,
-    email = email,
     role = role,
     avatarUrl = avatarUrl,
     canImportGames = canImportGames,

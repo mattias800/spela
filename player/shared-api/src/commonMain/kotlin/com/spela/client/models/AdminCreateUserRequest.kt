@@ -23,7 +23,6 @@ import kotlinx.serialization.encoding.*
 /**
  * 
  *
- * @param email New account email (RFC 5321 cap).
  * @param password New account password (8-72 characters).
  * @param username New account username (3-64 characters).
  * @param dollarSchema A URL to the JSON Schema for this object.
@@ -32,9 +31,6 @@ import kotlinx.serialization.encoding.*
 @Serializable
 
 data class AdminCreateUserRequest (
-
-    /* New account email (RFC 5321 cap). */
-    @SerialName(value = "email") @Required val email: kotlin.String,
 
     /* New account password (8-72 characters). */
     @SerialName(value = "password") @Required val password: kotlin.String,

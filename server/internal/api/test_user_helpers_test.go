@@ -12,11 +12,10 @@ import (
 
 // createNonOwnerUser creates a user via the admin endpoint (which bypasses pending approval)
 // and returns their access token by logging in. ownerToken must be a valid admin/owner token.
-func createNonOwnerUser(t *testing.T, router http.Handler, ownerToken, username, email, password string) string {
+func createNonOwnerUser(t *testing.T, router http.Handler, ownerToken, username, password string) string {
 	t.Helper()
 	body, _ := json.Marshal(map[string]string{
 		"username": username,
-		"email":    email,
 		"password": password,
 		"role":     "user",
 	})

@@ -549,7 +549,6 @@ class GameRepositoryImplTest {
                 canImportGames = false,
                 createdAt = now,
                 disabled = false,
-                email = "test@example.com",
                 id = "1",
                 pendingApproval = false,
                 role = "user",
@@ -564,8 +563,8 @@ class GameRepositoryImplTest {
 
         val user = dto.extractUser()
         assertEquals("testuser", user.username)
-        assertEquals("test@example.com", user.email)
         assertEquals("1", user.id)
+        assertEquals("user", user.role)
     }
 
     @Test
