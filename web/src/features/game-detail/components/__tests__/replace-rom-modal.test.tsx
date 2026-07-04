@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -271,14 +271,9 @@ describe("ReplaceRomModal", () => {
     const dropZone = screen.getByTestId("drop-zone");
 
     // Simulate drag-and-drop which bypasses the accept attribute
-    const dropEvent = new Event("drop", { bubbles: true });
-    Object.defineProperty(dropEvent, "dataTransfer", {
-      value: { files: [file] },
+    fireEvent.drop(dropZone, {
+      dataTransfer: { files: [file] },
     });
-    Object.defineProperty(dropEvent, "preventDefault", {
-      value: vi.fn(),
-    });
-    dropZone.dispatchEvent(dropEvent);
 
     await waitFor(() => {
       expect(screen.getByTestId("validation-error")).toBeInTheDocument();
