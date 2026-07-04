@@ -260,6 +260,10 @@ fun GameDetailScreen(
                     AlsoOnPlatformsSection(
                         game = game,
                         onPlatformSelected = navigateToGame,
+                        onSetPreferredPlatform = { preferredGameId ->
+                            viewModel.onIntent(GameDetailIntent.SetPreferredPlatform(preferredGameId))
+                        },
+                        settingPreferredPlatformGameId = state.settingPreferredPlatformGameId,
                     )
                 }
 

@@ -120,6 +120,7 @@ func TestOpenAPISpec_HasNewOperations(t *testing.T) {
 		{"/api/user/play-later", "get", "listPlayLater"},
 		{"/api/user/play-later/{gameId}", "post", "addToPlayLater"},
 		{"/api/user/play-later/{gameId}", "delete", "removeFromPlayLater"},
+		{"/api/user/title-platform-preferences/{gameId}", "put", "setTitlePlatformPreference"},
 		// Search + social
 		{"/api/search", "get", "globalSearch"},
 		{"/api/users/search", "get", "searchUsers"},

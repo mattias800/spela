@@ -15,7 +15,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import com.spela.player.domain.model.Game
-import com.spela.player.domain.model.GamePlatform
+import com.spela.player.presentation.ui.components.GamePlatformTarget
 import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpConsoleChip
 import com.spela.player.presentation.ui.components.SpTitledSection
@@ -30,6 +30,9 @@ object GameDetailAlsoOnTestTags {
 
     fun platform(gameId: String, targetGameId: String) =
         "game_detail_also_on_platform_${gameId}_$targetGameId"
+
+    fun preferPlatform(gameId: String, targetGameId: String) =
+        "game_detail_also_on_prefer_${gameId}_$targetGameId"
 }
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -37,6 +40,8 @@ object GameDetailAlsoOnTestTags {
 fun AlsoOnPlatformsSection(
     game: Game,
     onPlatformSelected: (String) -> Unit,
+    onSetPreferredPlatform: (String) -> Unit,
+    settingPreferredPlatformGameId: String? = null,
 ) {
     val targets = platformTargetsForGame(game)
     if (targets.size <= 1) return
@@ -55,7 +60,9 @@ fun AlsoOnPlatformsSection(
             verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
         ) {
             targets.forEach { platform ->
-                val isCurrent = platform.isPreferred
+                val isCurrent = platform.isCurrent
+                val preferenceInFlight = settingPreferredPlatformGameId != null
+                val isSavingPreference = settingPreferredPlatformGameId == platform.gameId
                 val label = platformDisplayName(platform)
                 val chipModifier = Modifier
                     .then(
@@ -73,6 +80,18 @@ fun AlsoOnPlatformsSection(
                             "Current platform $label"
                         } else {
                             "Open ${game.title} on $label"
+                        }
+                    }
+                val preferModifier = Modifier
+                    .focusRestoreItem(
+                        key = "game_detail_also_on_prefer_${game.id}_${platform.gameId}",
+                    )
+                    .testTag(GameDetailAlsoOnTestTags.preferPlatform(game.id, platform.gameId))
+                    .semantics {
+                        contentDescription = if (isSavingPreference) {
+                            "Saving preferred platform $label"
+                        } else {
+                            "Set $label as preferred platform"
                         }
                     }
 
@@ -94,21 +113,73 @@ fun AlsoOnPlatformsSection(
                             onGradient = true,
                             isSelected = true,
                         )
+                        PreferredPlatformChip(platform.isPreferred)
+                        PreferPlatformChip(
+                            visible = !platform.isPreferred,
+                            isSaving = isSavingPreference,
+                            enabled = !preferenceInFlight,
+                            modifier = preferModifier,
+                            onClick = { onSetPreferredPlatform(platform.gameId) },
+                        )
                     }
                 } else {
-                    SpConsoleChip(
-                        consoleName = label,
-                        consoleColor = SpColor.Primary,
-                        onGradient = true,
-                        isSelected = false,
-                        onClick = { onPlatformSelected(platform.gameId) },
-                        modifier = chipModifier,
-                    )
+                    Row(
+                        modifier = Modifier,
+                        horizontalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        SpConsoleChip(
+                            consoleName = label,
+                            consoleColor = SpColor.Primary,
+                            onGradient = true,
+                            isSelected = platform.isPreferred,
+                            onClick = { onPlatformSelected(platform.gameId) },
+                            modifier = chipModifier,
+                        )
+                        PreferredPlatformChip(platform.isPreferred)
+                        PreferPlatformChip(
+                            visible = !platform.isPreferred,
+                            isSaving = isSavingPreference,
+                            enabled = !preferenceInFlight,
+                            modifier = preferModifier,
+                            onClick = { onSetPreferredPlatform(platform.gameId) },
+                        )
+                    }
                 }
             }
         }
     }
 }
 
-private fun platformDisplayName(platform: GamePlatform): String =
+@Composable
+private fun PreferredPlatformChip(visible: Boolean) {
+    if (!visible) return
+    SpChip(
+        text = "Preferred",
+        color = SpColor.Primary,
+        onGradient = true,
+        isSelected = true,
+    )
+}
+
+@Composable
+private fun PreferPlatformChip(
+    visible: Boolean,
+    isSaving: Boolean,
+    enabled: Boolean,
+    modifier: Modifier,
+    onClick: () -> Unit,
+) {
+    if (!visible) return
+    SpChip(
+        text = if (isSaving) "Saving" else "Prefer",
+        color = SpColor.Primary,
+        onGradient = true,
+        isSelected = false,
+        onClick = if (enabled) onClick else null,
+        modifier = modifier,
+    )
+}
+
+private fun platformDisplayName(platform: GamePlatformTarget): String =
     platform.consoleName.ifBlank { platform.consoleId.uppercase() }

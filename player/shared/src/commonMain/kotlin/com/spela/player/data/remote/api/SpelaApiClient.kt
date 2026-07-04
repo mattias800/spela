@@ -825,6 +825,10 @@ class SpelaApiClient(
         playLaterApi.removeFromPlayLater(gameId)
     }
 
+    suspend fun setTitlePlatformPreference(gameId: String) {
+        userApi.setTitlePlatformPreference(gameId).body()
+    }
+
     // User Preferences
 
     suspend fun getPreferences(): com.spela.client.models.UserPreferencesResponse {

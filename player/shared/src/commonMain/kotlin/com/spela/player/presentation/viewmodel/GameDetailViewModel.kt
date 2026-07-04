@@ -133,6 +133,7 @@ class GameDetailViewModel(
             }
             GameDetailIntent.ToggleFavorite -> toggleFavorite()
             GameDetailIntent.TogglePlayLater -> togglePlayLater()
+            is GameDetailIntent.SetPreferredPlatform -> setPreferredPlatform(intent.gameId)
             is GameDetailIntent.SetGameSaveStatePolicy ->
                 setGameSaveStatePolicy(intent.choice)
             is GameDetailIntent.RateGame -> rateGame(intent.rating, intent.review)
@@ -752,6 +753,38 @@ class GameDetailViewModel(
                         d.copy(game = d.game.copy(isInPlayLater = currentlyInPlayLater))
                     }
                     _state.update { it.copy(error = error.message) }
+                },
+            )
+        }
+    }
+
+    private fun setPreferredPlatform(gameId: String) {
+        val previous = _state.value.gameDetail ?: return
+        mutateGameDetail { detail ->
+            detail.copy(
+                game = detail.game.copy(
+                    platforms = detail.game.platforms.map { platform ->
+                        platform.copy(isPreferred = platform.gameId == gameId)
+                    },
+                ),
+            )
+        }
+        _state.update { it.copy(settingPreferredPlatformGameId = gameId, error = null) }
+
+        scope.launch(dispatchers.io) {
+            gameRepository.setTitlePlatformPreference(gameId).fold(
+                onSuccess = {
+                    _state.update { it.copy(settingPreferredPlatformGameId = null) }
+                },
+                onFailure = { error ->
+                    GameDetailCache.put(previous.game.id, previous)
+                    _state.update {
+                        it.copy(
+                            gameDetail = previous,
+                            settingPreferredPlatformGameId = null,
+                            error = error.message,
+                        )
+                    }
                 },
             )
         }

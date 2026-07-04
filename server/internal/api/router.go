@@ -297,6 +297,7 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 	RegisterRatingRoutes(humaAPI, ratingHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterFavoriteRoutes(humaAPI, userHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterPlayLaterRoutes(humaAPI, playLaterHandler, cfg.JWTSecret, cfg.DB, userLimiter)
+	RegisterTitlePlatformPreferenceRoutes(humaAPI, userHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterSearchRoutes(humaAPI, searchHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterSocialRoutes(humaAPI, socialHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterSessionRoutes(humaAPI, sessionHandler, cfg.JWTSecret, cfg.DB, userLimiter)

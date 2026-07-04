@@ -96,6 +96,24 @@ export function useToggleFavorite() {
   return { ...mutation, toggle };
 }
 
+export function useSetTitlePlatformPreference() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (gameId: string) =>
+      unwrap(
+        typedApi.PUT("/api/user/title-platform-preferences/{gameId}", {
+          params: { path: { gameId } },
+        }),
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["game"] });
+      queryClient.invalidateQueries({ queryKey: ["games"] });
+      queryClient.invalidateQueries({ queryKey: ["search"] });
+    },
+  });
+}
+
 export function useScrapeIfNeeded() {
   const queryClient = useQueryClient();
   return useMutation({

@@ -302,6 +302,7 @@ export type TestIGDBResponse = Schemas["TestIGDBResponse"];
 export type ThemeResponse = Schemas["ThemeResponse"];
 export type TimelineEntry = Schemas["TimelineEntry"];
 export type TimelineGame = Schemas["TimelineGame"];
+export type TitlePlatformPreferenceResponse = Schemas["TitlePlatformPreferenceResponse"];
 export type TopListGameResponse = Schemas["TopListGameResponse"];
 export type TopRatedGameResponse = Schemas["TopRatedGameResponse"];
 export type TrendingGameResponse = Schemas["TrendingGameResponse"];

@@ -62,6 +62,8 @@ interface GameRepository {
     suspend fun getPlayLaterGames(): Result<List<Game>>
     suspend fun addToPlayLater(gameId: String): Result<Unit>
     suspend fun removeFromPlayLater(gameId: String): Result<Unit>
+    suspend fun setTitlePlatformPreference(gameId: String): Result<Unit> =
+        Result.failure(UnsupportedOperationException("title platform preference is not supported"))
     suspend fun getRecentlyAddedGames(): Result<List<Game>>
     suspend fun getTopRatedGames(consoleId: String): Result<List<TopRatedGame>>
     suspend fun getTopRatedGamesGlobal(): Result<List<TopRatedGame>>

@@ -6,10 +6,17 @@ import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { GameDetailPage } from "../game-detail-page";
 
 const mockScrapeIfNeededMutate = vi.hoisted(() => vi.fn());
+const mockSetTitlePlatformPreferenceMutate = vi.hoisted(() => vi.fn());
 
 vi.mock("@/hooks/use-games", () => ({
   useGame: vi.fn(),
   useToggleFavorite: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
+  useSetTitlePlatformPreference: vi.fn(() => ({
+    mutate: mockSetTitlePlatformPreferenceMutate,
+    isPending: false,
+    isError: false,
+    variables: undefined,
+  })),
   useScrapeIfNeeded: vi.fn(() => ({
     mutate: (gameId: string) => mockScrapeIfNeededMutate(gameId),
     isPending: false,
@@ -212,6 +219,7 @@ function renderPage(gameId = "g1") {
 beforeEach(() => {
   vi.clearAllMocks();
   mockScrapeIfNeededMutate.mockClear();
+  mockSetTitlePlatformPreferenceMutate.mockClear();
   mockUseGame.mockReturnValue({
     data: mockGame,
     isLoading: false,
@@ -362,6 +370,42 @@ describe("GameDetailPage - Also on platforms", () => {
 
     expect(screen.getByTestId("location")).toHaveTextContent(
       "/games/game-snes",
+    );
+  });
+
+  it("can set a non-preferred current platform as preferred", async () => {
+    const user = userEvent.setup();
+    mockUseGame.mockReturnValue({
+      data: {
+        ...multiPlatformGame,
+        platforms: [
+          {
+            gameId: "game-nes",
+            consoleId: "nes",
+            consoleName: "Nintendo Entertainment System",
+            isPreferred: false,
+          },
+          {
+            gameId: "game-snes",
+            consoleId: "snes",
+            consoleName: "Super Nintendo",
+            isPreferred: true,
+          },
+        ],
+      },
+      isLoading: false,
+    });
+
+    renderPage("game-nes");
+
+    const section = screen.getByTestId("also-on-platforms-section");
+    expect(within(section).getByText("Current")).toBeInTheDocument();
+    expect(within(section).getByText("Preferred")).toBeInTheDocument();
+
+    await user.click(within(section).getByRole("button", { name: "Prefer" }));
+
+    expect(mockSetTitlePlatformPreferenceMutate).toHaveBeenCalledWith(
+      "game-nes",
     );
   });
 });

@@ -35,7 +35,15 @@ internal fun compactPlatformLabel(consoleId: String, consoleName: String): Strin
     }
 }
 
-internal fun platformTargetsForGame(game: Game): List<GamePlatform> {
+internal data class GamePlatformTarget(
+    val gameId: String,
+    val consoleId: String,
+    val consoleName: String,
+    val isPreferred: Boolean,
+    val isCurrent: Boolean,
+)
+
+internal fun platformTargetsForGame(game: Game): List<GamePlatformTarget> {
     val fallback = GamePlatform(
         gameId = game.id,
         consoleId = game.consoleId,
@@ -46,16 +54,26 @@ internal fun platformTargetsForGame(game: Game): List<GamePlatform> {
     val targets = if (source.any { it.gameId == game.id }) {
         source
     } else {
-        listOf(fallback) + source
+        listOf(fallback.copy(isPreferred = false)) + source
     }.distinctBy { it.gameId }
-    val currentIndex = targets.indexOfFirst { it.gameId == game.id }
-        .takeIf { it >= 0 }
-        ?: targets.indexOfFirst { it.isPreferred }.takeIf { it >= 0 }
+    val preferredIndex = targets.indexOfFirst { it.isPreferred }.takeIf { it >= 0 }
+    val currentIndex = targets.indexOfFirst { it.gameId == game.id }.takeIf { it >= 0 }
+    val selectedIndex = preferredIndex
+        ?: currentIndex
         ?: 0
     return targets.mapIndexed { index, platform ->
-        platform.copy(isPreferred = index == currentIndex)
+        GamePlatformTarget(
+            gameId = platform.gameId,
+            consoleId = platform.consoleId,
+            consoleName = platform.consoleName,
+            isPreferred = index == selectedIndex,
+            isCurrent = platform.gameId == game.id,
+        )
     }
 }
+
+internal fun preferredGameIdForGame(game: Game): String =
+    platformTargetsForGame(game).firstOrNull { it.isPreferred }?.gameId ?: game.id
 
 fun gamePlatformPillContent(
     game: Game,
@@ -97,7 +115,7 @@ fun SpGamePlatformPills(
         verticalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
     ) {
         targets.forEach { platform ->
-            val isCurrent = platform.isPreferred
+            val isCurrent = platform.isCurrent
             SpConsoleChip(
                 consoleName = compactPlatformLabel(platform.consoleId, platform.consoleName),
                 consoleColor = SpColor.Primary,

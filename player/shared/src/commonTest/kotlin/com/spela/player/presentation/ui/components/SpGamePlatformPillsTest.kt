@@ -29,18 +29,26 @@ class SpGamePlatformPillsTest {
         val game = game(platforms = emptyList())
 
         assertEquals(
-            listOf(GamePlatform("game-1", "nes", "NES", isPreferred = true)),
+            listOf(
+                GamePlatformTarget(
+                    gameId = "game-1",
+                    consoleId = "nes",
+                    consoleName = "NES",
+                    isPreferred = true,
+                    isCurrent = true,
+                ),
+            ),
             platformTargetsForGame(game),
         )
     }
 
     @Test
-    fun platformTargetsMarkCurrentGamePreferredAndDedupeByGameId() {
+    fun platformTargetsKeepBackendPreferredAndDedupeByGameId() {
         val game = game(
             id = "game-nes",
             platforms = listOf(
                 GamePlatform("game-nes", "nes", "NES", isPreferred = false),
-                GamePlatform("game-snes", "snes", "SNES", isPreferred = false),
+                GamePlatform("game-snes", "snes", "SNES", isPreferred = true),
                 GamePlatform("game-snes", "snes", "SNES", isPreferred = false),
             ),
         )
@@ -48,7 +56,9 @@ class SpGamePlatformPillsTest {
         val targets = platformTargetsForGame(game)
 
         assertEquals(listOf("game-nes", "game-snes"), targets.map { it.gameId })
-        assertTrue(targets.first().isPreferred)
+        assertTrue(targets.first().isCurrent)
+        assertTrue(targets[1].isPreferred)
+        assertEquals("game-snes", preferredGameIdForGame(game))
     }
 
     @Test
@@ -64,7 +74,8 @@ class SpGamePlatformPillsTest {
 
         assertEquals(listOf("game-nes", "game-snes"), targets.map { it.gameId })
         assertEquals("NES", targets.first().consoleName)
-        assertTrue(targets.first().isPreferred)
+        assertTrue(targets.first().isCurrent)
+        assertTrue(targets[1].isPreferred)
     }
 
     private fun game(

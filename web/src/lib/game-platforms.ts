@@ -3,6 +3,7 @@ export interface GamePlatformTarget {
   consoleId: string;
   consoleName: string;
   isPreferred: boolean;
+  isCurrent?: boolean;
 }
 
 interface GamePlatformSource {
@@ -29,7 +30,7 @@ export function getGamePlatformTargets(
   const source = platforms.length > 0 ? platforms : [fallback];
   const withCurrent = source.some((platform) => platform.gameId === game.id)
     ? source
-    : [fallback, ...source];
+    : [{ ...fallback, isPreferred: false }, ...source];
   const seen = new Set<string>();
   const targets = withCurrent.reduce<GamePlatformTarget[]>((items, platform) => {
     if (seen.has(platform.gameId)) return items;
@@ -42,15 +43,16 @@ export function getGamePlatformTargets(
   );
   const preferredIndex = targets.findIndex((platform) => platform.isPreferred);
   let selectedIndex = 0;
-  if (currentIndex >= 0) {
-    selectedIndex = currentIndex;
-  } else if (preferredIndex >= 0) {
+  if (preferredIndex >= 0) {
     selectedIndex = preferredIndex;
+  } else if (currentIndex >= 0) {
+    selectedIndex = currentIndex;
   }
 
   return targets.map((platform, index) => ({
     ...platform,
     isPreferred: index === selectedIndex,
+    isCurrent: platform.gameId === game.id,
   }));
 }
 

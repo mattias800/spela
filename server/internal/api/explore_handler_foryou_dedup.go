@@ -135,18 +135,28 @@ func titleDedupeKey(game db.Game) string {
 // relative order of the first occurrence of each title is preserved.
 //
 // For each group, the winner is picked by:
-//  1. The user's most-played platform for this title, if [mostPlayedByTitle]
+//  1. The user's explicit preferred platform for this title, if present.
+//  2. The user's most-played platform for this title, if [mostPlayedByTitle]
 //     has an entry for the title key whose game ID appears in the group.
-//  2. Lower [Console.Generation] — the original-platform release tends to
+//  3. Lower [Console.Generation] — the original-platform release tends to
 //     be what users recognise as the canonical version. Generation 0 is
 //     treated as "unknown" and pushed to the end.
-//  3. Higher [Game.IGDBCriticsRating] — prefer the better-received version
+//  4. Higher [Game.IGDBCriticsRating] — prefer the better-received version
 //     when two consoles are in the same generation.
-//  4. Lower [Game.ID] — stable fallback so identical inputs always pick
+//  5. Lower [Game.ID] — stable fallback so identical inputs always pick
 //     the same winner across requests.
 //
-// [Console] must be preloaded on every Game for tiebreak (2) to work.
+// [Console] must be preloaded on every Game for tiebreak (3) to work.
 func dedupeGamesByTitle(games []db.Game, mostPlayedByTitle map[string]uint) []db.Game {
+	return dedupeGamesByTitleWithHints(games, titleWinnerHints{mostPlayedByTitle: mostPlayedByTitle})
+}
+
+type titleWinnerHints struct {
+	preferredByTitle  map[string]uint
+	mostPlayedByTitle map[string]uint
+}
+
+func dedupeGamesByTitleWithHints(games []db.Game, hints titleWinnerHints) []db.Game {
 	type group struct {
 		key   string
 		games []db.Game
@@ -172,20 +182,35 @@ func dedupeGamesByTitle(games []db.Game, mostPlayedByTitle map[string]uint) []db
 			result = append(result, grp.games[0])
 			continue
 		}
-		result = append(result, pickWinnerForTitle(key, grp.games, mostPlayedByTitle))
+		result = append(result, pickWinnerForTitle(key, grp.games, hints))
 	}
 	return result
 }
 
 func dedupeGamesByTitleForUser(games []db.Game, database *gorm.DB, userID uint) []db.Game {
-	return dedupeGamesByTitle(games, fetchMostPlayedTitleMap(database, userID))
+	return dedupeGamesByTitleForUserWithMostPlayed(games, database, userID, fetchMostPlayedTitleMap(database, userID))
+}
+
+func dedupeGamesByTitleForUserWithMostPlayed(games []db.Game, database *gorm.DB, userID uint, mostPlayedByTitle map[string]uint) []db.Game {
+	return dedupeGamesByTitleWithHints(games, titleWinnerHints{
+		preferredByTitle:  fetchPreferredTitlePlatformMap(database, userID, titleKeysForGames(games)),
+		mostPlayedByTitle: mostPlayedByTitle,
+	})
 }
 
 // pickWinnerForTitle applies the tiebreak rules documented on
 // [dedupeGamesByTitle] to choose one game from a group sharing the same
 // title key.
-func pickWinnerForTitle(key string, games []db.Game, mostPlayedByTitle map[string]uint) db.Game {
-	if mostPlayedID, ok := mostPlayedByTitle[key]; ok {
+func pickWinnerForTitle(key string, games []db.Game, hints titleWinnerHints) db.Game {
+	if preferredID, ok := hints.preferredByTitle[key]; ok {
+		for _, g := range games {
+			if g.ID == preferredID {
+				return g
+			}
+		}
+	}
+
+	if mostPlayedID, ok := hints.mostPlayedByTitle[key]; ok {
 		for _, g := range games {
 			if g.ID == mostPlayedID {
 				return g
@@ -214,6 +239,14 @@ func pickWinnerForTitle(key string, games []db.Game, mostPlayedByTitle map[strin
 		return sorted[i].ID < sorted[j].ID
 	})
 	return sorted[0]
+}
+
+func titleKeysForGames(games []db.Game) map[string]struct{} {
+	keys := make(map[string]struct{}, len(games))
+	for _, game := range games {
+		keys[titleDedupeKey(game)] = struct{}{}
+	}
+	return keys
 }
 
 // fetchMostPlayedTitleMap returns a map from title key to the

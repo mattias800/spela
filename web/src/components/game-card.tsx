@@ -30,6 +30,7 @@ export function GameCard({
   onTogglePlayLater,
 }: GameCardProps) {
   const { ref, isScraping } = useAutoScrape(game);
+  const gamePath = `/games/${game.id}`;
 
   return (
     <div
@@ -49,7 +50,7 @@ export function GameCard({
         }
       >
         <Link
-          to={`/games/${game.id}`}
+          to={gamePath}
           className="block"
           aria-label={`Open ${game.title}`}
         >

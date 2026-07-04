@@ -15,11 +15,12 @@ describe("game-platforms", () => {
         consoleId: "nes",
         consoleName: "NES",
         isPreferred: true,
+        isCurrent: true,
       },
     ]);
   });
 
-  it("marks the current game as preferred and dedupes targets", () => {
+  it("falls back to the current game as preferred and dedupes targets", () => {
     const game = makeGame({
       id: "game-nes",
       platforms: [
@@ -51,7 +52,9 @@ describe("game-platforms", () => {
       "game-snes",
     ]);
     expect(targets[0].isPreferred).toBe(true);
+    expect(targets[0].isCurrent).toBe(true);
     expect(targets[1].isPreferred).toBe(false);
+    expect(targets[1].isCurrent).toBe(false);
   });
 
   it("includes the current game when the backend target list omits it", () => {
@@ -78,9 +81,11 @@ describe("game-platforms", () => {
     expect(targets[0]).toMatchObject({
       gameId: "game-nes",
       consoleName: "NES",
-      isPreferred: true,
+      isPreferred: false,
+      isCurrent: true,
     });
-    expect(targets[1].isPreferred).toBe(false);
+    expect(targets[1].isPreferred).toBe(true);
+    expect(targets[1].isCurrent).toBe(false);
   });
 
   it("uses compact console ids for long labels", () => {

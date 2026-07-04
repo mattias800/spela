@@ -68,8 +68,8 @@ type PlayersLikeYouResponse struct {
 
 // buildBecauseYouPlayedRows generates "Because you played [Game]" recommendation rows.
 //
-// mostPlayedByTitle is the cross-platform-dedupe tiebreak hint; see
-// [dedupeGamesByTitle] for how it's consumed.
+// mostPlayedByTitle is the cross-platform-dedupe fallback hint; explicit
+// saved platform preferences still win before it.
 func (h *ExploreHandler) buildBecauseYouPlayedRows(userID uint, mostPlayedByTitle map[string]uint) ([]ForYouRowResponse, error) {
 	// Get top 3 most-played games
 	type playRow struct {
@@ -153,7 +153,7 @@ func (h *ExploreHandler) buildBecauseYouPlayedRows(userID uint, mostPlayedByTitl
 		// Done BEFORE the already-recommended filter and
 		// the 10-card cap so we don't first commit slots to dups and
 		// then have nothing left.
-		recGames = dedupeGamesByTitle(recGames, mostPlayedByTitle)
+		recGames = dedupeGamesByTitleForUserWithMostPlayed(recGames, h.DB, userID, mostPlayedByTitle)
 
 		// Filter out already-recommended games
 		var filtered []db.Game
@@ -185,8 +185,8 @@ func (h *ExploreHandler) buildBecauseYouPlayedRows(userID uint, mostPlayedByTitl
 
 // buildMoreGenreRow generates the "More [Genre] for you" recommendation row.
 //
-// mostPlayedByTitle is the cross-platform-dedupe tiebreak hint; see
-// [dedupeGamesByTitle].
+// mostPlayedByTitle is the cross-platform-dedupe fallback hint; explicit
+// saved platform preferences still win before it.
 func (h *ExploreHandler) buildMoreGenreRow(userID uint, mostPlayedByTitle map[string]uint) (*ForYouRowResponse, error) {
 	// Find the user's most-played genre by summing play time per genre
 	type genreRow struct {
@@ -237,7 +237,7 @@ func (h *ExploreHandler) buildMoreGenreRow(userID uint, mostPlayedByTitle map[st
 		return nil, err
 	}
 
-	games = dedupeGamesByTitle(games, mostPlayedByTitle)
+	games = dedupeGamesByTitleForUserWithMostPlayed(games, h.DB, userID, mostPlayedByTitle)
 	if len(games) > 10 {
 		games = games[:10]
 	}
@@ -255,8 +255,8 @@ func (h *ExploreHandler) buildMoreGenreRow(userID uint, mostPlayedByTitle map[st
 
 // buildUnfinishedRow generates the "Your unfinished business" recommendation row.
 //
-// mostPlayedByTitle is the cross-platform-dedupe tiebreak hint; see
-// [dedupeGamesByTitle].
+// mostPlayedByTitle is the cross-platform-dedupe fallback hint; explicit
+// saved platform preferences still win before it.
 func (h *ExploreHandler) buildUnfinishedRow(userID uint, mostPlayedByTitle map[string]uint) (*ForYouRowResponse, error) {
 	sevenDaysAgo := time.Now().Add(-7 * 24 * time.Hour)
 
@@ -303,7 +303,7 @@ func (h *ExploreHandler) buildUnfinishedRow(userID uint, mostPlayedByTitle map[s
 	// Dedupe: if the user has stalled multiple platform versions of the
 	// same title, surface the one their tiebreak prefers — typically
 	// the platform they spent the most time on.
-	sorted = dedupeGamesByTitle(sorted, mostPlayedByTitle)
+	sorted = dedupeGamesByTitleForUserWithMostPlayed(sorted, h.DB, userID, mostPlayedByTitle)
 
 	return &ForYouRowResponse{
 		Type:  "unfinished",
@@ -314,8 +314,8 @@ func (h *ExploreHandler) buildUnfinishedRow(userID uint, mostPlayedByTitle map[s
 
 // buildExpandHorizonsRow generates the "Expand your horizons" recommendation row.
 //
-// mostPlayedByTitle is the cross-platform-dedupe tiebreak hint; see
-// [dedupeGamesByTitle].
+// mostPlayedByTitle is the cross-platform-dedupe fallback hint; explicit
+// saved platform preferences still win before it.
 func (h *ExploreHandler) buildExpandHorizonsRow(userID uint, mostPlayedByTitle map[string]uint) (*ForYouRowResponse, error) {
 	// Get all genres the user has played
 	var playedGenres []string
@@ -366,7 +366,7 @@ func (h *ExploreHandler) buildExpandHorizonsRow(userID uint, mostPlayedByTitle m
 		return nil, err
 	}
 
-	games = dedupeGamesByTitle(games, mostPlayedByTitle)
+	games = dedupeGamesByTitleForUserWithMostPlayed(games, h.DB, userID, mostPlayedByTitle)
 	if len(games) > 10 {
 		games = games[:10]
 	}

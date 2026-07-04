@@ -61,7 +61,7 @@ export function GamePlatformPills<T extends GamePlatformTarget>({
       data-testid={testId}
     >
       {visibleTargets.map((platform) => {
-        const isCurrent = platform.isPreferred;
+        const isCurrent = platform.isCurrent === true;
         const label = compactPlatformLabel(platform);
         if (isCurrent) {
           return (

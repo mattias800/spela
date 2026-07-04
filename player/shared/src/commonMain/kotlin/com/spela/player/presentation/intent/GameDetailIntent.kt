@@ -30,6 +30,7 @@ sealed interface GameDetailIntent {
     data object DismissDeleteDownloadDialog : GameDetailIntent
     data object ToggleFavorite : GameDetailIntent
     data object TogglePlayLater : GameDetailIntent
+    data class SetPreferredPlatform(val gameId: String) : GameDetailIntent
     /**
      * Set the per-game save-state opt-out (#804 phase 4b spec point c).
      * `choice == null` clears the override so the game inherits from

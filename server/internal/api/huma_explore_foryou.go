@@ -323,7 +323,7 @@ func (h *ExploreHandler) HumaGetPlayersLikeYou(ctx context.Context, _ *GetPlayer
 	// Cross-platform title dedupe. Without it, a similar user
 	// who has Street Fighter II on SNES, Genesis, and Arcade favourited
 	// would inflate this shelf with all three platform variants.
-	sorted = dedupeGamesByTitle(sorted, h.fetchMostPlayedTitleMap(userID))
+	sorted = dedupeGamesByTitleForUserWithMostPlayed(sorted, h.DB, userID, h.fetchMostPlayedTitleMap(userID))
 	if len(sorted) > 20 {
 		sorted = sorted[:20]
 	}
