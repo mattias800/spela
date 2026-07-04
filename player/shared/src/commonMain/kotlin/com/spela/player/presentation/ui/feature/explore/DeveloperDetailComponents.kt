@@ -56,6 +56,7 @@ import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpImage
 import com.spela.player.presentation.ui.components.SpLinkText
 import com.spela.player.presentation.ui.components.SpCarouselGameCard
+import com.spela.player.presentation.ui.components.gamePlatformPillContent
 import com.spela.player.presentation.ui.components.SpShimmer
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -359,6 +360,7 @@ internal fun DeveloperTopRatedCard(
         isFavorite = game.isFavorite,
         isInPlayLater = game.isInPlayLater,
         testTag = "developer_top_game_${game.id}",
+        platformContent = gamePlatformPillContent(game, onGameSelected),
     )
 }
 

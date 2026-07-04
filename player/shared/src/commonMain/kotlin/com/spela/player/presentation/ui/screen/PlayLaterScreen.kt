@@ -110,6 +110,7 @@ fun PlayLaterScreen(
                                     GameGridItem(
                                         game = game,
                                         onClick = { onGameSelected(game.id) },
+                                        onPlatformSelected = onGameSelected,
                                         onRequestScrape = { viewModel.requestScrapeIfNeeded(it) },
                                         modifier = Modifier.focusRestoreItem(
                                             key = "play_later_screen_${game.id}",

@@ -13,6 +13,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.focus.focusRequester
 import com.spela.player.domain.model.Game
 import com.spela.player.presentation.ui.components.SpCarouselGameCard
+import com.spela.player.presentation.ui.components.gamePlatformPillContent
 import com.spela.player.presentation.ui.components.SpGameCardSkeleton
 import com.spela.player.presentation.ui.theme.SpSpacing
 
@@ -32,6 +33,7 @@ fun GameShelf(
         Box(modifier = Modifier.focusRequester(focusRequester)) {
             ExploreGameCard(
                 game = games[index],
+                onPlatformSelected = onGameSelected,
                 onClick = { onGameSelected(games[index].id) },
             )
         }
@@ -43,6 +45,7 @@ fun GameShelf(
 internal fun ExploreGameCard(
     game: Game,
     onClick: () -> Unit,
+    onPlatformSelected: ((String) -> Unit)? = null,
 ) {
     val resolvedCoverUrl = rememberResolvedCoverUrl(gameId = game.id, coverUrl = game.coverUrl, scrapeAttempts = game.scrapeAttempts)
     SpCarouselGameCard(
@@ -54,6 +57,7 @@ internal fun ExploreGameCard(
         isFavorite = game.isFavorite,
         isInPlayLater = game.isInPlayLater,
         testTag = "explore_game_card_${game.id}",
+        platformContent = gamePlatformPillContent(game, onPlatformSelected),
     )
 }
 

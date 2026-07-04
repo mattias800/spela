@@ -118,6 +118,14 @@ data class ConsolePhotoCredit(
 data class GameDisc(val discNumber: Int, val fileName: String, val fileSize: Long)
 
 @Serializable
+data class GamePlatform(
+    val gameId: String,
+    val consoleId: String,
+    val consoleName: String,
+    val isPreferred: Boolean = false,
+)
+
+@Serializable
 data class Game(
     val id: String,
     val title: String,
@@ -166,6 +174,7 @@ data class Game(
     val timeToBeatNormally: Int = 0,
     val timeToBeatCompletely: Int = 0,
     val partyInfo: String = "",
+    val platforms: List<GamePlatform> = emptyList(),
 )
 
 @Serializable

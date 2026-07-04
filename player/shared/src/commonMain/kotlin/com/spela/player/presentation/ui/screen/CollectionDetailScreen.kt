@@ -188,6 +188,7 @@ fun CollectionDetailScreen(
                             CollectionGameGridItem(
                                 game = game,
                                 onClick = { onGameSelected(game.id) },
+                                onPlatformSelected = onGameSelected,
                                 onRemove = if (isOwner) {
                                     {
                                         viewModel.onIntent(
@@ -274,12 +275,18 @@ fun CollectionDetailScreen(
 private fun CollectionGameGridItem(
     game: Game,
     onClick: () -> Unit,
+    onPlatformSelected: (String) -> Unit,
     onRemove: (() -> Unit)?,
     onRequestScrape: ((Game) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier) {
-        GameGridItem(game = game, onClick = onClick, onRequestScrape = onRequestScrape)
+        GameGridItem(
+            game = game,
+            onClick = onClick,
+            onPlatformSelected = onPlatformSelected,
+            onRequestScrape = onRequestScrape,
+        )
         if (onRemove != null) {
             SpIconButton(
                 icon = Icons.Filled.Close,

@@ -39,6 +39,7 @@ import androidx.compose.ui.focus.focusRequester
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpCarousel
 import com.spela.player.presentation.ui.components.SpCarouselGameCard
+import com.spela.player.presentation.ui.components.gamePlatformPillContent
 import com.spela.player.presentation.ui.components.SpGameCardSkeleton
 import com.spela.player.presentation.ui.components.SpShimmer
 import com.spela.player.presentation.ui.theme.SpColor
@@ -162,6 +163,7 @@ fun DeveloperSpotlightSection(
                     SpotlightGameCard(
                         game = spotlight.topGames[index],
                         onClick = { onGameSelected(spotlight.topGames[index].id) },
+                        onPlatformSelected = onGameSelected,
                     )
                 }
             }
@@ -174,6 +176,7 @@ fun DeveloperSpotlightSection(
 private fun SpotlightGameCard(
     game: Game,
     onClick: () -> Unit,
+    onPlatformSelected: ((String) -> Unit)? = null,
 ) {
     SpCarouselGameCard(
         title = game.title,
@@ -182,6 +185,7 @@ private fun SpotlightGameCard(
         onClick = onClick,
         rating = game.communityRating,
         testTag = "developer_spotlight_game_${game.id}",
+        platformContent = gamePlatformPillContent(game, onPlatformSelected),
     )
 }
 

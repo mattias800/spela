@@ -5,6 +5,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import com.spela.player.domain.model.Game
 import com.spela.player.presentation.ui.components.SpGridGameCard
+import com.spela.player.presentation.ui.components.gamePlatformPillContent
 
 /**
  * ROLE component — a game card for use in grid layouts.
@@ -17,6 +18,7 @@ import com.spela.player.presentation.ui.components.SpGridGameCard
 internal fun GameGridItem(
     game: Game,
     onClick: () -> Unit,
+    onPlatformSelected: ((String) -> Unit)? = null,
     onRequestScrape: ((Game) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
@@ -37,6 +39,7 @@ internal fun GameGridItem(
         isInPlayLater = game.isInPlayLater,
         variantCount = game.variantCount,
         testTag = "game_grid_item_${game.id}",
+        platformContent = gamePlatformPillContent(game, onPlatformSelected),
         modifier = modifier,
     )
 }

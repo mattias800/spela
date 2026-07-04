@@ -256,6 +256,7 @@ fun ConsoleGamesScreen(
                         GameGridItem(
                             game = game,
                             onClick = { onGameSelected(game.id) },
+                            onPlatformSelected = onGameSelected,
                             onRequestScrape = { viewModel.requestScrapeIfNeeded(it) },
                             modifier = Modifier.focusRestoreItem(
                                 key = game.id,

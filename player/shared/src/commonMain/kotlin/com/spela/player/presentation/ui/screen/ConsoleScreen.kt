@@ -53,6 +53,7 @@ import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.components.SpGameGrid
 import com.spela.player.presentation.ui.components.SpGridGameCard
+import com.spela.player.presentation.ui.components.gamePlatformPillContent
 import com.spela.player.presentation.ui.components.SpTitledSection
 import com.spela.player.presentation.ui.feature.explore.ConsoleEssentials
 import com.spela.player.presentation.ui.feature.explore.ConsoleHiddenGems
@@ -291,6 +292,7 @@ fun ConsoleScreen(
                                             rating = game.communityRating,
                                             isFavorite = game.isFavorite,
                                             isInPlayLater = game.isInPlayLater,
+                                            platformContent = gamePlatformPillContent(game, onGameSelected),
                                         )
                                     }
                                 },

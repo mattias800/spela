@@ -26,6 +26,7 @@ import com.spela.player.presentation.ui.components.SpCarousel
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpCarouselGameCard
+import com.spela.player.presentation.ui.components.gamePlatformPillContent
 import com.spela.player.presentation.ui.components.SpWideGameCard
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -93,6 +94,7 @@ internal fun GameCarouselRow(
             GameCoverCard(
                 game = games[index],
                 onClick = { onGameSelected(games[index].id) },
+                onPlatformSelected = onGameSelected,
             )
         }
     }
@@ -103,6 +105,7 @@ internal fun GameCarouselRow(
 internal fun GameCoverCard(
     game: Game,
     onClick: () -> Unit,
+    onPlatformSelected: ((String) -> Unit)? = null,
 ) {
     SpCarouselGameCard(
         title = game.title,
@@ -112,6 +115,7 @@ internal fun GameCoverCard(
         rating = game.communityRating,
         isFavorite = game.isFavorite,
         isInPlayLater = game.isInPlayLater,
+        platformContent = gamePlatformPillContent(game, onPlatformSelected),
     )
 }
 

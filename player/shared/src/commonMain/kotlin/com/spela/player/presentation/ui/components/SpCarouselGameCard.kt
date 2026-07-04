@@ -26,6 +26,7 @@ fun SpCarouselGameCard(
     isInPlayLater: Boolean = false,
     variantCount: Int = 0,
     testTag: String? = null,
+    platformContent: (@Composable () -> Unit)? = null,
 ) {
     SpGameCard(
         title = title,
@@ -39,5 +40,6 @@ fun SpCarouselGameCard(
         isInPlayLater = isInPlayLater,
         variantCount = variantCount,
         testTag = testTag,
+        platformContent = platformContent,
     )
 }

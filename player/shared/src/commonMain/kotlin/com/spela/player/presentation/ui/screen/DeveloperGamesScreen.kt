@@ -269,6 +269,7 @@ fun DeveloperGamesScreen(
                     GameGridItem(
                         game = game,
                         onClick = { onGameSelected(game.id) },
+                        onPlatformSelected = onGameSelected,
                     )
                 }
             }
