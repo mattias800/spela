@@ -41,11 +41,38 @@ class DesktopGamepadPoller(
         /** SDL axis magnitude, for normalizing to -1..1 (#1362 right-stick scroll). */
         private const val AXIS_RANGE = 32768f
 
+        /** Libretro analog button pressure range (0..0x7FFF). */
+        internal const val ANALOG_BUTTON_RANGE = 32767
+
         /** Number of axes: LX, LY, RX, RY, TriggerL, TriggerR. */
         private const val NUM_AXES = 6
 
         /** Trigger threshold to consider as digital press. */
         private const val TRIGGER_THRESHOLD = 8000
+
+        internal fun normalizeTriggerPressure(value: Int): Short {
+            return value.coerceIn(0, ANALOG_BUTTON_RANGE).toShort()
+        }
+
+        internal data class TriggerAxes(
+            val analogPressures: Map<Int, Short>,
+            val l2Pressed: Boolean,
+            val r2Pressed: Boolean,
+        )
+
+        internal fun resolveTriggerAxes(
+            l2Raw: Int,
+            r2Raw: Int,
+            mapping: Map<GamepadPosition, Int>,
+        ): TriggerAxes {
+            val l2 = normalizeTriggerPressure(l2Raw)
+            val r2 = normalizeTriggerPressure(r2Raw)
+            return TriggerAxes(
+                analogPressures = GamepadButtonResolver.resolveAnalogTriggerPressures(l2, r2, mapping),
+                l2Pressed = l2Raw > TRIGGER_THRESHOLD,
+                r2Pressed = r2Raw > TRIGGER_THRESHOLD,
+            )
+        }
     }
 
     private var pollJob: Job? = null
@@ -72,6 +99,9 @@ class DesktopGamepadPoller(
         confirmIsEast = confirmIsEast,
     )
 
+    private val analogTriggerRouteTracker = AnalogTriggerRouteTracker(GamepadPortManager.MAX_PORTS)
+    private val routedPortsByController = mutableMapOf<Int, Int>()
+
     fun start(scope: CoroutineScope) {
         if (pollJob != null) return
 
@@ -93,6 +123,12 @@ class DesktopGamepadPoller(
     fun stop() {
         pollJob?.cancel()
         pollJob = null
+        (controller as? DesktopLibretroController)?.let { desktopController ->
+            routedPortsByController.values.toSet().forEach { port ->
+                clearAnalogTriggerPort(desktopController, port)
+            }
+        }
+        routedPortsByController.clear()
         if (initialized) {
             jni.nativeGamepadShutdown()
             initialized = false
@@ -195,7 +231,16 @@ class DesktopGamepadPoller(
             // Emulation routing requires an assigned player port; unassigned
             // controllers stop here (they only feed the tester above).
             val port = gamepadPortManager.getPort(state.controllerId)
-            if (port < 0) continue
+            val previousPort = routedPortsByController[state.controllerId]
+            if (previousPort != port) {
+                if (previousPort != null) clearAnalogTriggerPort(desktopController, previousPort)
+                if (port >= 0) clearAnalogTriggerPort(desktopController, port)
+            }
+            if (port < 0) {
+                routedPortsByController.remove(state.controllerId)
+                continue
+            }
+            routedPortsByController[state.controllerId] = port
 
             var hasInput = false
 
@@ -215,15 +260,24 @@ class DesktopGamepadPoller(
                 val ly = applyDeadzone(state.axes[1])
                 val rx = applyDeadzone(state.axes[2])
                 val ry = applyDeadzone(state.axes[3])
+                val triggerAxes = resolveTriggerAxes(state.axes[4], state.axes[5], mapping)
 
                 desktopController.setAnalog(port, 0, 0, lx.toShort())
                 desktopController.setAnalog(port, 0, 1, ly.toShort())
                 desktopController.setAnalog(port, 1, 0, rx.toShort())
                 desktopController.setAnalog(port, 1, 1, ry.toShort())
+                clearStaleAnalogTriggerIds(desktopController, port, triggerAxes.analogPressures.keys)
+                triggerAxes.analogPressures.forEach { (retroId, pressure) ->
+                    desktopController.setAnalogButton(port, retroId, pressure)
+                }
 
-                if (lx != 0 || ly != 0 || rx != 0 || ry != 0) {
+                if (lx != 0 || ly != 0 || rx != 0 || ry != 0 ||
+                    triggerAxes.analogPressures.any { it.value.toInt() > 0 }
+                ) {
                     hasInput = true
                 }
+            } else {
+                clearAnalogTriggerPort(desktopController, port)
             }
 
             if (hasInput) {
@@ -263,8 +317,32 @@ class DesktopGamepadPoller(
         // Detect disconnections
         val disconnected = knownControllers - currentIds
         for (id in disconnected) {
+            val port = routedPortsByController.remove(id) ?: gamepadPortManager.getPort(id)
+            if (port >= 0) {
+                clearAnalogTriggerPort(desktopController, port)
+            }
             knownControllers.remove(id)
             gamepadPortManager.disconnectDevice(id)
+        }
+    }
+
+    private fun clearStaleAnalogTriggerIds(
+        desktopController: DesktopLibretroController,
+        port: Int,
+        currentIds: Set<Int>,
+    ) {
+        analogTriggerRouteTracker.update(port, currentIds).forEach { staleId ->
+            desktopController.clearAnalogButton(port, staleId)
+            desktopController.setButton(port, staleId, false)
+        }
+    }
+
+    private fun clearAnalogTriggerPort(desktopController: DesktopLibretroController, port: Int) {
+        for (retroId in 0 until GamepadButtonResolver.RETRO_BUTTON_COUNT) {
+            desktopController.clearAnalogButton(port, retroId)
+        }
+        analogTriggerRouteTracker.clearPort(port).forEach { staleId ->
+            desktopController.setButton(port, staleId, false)
         }
     }
 

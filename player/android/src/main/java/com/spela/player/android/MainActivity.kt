@@ -14,11 +14,14 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.lifecycle.lifecycleScope
 import com.spela.player.domain.model.ControllerClassifier
+import com.spela.player.domain.model.DefaultGamepadMapping
 import com.spela.player.domain.model.GamepadPosition
 import com.spela.player.domain.repository.ConfirmButtonConvention
 import com.spela.player.domain.repository.PreferencesRepository
 import com.spela.player.libretro.AndroidGamepadNormalizer
 import com.spela.player.libretro.AndroidLibretroController
+import com.spela.player.libretro.AnalogTriggerRouteTracker
+import com.spela.player.libretro.GamepadButtonResolver
 import com.spela.player.libretro.GamepadPortManager
 import com.spela.player.presentation.App
 import com.spela.player.presentation.ui.gamepad.ComposeFocusBridge
@@ -30,7 +33,6 @@ import com.spela.player.presentation.navigation.SpScreen
 import com.spela.player.presentation.intent.KeyMappingIntent
 import com.spela.player.presentation.viewmodel.EmulationViewModel
 import com.spela.player.presentation.viewmodel.KeyMappingViewModel
-import com.spela.player.presentation.viewmodel.LibretroButtons
 import com.spela.player.presentation.viewmodel.LibretroController
 import com.spela.player.presentation.viewmodel.SettingsViewModel
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -55,6 +57,8 @@ class MainActivity : ComponentActivity() {
     private val gamepadPortManager: GamepadPortManager by inject()
     private val settingsViewModel: SettingsViewModel by inject()
     private val preferencesRepository: PreferencesRepository by inject()
+    private val analogTriggerRouteTracker = AnalogTriggerRouteTracker(GamepadPortManager.MAX_PORTS)
+    private var analogTriggerAssignments: Map<Int, Int> = emptyMap()
 
     /** True when gamepad input should go to libretro (game running, overlay not shown). */
     private val isEmulationConsuming: Boolean
@@ -88,6 +92,8 @@ class MainActivity : ComponentActivity() {
         }
 
         override fun onInputDeviceRemoved(deviceId: Int) {
+            val port = gamepadPortManager.getPort(deviceId)
+            if (port >= 0) clearAnalogTriggerPort(port)
             gamepadPortManager.disconnectDevice(deviceId)
         }
 
@@ -140,6 +146,16 @@ class MainActivity : ComponentActivity() {
                         controller.show(WindowInsets.Type.systemBars())
                     }
                 }
+        }
+
+        lifecycleScope.launch {
+            gamepadPortManager.assignments.collect { assignments ->
+                val currentAssignments = assignments.associate { it.deviceId to it.port }
+                AnalogTriggerRouteTracker
+                    .portsInvalidatedByAssignmentChange(analogTriggerAssignments, currentAssignments)
+                    .forEach(::clearAnalogTriggerPort)
+                analogTriggerAssignments = currentAssignments
+            }
         }
 
         setContent {
@@ -573,12 +589,14 @@ class MainActivity : ComponentActivity() {
             controller.setAnalog(port, 1, 0, rightX)
             controller.setAnalog(port, 1, 1, rightY)
 
+            routeTriggerAxes(event, port)
+
             val hatX = event.getAxisValue(MotionEvent.AXIS_HAT_X)
             val hatY = event.getAxisValue(MotionEvent.AXIS_HAT_Y)
-            controller.setButton(port, LibretroButtons.LEFT, hatX < -0.5f)
-            controller.setButton(port, LibretroButtons.RIGHT, hatX > 0.5f)
-            controller.setButton(port, LibretroButtons.UP, hatY < -0.5f)
-            controller.setButton(port, LibretroButtons.DOWN, hatY > 0.5f)
+            routeMappedPosition(port, GamepadPosition.DPAD_LEFT, hatX < -0.5f)
+            routeMappedPosition(port, GamepadPosition.DPAD_RIGHT, hatX > 0.5f)
+            routeMappedPosition(port, GamepadPosition.DPAD_UP, hatY < -0.5f)
+            routeMappedPosition(port, GamepadPosition.DPAD_DOWN, hatY > 0.5f)
 
             return true
         }
@@ -627,6 +645,62 @@ class MainActivity : ComponentActivity() {
         gamepadPortManager.setRightStickScroll(if (Math.abs(rY) > 0.15f) rY else 0f)
 
         return true
+    }
+
+    private fun routeTriggerAxes(event: MotionEvent, port: Int) {
+        val controller = androidController ?: return
+        val mapping = gamepadPortManager.getGamepadMapping(port) ?: DefaultGamepadMapping.POSITION_TO_RETRO
+        val triggerRoute = GamepadMapping.resolveTriggerRoute(
+            leftTrigger = readTriggerAxis(event, MotionEvent.AXIS_LTRIGGER, MotionEvent.AXIS_BRAKE),
+            rightTrigger = readTriggerAxis(event, MotionEvent.AXIS_RTRIGGER, MotionEvent.AXIS_GAS),
+            mapping = mapping,
+        )
+
+        analogTriggerRouteTracker.update(port, triggerRoute.analogPressures.keys).forEach { staleId ->
+            controller.clearAnalogButton(port, staleId)
+            controller.setButton(port, staleId, false)
+        }
+        triggerRoute.analogPressures.forEach { (retroId, pressure) ->
+            controller.setAnalogButton(port, retroId, pressure)
+        }
+        triggerRoute.digitalPressed.forEach { (retroId, pressed) ->
+            controller.setButton(port, retroId, pressed)
+        }
+    }
+
+    private fun clearAnalogTriggerPort(port: Int) {
+        val controller = androidController ?: return
+        for (retroId in 0 until GamepadButtonResolver.RETRO_BUTTON_COUNT) {
+            controller.clearAnalogButton(port, retroId)
+        }
+        analogTriggerRouteTracker.clearPort(port).forEach { retroId ->
+            controller.setButton(port, retroId, false)
+        }
+    }
+
+    private fun readTriggerAxis(event: MotionEvent, primaryAxis: Int, fallbackAxis: Int): Float? {
+        val device = event.device ?: return null
+        val primary = if (device.getMotionRange(primaryAxis, event.source) != null) {
+            event.getAxisValue(primaryAxis)
+        } else {
+            null
+        }
+        val fallback = if (device.getMotionRange(fallbackAxis, event.source) != null) {
+            event.getAxisValue(fallbackAxis)
+        } else {
+            null
+        }
+        return GamepadMapping.selectPresentTriggerAxis(primary, fallback)
+    }
+
+    private fun routeMappedPosition(port: Int, position: GamepadPosition, pressed: Boolean) {
+        val retroId = mappedRetroButton(port, position) ?: return
+        androidController?.setButton(port, retroId, pressed)
+    }
+
+    private fun mappedRetroButton(port: Int, position: GamepadPosition): Int? {
+        val mapping = gamepadPortManager.getGamepadMapping(port) ?: DefaultGamepadMapping.POSITION_TO_RETRO
+        return mapping[position]
     }
 
     private fun applyOrientationLock(mode: String) {

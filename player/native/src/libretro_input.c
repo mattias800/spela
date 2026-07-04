@@ -6,8 +6,8 @@
  *
  * Threading (#1044):
  *   Writers = Kotlin platform threads via input_set_button / _analog /
- *             _pointer / _mouse / _keyboard, called from input event
- *             dispatch.
+ *             _analog_button / _pointer / _mouse / _keyboard, called from
+ *             input event dispatch.
  *   Reader  = libretro core via input_state_callback, called from inside
  *             retro_run on the emulation thread.
  *   Bool / int16 reads are atomic on aligned types in practice, but the
@@ -36,6 +36,11 @@ static struct {
 
     /* Analog axis state per port, per stick (left/right), per axis (x/y) */
     int16_t analog[MAX_PORTS][2][2];
+
+    /* Analog button pressure per port/button. A separate "set" bitmap lets
+     * digital-only devices keep the full-press fallback from #1570. */
+    int16_t analog_buttons[MAX_PORTS][MAX_BUTTONS];
+    bool analog_buttons_set[MAX_PORTS][MAX_BUTTONS];
 
     /* Pointer/touch state per port (for RETRO_DEVICE_POINTER) */
     struct {
@@ -106,6 +111,8 @@ void input_deinit(void) {
      * the whole struct would corrupt the pthread_mutex_t. */
     memset(input_state.buttons, 0, sizeof(input_state.buttons));
     memset(input_state.analog, 0, sizeof(input_state.analog));
+    memset(input_state.analog_buttons, 0, sizeof(input_state.analog_buttons));
+    memset(input_state.analog_buttons_set, 0, sizeof(input_state.analog_buttons_set));
     memset(input_state.pointer, 0, sizeof(input_state.pointer));
     memset(input_state.mouse, 0, sizeof(input_state.mouse));
     memset(input_state.keyboard, 0, sizeof(input_state.keyboard));
@@ -152,19 +159,15 @@ int16_t input_state_callback(unsigned port, unsigned device, unsigned index, uns
                 /* Analog sticks: index = LEFT/RIGHT, id = X/Y. */
                 result = input_state.analog[port][index][id];
             } else if (index == RETRO_DEVICE_INDEX_ANALOG_BUTTON && id < MAX_BUTTONS) {
-                /* Analog button pressure (#1570). Some cores bind analog
-                 * triggers here rather than reading the digital button —
-                 * e.g. dolphin maps the GameCube L/R triggers with
-                 * AddAxis(L2/R2, ..., RETRO_DEVICE_INDEX_ANALOG_BUTTON)
-                 * (DolphinLibretro/Input.cpp). We don't yet carry per-button
-                 * analog pressure from the platform input layer, so serve the
-                 * digital state at full scale: a held trigger reads 0x7FFF
-                 * instead of 0. Without this the trigger never registers on
-                 * this path (we're our own libretro frontend, so there's no
-                 * RetroArch-style digital→analog synthesis to fall back on).
-                 * True partial pressure is a follow-up (needs the trigger
-                 * axes plumbed from Android/desktop). */
-                result = input_state.buttons[port][id] ? 0x7FFF : 0;
+                /* Analog button pressure. Prefer the platform-supplied value
+                 * when the controller exposes a trigger axis. If no analog
+                 * pressure has ever been set for this port/button, keep the
+                 * #1570 digital full-press fallback for keyboard/digital-only
+                 * inputs and cores such as Dolphin that query L/R triggers via
+                 * RETRO_DEVICE_INDEX_ANALOG_BUTTON. */
+                result = input_state.analog_buttons_set[port][id]
+                    ? input_state.analog_buttons[port][id]
+                    : (input_state.buttons[port][id] ? 0x7FFF : 0);
             }
             break;
 
@@ -276,6 +279,24 @@ void input_set_analog(unsigned port, unsigned index, unsigned id, int16_t value)
     if (port >= MAX_PORTS || index >= 2 || id >= 2) return;
     input_lock();
     input_state.analog[port][index][id] = value;
+    input_unlock();
+}
+
+/* Called from Kotlin/JNI to set analog button pressure */
+void input_set_analog_button(unsigned port, unsigned id, int16_t value) {
+    if (port >= MAX_PORTS || id >= MAX_BUTTONS) return;
+    input_lock();
+    input_state.analog_buttons[port][id] = value;
+    input_state.analog_buttons_set[port][id] = true;
+    input_unlock();
+}
+
+/* Called from Kotlin/JNI when a mapped analog button no longer receives pressure */
+void input_clear_analog_button(unsigned port, unsigned id) {
+    if (port >= MAX_PORTS || id >= MAX_BUTTONS) return;
+    input_lock();
+    input_state.analog_buttons[port][id] = 0;
+    input_state.analog_buttons_set[port][id] = false;
     input_unlock();
 }
 

@@ -32,4 +32,81 @@ object GamepadButtonResolver {
         }
         return out
     }
+
+    /**
+     * Resolves analog trigger pressure through the same GamepadPosition -> RetroPad
+     * mapping layer used for digital buttons. Null means the platform did not
+     * expose that trigger axis; zero means the axis exists and is released.
+     *
+     * If both trigger positions map to the same RetroPad id, the stronger pressure
+     * wins so one released trigger cannot clobber another held trigger.
+     */
+    fun resolveAnalogTriggerPressures(
+        l2: Short?,
+        r2: Short?,
+        mapping: Map<GamepadPosition, Int>,
+    ): Map<Int, Short> {
+        val out = LinkedHashMap<Int, Int>()
+
+        fun record(position: GamepadPosition, pressure: Short?) {
+            if (pressure == null) return
+            val retroId = mapping[position] ?: return
+            if (retroId !in 0 until RETRO_BUTTON_COUNT) return
+            out[retroId] = maxOf(out[retroId] ?: 0, pressure.toInt())
+        }
+
+        record(GamepadPosition.L2, l2)
+        record(GamepadPosition.R2, r2)
+
+        return out.mapValues { (_, pressure) -> pressure.toShort() }
+    }
+}
+
+/**
+ * Tracks which RetroPad ids currently receive analog trigger pressure per port.
+ * When live mapping changes remove an id, the caller must clear that id in the
+ * native analog-button table so RETRO_DEVICE_INDEX_ANALOG_BUTTON can fall back
+ * to digital state again.
+ */
+class AnalogTriggerRouteTracker(private val portCount: Int = 8) {
+    companion object {
+        fun portsInvalidatedByAssignmentChange(
+            previousAssignments: Map<Int, Int>,
+            currentAssignments: Map<Int, Int>,
+        ): Set<Int> {
+            val portsToClear = LinkedHashSet<Int>()
+
+            previousAssignments.forEach { (deviceId, previousPort) ->
+                if (currentAssignments[deviceId] != previousPort) portsToClear.add(previousPort)
+            }
+            currentAssignments.forEach { (deviceId, port) ->
+                val previousDeviceOnPort = previousAssignments.entries
+                    .firstOrNull { (_, previousPort) -> previousPort == port }
+                    ?.key
+                if (previousDeviceOnPort != deviceId) {
+                    portsToClear.add(port)
+                }
+            }
+
+            return portsToClear
+        }
+    }
+
+    private val idsByPort = List(portCount) { LinkedHashSet<Int>() }
+
+    fun update(port: Int, currentIds: Set<Int>): Set<Int> {
+        if (port !in 0 until portCount) return emptySet()
+        val previous = idsByPort[port]
+        val removed = previous.filterTo(LinkedHashSet()) { it !in currentIds }
+        previous.clear()
+        previous.addAll(currentIds)
+        return removed
+    }
+
+    fun clearPort(port: Int): Set<Int> {
+        if (port !in 0 until portCount) return emptySet()
+        val previous = idsByPort[port].toSet()
+        idsByPort[port].clear()
+        return previous
+    }
 }

@@ -1,6 +1,8 @@
 package com.spela.player.android
 
 import android.view.KeyEvent
+import com.spela.player.domain.model.GamepadPosition
+import com.spela.player.libretro.GamepadButtonResolver
 import com.spela.player.presentation.viewmodel.LibretroButtons
 
 /**
@@ -15,6 +17,11 @@ import com.spela.player.presentation.viewmodel.LibretroButtons
  * map to libretro's B/A respectively (Nintendo-style layout: right button = A action).
  */
 object GamepadMapping {
+    data class TriggerRoute(
+        val analogPressures: Map<Int, Short>,
+        val digitalPressed: Map<Int, Boolean>,
+    )
+
 
     /**
      * The hardcoded default mapping: retroButtonId -> Android keyCode.
@@ -83,5 +90,43 @@ object GamepadMapping {
         return (adjusted * Short.MAX_VALUE).toInt()
             .coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt())
             .toShort()
+    }
+
+    /**
+     * Normalizes an Android trigger axis value (range 0.0..1.0) to a libretro
+     * analog button pressure value (range 0..32767).
+     */
+    fun normalizeTriggerAxis(value: Float): Short {
+        return (value.coerceIn(0f, 1f) * Short.MAX_VALUE).toInt().toShort()
+    }
+
+    fun selectPresentTriggerAxis(primary: Float?, fallback: Float?): Float? {
+        return primary ?: fallback
+    }
+
+    fun resolveTriggerRoute(
+        leftTrigger: Float?,
+        rightTrigger: Float?,
+        mapping: Map<GamepadPosition, Int>,
+        digitalThreshold: Float = 0.5f,
+    ): TriggerRoute {
+        val analogPressures = GamepadButtonResolver.resolveAnalogTriggerPressures(
+            l2 = leftTrigger?.let(::normalizeTriggerAxis),
+            r2 = rightTrigger?.let(::normalizeTriggerAxis),
+            mapping = mapping,
+        )
+        val digitalPressed = LinkedHashMap<Int, Boolean>()
+
+        fun record(position: GamepadPosition, value: Float?) {
+            if (value == null) return
+            val retroId = mapping[position] ?: return
+            if (retroId !in 0 until GamepadButtonResolver.RETRO_BUTTON_COUNT) return
+            digitalPressed[retroId] = (digitalPressed[retroId] ?: false) || value > digitalThreshold
+        }
+
+        record(GamepadPosition.L2, leftTrigger)
+        record(GamepadPosition.R2, rightTrigger)
+
+        return TriggerRoute(analogPressures, digitalPressed)
     }
 }

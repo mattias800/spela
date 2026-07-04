@@ -1,6 +1,8 @@
 package com.spela.player.android
 
 import android.view.KeyEvent
+import com.spela.player.domain.model.DefaultGamepadMapping
+import com.spela.player.domain.model.GamepadPosition
 import com.spela.player.presentation.viewmodel.LibretroButtons
 import kotlin.test.AfterTest
 import kotlin.test.Test
@@ -154,6 +156,89 @@ class GamepadMappingTest {
         // Values beyond 1.0 should clamp to Short.MAX_VALUE
         assertEquals(Short.MAX_VALUE, GamepadMapping.normalizeAxis(1.5f))
         assertEquals(Short.MIN_VALUE, GamepadMapping.normalizeAxis(-1.5f))
+    }
+
+    @Test
+    fun normalizeTriggerAxisZeroReturnsZero() {
+        assertEquals(0.toShort(), GamepadMapping.normalizeTriggerAxis(0f))
+    }
+
+    @Test
+    fun normalizeTriggerAxisFullPressureReturnsMaxShort() {
+        assertEquals(Short.MAX_VALUE, GamepadMapping.normalizeTriggerAxis(1f))
+    }
+
+    @Test
+    fun normalizeTriggerAxisHalfPressureReturnsApproximatelyHalfMax() {
+        assertEquals(16383.toShort(), GamepadMapping.normalizeTriggerAxis(0.5f))
+    }
+
+    @Test
+    fun normalizeTriggerAxisClampsToPressureRange() {
+        assertEquals(0.toShort(), GamepadMapping.normalizeTriggerAxis(-0.5f))
+        assertEquals(Short.MAX_VALUE, GamepadMapping.normalizeTriggerAxis(1.5f))
+    }
+
+    @Test
+    fun selectPresentTriggerAxisPrefersPrimaryAxisWhenAvailable() {
+        assertEquals(0.25f, GamepadMapping.selectPresentTriggerAxis(primary = 0.25f, fallback = 0.75f))
+    }
+
+    @Test
+    fun selectPresentTriggerAxisFallsBackWhenPrimaryAxisAbsent() {
+        assertEquals(0.75f, GamepadMapping.selectPresentTriggerAxis(primary = null, fallback = 0.75f))
+    }
+
+    @Test
+    fun selectPresentTriggerAxisReturnsNullWhenBothAxesAbsent() {
+        assertNull(GamepadMapping.selectPresentTriggerAxis(primary = null, fallback = null))
+    }
+
+    @Test
+    fun resolveTriggerRouteMapsAnalogPressureAndDigitalPressedState() {
+        val route = GamepadMapping.resolveTriggerRoute(
+            leftTrigger = 0.25f,
+            rightTrigger = 0.75f,
+            mapping = DefaultGamepadMapping.POSITION_TO_RETRO,
+        )
+
+        assertEquals(8191.toShort(), route.analogPressures[LibretroButtons.L2])
+        assertEquals(24575.toShort(), route.analogPressures[LibretroButtons.R2])
+        assertEquals(false, route.digitalPressed[LibretroButtons.L2])
+        assertEquals(true, route.digitalPressed[LibretroButtons.R2])
+    }
+
+    @Test
+    fun resolveTriggerRouteReportsReleaseWhenAxisIsPresentAtZero() {
+        val route = GamepadMapping.resolveTriggerRoute(
+            leftTrigger = 0f,
+            rightTrigger = null,
+            mapping = DefaultGamepadMapping.POSITION_TO_RETRO,
+        )
+
+        assertEquals(0.toShort(), route.analogPressures[LibretroButtons.L2])
+        assertEquals(false, route.digitalPressed[LibretroButtons.L2])
+        assertNull(route.analogPressures[LibretroButtons.R2])
+        assertNull(route.digitalPressed[LibretroButtons.R2])
+    }
+
+    @Test
+    fun resolveTriggerRouteUsesMappedRetroIdsAndStrongestFanInPressure() {
+        val mapping = mapOf(
+            GamepadPosition.L2 to LibretroButtons.R2,
+            GamepadPosition.R2 to LibretroButtons.R2,
+        )
+
+        val route = GamepadMapping.resolveTriggerRoute(
+            leftTrigger = 0.25f,
+            rightTrigger = 0.75f,
+            mapping = mapping,
+        )
+
+        assertEquals(24575.toShort(), route.analogPressures[LibretroButtons.R2])
+        assertEquals(true, route.digitalPressed[LibretroButtons.R2])
+        assertEquals(1, route.analogPressures.size)
+        assertEquals(1, route.digitalPressed.size)
     }
 
     // Verify all 16 libretro buttons are mapped (completeness check)
