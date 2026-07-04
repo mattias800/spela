@@ -5,13 +5,11 @@ import { cn } from "@/lib/cn";
 import { ConsoleBadge } from "@/components/console-badge";
 import { useAutoScrape } from "@/hooks/use-auto-scrape";
 import { getReleaseYear } from "@/lib/date-utils";
+import {
+  compactPlatformLabel,
+  getGamePlatformTargets,
+} from "@/lib/game-platforms";
 import type { Game } from "@/types/api";
-
-type GamePlatform = Game["platforms"][number];
-
-const COMPACT_LABEL_MAX_LENGTH = 12;
-const COMPACT_ID_MIN_LENGTH = 2;
-const COMPACT_ID_MAX_LENGTH = 6;
 
 interface GameCardProps {
   game: Game;
@@ -35,7 +33,7 @@ export function GameCard({
   onTogglePlayLater,
 }: GameCardProps) {
   const { ref, isScraping } = useAutoScrape(game);
-  const platformTargets = getPlatformTargets(game);
+  const platformTargets = getGamePlatformTargets(game);
 
   return (
     <div
@@ -223,8 +221,7 @@ export function GameCard({
             data-testid={`game-platform-pills-${game.id}`}
           >
             {platformTargets.map((platform) => {
-              const isCurrent =
-                platform.gameId === game.id || platform.isPreferred;
+              const isCurrent = platform.isPreferred;
               const label = compactPlatformLabel(platform);
               if (isCurrent) {
                 return (
@@ -261,37 +258,4 @@ export function GameCard({
       </div>
     </div>
   );
-}
-
-function getPlatformTargets(game: Game): GamePlatform[] {
-  const fallback: GamePlatform = {
-    gameId: game.id,
-    consoleId: game.consoleId,
-    consoleName: game.consoleName,
-    isPreferred: true,
-  };
-  const source = game.platforms.length > 0 ? game.platforms : [fallback];
-  const seen = new Set<string>();
-  return source.reduce<GamePlatform[]>((targets, platform) => {
-    if (seen.has(platform.gameId)) return targets;
-    seen.add(platform.gameId);
-    targets.push(
-      platform.gameId === game.id && !platform.isPreferred
-        ? { ...platform, isPreferred: true }
-        : platform,
-    );
-    return targets;
-  }, []);
-}
-
-function compactPlatformLabel(platform: GamePlatform): string {
-  const name = platform.consoleName || platform.consoleId.toUpperCase();
-  if (name.length <= COMPACT_LABEL_MAX_LENGTH) return name;
-
-  const id = platform.consoleId.toUpperCase();
-  const compactId =
-    id.length >= COMPACT_ID_MIN_LENGTH &&
-    id.length <= COMPACT_ID_MAX_LENGTH &&
-    /^[A-Z0-9-]+$/.test(id);
-  return compactId ? id : name;
 }

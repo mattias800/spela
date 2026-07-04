@@ -35,14 +35,19 @@ internal fun compactPlatformLabel(consoleId: String, consoleName: String): Strin
     }
 }
 
-internal fun platformTargetsForCard(game: Game): List<GamePlatform> {
+internal fun platformTargetsForGame(game: Game): List<GamePlatform> {
     val fallback = GamePlatform(
         gameId = game.id,
         consoleId = game.consoleId,
         consoleName = game.consoleName,
         isPreferred = true,
     )
-    val targets = game.platforms.ifEmpty { listOf(fallback) }.distinctBy { it.gameId }
+    val source = game.platforms.ifEmpty { listOf(fallback) }
+    val targets = if (source.any { it.gameId == game.id }) {
+        source
+    } else {
+        listOf(fallback) + source
+    }.distinctBy { it.gameId }
     val currentIndex = targets.indexOfFirst { it.gameId == game.id }
         .takeIf { it >= 0 }
         ?: targets.indexOfFirst { it.isPreferred }.takeIf { it >= 0 }
@@ -56,7 +61,7 @@ fun gamePlatformPillContent(
     game: Game,
     onPlatformSelected: ((String) -> Unit)?,
 ): (@Composable () -> Unit)? {
-    if (onPlatformSelected == null || platformTargetsForCard(game).size <= 1) return null
+    if (onPlatformSelected == null || platformTargetsForGame(game).size <= 1) return null
     return { SpGamePlatformPills(game = game, onPlatformSelected = onPlatformSelected) }
 }
 
@@ -74,7 +79,7 @@ fun SpGamePlatformPills(
     onPlatformSelected: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val targets = platformTargetsForCard(game)
+    val targets = platformTargetsForGame(game)
     if (targets.size <= 1) return
     val reportCarouselFocus = LocalCarouselChildHorizontalFocusReporter.current
     DisposableEffect(reportCarouselFocus) {
