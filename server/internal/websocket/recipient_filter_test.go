@@ -106,3 +106,16 @@ func TestBroadcast_RecipientFilter(t *testing.T) {
 		}
 	}
 }
+
+func TestTryBroadcast_DropsWhenFullOrClosed(t *testing.T) {
+	hub := NewHub(nil)
+
+	for i := 0; i < cap(hub.broadcast); i++ {
+		assert.True(t, hub.TryBroadcast(Event{Type: "fill"}))
+	}
+	assert.False(t, hub.TryBroadcast(Event{Type: "overflow"}))
+
+	closed := NewHub(nil)
+	closed.Close()
+	assert.False(t, closed.TryBroadcast(Event{Type: "closed"}))
+}

@@ -1,5 +1,7 @@
 package websocket
 
+import "time"
+
 // This file defines the canonical WebSocket event type names (as string
 // constants) and the typed payload structs that accompany them. Producers
 // should always use these constants for the Event.Type field and one of the
@@ -31,11 +33,11 @@ const (
 	EventScanError    = "scan_error"
 
 	// Scraper pipeline.
-	EventScrapeStarted     = "scrape_started"
-	EventScrapeProgress    = "scrape_progress"
-	EventScrapeComplete    = "scrape_complete"
-	EventScrapeCancelled   = "scrape_cancelled"
-	EventGameScrapeStatus  = "game_scrape_status"
+	EventScrapeStarted    = "scrape_started"
+	EventScrapeProgress   = "scrape_progress"
+	EventScrapeComplete   = "scrape_complete"
+	EventScrapeCancelled  = "scrape_cancelled"
+	EventGameScrapeStatus = "game_scrape_status"
 
 	// Metadata enrichment.
 	EventEnrichStarted  = "enrich_started"
@@ -64,21 +66,27 @@ const (
 	EventNetplayInviteDeclined = "netplay_invite_declined"
 
 	// Shared sessions.
-	EventSharedSessionCreated         = "shared_session_created"
-	EventSharedSessionUpdated         = "shared_session_updated"
-	EventSharedSessionDeleted         = "shared_session_deleted"
-	EventSharedSessionInviteSent      = "shared_session_invite_sent"
-	EventSharedSessionInviteAccepted  = "shared_session_invite_accepted"
-	EventSharedSessionInviteDeclined  = "shared_session_invite_declined"
-	EventSharedSessionMemberLeft      = "shared_session_member_left"
-	EventSharedSessionMemberRemoved   = "shared_session_member_removed"
-	EventSharedSessionTurnAcquired    = "shared_session_turn_acquired"
-	EventSharedSessionTurnReleased    = "shared_session_turn_released"
-	EventSharedSessionTurnExpired     = "shared_session_turn_expired"
-	EventSharedSessionSaveUploaded    = "shared_session_save_uploaded"
+	EventSharedSessionCreated        = "shared_session_created"
+	EventSharedSessionUpdated        = "shared_session_updated"
+	EventSharedSessionDeleted        = "shared_session_deleted"
+	EventSharedSessionInviteSent     = "shared_session_invite_sent"
+	EventSharedSessionInviteAccepted = "shared_session_invite_accepted"
+	EventSharedSessionInviteDeclined = "shared_session_invite_declined"
+	EventSharedSessionMemberLeft     = "shared_session_member_left"
+	EventSharedSessionMemberRemoved  = "shared_session_member_removed"
+	EventSharedSessionTurnAcquired   = "shared_session_turn_acquired"
+	EventSharedSessionTurnReleased   = "shared_session_turn_released"
+	EventSharedSessionTurnExpired    = "shared_session_turn_expired"
+	EventSharedSessionSaveUploaded   = "shared_session_save_uploaded"
 
 	// Challenges.
 	EventChallengeLeaderboardUpdated = "challenge_leaderboard_updated"
+)
+
+const (
+	// Federation admin observability.
+	EventFederationExchange   = "federation_exchange"
+	EventFederationPeerStatus = "federation_peer_status"
 )
 
 // --- Typed payloads ---
@@ -141,6 +149,43 @@ type BiosDownloadCompletePayload struct {
 	Downloaded int `json:"downloaded"`
 	Skipped    int `json:"skipped"`
 	Failed     int `json:"failed"`
+}
+
+// FederationExchangePayload is the admin-only live event for one federation
+// ledger row. It mirrors the fields needed to prepend the row to the admin
+// exchange log without polling.
+type FederationExchangePayload struct {
+	ID              uint      `json:"id"`
+	RequestID       string    `json:"requestId"`
+	PeerFingerprint string    `json:"peerFingerprint"`
+	PeerName        string    `json:"peerName"`
+	Direction       string    `json:"direction"`
+	Operation       string    `json:"operation"`
+	DataClass       string    `json:"dataClass"`
+	MaxHops         int       `json:"maxHops"`
+	Status          string    `json:"status"`
+	HTTPStatus      int       `json:"httpStatus"`
+	ItemCount       int       `json:"itemCount"`
+	Bytes           int64     `json:"bytes"`
+	DurationMs      int64     `json:"durationMs"`
+	StartedAt       time.Time `json:"startedAt"`
+	FinishedAt      time.Time `json:"finishedAt"`
+	Error           string    `json:"error"`
+}
+
+// FederationPeerStatusPayload is the admin-only live event for the latest
+// per-peer federation health state.
+type FederationPeerStatusPayload struct {
+	ID            uint       `json:"id"`
+	Fingerprint   string     `json:"fingerprint"`
+	Name          string     `json:"name"`
+	Status        string     `json:"status"`
+	Reachable     bool       `json:"reachable"`
+	LastContactAt *time.Time `json:"lastContactAt"`
+	LastSuccessAt *time.Time `json:"lastSuccessAt"`
+	LastError     string     `json:"lastError"`
+	LastErrorAt   *time.Time `json:"lastErrorAt"`
+	UpdatedAt     time.Time  `json:"updatedAt"`
 }
 
 // NetplaySessionEndedPayload is the payload for EventNetplaySessionEnded.

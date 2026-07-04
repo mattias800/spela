@@ -116,7 +116,7 @@ func (h *FederationHandler) ginExportCatalog(c *gin.Context) {
 	}
 	entries := append(local, cached...)
 
-	federation.RecordExchange(h.DB, federation.ExchangeRecord{
+	h.recordExchange(federation.ExchangeRecord{
 		RequestID: reqID, PeerFingerprint: peer.Fingerprint, PeerName: peer.Name,
 		Direction: db.ExchangeInbound, Operation: "catalog_export", MaxHops: maxHops,
 		DataClass: string(federation.DataClassCatalog), Status: db.ExchangeOK, ItemCount: len(entries),
@@ -151,7 +151,7 @@ func (h *FederationHandler) RefreshFederationCatalog() (int, int) {
 		started := time.Now()
 		raw, ferr := client.FetchCatalog(peer.BaseURL, reqID, h.Identity, peer.Fingerprint, federation.MaxFederationHops-1)
 		if ferr != nil {
-			federation.RecordExchange(h.DB, federation.ExchangeRecord{
+			h.recordExchange(federation.ExchangeRecord{
 				RequestID: reqID, PeerFingerprint: peer.Fingerprint, PeerName: peer.Name,
 				Direction: db.ExchangeOutbound, Operation: "catalog_pull",
 				DataClass: string(federation.DataClassCatalog), Status: db.ExchangeError,
@@ -165,7 +165,7 @@ func (h *FederationHandler) RefreshFederationCatalog() (int, int) {
 			cleaned[i].Hops++
 		}
 		if err := h.CatalogSnapshots.ReplacePeerSnapshot(peer.Fingerprint, cleaned, time.Now()); err != nil {
-			federation.RecordExchange(h.DB, federation.ExchangeRecord{
+			h.recordExchange(federation.ExchangeRecord{
 				RequestID: reqID, PeerFingerprint: peer.Fingerprint, PeerName: peer.Name,
 				Direction: db.ExchangeOutbound, Operation: "catalog_pull",
 				DataClass: string(federation.DataClassCatalog), Status: db.ExchangeError,
@@ -174,7 +174,7 @@ func (h *FederationHandler) RefreshFederationCatalog() (int, int) {
 			failed++
 			continue
 		}
-		federation.RecordExchange(h.DB, federation.ExchangeRecord{
+		h.recordExchange(federation.ExchangeRecord{
 			RequestID: reqID, PeerFingerprint: peer.Fingerprint, PeerName: peer.Name,
 			Direction: db.ExchangeOutbound, Operation: "catalog_pull",
 			DataClass: string(federation.DataClassCatalog), Status: db.ExchangeOK,

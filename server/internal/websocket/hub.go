@@ -226,6 +226,23 @@ func (h *Hub) Broadcast(event Event) {
 	h.broadcast <- event
 }
 
+// TryBroadcast sends an event without blocking. It returns false when the hub
+// queue is full or closed enough that callers should drop best-effort live
+// observability events instead of delaying the request path.
+func (h *Hub) TryBroadcast(event Event) bool {
+	select {
+	case <-h.done:
+		return false
+	default:
+	}
+	select {
+	case h.broadcast <- event:
+		return true
+	default:
+		return false
+	}
+}
+
 // hasOtherConnection checks if the user has another active WebSocket connection
 // besides the one being removed. Must be called with h.mu held.
 func (h *Hub) hasOtherConnection(userID uint, exclude *Client) bool {

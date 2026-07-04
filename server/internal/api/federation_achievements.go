@@ -102,7 +102,7 @@ func (h *FederationHandler) ginExportAchievements(c *gin.Context) {
 		return
 	}
 
-	federation.RecordExchange(h.DB, federation.ExchangeRecord{
+	h.recordExchange(federation.ExchangeRecord{
 		RequestID: reqID, PeerFingerprint: peer.Fingerprint, PeerName: peer.Name,
 		Direction: db.ExchangeInbound, Operation: "achievements_export",
 		DataClass: string(federation.DataClassAchievement), Status: db.ExchangeOK, ItemCount: len(local),
@@ -176,7 +176,7 @@ func (h *FederationHandler) HumaAggregatedAchievements(_ context.Context, in *Ag
 	for i, peer := range consumable {
 		r := results[i]
 		if r.err != nil {
-			federation.RecordExchange(h.DB, federation.ExchangeRecord{
+			h.recordExchange(federation.ExchangeRecord{
 				RequestID: r.reqID, PeerFingerprint: peer.Fingerprint, PeerName: peer.Name,
 				Direction: db.ExchangeOutbound, Operation: "achievements_pull",
 				DataClass: string(federation.DataClassAchievement), Status: db.ExchangeError,
@@ -190,7 +190,7 @@ func (h *FederationHandler) HumaAggregatedAchievements(_ context.Context, in *Ag
 			cleaned[j].ServerName = peer.Name
 		}
 		all = append(all, cleaned...)
-		federation.RecordExchange(h.DB, federation.ExchangeRecord{
+		h.recordExchange(federation.ExchangeRecord{
 			RequestID: r.reqID, PeerFingerprint: peer.Fingerprint, PeerName: peer.Name,
 			Direction: db.ExchangeOutbound, Operation: "achievements_pull",
 			DataClass: string(federation.DataClassAchievement), Status: db.ExchangeOK,

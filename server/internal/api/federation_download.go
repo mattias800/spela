@@ -148,7 +148,7 @@ func (h *FederationHandler) ginServeDownload(c *gin.Context) {
 
 	// 1. Serve a local game directly.
 	if game, absPath, found := h.resolveLocalGameByKey(key); found {
-		federation.RecordExchange(h.DB, federation.ExchangeRecord{
+		h.recordExchange(federation.ExchangeRecord{
 			RequestID: reqID, PeerFingerprint: peer.Fingerprint, PeerName: peer.Name,
 			Direction: db.ExchangeInbound, Operation: "download_serve",
 			DataClass: string(federation.DataClassDownload), Status: db.ExchangeOK, ItemCount: 1,
@@ -168,7 +168,7 @@ func (h *FederationHandler) ginServeDownload(c *gin.Context) {
 		}
 	}
 	if h.relayEnabled() && hops > 0 && h.relayForward(c, reqID, peer, key, hops) {
-		federation.RecordExchange(h.DB, federation.ExchangeRecord{
+		h.recordExchange(federation.ExchangeRecord{
 			RequestID: reqID, PeerFingerprint: peer.Fingerprint, PeerName: peer.Name,
 			Direction: db.ExchangeInbound, Operation: "download_serve",
 			DataClass: string(federation.DataClassDownload), Status: db.ExchangeOK,
@@ -177,7 +177,7 @@ func (h *FederationHandler) ginServeDownload(c *gin.Context) {
 		return
 	}
 
-	federation.RecordExchange(h.DB, federation.ExchangeRecord{
+	h.recordExchange(federation.ExchangeRecord{
 		RequestID: reqID, PeerFingerprint: peer.Fingerprint, PeerName: peer.Name,
 		Direction: db.ExchangeInbound, Operation: "download_serve",
 		DataClass: string(federation.DataClassDownload), Status: db.ExchangeError,
@@ -216,7 +216,7 @@ func (h *FederationHandler) relayForward(c *gin.Context, reqID string, requester
 			if ferr != nil {
 				errMsg = ferr.Error()
 			}
-			federation.RecordExchange(h.DB, federation.ExchangeRecord{
+			h.recordExchange(federation.ExchangeRecord{
 				RequestID: reqID, PeerFingerprint: src.Fingerprint, PeerName: src.Name,
 				Direction: db.ExchangeOutbound, Operation: "download_relay",
 				DataClass: string(federation.DataClassDownload), Status: db.ExchangeError,
@@ -226,7 +226,7 @@ func (h *FederationHandler) relayForward(c *gin.Context, reqID string, requester
 		}
 		n := streamSafeDownload(c, resp, key)
 		resp.Body.Close()
-		federation.RecordExchange(h.DB, federation.ExchangeRecord{
+		h.recordExchange(federation.ExchangeRecord{
 			RequestID: reqID, PeerFingerprint: src.Fingerprint, PeerName: src.Name,
 			Direction: db.ExchangeOutbound, Operation: "download_relay",
 			DataClass: string(federation.DataClassDownload), Status: db.ExchangeOK,
@@ -273,7 +273,7 @@ func (h *FederationHandler) ginUserDownload(c *gin.Context) {
 			if ferr != nil {
 				errMsg = ferr.Error()
 			}
-			federation.RecordExchange(h.DB, federation.ExchangeRecord{
+			h.recordExchange(federation.ExchangeRecord{
 				RequestID: reqID, PeerFingerprint: peer.Fingerprint, PeerName: peer.Name,
 				Direction: db.ExchangeOutbound, Operation: "download_fetch",
 				DataClass: string(federation.DataClassDownload), Status: db.ExchangeError,
@@ -283,7 +283,7 @@ func (h *FederationHandler) ginUserDownload(c *gin.Context) {
 		}
 		n := streamSafeDownload(c, resp, key)
 		resp.Body.Close()
-		federation.RecordExchange(h.DB, federation.ExchangeRecord{
+		h.recordExchange(federation.ExchangeRecord{
 			RequestID: reqID, PeerFingerprint: peer.Fingerprint, PeerName: peer.Name,
 			Direction: db.ExchangeOutbound, Operation: "download_fetch",
 			DataClass: string(federation.DataClassDownload), Status: db.ExchangeOK,

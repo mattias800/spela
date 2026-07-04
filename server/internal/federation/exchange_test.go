@@ -20,11 +20,15 @@ func TestRecordExchange_WritesLedgerRow(t *testing.T) {
 	database := openFedTestDB(t)
 	start := time.Now().Add(-50 * time.Millisecond)
 
-	RecordExchange(database, ExchangeRecord{
+	result := RecordExchange(database, ExchangeRecord{
 		RequestID: "req-1", PeerFingerprint: "fp-a", PeerName: "Alice",
 		Direction: db.ExchangeOutbound, Operation: "handshake",
 		Status: db.ExchangeOK, ItemCount: 3, StartedAt: start, FinishedAt: time.Now(),
 	})
+
+	assert.True(t, result.ExchangePersisted)
+	assert.Equal(t, "req-1", result.Exchange.RequestID)
+	assert.False(t, result.PeerUpdated)
 
 	var row db.FederationExchange
 	require.NoError(t, database.Where("request_id = ?", "req-1").First(&row).Error)
@@ -40,11 +44,15 @@ func TestRecordExchange_UpdatesPeerHealthOnSuccess(t *testing.T) {
 		Fingerprint: "fp-h", PublicKey: "k", BaseURL: "https://h", Status: db.PeerStatusActive,
 	}))
 
-	RecordExchange(database, ExchangeRecord{
+	result := RecordExchange(database, ExchangeRecord{
 		RequestID: "r", PeerFingerprint: "fp-h", Direction: db.ExchangeOutbound,
 		Operation: "stats_pull", Status: db.ExchangeOK,
 	})
 
+	assert.True(t, result.ExchangePersisted)
+	assert.True(t, result.PeerUpdated)
+	assert.Equal(t, "fp-h", result.Peer.Fingerprint)
+	assert.True(t, result.Peer.Reachable)
 	got, err := store.GetByFingerprint("fp-h")
 	require.NoError(t, err)
 	assert.True(t, got.Reachable)
@@ -59,16 +67,32 @@ func TestRecordExchange_UpdatesPeerHealthOnError(t *testing.T) {
 		Fingerprint: "fp-e", PublicKey: "k", BaseURL: "https://e", Status: db.PeerStatusActive, Reachable: true,
 	}))
 
-	RecordExchange(database, ExchangeRecord{
+	result := RecordExchange(database, ExchangeRecord{
 		RequestID: "r", PeerFingerprint: "fp-e", Direction: db.ExchangeOutbound,
 		Operation: "stats_pull", Status: db.ExchangeError, Error: "connection refused",
 	})
 
+	assert.True(t, result.ExchangePersisted)
+	assert.True(t, result.PeerUpdated)
+	assert.Equal(t, "connection refused", result.Peer.LastError)
 	got, err := store.GetByFingerprint("fp-e")
 	require.NoError(t, err)
 	assert.False(t, got.Reachable)
 	assert.Equal(t, "connection refused", got.LastError)
 	require.NotNil(t, got.LastErrorAt)
+}
+
+func TestRecordExchange_ReturnsNoPeerUpdateForUnknownPeer(t *testing.T) {
+	database := openFedTestDB(t)
+
+	result := RecordExchange(database, ExchangeRecord{
+		RequestID: "r", PeerFingerprint: "fp-missing", Direction: db.ExchangeOutbound,
+		Operation: "stats_pull", Status: db.ExchangeOK,
+	})
+
+	assert.True(t, result.ExchangePersisted)
+	assert.False(t, result.PeerUpdated)
+	assert.Empty(t, result.Peer.Fingerprint)
 }
 
 func TestPruneExpiredExchanges_RemovesOnlyRowsOutsideRetention(t *testing.T) {
