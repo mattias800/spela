@@ -19,6 +19,7 @@ import androidx.compose.ui.input.InputMode
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalInputModeManager
+import com.spela.player.presentation.ui.components.LocalAnimationsEnabled
 import com.spela.player.presentation.ui.components.LocalScrollState
 
 /**
@@ -98,6 +99,13 @@ fun Modifier.centerOnFocus(
     if (scrollState == null && lazyGridInfo == null && lazyListInfo == null) return@composed this
 
     val inputModeManager = LocalInputModeManager.current
+    // In test mode (LocalAnimationsEnabled=false) scroll instantly rather than
+    // animating: the animated scroll re-renders/re-lays-out the list every frame
+    // across the whole advance loop, which is the dominant cost behind the slow
+    // focus-navigation E2E tests (#1607) and a known source of d-pad-traversal
+    // flakiness. The instant path reaches the identical scroll position — it is
+    // exactly what the rapid-focus branch below already does.
+    val animationsEnabled = LocalAnimationsEnabled.current
 
     LaunchedEffect(isFocused) {
         if (!isFocused) return@LaunchedEffect
@@ -127,7 +135,7 @@ fun Modifier.centerOnFocus(
                 .toInt()
                 .coerceIn(0, scrollState.maxValue)
 
-            if (isRapid) {
+            if (isRapid || !animationsEnabled) {
                 scrollState.scrollTo(targetScroll)
             } else {
                 scrollState.animateScrollTo(targetScroll)
@@ -139,7 +147,7 @@ fun Modifier.centerOnFocus(
             val viewportCenterOnScreen = lazyGridInfo.containerTopInRoot + viewportHeight / 2f
             val delta = elementCenterOnScreen - viewportCenterOnScreen
 
-            if (isRapid) {
+            if (isRapid || !animationsEnabled) {
                 lazyGridInfo.state.scrollBy(delta)
             } else {
                 lazyGridInfo.state.animateScrollBy(delta)
@@ -156,7 +164,7 @@ fun Modifier.centerOnFocus(
             val viewportCenterOnScreen = lazyListInfo.containerTopInRoot + viewportHeight / 2f
             val delta = elementCenterOnScreen - viewportCenterOnScreen
 
-            if (isRapid) {
+            if (isRapid || !animationsEnabled) {
                 lazyListInfo.state.scrollBy(delta)
             } else {
                 lazyListInfo.state.animateScrollBy(delta)

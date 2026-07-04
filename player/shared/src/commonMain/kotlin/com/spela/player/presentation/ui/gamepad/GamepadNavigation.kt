@@ -1,6 +1,7 @@
 package com.spela.player.presentation.ui.gamepad
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -276,9 +277,13 @@ fun Modifier.spFocusRing(
         fallbackFocused
     }
 
+    // Snap (no animation) in test mode: the 150ms scale tween re-renders every
+    // frame on each focus change, and focus-navigation E2E tests move focus many
+    // times — a large chunk of their runtime (#1607). Users still get the tween.
+    val animationsEnabled = com.spela.player.presentation.ui.components.LocalAnimationsEnabled.current
     val focusScale by animateFloatAsState(
         targetValue = if (isFocused && scaleOnFocus) 1.04f else 1f,
-        animationSpec = tween(150),
+        animationSpec = if (animationsEnabled) tween(150) else snap(),
     )
 
     val density = LocalDensity.current
