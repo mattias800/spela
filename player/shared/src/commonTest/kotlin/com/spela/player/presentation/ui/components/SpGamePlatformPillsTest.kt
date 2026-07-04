@@ -30,7 +30,7 @@ class SpGamePlatformPillsTest {
 
         assertEquals(
             listOf(GamePlatform("game-1", "nes", "NES", isPreferred = true)),
-            platformTargetsForCard(game),
+            platformTargetsForGame(game),
         )
     }
 
@@ -45,9 +45,25 @@ class SpGamePlatformPillsTest {
             ),
         )
 
-        val targets = platformTargetsForCard(game)
+        val targets = platformTargetsForGame(game)
 
         assertEquals(listOf("game-nes", "game-snes"), targets.map { it.gameId })
+        assertTrue(targets.first().isPreferred)
+    }
+
+    @Test
+    fun platformTargetsIncludeCurrentGameWhenBackendListOmitsIt() {
+        val game = game(
+            id = "game-nes",
+            platforms = listOf(
+                GamePlatform("game-snes", "snes", "SNES", isPreferred = true),
+            ),
+        )
+
+        val targets = platformTargetsForGame(game)
+
+        assertEquals(listOf("game-nes", "game-snes"), targets.map { it.gameId })
+        assertEquals("NES", targets.first().consoleName)
         assertTrue(targets.first().isPreferred)
     }
 

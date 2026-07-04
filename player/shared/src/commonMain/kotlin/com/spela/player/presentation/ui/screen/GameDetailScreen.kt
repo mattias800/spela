@@ -54,6 +54,7 @@ import com.spela.player.presentation.ui.components.social.StarRatingRow
 import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
 import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
 import androidx.compose.runtime.CompositionLocalProvider
+import com.spela.player.presentation.ui.feature.gamedetail.AlsoOnPlatformsSection
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -254,6 +255,13 @@ fun GameDetailScreen(
                         { onNavigateToAchievements?.invoke(gameId) }
                     } else null,
                 )
+
+                onNavigateToGame?.let { navigateToGame ->
+                    AlsoOnPlatformsSection(
+                        game = game,
+                        onPlatformSelected = navigateToGame,
+                    )
+                }
 
                 // Series & Franchise links
                 if (state.gameSeries.isNotEmpty() || state.gameFranchises.isNotEmpty()) {

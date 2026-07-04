@@ -2,17 +2,11 @@ import { Link } from "react-router-dom";
 import { ConsoleBadge } from "@/components/console-badge";
 import { Badge } from "@/components/ui";
 import { cn } from "@/lib/cn";
-
-export interface GamePlatformTarget {
-  gameId: string;
-  consoleId: string;
-  consoleName: string;
-  isPreferred: boolean;
-}
-
-const COMPACT_LABEL_MAX_LENGTH = 12;
-const COMPACT_ID_MIN_LENGTH = 2;
-const COMPACT_ID_MAX_LENGTH = 6;
+import {
+  compactPlatformLabel,
+  getGamePlatformTargets,
+  type GamePlatformTarget,
+} from "@/lib/game-platforms";
 
 interface GamePlatformPillsProps<T extends GamePlatformTarget> {
   gameId: string;
@@ -41,12 +35,14 @@ export function GamePlatformPills<T extends GamePlatformTarget>({
   testId,
   onNavigate,
 }: GamePlatformPillsProps<T>) {
-  const targets = getPlatformTargets({
-    gameId,
-    consoleId,
-    consoleName,
-    platforms,
-  });
+  const targets = preferredFirst(
+    getGamePlatformTargets({
+      id: gameId,
+      consoleId,
+      consoleName,
+      platforms,
+    }),
+  );
 
   if (targets.length <= 1 && !showSingle) return null;
 
@@ -65,7 +61,7 @@ export function GamePlatformPills<T extends GamePlatformTarget>({
       data-testid={testId}
     >
       {visibleTargets.map((platform) => {
-        const isCurrent = isCurrentPlatform(platform, gameId);
+        const isCurrent = platform.isPreferred;
         const label = compactPlatformLabel(platform);
         if (isCurrent) {
           return (
@@ -140,59 +136,11 @@ export function GamePlatformPills<T extends GamePlatformTarget>({
   );
 }
 
-function getPlatformTargets<T extends GamePlatformTarget>({
-  gameId,
-  consoleId,
-  consoleName,
-  platforms,
-}: {
-  gameId: string;
-  consoleId: string;
-  consoleName: string;
-  platforms: readonly T[];
-}): GamePlatformTarget[] {
-  const fallback: GamePlatformTarget = {
-    gameId,
-    consoleId,
-    consoleName,
-    isPreferred: true,
-  };
-  const source = platforms.length > 0 ? platforms : [fallback];
-  const hasCurrentGame = source.some((platform) => platform.gameId === gameId);
-  const seen = new Set<string>();
-  const targets = source.reduce<GamePlatformTarget[]>((result, platform) => {
-    if (seen.has(platform.gameId)) return result;
-    seen.add(platform.gameId);
-    result.push({
-      ...platform,
-      isPreferred: hasCurrentGame
-        ? platform.gameId === gameId
-        : platform.isPreferred,
-    });
-    return result;
-  }, []);
+function preferredFirst(targets: GamePlatformTarget[]): GamePlatformTarget[] {
+  const preferredIndex = targets.findIndex((platform) => platform.isPreferred);
+  if (preferredIndex <= 0) return targets;
 
-  const currentIndex = targets.findIndex((platform) =>
-    isCurrentPlatform(platform, gameId),
-  );
-  if (currentIndex <= 0) return targets;
-
-  const [current] = targets.splice(currentIndex, 1);
-  return [current, ...targets];
-}
-
-function isCurrentPlatform(platform: GamePlatformTarget, gameId: string) {
-  return platform.gameId === gameId || platform.isPreferred;
-}
-
-function compactPlatformLabel(platform: GamePlatformTarget): string {
-  const name = platform.consoleName || platform.consoleId.toUpperCase();
-  if (name.length <= COMPACT_LABEL_MAX_LENGTH) return name;
-
-  const id = platform.consoleId.toUpperCase();
-  const compactId =
-    id.length >= COMPACT_ID_MIN_LENGTH &&
-    id.length <= COMPACT_ID_MAX_LENGTH &&
-    /^[A-Z0-9-]+$/.test(id);
-  return compactId ? id : name;
+  const ordered = [...targets];
+  const [preferred] = ordered.splice(preferredIndex, 1);
+  return [preferred, ...ordered];
 }
