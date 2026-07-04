@@ -40,10 +40,39 @@ class AndroidApiGraphSmokeTest : AndroidApiSmokeBase() {
             check(user.username == PLAYER_USERNAME) {
                 "Expected authenticated Android API call as $PLAYER_USERNAME, got ${user.username}"
             }
+
+            val game = apiClient.getAllGames(pageSize = 1).data.firstOrNull()
+                ?: throw AssertionError("Expected at least one game in the Android API smoke seed")
+            assertPlatformTargets(
+                owner = "GET /api/games",
+                gameId = game.id,
+                platforms = game.platforms,
+            )
+
+            val searchGame = apiClient.globalSearch("Castlevania", limit = 1).games.results.firstOrNull()
+                ?: throw AssertionError("Expected global search to return the seeded Castlevania game")
+            assertPlatformTargets(
+                owner = "GET /api/search",
+                gameId = searchGame.id,
+                platforms = searchGame.platforms,
+            )
         }
 
         // Resolving SessionRepository above is intentional: Koin throws if the
         // Android production graph no longer exposes the repository binding.
+    }
+
+    private fun assertPlatformTargets(
+        owner: String,
+        gameId: String,
+        platforms: List<com.spela.client.models.GamePlatformResponse>,
+    ) {
+        check(platforms.isNotEmpty()) {
+            "$owner should include at least one platform target for game $gameId"
+        }
+        check(platforms.any { it.gameId == gameId && it.isPreferred }) {
+            "$owner should include the current game as the preferred platform target for game $gameId; got $platforms"
+        }
     }
 
     private fun loginAndExtractTokens(): Pair<String, String>? {
