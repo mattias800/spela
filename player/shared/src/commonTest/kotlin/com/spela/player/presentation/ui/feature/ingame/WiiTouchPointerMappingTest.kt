@@ -4,6 +4,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -70,5 +71,76 @@ class WiiTouchPointerMappingTest {
         val (x, y) = wiiPointerCoords(Offset(1920f, 1080f), info)
         assertTrue(x in -0x7FFF..0x7FFF)
         assertTrue(y in -0x7FFF..0x7FFF)
+    }
+
+    @Test
+    fun quickSmallMovementIsTap() {
+        assertTrue(
+            isWiiPointerTap(
+                startPosition = Offset(100f, 100f),
+                endPosition = Offset(106f, 104f),
+                elapsedMs = WII_POINTER_TAP_TIMEOUT_MS - 1,
+                movementExceeded = false,
+                multiTouchSeen = false,
+            ),
+        )
+    }
+
+    @Test
+    fun slowReleaseIsNotTap() {
+        assertFalse(
+            isWiiPointerTap(
+                startPosition = Offset(100f, 100f),
+                endPosition = Offset(100f, 100f),
+                elapsedMs = WII_POINTER_TAP_TIMEOUT_MS,
+                movementExceeded = false,
+                multiTouchSeen = false,
+            ),
+        )
+    }
+
+    @Test
+    fun movementBeyondThresholdIsNotTap() {
+        assertTrue(
+            hasWiiPointerMovedBeyondTapThreshold(
+                startPosition = Offset(100f, 100f),
+                currentPosition = Offset(111f, 100f),
+            ),
+        )
+        assertFalse(
+            isWiiPointerTap(
+                startPosition = Offset(100f, 100f),
+                endPosition = Offset(111f, 100f),
+                elapsedMs = 50,
+                movementExceeded = false,
+                multiTouchSeen = false,
+            ),
+        )
+    }
+
+    @Test
+    fun movementBeyondThresholdCannotBecomeTapByReturningNearStart() {
+        assertFalse(
+            isWiiPointerTap(
+                startPosition = Offset(100f, 100f),
+                endPosition = Offset(101f, 101f),
+                elapsedMs = 50,
+                movementExceeded = true,
+                multiTouchSeen = false,
+            ),
+        )
+    }
+
+    @Test
+    fun multiTouchGestureIsNotTap() {
+        assertFalse(
+            isWiiPointerTap(
+                startPosition = Offset(100f, 100f),
+                endPosition = Offset(100f, 100f),
+                elapsedMs = 50,
+                movementExceeded = false,
+                multiTouchSeen = true,
+            ),
+        )
     }
 }

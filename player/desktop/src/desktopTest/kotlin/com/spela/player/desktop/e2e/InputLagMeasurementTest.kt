@@ -83,7 +83,7 @@ class InputLagMeasurementTest {
          * Simulates setButton() with timestamp recording.
          * In the real pipeline, this is called from the Compose UI thread.
          */
-        fun setButton(port: Int, buttonId: Int, pressed: Boolean) {
+        override fun setButton(port: Int, buttonId: Int, pressed: Boolean) {
             val now = clockNs
             inputTimestamps.add(now)
             buttonEvents.add(ButtonEvent(port, buttonId, pressed, now))

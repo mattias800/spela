@@ -4,6 +4,7 @@ import androidx.compose.ui.test.*
 import com.spela.player.presentation.intent.EmulationIntent
 import com.spela.player.presentation.state.ControlTab
 import com.spela.player.presentation.ui.feature.ingame.SecondaryControlsPage
+import com.spela.player.presentation.viewmodel.LibretroButtons
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlin.test.Test
@@ -422,6 +423,45 @@ class SecondaryScreenControlsTest {
 
         onNodeWithContentDescription("Pointer input mode").assertExists()
         onNodeWithContentDescription("Input mode: pointer").assertExists()
+    }
+
+    @Test
+    fun pointerTabTapPressesAWithoutMovingPointer() = runComposeUiTest {
+        val harness = SpelaTestHarness(StandardTestDispatcher())
+
+        setContent {
+            SecondaryControlsPage(
+                controller = harness.libretroController,
+                touchControlPort = 0,
+                selectedTab = ControlTab.POINTER,
+                consoleId = "wii",
+                onSelectPort = {},
+                onSelectTab = {},
+                onKeyDown = {},
+                onKeyUp = {},
+                onMouseMove = { _, _ -> },
+                onMouseButton = { _, _ -> },
+                showPointerTab = true,
+                pointerAspectRatio = 4f / 3f,
+            )
+        }
+        waitForIdle()
+
+        onNodeWithContentDescription("Wii pointer area, drag to aim, tap for A")
+            .performTouchInput {
+                click(center)
+            }
+        mainClock.advanceTimeBy(100)
+        waitForIdle()
+
+        assertEquals(
+            listOf(
+                FakeLibretroController.ButtonEvent(0, LibretroButtons.A, true),
+                FakeLibretroController.ButtonEvent(0, LibretroButtons.A, false),
+            ),
+            harness.libretroController.buttonEvents,
+        )
+        assertEquals(emptyList(), harness.libretroController.pointerEvents)
     }
 
     @Test
