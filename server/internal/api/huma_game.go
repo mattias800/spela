@@ -726,7 +726,7 @@ func (h *GameHandler) HumaScrapeIfNeeded(_ context.Context, in *ScrapeIfNeededIn
 		}, nil
 	}
 
-	activeJob, _ := h.Scraper.Queue.GetActiveJob()
+	activeJob, _ := h.Scraper.Queue.GetActiveScrapeJob()
 	var jobID *uint
 	if activeJob != nil {
 		jobID = &activeJob.ID

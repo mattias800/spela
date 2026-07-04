@@ -2717,6 +2717,30 @@ func TestScrapeStatus_Idle(t *testing.T) {
 	assert.Equal(t, float64(0), resp["total"])
 }
 
+func TestScrapeStatus_IgnoresMaintenanceBackfillJob(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	token := registerAndGetToken(t, router)
+
+	require.NoError(t, database.Create(&db.ScrapeJob{
+		Status:     "running",
+		Mode:       "title_root_backfill",
+		TotalItems: 3,
+	}).Error)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/admin/scrape/status", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Equal(t, false, resp["active"])
+	assert.Equal(t, float64(0), resp["total"])
+}
+
 func TestScrapeStatus_NonAdmin(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	router, cleanup := NewRouter(*cfg)

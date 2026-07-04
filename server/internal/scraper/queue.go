@@ -76,6 +76,22 @@ func (q *ScrapeQueue) GetActiveJob() (*db.ScrapeJob, error) {
 	return &job, nil
 }
 
+// GetActiveScrapeJob returns the running user-visible scrape job, or nil if
+// only maintenance jobs are running.
+func (q *ScrapeQueue) GetActiveScrapeJob() (*db.ScrapeJob, error) {
+	var job db.ScrapeJob
+	err := q.db.
+		Where("status = ? AND mode NOT IN ?", "running", maintenanceScrapeJobModes()).
+		First(&job).Error
+	if err == gorm.ErrRecordNotFound {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("querying active scrape job: %w", err)
+	}
+	return &job, nil
+}
+
 // EnqueueGames bulk-inserts queue items for the given game IDs.
 // Items default to Type="scrape", so each enqueued game also broadcasts a
 // "queued" scrape-status event so the UI can show "Scrape queued" before

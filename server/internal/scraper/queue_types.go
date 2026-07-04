@@ -9,3 +9,7 @@ const (
 
 	backfillTitleRootIGDBFlag = "backfill_title_root_igdb_v1"
 )
+
+func maintenanceScrapeJobModes() []string {
+	return []string{scrapeJobModeTitleRootBackfill}
+}

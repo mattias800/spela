@@ -271,7 +271,7 @@ func (h *AdminHandler) HumaTriggerScrape(ctx context.Context, in *TriggerScrapeI
 		conflict = "reject"
 	}
 
-	activeJob, err := h.Scraper.Queue.GetActiveJob()
+	activeJob, err := h.Scraper.Queue.GetActiveScrapeJob()
 	if err != nil {
 		return nil, huma.Error500InternalServerError("checking active job")
 	}
@@ -351,7 +351,7 @@ func (h *AdminHandler) HumaTriggerScrape(ctx context.Context, in *TriggerScrapeI
 
 // HumaCancelScrape is the huma handler for DELETE /api/admin/scrape.
 func (h *AdminHandler) HumaCancelScrape(ctx context.Context, _ *CancelScrapeInput) (*CancelScrapeOutput, error) {
-	job, err := h.Scraper.Queue.GetActiveJob()
+	job, err := h.Scraper.Queue.GetActiveScrapeJob()
 	if err != nil {
 		return nil, huma.Error500InternalServerError("checking active job")
 	}
@@ -388,7 +388,7 @@ func (h *AdminHandler) HumaCancelScrape(ctx context.Context, _ *CancelScrapeInpu
 
 // HumaScrapeStatus is the huma handler for GET /api/admin/scrape/status.
 func (h *AdminHandler) HumaScrapeStatus(_ context.Context, _ *ScrapeStatusInput) (*ScrapeStatusOutput, error) {
-	job, err := h.Scraper.Queue.GetActiveJob()
+	job, err := h.Scraper.Queue.GetActiveScrapeJob()
 	if err != nil {
 		return nil, huma.Error500InternalServerError("checking active job")
 	}
@@ -499,7 +499,7 @@ func (h *AdminHandler) HumaScrapeGame(_ context.Context, in *ScrapeGameInput) (*
 		return &ScrapeGameOutput{Body: ScrapeGameResponse{Status: "already_queued", GameID: game.ID}}, nil
 	}
 
-	activeJob, _ := h.Scraper.Queue.GetActiveJob()
+	activeJob, _ := h.Scraper.Queue.GetActiveScrapeJob()
 	var jobID *uint
 	if activeJob != nil {
 		jobID = &activeJob.ID

@@ -91,7 +91,10 @@ func (s *Scraper) BackfillTitleRootForGame(game *db.Game) error {
 	parentID := uintPtrFromOptionalInt(igdbGame.ParentGameID)
 	versionParentID := uintPtrFromOptionalInt(igdbGame.VersionParentID)
 	category := intPtrCopy(igdbGame.Category)
-	titleRootID := s.resolveTitleRootIGDBID(*igdbGame)
+	titleRootID, err := resolveTitleRootIGDBIDStrict(*igdbGame, s.IGDBClient.GetGameByID)
+	if err != nil {
+		return fmt.Errorf("resolving IGDB title root for game %d: %w", game.ID, err)
+	}
 
 	if err := s.DB.Model(&db.Game{}).
 		Where("id = ?", game.ID).
@@ -124,13 +127,31 @@ func (s *Scraper) isTitleRootBackfillDone() (bool, error) {
 }
 
 func (s *Scraper) hasActiveTitleRootBackfill() (bool, error) {
-	var count int64
+	var jobs []db.ScrapeJob
 	if err := s.DB.Model(&db.ScrapeJob{}).
 		Where("mode = ? AND status = ?", scrapeJobModeTitleRootBackfill, "running").
-		Count(&count).Error; err != nil {
+		Find(&jobs).Error; err != nil {
 		return false, fmt.Errorf("checking active title-root backfill job: %w", err)
 	}
-	return count > 0, nil
+	for _, job := range jobs {
+		var activeItems int64
+		if err := s.DB.Model(&db.ScrapeQueueItem{}).
+			Where("job_id = ? AND status IN ?", job.ID, []string{"pending", "in_progress"}).
+			Count(&activeItems).Error; err != nil {
+			return false, fmt.Errorf("checking title-root backfill queue items for job %d: %w", job.ID, err)
+		}
+		if activeItems > 0 {
+			return true, nil
+		}
+		slog.Warn("cancelling stale title-root backfill job with no active queue items", "jobId", job.ID)
+		if s.Queue == nil {
+			return false, fmt.Errorf("title-root backfill queue is not configured")
+		}
+		if err := s.Queue.CancelJob(job.ID); err != nil {
+			return false, fmt.Errorf("cancelling stale title-root backfill job %d: %w", job.ID, err)
+		}
+	}
+	return false, nil
 }
 
 func (s *Scraper) titleRootBackfillCandidateIDs() ([]uint, error) {

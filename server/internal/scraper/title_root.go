@@ -1,6 +1,7 @@
 package scraper
 
 import (
+	"fmt"
 	"log/slog"
 
 	"github.com/spela/server/internal/igdb"
@@ -15,12 +16,26 @@ func (s *Scraper) resolveTitleRootIGDBID(match igdb.Game) *uint {
 	if s.IGDBClient != nil {
 		fetch = s.IGDBClient.GetGameByID
 	}
-	return resolveTitleRootIGDBID(match, fetch)
+	root, err := resolveTitleRootIGDBIDStrict(match, fetch)
+	if err != nil {
+		slog.Warn("IGDB title-root resolution failed", "startIgdbID", match.ID, "error", err)
+		return nil
+	}
+	return root
 }
 
 func resolveTitleRootIGDBID(match igdb.Game, fetch igdbGameFetcher) *uint {
-	if match.ID <= 0 {
+	root, err := resolveTitleRootIGDBIDStrict(match, fetch)
+	if err != nil {
+		slog.Warn("IGDB title-root resolution failed", "startIgdbID", match.ID, "error", err)
 		return nil
+	}
+	return root
+}
+
+func resolveTitleRootIGDBIDStrict(match igdb.Game, fetch igdbGameFetcher) (*uint, error) {
+	if match.ID <= 0 {
+		return nil, nil
 	}
 
 	current := match
@@ -30,34 +45,32 @@ func resolveTitleRootIGDBID(match igdb.Game, fetch igdbGameFetcher) *uint {
 	for depth := 0; depth < maxTitleRootDepth; depth++ {
 		nextID := nextTitleAncestorID(current)
 		if nextID == 0 {
-			return uintPtrFromInt(currentID)
+			return uintPtrFromInt(currentID), nil
 		}
 		if visited[nextID] {
 			slog.Warn("IGDB title-root cycle detected", "startIgdbID", match.ID, "currentIgdbID", currentID, "nextIgdbID", nextID)
-			return uintPtrFromInt(currentID)
+			return uintPtrFromInt(currentID), nil
 		}
 
 		visited[nextID] = true
 		currentID = nextID
 		if fetch == nil {
-			slog.Warn("IGDB title-root ancestor cannot be fetched", "startIgdbID", match.ID, "ancestorIgdbID", nextID)
-			return nil
+			return nil, fmt.Errorf("fetching IGDB title-root ancestor %d: no fetcher configured", nextID)
 		}
 
 		next, err := fetch(nextID)
 		if err != nil {
-			slog.Warn("IGDB title-root ancestor fetch failed", "startIgdbID", match.ID, "ancestorIgdbID", nextID, "error", err)
-			return nil
+			return nil, fmt.Errorf("fetching IGDB title-root ancestor %d: %w", nextID, err)
 		}
 		if next == nil {
 			slog.Warn("IGDB title-root ancestor not found", "startIgdbID", match.ID, "ancestorIgdbID", nextID)
-			return nil
+			return nil, nil
 		}
 		current = *next
 	}
 
 	slog.Warn("IGDB title-root depth cap reached", "startIgdbID", match.ID, "maxDepth", maxTitleRootDepth, "deepestIgdbID", currentID)
-	return uintPtrFromInt(currentID)
+	return uintPtrFromInt(currentID), nil
 }
 
 func nextTitleAncestorID(game igdb.Game) int {

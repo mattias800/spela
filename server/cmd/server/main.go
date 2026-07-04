@@ -487,7 +487,7 @@ func main() {
 
 			if len(gameIDs) > 0 {
 				// Use merge if there's an existing job (e.g., resuming after restart)
-				activeJob, _ := metaScraper.Queue.GetActiveJob()
+				activeJob, _ := metaScraper.Queue.GetActiveScrapeJob()
 				if activeJob != nil {
 					added, mergeErr := metaScraper.Queue.MergeGames(activeJob.ID, gameIDs)
 					if mergeErr != nil {

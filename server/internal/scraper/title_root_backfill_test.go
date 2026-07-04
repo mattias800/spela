@@ -118,6 +118,39 @@ func TestBackfillTitleRootsQueuesMissingIGDBGames(t *testing.T) {
 	assert.Equal(t, int64(1), itemCount)
 }
 
+func TestBackfillTitleRootsCancelsStaleRunningJobWithNoItems(t *testing.T) {
+	database := setupTitleRootBackfillDB(t)
+	queue := NewScrapeQueue(database)
+	s := &Scraper{DB: database, Queue: queue, IGDBClient: igdb.NewClient("test-id", "test-secret")}
+	t.Cleanup(s.IGDBClient.Close)
+
+	console := db.Console{Abbreviation: "NES", Name: "Nintendo Entertainment System"}
+	require.NoError(t, database.Create(&console).Error)
+	game := db.Game{ConsoleID: console.ID, Title: "Missing Root", FileName: "missing.nes", FilePath: "/roms/missing.nes", ScraperID: "igdb:300"}
+	require.NoError(t, database.Create(&game).Error)
+
+	staleJob, err := queue.CreateJob(scrapeJobModeTitleRootBackfill, "igdb", "missing_title_root", "", 1)
+	require.NoError(t, err)
+
+	require.NoError(t, s.BackfillTitleRoots())
+
+	var stale db.ScrapeJob
+	require.NoError(t, database.First(&stale, staleJob.ID).Error)
+	assert.Equal(t, "cancelled", stale.Status)
+
+	var active db.ScrapeJob
+	require.NoError(t, database.
+		Where("mode = ? AND status = ?", scrapeJobModeTitleRootBackfill, "running").
+		First(&active).Error)
+	assert.NotEqual(t, staleJob.ID, active.ID)
+	assert.Equal(t, 1, active.TotalItems)
+
+	var item db.ScrapeQueueItem
+	require.NoError(t, database.Where("job_id = ?", active.ID).First(&item).Error)
+	assert.Equal(t, game.ID, item.GameID)
+	assert.Equal(t, scrapeQueueTypeTitleRootBackfill, item.Type)
+}
+
 func TestBackfillTitleRootsSetsFlagWhenNoCandidates(t *testing.T) {
 	database := setupTitleRootBackfillDB(t)
 	s := &Scraper{DB: database, Queue: NewScrapeQueue(database), IGDBClient: igdb.NewClient("test-id", "test-secret")}
@@ -173,6 +206,69 @@ func TestBackfillTitleRootForGameUpdatesOnlyRelationshipFields(t *testing.T) {
 	assert.Equal(t, 7, updated.ScrapeAttempts)
 	assert.InDelta(t, 82.5, updated.IGDBCriticsRating, 0.01)
 	assert.Equal(t, []int{300, 100}, requests)
+}
+
+func TestBackfillTitleRootForGameReturnsAncestorFetchErrors(t *testing.T) {
+	parentID := 100
+	var requests []int
+
+	tokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.NoError(t, json.NewEncoder(w).Encode(map[string]interface{}{
+			"access_token": "test-token",
+			"expires_in":   3600,
+			"token_type":   "bearer",
+		}))
+	}))
+	t.Cleanup(tokenServer.Close)
+
+	idPattern := regexp.MustCompile(`where id = ([0-9]+)`)
+	igdbServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, err := io.ReadAll(r.Body)
+		require.NoError(t, err)
+		matches := idPattern.FindStringSubmatch(string(body))
+		require.Len(t, matches, 2)
+		id, err := strconv.Atoi(matches[1])
+		require.NoError(t, err)
+		requests = append(requests, id)
+
+		if id == parentID {
+			http.Error(w, "rate limit", http.StatusTooManyRequests)
+			return
+		}
+		require.NoError(t, json.NewEncoder(w).Encode([]igdb.Game{
+			{ID: 300, Name: "Port", ParentGameID: &parentID},
+		}))
+	}))
+	t.Cleanup(igdbServer.Close)
+
+	origTokenURL := igdb.TwitchTokenURLForTest()
+	origAPIBase := igdb.IGDBAPIBaseForTest()
+	igdb.SetTwitchTokenURLForTest(tokenServer.URL)
+	igdb.SetIGDBAPIBaseForTest(igdbServer.URL + "/v4")
+	t.Cleanup(func() {
+		igdb.SetTwitchTokenURLForTest(origTokenURL)
+		igdb.SetIGDBAPIBaseForTest(origAPIBase)
+	})
+
+	igdbClient := igdb.NewClient("test-id", "test-secret")
+	igdbClient.HTTPClient = &http.Client{Timeout: 5 * time.Second}
+	t.Cleanup(igdbClient.Close)
+
+	database := setupTitleRootBackfillDB(t)
+	console := db.Console{Abbreviation: "PSX", Name: "PlayStation"}
+	require.NoError(t, database.Create(&console).Error)
+	game := db.Game{ConsoleID: console.ID, Title: "Local Title", FileName: "port.chd", FilePath: "/roms/port.chd", ScraperID: "igdb:300"}
+	require.NoError(t, database.Create(&game).Error)
+
+	s := &Scraper{DB: database, IGDBClient: igdbClient}
+	err := s.BackfillTitleRootForGame(&game)
+	require.Error(t, err)
+	assert.ErrorIs(t, err, igdb.ErrRateLimit)
+	assert.Equal(t, []int{300, parentID}, requests)
+
+	var updated db.Game
+	require.NoError(t, database.First(&updated, game.ID).Error)
+	assert.Nil(t, updated.TitleRootIGDBID)
 }
 
 func TestScrapeWorkerProcessesTitleRootBackfillWithoutFullScrape(t *testing.T) {
