@@ -1,4 +1,10 @@
-import { render, screen, waitFor, act, fireEvent } from "@testing-library/react";
+import {
+  render,
+  screen,
+  waitFor,
+  act,
+  fireEvent,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { MemoryRouter } from "react-router-dom";
@@ -75,37 +81,59 @@ function emptyResults(): SearchResults {
 }
 
 function resultsWithGames(): SearchResults {
+  const games: SearchResults["games"]["results"] = [
+    {
+      id: "game-1",
+      title: "Super Mario World",
+      coverUrl: "/covers/smw.jpg",
+      coverAspectRatio: 0.75,
+      genre: "Platformer",
+      consoleId: "SNES",
+      consoleName: "Super Nintendo",
+      developer: "Nintendo",
+      platforms: [
+        {
+          gameId: "game-1",
+          consoleId: "SNES",
+          consoleName: "Super Nintendo",
+          isPreferred: true,
+        },
+        {
+          gameId: "game-gba",
+          consoleId: "GBA",
+          consoleName: "Game Boy Advance",
+          isPreferred: false,
+        },
+      ],
+    },
+    {
+      id: "game-2",
+      title: "Mario Kart 64",
+      coverUrl: "",
+      coverAspectRatio: 0.75,
+      genre: "Racing",
+      consoleId: "N64",
+      consoleName: "Nintendo 64",
+      developer: "Nintendo",
+      platforms: [
+        {
+          gameId: "game-2",
+          consoleId: "N64",
+          consoleName: "Nintendo 64",
+          isPreferred: true,
+        },
+      ],
+    },
+  ];
+
   return {
     ...emptyResults(),
     games: {
-      results: [
-        {
-          id: "game-1",
-          title: "Super Mario World",
-          coverUrl: "/covers/smw.jpg",
-          coverAspectRatio: 0.75,
-          genre: "Platformer",
-          consoleId: "SNES",
-          consoleName: "Super Nintendo",
-          developer: "Nintendo",
-        },
-        {
-          id: "game-2",
-          title: "Mario Kart 64",
-          coverUrl: "",
-          coverAspectRatio: 0.75,
-          genre: "Racing",
-          consoleId: "N64",
-          consoleName: "Nintendo 64",
-          developer: "Nintendo",
-        },
-      ],
+      results: games,
       total: 5,
     },
     developers: {
-      results: [
-        { name: "Nintendo", gameCount: 42, avgRating: 85.3 },
-      ],
+      results: [{ name: "Nintendo", gameCount: 42, avgRating: 85.3 }],
       total: 1,
     },
   };
@@ -177,7 +205,9 @@ describe("SearchPalette", () => {
       render(<SearchPalette />, { wrapper: createWrapper() });
       act(() => pressMetaK());
       await userEvent.type(screen.getByLabelText("Search input"), "a");
-      expect(screen.getByText("Type at least 2 characters")).toBeInTheDocument();
+      expect(
+        screen.getByText("Type at least 2 characters"),
+      ).toBeInTheDocument();
     });
   });
 
@@ -196,10 +226,33 @@ describe("SearchPalette", () => {
       expect(screen.getByText("Super Mario World")).toBeInTheDocument();
       expect(screen.getByText("Mario Kart 64")).toBeInTheDocument();
       expect(screen.getByText("SNES")).toBeInTheDocument();
-      expect(screen.getByText("N64")).toBeInTheDocument();
+      expect(screen.getByText("Nintendo 64")).toBeInTheDocument();
 
       // Developer section
       expect(screen.getByText("Developers")).toBeInTheDocument();
+    });
+
+    it("renders platform alternatives for game results", async () => {
+      mockGet.mockResolvedValue(resultsWithGames());
+
+      render(<SearchPalette />, { wrapper: createWrapper() });
+      act(() => pressMetaK());
+      await userEvent.type(screen.getByLabelText("Search input"), "mario");
+
+      await waitFor(() => {
+        expect(
+          screen.getByTestId("search-game-platforms-game-1"),
+        ).toBeInTheDocument();
+      });
+
+      expect(
+        screen.getByLabelText("Current platform Super Nintendo"),
+      ).toHaveTextContent("SNES");
+      expect(
+        screen.getByRole("button", {
+          name: "Open Super Mario World on Game Boy Advance",
+        }),
+      ).toHaveTextContent("GBA");
     });
 
     it("shows 'total' count when there are more results than shown", async () => {
@@ -285,11 +338,62 @@ describe("SearchPalette", () => {
         expect(screen.getByText("Super Mario World")).toBeInTheDocument();
       });
 
-      await userEvent.click(screen.getByTestId("search-result-game-game-1"));
+      await userEvent.click(
+        screen.getByRole("button", { name: "Open Super Mario World" }),
+      );
 
       expect(mockNavigate).toHaveBeenCalledWith("/games/game-1");
       // Palette should close
       expect(screen.queryByTestId("search-palette")).not.toBeInTheDocument();
+    });
+
+    it("navigates directly to an alternate platform without following the row", async () => {
+      mockGet.mockResolvedValue(resultsWithGames());
+
+      render(<SearchPalette />, { wrapper: createWrapper() });
+      act(() => pressMetaK());
+      await userEvent.type(screen.getByLabelText("Search input"), "mario");
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole("button", {
+            name: "Open Super Mario World on Game Boy Advance",
+          }),
+        ).toBeInTheDocument();
+      });
+
+      await userEvent.click(
+        screen.getByRole("button", {
+          name: "Open Super Mario World on Game Boy Advance",
+        }),
+      );
+
+      expect(mockNavigate).toHaveBeenCalledTimes(1);
+      expect(mockNavigate).toHaveBeenCalledWith("/games/game-gba");
+      expect(screen.queryByTestId("search-palette")).not.toBeInTheDocument();
+    });
+
+    it("lets a focused result button handle Enter even when another result is highlighted", async () => {
+      const user = userEvent.setup();
+      mockGet.mockResolvedValue(resultsWithGames());
+
+      render(<SearchPalette />, { wrapper: createWrapper() });
+      act(() => pressMetaK());
+      await user.type(screen.getByLabelText("Search input"), "mario");
+
+      await waitFor(() => {
+        expect(screen.getByText("Mario Kart 64")).toBeInTheDocument();
+      });
+
+      await user.keyboard("{ArrowDown}{ArrowDown}");
+      const firstResult = screen.getByRole("button", {
+        name: "Open Super Mario World",
+      });
+      firstResult.focus();
+      await user.keyboard("{Enter}");
+
+      expect(mockNavigate).toHaveBeenCalledTimes(1);
+      expect(mockNavigate).toHaveBeenCalledWith("/games/game-1");
     });
   });
 
@@ -303,7 +407,9 @@ describe("SearchPalette", () => {
       await userEvent.type(screen.getByLabelText("Search input"), "mario");
 
       await waitFor(() => {
-        expect(screen.getAllByTestId("search-loading").length).toBeGreaterThanOrEqual(1);
+        expect(
+          screen.getAllByTestId("search-loading").length,
+        ).toBeGreaterThanOrEqual(1);
       });
     });
   });
@@ -353,10 +459,7 @@ describe("SearchPalette", () => {
     });
 
     it("fills search input when clicking a recent search", async () => {
-      localStorage.setItem(
-        "spela-recent-searches",
-        JSON.stringify(["zelda"]),
-      );
+      localStorage.setItem("spela-recent-searches", JSON.stringify(["zelda"]));
 
       mockGet.mockResolvedValue(emptyResults());
 
@@ -380,7 +483,9 @@ describe("SearchPalette", () => {
         expect(screen.getByText("Super Mario World")).toBeInTheDocument();
       });
 
-      await userEvent.click(screen.getByTestId("search-result-game-game-1"));
+      await userEvent.click(
+        screen.getByRole("button", { name: "Open Super Mario World" }),
+      );
 
       const stored = JSON.parse(
         localStorage.getItem("spela-recent-searches") ?? "[]",

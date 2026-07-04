@@ -39,14 +39,15 @@ type SearchCategoryResult[T any] struct {
 
 // SearchGameResult is a game entry in search results.
 type SearchGameResult struct {
-	ID               string  `json:"id"`
-	Title            string  `json:"title"`
-	CoverURL         string  `json:"coverUrl"`
-	ConsoleName      string  `json:"consoleName"`
-	ConsoleID        string  `json:"consoleId"`
-	Developer        string  `json:"developer"`
-	Genre            string  `json:"genre"`
-	CoverAspectRatio float64 `json:"coverAspectRatio"`
+	ID               string                 `json:"id"`
+	Title            string                 `json:"title"`
+	CoverURL         string                 `json:"coverUrl"`
+	ConsoleName      string                 `json:"consoleName"`
+	ConsoleID        string                 `json:"consoleId"`
+	Platforms        []GamePlatformResponse `json:"platforms"`
+	Developer        string                 `json:"developer"`
+	Genre            string                 `json:"genre"`
+	CoverAspectRatio float64                `json:"coverAspectRatio"`
 }
 
 // SearchConsoleResult is a console entry in search results.
@@ -92,6 +93,12 @@ type SearchFranchiseResult struct {
 
 // likeEscape is the ESCAPE clause fragment used in all LIKE queries.
 const likeEscape = " ESCAPE '\\'"
+
+const (
+	searchGameMaterializationMultiplier = 20
+	searchGameMaterializationMin        = 100
+	searchGameMaterializationMax        = 1000
+)
 
 // consoleAbbrSafe restricts what may be inlined into the CASE expression
 // used by [SearchHandler.searchGames] when applying a platform-code
@@ -194,28 +201,22 @@ func titleLikeClauses(column, query string) (clause string, args []any) {
 // When priorityAbbr is non-empty, games on that console float to the top
 // of the result list without filtering out other consoles' results.
 func (h *SearchHandler) searchGames(gameQuery string, limit int, priorityAbbr string) SearchCategoryResult[SearchGameResult] {
-	type gameRow struct {
-		ID          uint
-		Title       string
-		CoverURL    string
-		ConsoleAbbr string
-		Developer   string
-		Genre       string
-	}
-
 	titleClause, titleArgs := titleLikeClauses("games.title", gameQuery)
 	likeClause := "(" + titleClause + ") AND games.deleted_at IS NULL"
 
-	var total int64
-	h.DB.Model(&db.Game{}).
+	var rawTotal int64
+	if err := h.DB.Model(&db.Game{}).
 		Joins("JOIN consoles ON consoles.id = games.console_id").
 		Where(likeClause, titleArgs...).
-		Count(&total)
+		Count(&rawTotal).Error; err != nil {
+		slog.Error("search: failed to count games", "error", err)
+	}
 
-	var rows []gameRow
+	var games []db.Game
 	q := h.DB.
-		Table("games").
-		Select("games.id, games.title, games.cover_url, consoles.abbreviation as console_abbr, games.developer, games.genre").
+		Model(&db.Game{}).
+		Select("games.*").
+		Preload("Console").
 		Joins("JOIN consoles ON consoles.id = games.console_id").
 		Where(likeClause, titleArgs...)
 
@@ -242,31 +243,104 @@ func (h *SearchHandler) searchGames(gameQuery string, limit int, priorityAbbr st
 
 	if err := q.
 		Order("games.title ASC").
-		Limit(limit).
-		Scan(&rows).Error; err != nil {
+		Order("games.id ASC").
+		Limit(searchGameMaterializationLimit(limit)).
+		Find(&games).Error; err != nil {
 		slog.Error("search: failed to search games", "error", err)
 		return SearchCategoryResult[SearchGameResult]{Results: []SearchGameResult{}, Total: 0}
 	}
 
-	results := make([]SearchGameResult, len(rows))
-	for i, r := range rows {
-		coverURL := r.CoverURL
-		if coverURL != "" && !strings.HasPrefix(coverURL, "http") {
-			coverURL = "/api/images/" + coverURL
-		}
-		results[i] = SearchGameResult{
-			ID:               strconv.FormatUint(uint64(r.ID), 10),
-			Title:            r.Title,
-			CoverURL:         coverURL,
-			ConsoleName:      db.ConsoleName(r.ConsoleAbbr), // registry-derived (#1443)
-			ConsoleID:        strings.ToLower(r.ConsoleAbbr),
-			Developer:        r.Developer,
-			Genre:            r.Genre,
-			CoverAspectRatio: parseAspectRatio(db.ConsoleCoverAspect(r.ConsoleAbbr)), // registry-derived (#1443)
-		}
+	folded := foldSearchGamesByTitle(games, priorityAbbr)
+	total := len(folded)
+	if rawTotal > int64(len(games)) {
+		total = int(rawTotal)
+	}
+	if limit > 0 && len(folded) > limit {
+		folded = folded[:limit]
 	}
 
-	return SearchCategoryResult[SearchGameResult]{Results: results, Total: int(total)}
+	platformsByGameID := loadGamePlatforms(h.DB, games)
+	results := make([]SearchGameResult, len(folded))
+	for i, game := range folded {
+		results[i] = toSearchGameResult(game, platformsByGameID[game.ID])
+	}
+
+	return SearchCategoryResult[SearchGameResult]{Results: results, Total: total}
+}
+
+func searchGameMaterializationLimit(limit int) int {
+	if limit < 1 {
+		limit = 5
+	}
+	n := limit * searchGameMaterializationMultiplier
+	if n < searchGameMaterializationMin {
+		return searchGameMaterializationMin
+	}
+	if n > searchGameMaterializationMax {
+		return searchGameMaterializationMax
+	}
+	return n
+}
+
+func foldSearchGamesByTitle(games []db.Game, priorityAbbr string) []db.Game {
+	type group struct {
+		key   string
+		games []db.Game
+	}
+
+	groups := make(map[string]*group, len(games))
+	orderedKeys := make([]string, 0, len(games))
+	for _, game := range games {
+		key := titleDedupeKey(game)
+		if existing, ok := groups[key]; ok {
+			existing.games = append(existing.games, game)
+			continue
+		}
+		groups[key] = &group{key: key, games: []db.Game{game}}
+		orderedKeys = append(orderedKeys, key)
+	}
+
+	folded := make([]db.Game, 0, len(orderedKeys))
+	for _, key := range orderedKeys {
+		grp := groups[key]
+		folded = append(folded, pickSearchResultForTitle(grp.key, grp.games, priorityAbbr))
+	}
+	return folded
+}
+
+func pickSearchResultForTitle(key string, games []db.Game, priorityAbbr string) db.Game {
+	if priorityAbbr != "" {
+		for _, game := range games {
+			if strings.EqualFold(game.Console.Abbreviation, priorityAbbr) {
+				return game
+			}
+		}
+	}
+	return pickWinnerForTitle(key, games, nil)
+}
+
+func toSearchGameResult(game db.Game, platforms []GamePlatformResponse) SearchGameResult {
+	if len(platforms) == 0 {
+		platforms = []GamePlatformResponse{toGamePlatformResponse(game, true)}
+	}
+
+	consoleAbbr := game.Console.Abbreviation
+	coverURL := game.CoverURL
+	if coverURL != "" && !strings.HasPrefix(coverURL, "http") {
+		coverURL = "/api/images/" + coverURL
+	}
+
+	return SearchGameResult{
+		ID:               strconv.FormatUint(uint64(game.ID), 10),
+		Title:            game.Title,
+		CoverURL:         coverURL,
+		ConsoleName:      db.ConsoleName(consoleAbbr), // registry-derived (#1443)
+		ConsoleID:        strings.ToLower(consoleAbbr),
+		Platforms:        platforms,
+		Developer:        game.Developer,
+		Genre:            game.Genre,
+		CoverAspectRatio: parseAspectRatio(db.ConsoleCoverAspect(consoleAbbr)), // registry-derived (#1443)
+	}
 }
 
 // searchConsoles searches consoles by display name, returning only those

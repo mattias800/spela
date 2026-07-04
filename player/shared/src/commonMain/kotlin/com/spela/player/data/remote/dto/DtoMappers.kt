@@ -1261,6 +1261,16 @@ fun com.spela.client.models.SearchGameResult.toDomain() = SearchGameResult(
     developer = developer.takeIf { it.isNotEmpty() },
     genre = genre.takeIf { it.isNotEmpty() },
     coverAspectRatio = coverAspectRatio.toFloat(),
+    platforms = platforms.map { it.toDomain() }.ifEmpty {
+        listOf(
+            GamePlatform(
+                gameId = id,
+                consoleId = consoleId,
+                consoleName = consoleName,
+                isPreferred = true,
+            ),
+        )
+    },
 )
 
 fun com.spela.client.models.SearchConsoleResult.toDomain() = SearchConsoleResult(

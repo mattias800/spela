@@ -1,14 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Code,
-  Building,
-  FolderOpen,
-  Layers,
-  Crown,
-  Star,
-} from "lucide-react";
+import { Code, Building, FolderOpen, Layers, Crown, Star } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { GamePlatformPills } from "@/components/game-platform-pills";
 import type {
   SearchResults,
   GameSearchResult,
@@ -47,7 +41,11 @@ interface ResultItem {
   // Router navigation state — federated rows carry their catalog entry so the
   // remote-game page can render instantly without a refetch.
   state?: CatalogAvailability;
-  render: (highlighted: boolean) => React.ReactNode;
+  hasInlineActions?: boolean;
+  render: (
+    highlighted: boolean,
+    onPrimaryActivate?: () => void,
+  ) => React.ReactNode;
 }
 
 // Helper for building a section's items. Each of the 7 result types
@@ -59,7 +57,12 @@ function makeSection<T>(
   bucket: { results: T[]; total: number },
   getId: (item: T) => string,
   getPath: (item: T) => string,
-  renderRow: (item: T, highlighted: boolean) => React.ReactNode,
+  renderRow: (
+    item: T,
+    highlighted: boolean,
+    onPrimaryActivate?: () => void,
+  ) => React.ReactNode,
+  hasInlineActions?: (item: T) => boolean,
 ): ResultSection | null {
   if (bucket.results.length === 0) return null;
   return {
@@ -69,12 +72,17 @@ function makeSection<T>(
     items: bucket.results.map((item) => ({
       id: getId(item),
       path: getPath(item),
-      render: (highlighted: boolean) => renderRow(item, highlighted),
+      hasInlineActions: hasInlineActions?.(item) ?? false,
+      render: (highlighted: boolean, onPrimaryActivate?: () => void) =>
+        renderRow(item, highlighted, onPrimaryActivate),
     })),
   };
 }
 
-function buildSections(results: SearchResults): ResultSection[] {
+function buildSections(
+  results: SearchResults,
+  onNavigate: (path: string) => void,
+): ResultSection[] {
   const sections: Array<ResultSection | null> = [
     makeSection(
       "games",
@@ -82,7 +90,15 @@ function buildSections(results: SearchResults): ResultSection[] {
       results.games,
       (g) => `game-${g.id}`,
       (g) => `/games/${g.id}`,
-      (g, hl) => <GameRow game={g} highlighted={hl} />,
+      (g, hl, activate) => (
+        <GameRow
+          game={g}
+          highlighted={hl}
+          onNavigate={onNavigate}
+          onPrimaryActivate={activate}
+        />
+      ),
+      (g) => (g.platforms?.length ?? 0) > 1,
     ),
     makeSection(
       "consoles",
@@ -141,7 +157,22 @@ export function SearchResultsDisplay({
   onNavigate,
   federatedGames,
 }: SearchResultsDisplayProps) {
-  const sections = useMemo(() => (results ? buildSections(results) : []), [results]);
+  const navigate = useNavigate();
+  const handleNavigate = useCallback(
+    (path: string, state?: CatalogAvailability) => {
+      onNavigate(path);
+      if (state) {
+        navigate(path, { state });
+      } else {
+        navigate(path);
+      }
+    },
+    [navigate, onNavigate],
+  );
+  const sections = useMemo(
+    () => (results ? buildSections(results, handleNavigate) : []),
+    [handleNavigate, results],
+  );
   const allFedGames = Array.isArray(federatedGames)
     ? federatedGames
     : EMPTY_FEDERATED_GAMES;
@@ -156,14 +187,15 @@ export function SearchResultsDisplay({
         id: `federated-${game.key}`,
         path: `/remote-games/${encodeURIComponent(game.key)}`,
         state: game,
-        render: (hl: boolean) => <FederatedGameRow game={game} highlighted={hl} />,
+        render: (hl: boolean) => (
+          <FederatedGameRow game={game} highlighted={hl} />
+        ),
       })),
     ],
     [fedGames, sections],
   );
   const [highlightIndex, setHighlightIndex] = useState(-1);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate();
 
   // Reset highlight when results change
   useEffect(() => {
@@ -185,19 +217,15 @@ export function SearchResultsDisplay({
           prev > 0 ? prev - 1 : allItems.length - 1,
         );
       } else if (e.key === "Enter" && highlightIndex >= 0) {
+        if (shouldFocusedActionHandleEnter(e.target)) return;
         e.preventDefault();
         const item = allItems[highlightIndex];
         if (item) {
-          onNavigate(item.path);
-          if (item.state) {
-            navigate(item.path, { state: item.state });
-          } else {
-            navigate(item.path);
-          }
+          handleNavigate(item.path, item.state);
         }
       }
     },
-    [allItems, highlightIndex, navigate, onNavigate],
+    [allItems, handleNavigate, highlightIndex],
   );
 
   useEffect(() => {
@@ -221,7 +249,11 @@ export function SearchResultsDisplay({
   let globalIndex = 0;
 
   return (
-    <div data-comp="SearchResultsDisplay" ref={scrollRef} className="overflow-y-auto max-h-[60vh]">
+    <div
+      data-comp="SearchResultsDisplay"
+      ref={scrollRef}
+      className="overflow-y-auto max-h-[60vh]"
+    >
       {sections.map((section) => (
         <div key={section.key} className="py-2">
           <div className="px-4 py-1.5 flex items-center justify-between">
@@ -236,23 +268,33 @@ export function SearchResultsDisplay({
           </div>
           {section.items.map((item) => {
             const currentIndex = globalIndex++;
+            const highlighted = highlightIndex === currentIndex;
+            const activateItem = () => handleNavigate(item.path, item.state);
+            if (item.hasInlineActions) {
+              return (
+                <div
+                  key={item.id}
+                  data-result-index={currentIndex}
+                  data-testid={`search-result-${item.id}`}
+                  className="w-full px-4 py-1.5"
+                  onMouseEnter={() => setHighlightIndex(currentIndex)}
+                >
+                  {item.render(highlighted, activateItem)}
+                </div>
+              );
+            }
+
             return (
               <button
                 key={item.id}
+                type="button"
                 data-result-index={currentIndex}
                 data-testid={`search-result-${item.id}`}
-                className="w-full text-left px-4 py-1.5 cursor-pointer"
-                onClick={() => {
-                  onNavigate(item.path);
-                  if (item.state) {
-                    navigate(item.path, { state: item.state });
-                  } else {
-                    navigate(item.path);
-                  }
-                }}
+                className="w-full text-left px-4 py-1.5 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-950"
+                onClick={activateItem}
                 onMouseEnter={() => setHighlightIndex(currentIndex)}
               >
-                {item.render(highlightIndex === currentIndex)}
+                {item.render(highlighted)}
               </button>
             );
           })}
@@ -273,17 +315,15 @@ export function SearchResultsDisplay({
           </div>
           {fedGames.map((game) => {
             const currentIndex = globalIndex++;
+            const path = `/remote-games/${encodeURIComponent(game.key)}`;
             return (
               <button
                 key={game.key}
+                type="button"
                 data-result-index={currentIndex}
                 data-testid={`federated-result-${game.key}`}
-                className="w-full text-left px-4 py-1.5 cursor-pointer"
-                onClick={() => {
-                  const path = `/remote-games/${encodeURIComponent(game.key)}`;
-                  onNavigate(path);
-                  navigate(path, { state: game });
-                }}
+                className="w-full text-left px-4 py-1.5 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-950"
+                onClick={() => handleNavigate(path, game)}
                 onMouseEnter={() => setHighlightIndex(currentIndex)}
               >
                 <FederatedGameRow
@@ -297,6 +337,11 @@ export function SearchResultsDisplay({
       )}
     </div>
   );
+}
+
+function shouldFocusedActionHandleEnter(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  return target.closest("button,a,[role='button']") !== null;
 }
 
 // Shared row primitive — every result row renders as a 3-slot flex
@@ -320,7 +365,8 @@ function SearchResultRow({
   highlighted,
 }: SearchResultRowProps) {
   return (
-    <div data-comp="SearchResultRow"
+    <div
+      data-comp="SearchResultRow"
       className={cn(
         "flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors",
         highlighted ? "bg-surface-800" : "hover:bg-surface-800/50",
@@ -329,7 +375,9 @@ function SearchResultRow({
       {icon}
       {subtitle !== undefined ? (
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-surface-100 truncate">{title}</p>
+          <p className="text-sm font-medium text-surface-100 truncate">
+            {title}
+          </p>
           <p className="text-xs text-surface-500 truncate">{subtitle}</p>
         </div>
       ) : (
@@ -344,13 +392,12 @@ function SearchResultRow({
 
 // Small square icon badge used by the name-only result types
 // (developer, publisher, collection, series, franchise).
-function IconBadge({
-  icon: Icon,
-}: {
-  icon: typeof Code;
-}) {
+function IconBadge({ icon: Icon }: { icon: typeof Code }) {
   return (
-    <div data-comp="IconBadge" className="h-8 w-8 rounded-lg bg-surface-800 flex items-center justify-center flex-shrink-0">
+    <div
+      data-comp="IconBadge"
+      className="h-8 w-8 rounded-lg bg-surface-800 flex items-center justify-center flex-shrink-0"
+    >
       <Icon className="h-4 w-4 text-surface-400" />
     </div>
   );
@@ -367,7 +414,10 @@ function GameCountWithRating({
   avgRating: number;
 }) {
   return (
-    <span data-comp="GameCountWithRating" className="text-xs text-surface-500 flex items-center gap-1.5">
+    <span
+      data-comp="GameCountWithRating"
+      className="text-xs text-surface-500 flex items-center gap-1.5"
+    >
       {gameCount} {gameCount === 1 ? "game" : "games"}
       {avgRating > 0 && (
         <>
@@ -384,9 +434,13 @@ function GameCountWithRating({
 function GameRow({
   game,
   highlighted,
+  onNavigate,
+  onPrimaryActivate,
 }: {
   game: GameSearchResult;
   highlighted: boolean;
+  onNavigate: (path: string) => void;
+  onPrimaryActivate?: () => void;
 }) {
   const icon = game.coverUrl ? (
     <img
@@ -397,16 +451,67 @@ function GameRow({
   ) : (
     <div className="h-10 w-8 rounded bg-surface-700 flex-shrink-0" />
   );
+
+  const platformPills = (
+    <GamePlatformPills
+      gameId={game.id}
+      title={game.title}
+      consoleId={game.consoleId}
+      consoleName={game.consoleName}
+      platforms={game.platforms ?? []}
+      showSingle
+      align="end"
+      maxVisible={3}
+      className="max-w-[10rem] flex-shrink-0"
+      testId={
+        (game.platforms?.length ?? 0) > 1
+          ? `search-game-platforms-${game.id}`
+          : undefined
+      }
+      onNavigate={onNavigate}
+    />
+  );
+
+  if (onPrimaryActivate) {
+    return (
+      <div
+        data-comp="SearchResultRow"
+        className={cn(
+          "flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors",
+          highlighted ? "bg-surface-800" : "hover:bg-surface-800/50",
+        )}
+      >
+        <button
+          type="button"
+          className="min-w-0 flex-1 rounded-md text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-950"
+          aria-label={`Open ${game.title}`}
+          onClick={onPrimaryActivate}
+        >
+          <div className="flex min-w-0 items-center gap-3">
+            {icon}
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-surface-100 truncate">
+                {game.title}
+              </p>
+              {game.developer && (
+                <p className="text-xs text-surface-500 truncate">
+                  {game.developer}
+                </p>
+              )}
+            </div>
+          </div>
+        </button>
+        {platformPills}
+      </div>
+    );
+  }
+
   return (
     <SearchResultRow
       icon={icon}
       title={game.title}
       subtitle={game.developer || undefined}
-      rightContent={
-        <span className="text-xs font-medium px-2 py-0.5 rounded bg-surface-800 text-surface-400 uppercase flex-shrink-0">
-          {game.consoleId}
-        </span>
-      }
+      rightContent={platformPills}
       highlighted={highlighted}
     />
   );

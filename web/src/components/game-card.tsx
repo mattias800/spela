@@ -3,12 +3,9 @@ import { Heart, Clock, Loader2 } from "lucide-react";
 import { RatingDisplay } from "@/components/rating-display";
 import { cn } from "@/lib/cn";
 import { ConsoleBadge } from "@/components/console-badge";
+import { GamePlatformPills } from "@/components/game-platform-pills";
 import { useAutoScrape } from "@/hooks/use-auto-scrape";
 import { getReleaseYear } from "@/lib/date-utils";
-import {
-  compactPlatformLabel,
-  getGamePlatformTargets,
-} from "@/lib/game-platforms";
 import type { Game } from "@/types/api";
 
 interface GameCardProps {
@@ -33,7 +30,6 @@ export function GameCard({
   onTogglePlayLater,
 }: GameCardProps) {
   const { ref, isScraping } = useAutoScrape(game);
-  const platformTargets = getGamePlatformTargets(game);
 
   return (
     <div
@@ -215,46 +211,15 @@ export function GameCard({
             </p>
           )}
         </div>
-        {platformTargets.length > 1 && (
-          <div
-            className="flex flex-wrap gap-1.5 pt-0.5"
-            data-testid={`game-platform-pills-${game.id}`}
-          >
-            {platformTargets.map((platform) => {
-              const isCurrent = platform.isPreferred;
-              const label = compactPlatformLabel(platform);
-              if (isCurrent) {
-                return (
-                  <span
-                    key={platform.gameId}
-                    aria-label={`Current platform ${platform.consoleName}`}
-                  >
-                    <ConsoleBadge
-                      code={platform.consoleId}
-                      label={label}
-                      className="text-[10px]"
-                    />
-                  </span>
-                );
-              }
-
-              return (
-                <Link
-                  key={platform.gameId}
-                  to={`/games/${platform.gameId}`}
-                  className="rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-950"
-                  aria-label={`Open ${game.title} on ${platform.consoleName}`}
-                >
-                  <ConsoleBadge
-                    code={platform.consoleId}
-                    label={label}
-                    className="text-[10px] transition-colors hover:border-white/60"
-                  />
-                </Link>
-              );
-            })}
-          </div>
-        )}
+        <GamePlatformPills
+          gameId={game.id}
+          title={game.title}
+          consoleId={game.consoleId}
+          consoleName={game.consoleName}
+          platforms={game.platforms}
+          className="pt-0.5"
+          testId={`game-platform-pills-${game.id}`}
+        />
       </div>
     </div>
   );

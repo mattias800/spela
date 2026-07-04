@@ -8670,6 +8670,12 @@
           "id": {
             "type": "string"
           },
+          "platforms": {
+            "items": {
+              "$ref": "#/components/schemas/GamePlatformResponse"
+            },
+            "type": "array"
+          },
           "title": {
             "type": "string"
           }
@@ -8680,6 +8686,7 @@
           "coverUrl",
           "consoleName",
           "consoleId",
+          "platforms",
           "developer",
           "genre",
           "coverAspectRatio"

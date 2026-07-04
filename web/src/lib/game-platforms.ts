@@ -1,12 +1,24 @@
-import type { Game } from "@/types/api";
+export interface GamePlatformTarget {
+  gameId: string;
+  consoleId: string;
+  consoleName: string;
+  isPreferred: boolean;
+}
 
-export type GamePlatformTarget = Game["platforms"][number];
+interface GamePlatformSource {
+  id: string;
+  consoleId: string;
+  consoleName: string;
+  platforms?: readonly GamePlatformTarget[];
+}
 
 const COMPACT_LABEL_MAX_LENGTH = 12;
 const COMPACT_ID_MIN_LENGTH = 2;
 const COMPACT_ID_MAX_LENGTH = 6;
 
-export function getGamePlatformTargets(game: Game): GamePlatformTarget[] {
+export function getGamePlatformTargets(
+  game: GamePlatformSource,
+): GamePlatformTarget[] {
   const fallback: GamePlatformTarget = {
     gameId: game.id,
     consoleId: game.consoleId,
