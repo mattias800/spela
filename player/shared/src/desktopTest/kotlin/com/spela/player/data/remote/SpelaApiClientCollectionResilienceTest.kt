@@ -17,15 +17,14 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
 /**
- * Cold-load resilience for the Collections and related entity-detail screens
- * (#1231).
+ * Cold-load resilience for the Collections, Activity, and related
+ * entity-detail screens (#1231, #1230).
  *
  * A truncated / garbled 2xx body — connection contention while cores prefetch,
  * a proxy hiccup — used to surface as a hard JSON error even though a retry
- * would succeed. `SpelaApiClient.getMyCollections/getPublicCollections/
- * getCollection` now retry the transient failure modes (and log the raw body).
- * The same symptom was seen on developer/publisher detail screens, so those
- * read-only calls share the same retry path. These tests pin that behaviour.
+ * would succeed. Read-only GETs that are known to feed cold-load screens now
+ * retry the transient failure modes (and log the raw body). These tests pin
+ * that behaviour.
  */
 class SpelaApiClientCollectionResilienceTest {
 
@@ -47,6 +46,22 @@ class SpelaApiClientCollectionResilienceTest {
 
     // A 2xx body that is cut off mid-object → SerializationException on decode.
     private val truncatedJson = """{"data":[{"id":"1","userId":"u1","""
+
+    private val activityFeedJson = """
+        {
+          "data": [
+            {
+              "avatarUrl": "", "consoleName": "NES",
+              "createdAt": "2026-04-21T00:00:00Z",
+              "eventType": "started_playing",
+              "gameCoverUrl": "", "gameId": "g1",
+              "gameTitle": "Super Mario Bros.", "id": "e1",
+              "metadata": "{}", "userId": "u1", "username": "alice"
+            }
+          ],
+          "total": 1, "page": 1, "pageSize": 20
+        }
+    """.trimIndent()
 
     private fun entityDetailJson(name: String, publisher: Boolean = false): String {
         val relationshipKey = if (publisher) "developers" else "publishers"
@@ -161,5 +176,21 @@ class SpelaApiClientCollectionResilienceTest {
 
         assertEquals(2, calls[0], "expected exactly one retry after the first truncated body")
         assertEquals("Capcom", result.name)
+    }
+
+    @Test
+    fun getActivityFeedRetriesAndRecoversAfterTruncatedBody() = runTest {
+        val calls = intArrayOf(0)
+        val apiClient = client(
+            sequencedEngine(calls) { n ->
+                (if (n == 1) truncatedJson else activityFeedJson) to HttpStatusCode.OK
+            },
+        )
+
+        val result = apiClient.getActivityFeed()
+
+        assertEquals(2, calls[0], "expected exactly one retry after the first truncated body")
+        assertEquals(1, result.data.size)
+        assertEquals("started_playing", result.data[0].eventType)
     }
 }
