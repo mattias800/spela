@@ -104,6 +104,7 @@ users or if we need to track a core pin, workaround, or verification pass.
 ### Play!: PS2 Audio Under-Delivery And EE/GS Freezes
 
 - **Issue:** #1297
+- **Manual/core verification:** #1648
 - **Status:** confirmed Play! core issues; remaining symptoms reproduce in
   stock RetroArch with the same core.
 - **Game/context:** Final Fantasy X on Windows desktop during the Play! core
