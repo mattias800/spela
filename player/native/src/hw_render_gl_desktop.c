@@ -45,6 +45,14 @@ typedef HGLRC (WINAPI *PFN_wglCreateContextAttribsARB)(HDC, HGLRC, const int *);
 #define WGL_CONTEXT_PROFILE_MASK_ARB  0x9126
 #define WGL_CONTEXT_CORE_PROFILE_BIT_ARB 0x00000001
 
+static void *normalize_wgl_proc_address(PROC proc) {
+    uintptr_t value = (uintptr_t)proc;
+    if (value == 0 || value == 1 || value == 2 || value == 3 || value == (uintptr_t)-1) {
+        return NULL;
+    }
+    return (void *)proc;
+}
+
 #else /* Linux */
 #include <dlfcn.h>
 
@@ -296,7 +304,7 @@ static void *load_gl_func(hw_gl_context_t *ctx, const char *name) {
 #ifdef _WIN32
     /* Try wglGetProcAddress first (for extension functions), then GetProcAddress */
     if (ctx->pfn_wglGetProcAddress) {
-        proc = (void *)ctx->pfn_wglGetProcAddress(name);
+        proc = normalize_wgl_proc_address(ctx->pfn_wglGetProcAddress(name));
     }
     if (!proc && ctx->gl_lib) {
         proc = (void *)GetProcAddress(ctx->gl_lib, name);
@@ -417,7 +425,9 @@ static bool create_gl_context_win32(hw_gl_context_t *ctx, unsigned vmaj, unsigne
     ctx->pfn_wglMakeCurrent(ctx->hdc, tmp_ctx);
 
     ctx->pfn_wglCreateContextAttribsARB =
-        (PFN_wglCreateContextAttribsARB)ctx->pfn_wglGetProcAddress("wglCreateContextAttribsARB");
+        (PFN_wglCreateContextAttribsARB)normalize_wgl_proc_address(
+            ctx->pfn_wglGetProcAddress("wglCreateContextAttribsARB")
+        );
 
     if (ctx->pfn_wglCreateContextAttribsARB && vmaj >= 3) {
         int attribs[] = {
@@ -988,7 +998,7 @@ void *hw_gl_get_proc_address(const char *sym) {
     HMODULE gl = GetModuleHandleA("opengl32.dll");
     void *proc = NULL;
     /* wglGetProcAddress requires a current context */
-    proc = (void *)wglGetProcAddress(sym);
+    proc = normalize_wgl_proc_address(wglGetProcAddress(sym));
     if (!proc && gl) {
         proc = (void *)GetProcAddress(gl, sym);
     }
