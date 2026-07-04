@@ -230,6 +230,9 @@ private class NetplayTestRunnerImpl(private val config: Config) {
                             log("Starting emulation...")
                             emulationStarted = true
                             controller.start()
+                            if (!config.solo) {
+                                controller.startNetplayInputSync()
+                            }
                         }
                         println("OK go")
                     }

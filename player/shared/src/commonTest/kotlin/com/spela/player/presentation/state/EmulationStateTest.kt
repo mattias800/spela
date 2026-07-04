@@ -35,6 +35,7 @@ class EmulationStateTest {
         assertFalse(state.isFastForward)
         assertFalse(state.showKeyMapping)
         assertNull(state.error)
+        assertNull(state.fatalError)
         assertNull(state.achievementEvent)
         assertFalse(state.isHardcoreMode)
         assertFalse(state.secondaryDisplayActive)

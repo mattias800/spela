@@ -44,6 +44,9 @@ class DesktopLibretroController(
     private var netplayInputDelay: Int = 0
 
     @Volatile
+    private var netplayInputSyncStarted = false
+
+    @Volatile
     private var netplayDisconnected = false
 
     /**
@@ -359,6 +362,11 @@ class DesktopLibretroController(
         netplayInputBuffer = inputBuffer
         netplayLocalPort = localPort
         netplayInputDelay = inputDelay
+        netplayInputSyncStarted = false
+    }
+
+    override fun startNetplayInputSync() {
+        netplayInputSyncStarted = true
     }
 
     override fun clearNetplayMode() {
@@ -366,6 +374,7 @@ class DesktopLibretroController(
         netplayInputBuffer = null
         netplayLocalPort = 0
         netplayInputDelay = 0
+        netplayInputSyncStarted = false
         netplayDisconnected = false
         onNetplayPeerTimeout = null
     }
@@ -500,22 +509,44 @@ class DesktopLibretroController(
         var frameCounter = 0L
         var fpsCounter = 0
         var fpsTimer = System.nanoTime()
-
-        // Seed frames 0 through inputDelay-1 with empty inputs for both ports.
-        // The loop sends input for frame F + inputDelay, so without seeding
-        // the early frames would never have inputs and the loop would deadlock.
-        val emptyInput = InputState()
-        for (f in 0L until inputDelay.toLong()) {
-            for (p in 0 until playerCount) {
-                runBlocking {
-                    inputBuffer.setLocalInput(f, p, emptyInput)
-                }
-                transport.sendInput(f, p, emptyInput)
-            }
-        }
+        var inputDelaySeeded = false
 
         while (running) {
             pumpEmulationThreadQueue() // service serialize/unserialize on this thread (#1206)
+            if (!netplayInputSyncStarted) {
+                if (paused) {
+                    Thread.sleep(16)
+                    continue
+                }
+                val frameStart = System.nanoTime()
+                accrueActivePlayTime(frameStart)
+                jni.nativeRun()
+                if (jni.nativeGpuIsActive()) {
+                    renderGpuFrameToBgra()
+                }
+                val ap = audioPlayer
+                if (ap != null && !fastForward) {
+                    ap.write(ap.calculateRatio())
+                }
+                if (!fastForward) {
+                    precisionSleep(frameStart + frameTimeNs)
+                }
+                currentFrameTime = (System.nanoTime() - frameStart) / 1_000_000f
+                continue
+            }
+            if (!inputDelaySeeded) {
+                frameCounter = 0L
+                val emptyInput = InputState()
+                for (f in 0L until inputDelay.toLong()) {
+                    for (p in 0 until playerCount) {
+                        runBlocking {
+                            inputBuffer.setLocalInput(f, p, emptyInput)
+                        }
+                        transport.sendInput(f, p, emptyInput)
+                    }
+                }
+                inputDelaySeeded = true
+            }
             if (paused) {
                 Thread.sleep(16)
                 continue

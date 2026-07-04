@@ -14,6 +14,8 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
@@ -37,6 +39,7 @@ class NetplaySignaling(
     private var session: DefaultClientWebSocketSession? = null
     private val outgoingBinary = Channel<ByteArray>(Channel.BUFFERED)
     private val outgoingText = Channel<String>(Channel.BUFFERED)
+    private val sendMutex = Mutex()
 
     private val _controlMessages = MutableSharedFlow<ControlMessage>(extraBufferCapacity = 64)
     val controlMessages: Flow<ControlMessage> = _controlMessages.asSharedFlow()
@@ -73,12 +76,16 @@ class NetplaySignaling(
                         // Launch sender coroutines
                         val binarySender = launch {
                             for (data in outgoingBinary) {
-                                send(Frame.Binary(true, data))
+                                sendMutex.withLock {
+                                    send(Frame.Binary(true, data))
+                                }
                             }
                         }
                         val textSender = launch {
                             for (text in outgoingText) {
-                                send(Frame.Text(text))
+                                sendMutex.withLock {
+                                    send(Frame.Text(text))
+                                }
                             }
                         }
 
@@ -86,7 +93,7 @@ class NetplaySignaling(
                         for (frame in incoming) {
                             when (frame) {
                                 is Frame.Text -> handleTextFrame(frame.readText())
-                                is Frame.Binary -> _binaryMessages.tryEmit(frame.readBytes())
+                                is Frame.Binary -> _binaryMessages.emit(frame.readBytes())
                                 else -> { /* ignore ping/pong/close */ }
                             }
                         }
@@ -119,6 +126,23 @@ class NetplaySignaling(
      */
     fun sendBinary(data: ByteArray) {
         outgoingBinary.trySend(data)
+    }
+
+    /**
+     * Send binary data without silent truncation. Used for initial state
+     * transfer where dropping a chunk would desync the session.
+     */
+    suspend fun sendBinaryReliable(data: ByteArray) {
+        while (true) {
+            val activeSession = session
+            if (activeSession != null) {
+                sendMutex.withLock {
+                    activeSession.send(Frame.Binary(true, data))
+                }
+                return
+            }
+            delay(10)
+        }
     }
 
     /**
