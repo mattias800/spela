@@ -30,8 +30,10 @@ platform shows up empty in the UI on a fresh install / in CI.
 
 What stubs cover:
 - Scanner walks the folder, adds rows to the `games` table
-- Filename → IGDB metadata lookup proceeds normally (covers,
-  descriptions resolve based on title)
+- Filename → IGDB metadata lookup is exercised normally. Because these
+  are fictional titles, they should be expected to render as
+  placeholder/no-metadata entries unless external metadata happens to
+  match.
 - Library UI surfaces the platform with populated content
 
 What they explicitly do NOT cover:
@@ -45,9 +47,9 @@ Titles are intentionally **fictional and Spela-branded** to avoid
 any ambiguity about whether a real third-party ROM is implied; you
 will not find `Spela Rainbow Quest` on any other emulation site.
 
-The stubs sit alongside the small CC0 hand-crafted carts
-(`spela-hello.tic`, `spela-hello.tap`) which DO boot their cores —
-those are the minimum-boot anchors; the stubs are the
+The stubs sit alongside the small CC0 hand-crafted carts/disks
+(`spela-hello.tic`, `spela-hello.tap`, `spela-hello.dsk`) which DO boot
+their cores — those are the minimum-boot anchors; the stubs are the
 library-feels-real layer.
 
 ### `tic80/spela-hello.tic`
@@ -82,6 +84,23 @@ Built directly to the documented `.tap` block format (one header
 block + one data block, autostart at line 10). Boots the libretro
 `fuse` core's auto-load-tape flow to confirm the platform
 integration works.
+
+### `amstradcpc/spela-hello.dsk`
+
+| Field | Value |
+|-------|-------|
+| **Author** | Spela contributors (this repo) |
+| **Year** | 2026 |
+| **Size** | 5,120 bytes |
+| **Source** | hand-written; see `scripts/build-testdata-roms.py` |
+| **License** | CC0 / Public Domain — dedicated to the public domain by the authors |
+
+A minimal Amstrad CPC extended DSK image containing one CPC Data-format
+track and a tiny AMSDOS BASIC file: `10 PRINT "SPELA CPC OK"`.
+Built directly to the documented CPCEMU/extended DSK container format
+with a standard CPC data track (`0xC1` sector IDs, 9 x 512-byte sectors)
+and an AMSDOS header/checksum. Boots the libretro `cap32` core to
+confirm the platform integration works.
 
 ### `nes/nestest.nes`
 
