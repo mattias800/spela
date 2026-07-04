@@ -1,5 +1,6 @@
 package com.spela.player.presentation.viewmodel
 
+import com.spela.player.domain.model.GamepadPosition
 import com.spela.player.domain.model.KeyMappingPreset
 import com.spela.player.domain.model.KeyMappingProfile
 import com.spela.player.domain.repository.KeyMappingRepository
@@ -205,6 +206,27 @@ class GamepadConfigViewModelTest {
         gamepadPortManager.disconnectDevice(1)
         advanceTimeBy(300)
         assertTrue(vm.state.value.portAssignments.isEmpty())
+        scope.cancel()
+    }
+
+    @Test
+    fun inputCalibrationCaptureStoresMappingAndClearsPrompt() = runTest(testDispatcher) {
+        val scope = CoroutineScope(testDispatcher + Job())
+        val vm = createViewModel(scope)
+        gamepadPortManager.connectDevice(1, "Pad", stableKey = "key-pad")
+        advanceTimeBy(300)
+
+        vm.onIntent(GamepadConfigIntent.StartInputCalibration(1, GamepadPosition.SOUTH))
+        advanceTimeBy(300)
+        assertEquals(GamepadPosition.SOUTH, vm.state.value.inputCalibrationCapture?.targetPosition)
+
+        gamepadPortManager.reportInputCalibrationPosition(1, GamepadPosition.EAST, pressed = true)
+        advanceTimeBy(300)
+
+        val controller = vm.state.value.controllers.single { it.deviceId == 1 }
+        assertNull(vm.state.value.inputCalibrationCapture)
+        assertEquals(GamepadPosition.SOUTH, controller.inputCalibration[GamepadPosition.EAST])
+        assertEquals(GamepadPosition.EAST, controller.inputCalibration[GamepadPosition.SOUTH])
         scope.cancel()
     }
 

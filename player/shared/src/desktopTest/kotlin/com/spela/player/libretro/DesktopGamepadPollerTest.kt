@@ -2,7 +2,9 @@ package com.spela.player.libretro
 
 import com.spela.player.domain.model.DefaultGamepadMapping
 import com.spela.player.domain.model.GamepadPosition
+import com.spela.player.presentation.navigation.NavigationEventBus
 import com.spela.player.presentation.viewmodel.LibretroButtons
+import java.awt.event.KeyEvent
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -69,5 +71,46 @@ class DesktopGamepadPollerTest {
         )
 
         assertEquals(mapOf(LibretroButtons.L2 to 2000.toShort()), out.analogPressures)
+    }
+
+    @Test
+    fun calibrationInputMaskSuppressesNavigationUntilCapturedButtonReleased() {
+        val keys = mutableListOf<Int>()
+        val navigator = GamepadUiNavigator(
+            navigationEventBus = NavigationEventBus(),
+            isInGame = { false },
+            synthesizeKey = { keys.add(it) },
+        )
+        val mask = CalibrationInputMask()
+        val controllerId = 7
+        val held = setOf(GamepadPosition.EAST)
+
+        handleNavigationFrame(navigator, controllerId, held, mask.update(controllerId, held, true))
+        handleNavigationFrame(navigator, controllerId, held, mask.update(controllerId, held, false))
+        handleNavigationFrame(
+            navigator,
+            controllerId,
+            emptySet<GamepadPosition>(),
+            mask.update(controllerId, emptySet<GamepadPosition>(), false),
+        )
+        handleNavigationFrame(navigator, controllerId, held, mask.update(controllerId, held, false))
+
+        assertEquals(listOf(KeyEvent.VK_ESCAPE), keys)
+    }
+
+    private fun handleNavigationFrame(
+        navigator: GamepadUiNavigator,
+        controllerId: Int,
+        pressedPositions: Set<GamepadPosition>,
+        masked: Boolean,
+    ) {
+        val state = state(controllerId, pressedPositions)
+        navigator.handle(arrayOf(if (masked) state(controllerId, emptySet()) else state))
+    }
+
+    private fun state(controllerId: Int, pressedPositions: Set<GamepadPosition>): GamepadState {
+        val buttons = BooleanArray(GamepadPosition.entries.size)
+        pressedPositions.forEach { buttons[it.ordinal] = true }
+        return GamepadState(controllerId, "Test Controller", buttons, IntArray(6), 0)
     }
 }

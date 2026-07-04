@@ -5,6 +5,7 @@ import com.spela.player.domain.model.GamepadPosition
 import com.spela.player.domain.repository.ControllerStyleOverrideRepository
 import com.spela.player.libretro.GamepadPortManager
 import com.spela.player.libretro.GamepadTestSticks
+import com.spela.player.libretro.InputCalibrationCapture
 import com.spela.player.util.DispatcherProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -33,6 +34,8 @@ data class GamepadConfigState(
     val controllers: List<ControllerUi> = emptyList(),
     /** A pending player-slot conflict awaiting the user's switch/cancel (#1359). */
     val conflict: SlotConflict? = null,
+    /** Active input-layer calibration prompt for a controller (#1341). */
+    val inputCalibrationCapture: InputCalibrationCapture? = null,
 )
 
 /**
@@ -51,6 +54,10 @@ data class ControllerUi(
     val detectedStyle: ControllerStyle = ControllerStyle.Generic,
     /** The user's explicit style override, or null when Auto (defer to detection). */
     val styleOverride: ControllerStyle? = null,
+    /** Stable physical-controller key used for device-local persistence. */
+    val stableKey: String = "",
+    /** Raw/reported position -> corrected position overrides for this controller. */
+    val inputCalibration: Map<GamepadPosition, GamepadPosition> = emptyMap(),
 )
 
 /**
@@ -111,6 +118,15 @@ sealed interface GamepadConfigIntent {
 
     /** Toggle input-test capture for [deviceId]'s detail page (tester focus). */
     data class SetInputTestActive(val deviceId: Int, val active: Boolean) : GamepadConfigIntent
+
+    /** Start capturing the physical control that should produce [targetPosition]. */
+    data class StartInputCalibration(val deviceId: Int, val targetPosition: GamepadPosition) : GamepadConfigIntent
+
+    /** Cancel an active input-layer calibration prompt without saving. */
+    data object CancelInputCalibration : GamepadConfigIntent
+
+    /** Reset all input-layer calibration for [deviceId]. */
+    data class ClearInputCalibration(val deviceId: Int) : GamepadConfigIntent
 }
 
 class GamepadConfigViewModel(
@@ -164,6 +180,24 @@ class GamepadConfigViewModel(
         scope.launch(dispatchers.default) {
             gamepadPortManager.testConfirmHeld.collect { held ->
                 _state.update { it.copy(confirmHeld = held) }
+            }
+        }
+        scope.launch(dispatchers.default) {
+            gamepadPortManager.inputCalibrationCapture.collect { capture ->
+                _state.update { it.copy(inputCalibrationCapture = capture) }
+            }
+        }
+        scope.launch(dispatchers.default) {
+            gamepadPortManager.inputCalibrationCapturedPosition.collect { rawPosition ->
+                val capture = gamepadPortManager.inputCalibrationCapture.value
+                if (rawPosition != null && capture != null) {
+                    gamepadPortManager.setInputCalibration(
+                        deviceId = capture.deviceId,
+                        rawPosition = rawPosition,
+                        targetPosition = capture.targetPosition,
+                    )
+                    refreshState()
+                }
             }
         }
     }
@@ -231,6 +265,16 @@ class GamepadConfigViewModel(
             }
             is GamepadConfigIntent.SetInputTestActive -> {
                 gamepadPortManager.setTestCaptureDevice(if (intent.active) intent.deviceId else null)
+            }
+            is GamepadConfigIntent.StartInputCalibration -> {
+                gamepadPortManager.startInputCalibrationCapture(intent.deviceId, intent.targetPosition)
+            }
+            GamepadConfigIntent.CancelInputCalibration -> {
+                gamepadPortManager.cancelInputCalibrationCapture()
+            }
+            is GamepadConfigIntent.ClearInputCalibration -> {
+                gamepadPortManager.clearInputCalibration(intent.deviceId)
+                refreshState()
             }
         }
     }
@@ -313,6 +357,8 @@ class GamepadConfigViewModel(
                 style = override ?: controller.style,
                 detectedStyle = controller.style,
                 styleOverride = override,
+                stableKey = controller.stableKey,
+                inputCalibration = controller.inputCalibration,
             )
         }
 

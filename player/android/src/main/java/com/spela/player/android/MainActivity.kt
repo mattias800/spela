@@ -14,7 +14,6 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.lifecycle.lifecycleScope
 import com.spela.player.domain.model.ControllerClassifier
-import com.spela.player.domain.model.DefaultGamepadMapping
 import com.spela.player.domain.model.GamepadPosition
 import com.spela.player.domain.repository.ConfirmButtonConvention
 import com.spela.player.domain.repository.PreferencesRepository
@@ -307,6 +306,14 @@ class MainActivity : ComponentActivity() {
         return true
     }
 
+    /** Controller input-layer calibration capture (#1341): while active, the next
+     * raw gamepad position from the selected device is consumed by the prompt. */
+    private fun captureInputCalibration(event: KeyEvent?, keyCode: Int, pressed: Boolean): Boolean {
+        val deviceId = event?.deviceId ?: return false
+        val position = AndroidGamepadNormalizer.normalize(keyCode) ?: return false
+        return gamepadPortManager.reportInputCalibrationPosition(deviceId, position, pressed)
+    }
+
     /** Key codes that are gamepad-relevant and should be captured during key mapping. */
     private fun isGamepadCapturable(keyCode: Int): Boolean = when (keyCode) {
         KeyEvent.KEYCODE_BUTTON_A, KeyEvent.KEYCODE_BUTTON_B,
@@ -340,6 +347,10 @@ class MainActivity : ComponentActivity() {
             ensureDeviceConnected(event.deviceId)
         }
 
+        // Input-layer calibration capture (#1341): consume the selected
+        // controller's next raw button press before any other input handling.
+        if (captureInputCalibration(event, keyCode, pressed = true)) return true
+
         // Hold-to-bind capture (#1377): when the mapping editor is awaiting a
         // press, capture every button (incl. D-pad) from any pad and consume it.
         if (captureBindInput(event, keyCode, pressed = true)) return true
@@ -361,7 +372,7 @@ class MainActivity : ComponentActivity() {
             val port = ensureDeviceConnected(deviceId)
             if (port < 0) return super.onKeyDown(keyCode, event)
 
-            val buttonId = gamepadPortManager.mapGamepadKeyToLibretro(port, keyCode)
+            val buttonId = gamepadPortManager.mapGamepadKeyToLibretro(port, keyCode, deviceId)
             if (buttonId != null) {
                 androidController?.let {
                     it.setButton(port, buttonId, true)
@@ -470,6 +481,8 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onKeyUp(keyCode: Int, event: KeyEvent?): Boolean {
+        if (captureInputCalibration(event, keyCode, pressed = false)) return true
+
         // Hold-to-bind capture (#1377): release feeds the binder (resets the hold).
         if (captureBindInput(event, keyCode, pressed = false)) return true
 
@@ -487,7 +500,7 @@ class MainActivity : ComponentActivity() {
             val port = gamepadPortManager.getPort(deviceId)
             if (port < 0) return super.onKeyUp(keyCode, event)
 
-            val buttonId = gamepadPortManager.mapGamepadKeyToLibretro(port, keyCode)
+            val buttonId = gamepadPortManager.mapGamepadKeyToLibretro(port, keyCode, deviceId)
             if (buttonId != null) {
                 androidController?.let {
                     it.setButton(port, buttonId, false)
@@ -545,6 +558,22 @@ class MainActivity : ComponentActivity() {
         // gamepad sources thanks to ensureDeviceConnected's filter.
         ensureDeviceConnected(event.deviceId)
 
+        val calibrationTarget = gamepadPortManager.inputCalibrationCapture.value?.deviceId
+        if (!isEmulationConsuming && calibrationTarget == event.deviceId) {
+            val hatX = event.getAxisValue(MotionEvent.AXIS_HAT_X)
+            val hatY = event.getAxisValue(MotionEvent.AXIS_HAT_Y)
+            gamepadPortManager.reportInputCalibrationPosition(event.deviceId, GamepadPosition.DPAD_LEFT, hatX < -0.5f)
+            gamepadPortManager.reportInputCalibrationPosition(event.deviceId, GamepadPosition.DPAD_RIGHT, hatX > 0.5f)
+            gamepadPortManager.reportInputCalibrationPosition(event.deviceId, GamepadPosition.DPAD_UP, hatY < -0.5f)
+            gamepadPortManager.reportInputCalibrationPosition(event.deviceId, GamepadPosition.DPAD_DOWN, hatY > 0.5f)
+            val leftTrigger = readTriggerAxis(event, MotionEvent.AXIS_LTRIGGER, MotionEvent.AXIS_BRAKE) ?: 0f
+            val rightTrigger = readTriggerAxis(event, MotionEvent.AXIS_RTRIGGER, MotionEvent.AXIS_GAS) ?: 0f
+            gamepadPortManager.reportInputCalibrationPosition(event.deviceId, GamepadPosition.L2, leftTrigger > 0.5f)
+            gamepadPortManager.reportInputCalibrationPosition(event.deviceId, GamepadPosition.R2, rightTrigger > 0.5f)
+            gamepadPortManager.setRightStickScroll(0f)
+            return true
+        }
+
         // Live input tester active for this controller (#1448): capture the D-pad
         // (HAT) and both analog sticks so they light up on the schematic, and
         // suppress UI navigation + right-stick scroll. Exit is the confirm button,
@@ -589,14 +618,14 @@ class MainActivity : ComponentActivity() {
             controller.setAnalog(port, 1, 0, rightX)
             controller.setAnalog(port, 1, 1, rightY)
 
-            routeTriggerAxes(event, port)
+            routeTriggerAxes(event, port, event.deviceId)
 
             val hatX = event.getAxisValue(MotionEvent.AXIS_HAT_X)
             val hatY = event.getAxisValue(MotionEvent.AXIS_HAT_Y)
-            routeMappedPosition(port, GamepadPosition.DPAD_LEFT, hatX < -0.5f)
-            routeMappedPosition(port, GamepadPosition.DPAD_RIGHT, hatX > 0.5f)
-            routeMappedPosition(port, GamepadPosition.DPAD_UP, hatY < -0.5f)
-            routeMappedPosition(port, GamepadPosition.DPAD_DOWN, hatY > 0.5f)
+            routeMappedPosition(port, event.deviceId, GamepadPosition.DPAD_LEFT, hatX < -0.5f)
+            routeMappedPosition(port, event.deviceId, GamepadPosition.DPAD_RIGHT, hatX > 0.5f)
+            routeMappedPosition(port, event.deviceId, GamepadPosition.DPAD_UP, hatY < -0.5f)
+            routeMappedPosition(port, event.deviceId, GamepadPosition.DPAD_DOWN, hatY > 0.5f)
 
             return true
         }
@@ -647,9 +676,9 @@ class MainActivity : ComponentActivity() {
         return true
     }
 
-    private fun routeTriggerAxes(event: MotionEvent, port: Int) {
+    private fun routeTriggerAxes(event: MotionEvent, port: Int, deviceId: Int) {
         val controller = androidController ?: return
-        val mapping = gamepadPortManager.getGamepadMapping(port) ?: DefaultGamepadMapping.POSITION_TO_RETRO
+        val mapping = gamepadPortManager.getCalibratedGamepadMapping(port, deviceId)
         val triggerRoute = GamepadMapping.resolveTriggerRoute(
             leftTrigger = readTriggerAxis(event, MotionEvent.AXIS_LTRIGGER, MotionEvent.AXIS_BRAKE),
             rightTrigger = readTriggerAxis(event, MotionEvent.AXIS_RTRIGGER, MotionEvent.AXIS_GAS),
@@ -693,13 +722,13 @@ class MainActivity : ComponentActivity() {
         return GamepadMapping.selectPresentTriggerAxis(primary, fallback)
     }
 
-    private fun routeMappedPosition(port: Int, position: GamepadPosition, pressed: Boolean) {
-        val retroId = mappedRetroButton(port, position) ?: return
+    private fun routeMappedPosition(port: Int, deviceId: Int, position: GamepadPosition, pressed: Boolean) {
+        val retroId = mappedRetroButton(port, deviceId, position) ?: return
         androidController?.setButton(port, retroId, pressed)
     }
 
-    private fun mappedRetroButton(port: Int, position: GamepadPosition): Int? {
-        val mapping = gamepadPortManager.getGamepadMapping(port) ?: DefaultGamepadMapping.POSITION_TO_RETRO
+    private fun mappedRetroButton(port: Int, deviceId: Int, position: GamepadPosition): Int? {
+        val mapping = gamepadPortManager.getCalibratedGamepadMapping(port, deviceId)
         return mapping[position]
     }
 

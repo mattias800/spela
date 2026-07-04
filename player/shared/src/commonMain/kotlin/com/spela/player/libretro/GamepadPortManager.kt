@@ -4,6 +4,7 @@ import com.spela.player.domain.model.ControllerStyle
 import com.spela.player.domain.model.DefaultGamepadMapping
 import com.spela.player.domain.model.GamepadPosition
 import com.spela.player.domain.repository.ControllerAssignmentRepository
+import com.spela.player.domain.repository.ControllerInputCalibrationRepository
 import com.spela.player.domain.repository.GamepadMappingRepository
 import com.spela.player.domain.repository.KeyMappingRepository
 import com.spela.player.presentation.ui.gamepad.InputMode
@@ -36,6 +37,13 @@ data class GamepadTestSticks(
     val rightY: Float = 0f,
 )
 
+/** Active input-layer calibration capture: press the physical control that
+ * should produce [targetPosition] on [deviceId]. */
+data class InputCalibrationCapture(
+    val deviceId: Int,
+    val targetPosition: GamepadPosition,
+)
+
 class GamepadPortManager(
     private val keyMappingRepository: KeyMappingRepository,
     private val scope: CoroutineScope? = null,
@@ -60,6 +68,12 @@ class GamepadPortManager(
      * remembered "cleared" state) on reconnect.
      */
     private val controllerAssignmentRepository: ControllerAssignmentRepository? = null,
+    /**
+     * Device-local input-layer calibration (#1341): reported GamepadPosition ->
+     * corrected GamepadPosition per physical controller. Null disables
+     * calibration, preserving the historical platform normalization.
+     */
+    private val controllerInputCalibrationRepository: ControllerInputCalibrationRepository? = null,
 ) {
     companion object {
         const val MAX_PORTS = 8
@@ -89,6 +103,7 @@ class GamepadPortManager(
         val stableKey: String,
         val style: ControllerStyle,
         val slot: Int?,
+        val inputCalibration: Map<GamepadPosition, GamepadPosition> = emptyMap(),
     )
 
     /** Identity of every connected device, assigned or not, in connect order. */
@@ -97,6 +112,7 @@ class GamepadPortManager(
         val deviceName: String,
         val stableKey: String,
         val style: ControllerStyle,
+        val inputCalibration: Map<GamepadPosition, GamepadPosition>,
     )
 
     private val connectedDevices = LinkedHashMap<Int, DeviceIdentity>()
@@ -214,6 +230,15 @@ class GamepadPortManager(
     private val _bindCaptureActive = MutableStateFlow(false)
     val bindCaptureActive: StateFlow<Boolean> = _bindCaptureActive.asStateFlow()
 
+    /** Active controller-calibration capture, if any (#1341). */
+    private val _inputCalibrationCapture = MutableStateFlow<InputCalibrationCapture?>(null)
+    val inputCalibrationCapture: StateFlow<InputCalibrationCapture?> = _inputCalibrationCapture.asStateFlow()
+
+    /** Raw/reported position captured during [inputCalibrationCapture]. */
+    private val _inputCalibrationCapturedPosition = MutableStateFlow<GamepadPosition?>(null)
+    val inputCalibrationCapturedPosition: StateFlow<GamepadPosition?> =
+        _inputCalibrationCapturedPosition.asStateFlow()
+
     /** Set by the mapping editor when a hold-to-bind session starts/ends. Clears
      *  any stale held positions on each transition. */
     @Synchronized
@@ -223,6 +248,83 @@ class GamepadPortManager(
         bindPressedByDevice.clear()
         _bindPressedPositions.value = emptySet()
     }
+
+    /** Starts capture for one calibration target. The next raw/reported position
+     * from [deviceId] is stored in [inputCalibrationCapturedPosition]. */
+    @Synchronized
+    fun startInputCalibrationCapture(deviceId: Int, targetPosition: GamepadPosition) {
+        if (!connectedDevices.containsKey(deviceId)) return
+        _inputCalibrationCapture.value = InputCalibrationCapture(deviceId, targetPosition)
+        _inputCalibrationCapturedPosition.value = null
+    }
+
+    /** Cancels any active calibration capture without changing mappings. */
+    @Synchronized
+    fun cancelInputCalibrationCapture() {
+        _inputCalibrationCapture.value = null
+        _inputCalibrationCapturedPosition.value = null
+    }
+
+    /** Reports raw/reported input to the active calibration prompt. Returns true
+     * when the event belongs to the prompt and should be consumed. */
+    @Synchronized
+    fun reportInputCalibrationPosition(deviceId: Int, rawPosition: GamepadPosition, pressed: Boolean): Boolean {
+        val capture = _inputCalibrationCapture.value ?: return false
+        if (capture.deviceId != deviceId) return false
+        if (pressed) _inputCalibrationCapturedPosition.value = rawPosition
+        return true
+    }
+
+    /** Reports a full raw/reported position set to the active calibration prompt.
+     * Used by the desktop poller, which receives the whole controller frame. */
+    @Synchronized
+    fun reportInputCalibrationPressedPositions(deviceId: Int, rawPositions: Set<GamepadPosition>): Boolean {
+        val capture = _inputCalibrationCapture.value ?: return false
+        if (capture.deviceId != deviceId) return false
+        rawPositions.firstOrNull()?.let { _inputCalibrationCapturedPosition.value = it }
+        return true
+    }
+
+    /** Sets the selected physical/raw position to mean [targetPosition] for
+     * [deviceId]. The operation is exclusive: if another raw position previously
+     * produced the target, it is moved to the raw position's old target so simple
+     * two-button swaps work without leaving duplicate targets. */
+    @Synchronized
+    fun setInputCalibration(deviceId: Int, rawPosition: GamepadPosition, targetPosition: GamepadPosition) {
+        val identity = connectedDevices[deviceId] ?: return
+        val updated = identity.inputCalibration.toMutableMap()
+        applyExclusiveCalibration(updated, rawPosition, targetPosition)
+        val normalized = normalizedCalibration(updated)
+        if (identity.stableKey.isNotBlank()) {
+            controllerInputCalibrationRepository?.put(identity.stableKey, normalized)
+        }
+        connectedDevices[deviceId] = identity.copy(inputCalibration = normalized)
+        _inputCalibrationCapture.value = null
+        _inputCalibrationCapturedPosition.value = null
+        emitConnectedControllers()
+    }
+
+    /** Clears all calibration overrides for [deviceId]. */
+    @Synchronized
+    fun clearInputCalibration(deviceId: Int) {
+        val identity = connectedDevices[deviceId] ?: return
+        if (identity.stableKey.isNotBlank()) {
+            controllerInputCalibrationRepository?.clear(identity.stableKey)
+        }
+        connectedDevices[deviceId] = identity.copy(inputCalibration = emptyMap())
+        cancelInputCalibrationCapture()
+        emitConnectedControllers()
+    }
+
+    /** Applies this controller's input-layer calibration to a raw position. */
+    @Synchronized
+    fun resolveInputPosition(deviceId: Int, rawPosition: GamepadPosition): GamepadPosition =
+        connectedDevices[deviceId]?.inputCalibration?.get(rawPosition) ?: rawPosition
+
+    /** Applies input-layer calibration to a raw pressed-position set. */
+    @Synchronized
+    fun resolveInputPositions(deviceId: Int, rawPositions: Set<GamepadPosition>): Set<GamepadPosition> =
+        rawPositions.mapTo(mutableSetOf()) { raw -> connectedDevices[deviceId]?.inputCalibration?.get(raw) ?: raw }
 
     /** Current input mode: TOUCH when touch input was last used, GAMEPAD when D-pad/buttons were. */
     private val _inputMode = MutableStateFlow(InputMode.TOUCH)
@@ -276,7 +378,13 @@ class GamepadPortManager(
         if (connectedDevices.containsKey(deviceId)) return deviceToPort[deviceId]?.port ?: -1
 
         ensureCacheLoaded()
-        connectedDevices[deviceId] = DeviceIdentity(deviceId, deviceName, stableKey, style)
+        connectedDevices[deviceId] = DeviceIdentity(
+            deviceId = deviceId,
+            deviceName = deviceName,
+            stableKey = stableKey,
+            style = style,
+            inputCalibration = loadInputCalibration(stableKey),
+        )
 
         val cache = assignmentCache!!
         val targetSlot: Int? = when {
@@ -389,6 +497,7 @@ class GamepadPortManager(
                 stableKey = id.stableKey,
                 style = id.style,
                 slot = deviceToPort[id.deviceId]?.port,
+                inputCalibration = id.inputCalibration,
             )
         }
     }
@@ -424,6 +533,10 @@ class GamepadPortManager(
         }
         if (bindPressedByDevice.remove(deviceId) != null && _bindCaptureActive.value) {
             recomputeBindPressed()
+        }
+        if (_inputCalibrationCapture.value?.deviceId == deviceId) {
+            _inputCalibrationCapture.value = null
+            _inputCalibrationCapturedPosition.value = null
         }
         if (!wasConnected) return
         _portActivity.value = buildActivityMap()
@@ -530,6 +643,24 @@ class GamepadPortManager(
     }
 
     /**
+     * Returns a mapping keyed by raw/reported positions for [deviceId]. Each raw
+     * position first resolves through input calibration, then through the normal
+     * GamepadPosition -> RetroPad mapping layer.
+     */
+    @Synchronized
+    fun getCalibratedGamepadMapping(port: Int, deviceId: Int): Map<GamepadPosition, Int> {
+        val base = if (port in 0 until MAX_PORTS) {
+            portGamepadMappings[port] ?: fallbackGamepadMapping ?: DefaultGamepadMapping.POSITION_TO_RETRO
+        } else {
+            DefaultGamepadMapping.POSITION_TO_RETRO
+        }
+        return GamepadPosition.entries.mapNotNull { raw ->
+            val corrected = connectedDevices[deviceId]?.inputCalibration?.get(raw) ?: raw
+            base[corrected]?.let { raw to it }
+        }.toMap()
+    }
+
+    /**
      * Maps an Android gamepad key code to a libretro RetroPad id for a port via
      * the two-layer model (#1334): physical key code → canonical
      * [GamepadPosition] (input layer) → RetroPad id (mapping layer). Falls back
@@ -538,10 +669,14 @@ class GamepadPortManager(
      * key codes or unmapped positions.
      */
     @Synchronized
-    fun mapGamepadKeyToLibretro(port: Int, keyCode: Int): Int? {
+    fun mapGamepadKeyToLibretro(port: Int, keyCode: Int, deviceId: Int? = null): Int? {
         if (port < 0 || port >= MAX_PORTS) return null
         val position = AndroidGamepadNormalizer.normalize(keyCode) ?: return null
-        val mapping = portGamepadMappings[port] ?: fallbackGamepadMapping ?: DefaultGamepadMapping.POSITION_TO_RETRO
+        val mapping = if (deviceId != null) {
+            getCalibratedGamepadMapping(port, deviceId)
+        } else {
+            portGamepadMappings[port] ?: fallbackGamepadMapping ?: DefaultGamepadMapping.POSITION_TO_RETRO
+        }
         return mapping[position]
     }
 
@@ -553,8 +688,10 @@ class GamepadPortManager(
      */
     @Synchronized
     fun reportPositionInput(deviceId: Int, position: GamepadPosition, pressed: Boolean) {
+        if (reportInputCalibrationPosition(deviceId, position, pressed)) return
+        val correctedPosition = resolveInputPosition(deviceId, position)
         val set = pressedByDevice.getOrPut(deviceId) { mutableSetOf() }
-        val changed = if (pressed) set.add(position) else set.remove(position)
+        val changed = if (pressed) set.add(correctedPosition) else set.remove(correctedPosition)
         if (changed && _testCaptureDeviceId.value == deviceId) recomputePressedPositions()
     }
 
@@ -566,10 +703,12 @@ class GamepadPortManager(
      */
     @Synchronized
     fun reportPressedPositions(deviceId: Int, positions: Set<GamepadPosition>) {
+        if (reportInputCalibrationPressedPositions(deviceId, positions)) return
+        val correctedPositions = resolveInputPositions(deviceId, positions)
         val set = pressedByDevice.getOrPut(deviceId) { mutableSetOf() }
-        if (set == positions) return
+        if (set == correctedPositions) return
         set.clear()
-        set.addAll(positions)
+        set.addAll(correctedPositions)
         if (_testCaptureDeviceId.value == deviceId) recomputePressedPositions()
     }
 
@@ -588,8 +727,9 @@ class GamepadPortManager(
     @Synchronized
     fun reportBindPosition(deviceId: Int, position: GamepadPosition, pressed: Boolean) {
         if (!_bindCaptureActive.value) return
+        val correctedPosition = resolveInputPosition(deviceId, position)
         val set = bindPressedByDevice.getOrPut(deviceId) { mutableSetOf() }
-        val changed = if (pressed) set.add(position) else set.remove(position)
+        val changed = if (pressed) set.add(correctedPosition) else set.remove(correctedPosition)
         if (changed) recomputeBindPressed()
     }
 
@@ -601,10 +741,11 @@ class GamepadPortManager(
     @Synchronized
     fun reportBindPressedPositions(deviceId: Int, positions: Set<GamepadPosition>) {
         if (!_bindCaptureActive.value) return
+        val correctedPositions = resolveInputPositions(deviceId, positions)
         val set = bindPressedByDevice.getOrPut(deviceId) { mutableSetOf() }
-        if (set == positions) return
+        if (set == correctedPositions) return
         set.clear()
-        set.addAll(positions)
+        set.addAll(correctedPositions)
         recomputeBindPressed()
     }
 
@@ -743,6 +884,8 @@ class GamepadPortManager(
         bindPressedByDevice.clear()
         _bindPressedPositions.value = emptySet()
         _bindCaptureActive.value = false
+        _inputCalibrationCapture.value = null
+        _inputCalibrationCapturedPosition.value = null
         _rightStickScroll.value = 0f
         _assignments.value = emptyList()
         _connectedControllers.value = emptyList()
@@ -804,4 +947,33 @@ class GamepadPortManager(
         }
         return map
     }
+
+    private fun loadInputCalibration(stableKey: String): Map<GamepadPosition, GamepadPosition> {
+        if (stableKey.isBlank()) return emptyMap()
+        return normalizedCalibration(controllerInputCalibrationRepository?.get(stableKey).orEmpty().toMutableMap())
+    }
+
+    private fun applyExclusiveCalibration(
+        calibration: MutableMap<GamepadPosition, GamepadPosition>,
+        rawPosition: GamepadPosition,
+        targetPosition: GamepadPosition,
+    ) {
+        val previousTargetForRaw = calibration[rawPosition] ?: rawPosition
+        val previousRawForTarget = GamepadPosition.entries.firstOrNull { raw ->
+            raw != rawPosition && (calibration[raw] ?: raw) == targetPosition
+        }
+
+        calibration[rawPosition] = targetPosition
+
+        if (previousRawForTarget != null) {
+            calibration[previousRawForTarget] = previousTargetForRaw
+        }
+    }
+
+    private fun normalizedCalibration(
+        calibration: MutableMap<GamepadPosition, GamepadPosition>,
+    ): Map<GamepadPosition, GamepadPosition> =
+        calibration
+            .filter { (raw, target) -> raw != target }
+            .toMap()
 }

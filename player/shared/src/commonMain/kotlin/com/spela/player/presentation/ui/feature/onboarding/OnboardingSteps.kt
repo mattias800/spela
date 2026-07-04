@@ -249,6 +249,10 @@ fun ControlsStepContent(
             onAssignSlot = { onIntent(GamepadConfigIntent.AssignPlayer(selected.deviceId, it)) },
             onClear = { onIntent(GamepadConfigIntent.ClearPlayer(selected.deviceId)) },
             onTestActiveChange = { onIntent(GamepadConfigIntent.SetInputTestActive(selected.deviceId, it)) },
+            calibrationCapture = state.inputCalibrationCapture,
+            onStartCalibration = { onIntent(GamepadConfigIntent.StartInputCalibration(selected.deviceId, it)) },
+            onClearCalibration = { onIntent(GamepadConfigIntent.ClearInputCalibration(selected.deviceId)) },
+            onCancelCalibration = { onIntent(GamepadConfigIntent.CancelInputCalibration) },
         )
         val conflict = state.conflict
         if (conflict != null) {
