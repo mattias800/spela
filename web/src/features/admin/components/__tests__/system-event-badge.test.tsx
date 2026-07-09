@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, it, expect } from "vitest";
 import { SystemEventBadge } from "../system-event-badge";
-import { getSystemEventLabel } from "../system-event-meta";
+import { getSystemEventLabel, getSystemEventMeta } from "../system-event-meta";
 
 describe("SystemEventBadge", () => {
   it("renders a known event type with its humanized label", () => {
@@ -27,6 +27,11 @@ describe("SystemEventBadge", () => {
     render(<SystemEventBadge type="ra_circuit_breaker_tripped" />);
     expect(screen.getByText("RA Circuit Breaker")).toBeInTheDocument();
   });
+
+  it("renders core_update_failed with a clear failure label (#1667)", () => {
+    render(<SystemEventBadge type="core_update_failed" />);
+    expect(screen.getByText("Core Update Failed")).toBeInTheDocument();
+  });
 });
 
 describe("getSystemEventLabel", () => {
@@ -42,5 +47,20 @@ describe("getSystemEventLabel", () => {
   it("returns labels for operational event types", () => {
     expect(getSystemEventLabel("ra_circuit_breaker_tripped")).toBe("RA Circuit Breaker");
     expect(getSystemEventLabel("rom_file_missing")).toBe("ROM Missing");
+  });
+
+  it("distinguishes core_update_failed from core_updated (#1667)", () => {
+    expect(getSystemEventLabel("core_updated")).toBe("Core Updated");
+    expect(getSystemEventLabel("core_update_failed")).toBe("Core Update Failed");
+  });
+});
+
+describe("getSystemEventMeta core_update_failed (#1667)", () => {
+  it("is a first-class operational failure entry, not the unknown fallback", () => {
+    const meta = getSystemEventMeta("core_update_failed");
+    expect(meta).toBeDefined();
+    expect(meta?.label).toBe("Core Update Failed");
+    expect(meta?.variant).toBe("warning");
+    expect(meta?.severity).toBe("notice");
   });
 });
