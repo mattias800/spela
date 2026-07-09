@@ -12,8 +12,10 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/spela/server/internal/db"
 	"github.com/spela/server/internal/federation"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 )
 
@@ -70,6 +72,29 @@ func TestFederationMW_RejectsUnknownPeer(t *testing.T) {
 	fedMWRouter(database, self.Fingerprint()).ServeHTTP(w,
 		signedFedRequest(stranger, http.MethodGet, "/api/federation/test", "", time.Now(), self.Fingerprint()))
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
+
+	var count int64
+	database.Model(&db.SystemEvent{}).
+		Where("event_type = ?", db.SystemEventFederationAuthRejected).
+		Count(&count)
+	assert.Equal(t, int64(0), count, "unknown fingerprints stay slog-only to avoid public event floods")
+}
+
+func TestFederationMW_DoesNotRecordAnonymousMissingHeaderNoise(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	database := openAPIFedTestDB(t)
+	self, _ := federation.GenerateIdentity()
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/api/federation/test", nil)
+	fedMWRouter(database, self.Fingerprint()).ServeHTTP(w, req)
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+
+	var count int64
+	database.Model(&db.SystemEvent{}).
+		Where("event_type = ?", db.SystemEventFederationAuthRejected).
+		Count(&count)
+	assert.Equal(t, int64(0), count)
 }
 
 func TestFederationMW_RejectsStaleTimestamp(t *testing.T) {
@@ -102,6 +127,14 @@ func TestFederationMW_RejectsTamperedPath(t *testing.T) {
 	w := httptest.NewRecorder()
 	fedMWRouter(database, self.Fingerprint()).ServeHTTP(w, req2)
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
+
+	var events []db.SystemEvent
+	require.NoError(t, database.Where("event_type = ?", db.SystemEventFederationAuthRejected).Find(&events).Error)
+	require.Len(t, events, 1)
+	assert.Contains(t, events[0].Reason, "signature verification failed")
+	assert.Contains(t, events[0].Reason, federation.ShortFingerprint(peerID.Fingerprint()))
+	assert.Equal(t, "/api/federation/test", events[0].Path)
+	assert.Contains(t, events[0].Metadata, peerID.Fingerprint())
 }
 
 func TestFederationMW_RejectsWrongRecipient(t *testing.T) {

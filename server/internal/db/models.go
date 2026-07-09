@@ -419,6 +419,7 @@ type SystemEventCategory struct {
 const (
 	CategorySecurity    = "security"
 	CategoryOperational = "operational"
+	CategoryFederation  = "federation"
 )
 
 // System event types. Keep in sync with the slog event= discriminators
@@ -460,6 +461,15 @@ const (
 	SystemEventBIOSDownloadFailed = "bios_download_failed"
 )
 
+// Federation event types.
+const (
+	SystemEventFederationPeerPaired      = "federation_peer_paired"
+	SystemEventFederationPeerRevoked     = "federation_peer_revoked"
+	SystemEventFederationHandshakeFailed = "federation_handshake_failed"
+	SystemEventFederationPeerUnreachable = "federation_peer_unreachable"
+	SystemEventFederationAuthRejected    = "federation_auth_rejected"
+)
+
 // AllSystemEventTypes is the canonical catalog of system event type strings.
 // Every type above must appear here so API responses and UI filters stay in
 // sync with the emitted events.
@@ -481,29 +491,39 @@ var AllSystemEventTypes = []string{
 	SystemEventCoreUpdated,
 	SystemEventCoreUpdateFailed,
 	SystemEventBIOSDownloadFailed,
+	SystemEventFederationPeerPaired,
+	SystemEventFederationPeerRevoked,
+	SystemEventFederationHandshakeFailed,
+	SystemEventFederationPeerUnreachable,
+	SystemEventFederationAuthRejected,
 }
 
 // SystemEventTypeCategory maps each event type to its category code. Used by
 // the recorder to auto-resolve CategoryID and by the types endpoint to tell
 // the frontend which types belong to which category.
 var SystemEventTypeCategory = map[string]string{
-	SystemEventLoginSuccess:            CategorySecurity,
-	SystemEventLoginFailed:             CategorySecurity,
-	SystemEventLoginLocked:             CategorySecurity,
-	SystemEventLoginBlocked:            CategorySecurity,
-	SystemEventAccountLocked:           CategorySecurity,
-	SystemEventRevokedTokenUsed:        CategorySecurity,
-	SystemEventDisabledAccountToken:    CategorySecurity,
-	SystemEventTokenUserMissing:        CategorySecurity,
-	SystemEventStaleTokenVersion:       CategorySecurity,
-	SystemEventRACircuitBreakerTripped: CategoryOperational,
-	SystemEventScraperRepeatedErrors:   CategoryOperational,
-	SystemEventROMFileMissing:          CategoryOperational,
-	SystemEventAPICredentialsInvalid:   CategoryOperational,
-	SystemEventEmulatorJSLoadFailed:    CategoryOperational,
-	SystemEventCoreUpdated:             CategoryOperational,
-	SystemEventCoreUpdateFailed:        CategoryOperational,
-	SystemEventBIOSDownloadFailed:      CategoryOperational,
+	SystemEventLoginSuccess:              CategorySecurity,
+	SystemEventLoginFailed:               CategorySecurity,
+	SystemEventLoginLocked:               CategorySecurity,
+	SystemEventLoginBlocked:              CategorySecurity,
+	SystemEventAccountLocked:             CategorySecurity,
+	SystemEventRevokedTokenUsed:          CategorySecurity,
+	SystemEventDisabledAccountToken:      CategorySecurity,
+	SystemEventTokenUserMissing:          CategorySecurity,
+	SystemEventStaleTokenVersion:         CategorySecurity,
+	SystemEventRACircuitBreakerTripped:   CategoryOperational,
+	SystemEventScraperRepeatedErrors:     CategoryOperational,
+	SystemEventROMFileMissing:            CategoryOperational,
+	SystemEventAPICredentialsInvalid:     CategoryOperational,
+	SystemEventEmulatorJSLoadFailed:      CategoryOperational,
+	SystemEventCoreUpdated:               CategoryOperational,
+	SystemEventCoreUpdateFailed:          CategoryOperational,
+	SystemEventBIOSDownloadFailed:        CategoryOperational,
+	SystemEventFederationPeerPaired:      CategoryFederation,
+	SystemEventFederationPeerRevoked:     CategoryFederation,
+	SystemEventFederationHandshakeFailed: CategoryFederation,
+	SystemEventFederationPeerUnreachable: CategoryFederation,
+	SystemEventFederationAuthRejected:    CategoryFederation,
 }
 
 // SystemEvent records an admin-only audit entry for an authentication,

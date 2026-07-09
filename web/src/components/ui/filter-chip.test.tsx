@@ -5,9 +5,7 @@ import { FilterChip } from "./filter-chip";
 
 describe("FilterChip", () => {
   it("renders label text", () => {
-    render(
-      <FilterChip label="Action" isSelected={false} onClick={vi.fn()} />,
-    );
+    render(<FilterChip label="Action" isSelected={false} onClick={vi.fn()} />);
     expect(screen.getByRole("button")).toHaveTextContent("Action");
   });
 
@@ -24,9 +22,7 @@ describe("FilterChip", () => {
   });
 
   it("does not render count when omitted", () => {
-    render(
-      <FilterChip label="All" isSelected={true} onClick={vi.fn()} />,
-    );
+    render(<FilterChip label="All" isSelected={true} onClick={vi.fn()} />);
     expect(screen.getByRole("button")).toHaveTextContent("All");
     expect(screen.getByRole("button").textContent).not.toContain("(");
   });
@@ -44,10 +40,9 @@ describe("FilterChip", () => {
   });
 
   it("applies selected styles when isSelected is true", () => {
-    render(
-      <FilterChip label="Selected" isSelected={true} onClick={vi.fn()} />,
-    );
+    render(<FilterChip label="Selected" isSelected={true} onClick={vi.fn()} />);
     const button = screen.getByRole("button");
+    expect(button).toHaveAttribute("aria-pressed", "true");
     expect(button.className).toContain("text-brand-400");
     expect(button.className).toContain("bg-brand-500/15");
   });
@@ -57,6 +52,7 @@ describe("FilterChip", () => {
       <FilterChip label="Unselected" isSelected={false} onClick={vi.fn()} />,
     );
     const button = screen.getByRole("button");
+    expect(button).toHaveAttribute("aria-pressed", "false");
     expect(button.className).toContain("bg-surface-800");
     expect(button.className).toContain("text-surface-300");
   });

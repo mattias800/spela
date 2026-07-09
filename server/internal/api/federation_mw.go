@@ -63,6 +63,18 @@ func VerifyFederationRequest(database *gorm.DB, selfFingerprint string) gin.Hand
 				"component", "federation", "request_id", reqID,
 				"peer", federation.ShortFingerprint(fp), "path", c.Request.URL.Path,
 				"reason", reason)
+			knownPeer, knownPeerErr := store.GetByFingerprint(fp)
+			if knownPeerErr == nil {
+				recordFederationSystemEvent(database, db.SystemEventFederationAuthRejected, federationFailureReason(reason, fp), c.ClientIP(), c.Request.URL.Path, db.FederationEventMetadata{
+					PeerFingerprint: knownPeer.Fingerprint,
+					PeerName:        knownPeer.Name,
+					PeerBaseURL:     knownPeer.BaseURL,
+					RequestID:       reqID,
+					Direction:       db.ExchangeInbound,
+					Operation:       c.Request.URL.Path,
+					Error:           reason,
+				})
+			}
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": reason})
 		}
 

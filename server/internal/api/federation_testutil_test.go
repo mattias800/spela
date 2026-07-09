@@ -22,6 +22,8 @@ func openAPIFedTestDB(t *testing.T) *gorm.DB {
 	require.NoError(t, err)
 	require.NoError(t, database.AutoMigrate(
 		&db.ServerSetting{},
+		&db.SystemEventCategory{},
+		&db.SystemEvent{},
 		&db.FederationPeer{},
 		&db.FederationInviteNonce{},
 		&db.FederationExchange{},
@@ -39,6 +41,11 @@ func openAPIFedTestDB(t *testing.T) *gorm.DB {
 		&db.ScrapeJob{},
 		&db.ScrapeQueueItem{},
 	))
+	require.NoError(t, database.Create(&db.SystemEventCategory{Code: db.CategorySecurity, Name: "Security"}).Error)
+	require.NoError(t, database.Create(&db.SystemEventCategory{Code: db.CategoryOperational, Name: "Operational"}).Error)
+	require.NoError(t, database.Create(&db.SystemEventCategory{Code: db.CategoryFederation, Name: "Federation"}).Error)
+	db.ResetCategoryIDCacheForTest()
+	db.ResetSystemEventDedupForTest()
 	return database
 }
 

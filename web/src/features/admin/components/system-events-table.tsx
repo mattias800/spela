@@ -1,9 +1,5 @@
 import { ShieldAlert, X } from "lucide-react";
-import {
-  EmptyState,
-  Section,
-  TableRowSkeleton,
-} from "@/components/ui";
+import { EmptyState, Section, TableRowSkeleton } from "@/components/ui";
 import { formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import { SystemEventBadge } from "./system-event-badge";
@@ -155,6 +151,10 @@ export function SystemEventsTable({
 }
 
 function summarizeDetails(e: SystemEvent): string {
+  if (e.eventType.startsWith("federation_")) {
+    const federationDetails = summarizeFederationDetails(e);
+    if (federationDetails) return federationDetails;
+  }
   if (e.reason) return humanizeReason(e.reason);
   if (e.metadata) {
     if (typeof e.metadata.failedCount === "number") {
@@ -177,7 +177,43 @@ function summarizeDetails(e: SystemEvent): string {
   return "";
 }
 
+function summarizeFederationDetails(e: SystemEvent): string {
+  const reason = humanizeReason(e.reason);
+  if (!e.metadata) return reason;
+
+  const peerName =
+    typeof e.metadata.peerName === "string" ? e.metadata.peerName : "";
+  const peerFingerprint =
+    typeof e.metadata.peerFingerprint === "string"
+      ? e.metadata.peerFingerprint
+      : "";
+  const peerBaseUrl =
+    typeof e.metadata.peerBaseUrl === "string" ? e.metadata.peerBaseUrl : "";
+  const requestId =
+    typeof e.metadata.requestId === "string" ? e.metadata.requestId : "";
+
+  const peer =
+    peerName ||
+    (peerFingerprint ? `Peer ${shortFingerprint(peerFingerprint)}` : "");
+  const parts = [
+    reason,
+    peer,
+    peerBaseUrl,
+    requestId ? `Request ${requestId}` : "",
+  ].filter(Boolean);
+
+  if (parts.length > 0) {
+    return parts.join(" · ");
+  }
+  return humanizeReason(e.reason);
+}
+
+function shortFingerprint(fp: string): string {
+  return fp.length > 10 ? fp.slice(0, 10) : fp;
+}
+
 function humanizeReason(reason: string): string {
+  const baseReason = reason.split(":")[0];
   switch (reason) {
     case "bad_password":
       return "Bad password";
@@ -187,6 +223,40 @@ function humanizeReason(reason: string): string {
       return "Disabled account";
     case "pending_approval":
       return "Pending approval";
+    default:
+      break;
+  }
+  switch (baseReason) {
+    case "pair_accepted":
+      return "Pair accepted";
+    case "invalid_invite":
+      return "Invalid invite";
+    case "invite_verification_failed":
+      return "Invite verification failed";
+    case "pair_callback_failed":
+      return "Pair callback failed";
+    case "pair_callback_unreachable":
+      return "Peer unreachable during pairing";
+    case "pair_fingerprint_mismatch":
+      return "Pair fingerprint mismatch";
+    case "peer_revoked":
+      return "Peer revoked";
+    case "diagnostic_unreachable":
+      return "Diagnostic could not reach peer";
+    case "diagnostic_failed":
+      return "Diagnostic failed";
+    case "unknown or inactive peer":
+      return "Unknown or inactive peer";
+    case "missing federation auth headers":
+      return "Missing federation auth headers";
+    case "stale or invalid timestamp":
+      return "Stale or invalid timestamp";
+    case "corrupt peer key":
+      return "Corrupt peer key";
+    case "invalid signature encoding":
+      return "Invalid signature encoding";
+    case "signature verification failed":
+      return "Signature verification failed";
     default:
       return reason;
   }

@@ -53,6 +53,12 @@ func TestPair_StoresPeerActive_OnValidBundleAndNonce(t *testing.T) {
 	database.Model(&db.FederationExchange{}).Where("operation = ? AND status = ?", "pair", db.ExchangeOK).Count(&exchanges)
 	assert.Equal(t, int64(1), exchanges)
 
+	var pairedEvents int64
+	database.Model(&db.SystemEvent{}).
+		Where("event_type = ?", db.SystemEventFederationPeerPaired).
+		Count(&pairedEvents)
+	assert.Equal(t, int64(1), pairedEvents)
+
 	// Nonce is now consumed: a replay must fail.
 	_, err = h.HumaPair(context.Background(), &PairInput{Body: body})
 	assert.Error(t, err)
@@ -74,6 +80,10 @@ func TestPair_RejectsUnknownNonce(t *testing.T) {
 	var rows int64
 	database.Model(&db.FederationExchange{}).Count(&rows)
 	assert.Equal(t, int64(0), rows)
+
+	var events int64
+	database.Model(&db.SystemEvent{}).Count(&events)
+	assert.Equal(t, int64(0), events, "public pair rejections stay slog-only to avoid admin feed floods")
 }
 
 func TestPair_RejectsBadSignature(t *testing.T) {

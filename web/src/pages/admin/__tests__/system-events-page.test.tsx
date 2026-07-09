@@ -14,9 +14,17 @@ vi.mock("@/hooks/use-system-events", () => ({
   useDismissSystemEvent: vi.fn(() => ({ mutate: vi.fn() })),
 }));
 
-import { useSystemEvents } from "@/hooks/use-system-events";
+import {
+  useSystemEvents,
+  useSystemEventCategories,
+  useSystemEventTypes,
+} from "@/hooks/use-system-events";
 
 const mockUseSystemEvents = useSystemEvents as ReturnType<typeof vi.fn>;
+const mockUseSystemEventCategories = useSystemEventCategories as ReturnType<
+  typeof vi.fn
+>;
+const mockUseSystemEventTypes = useSystemEventTypes as ReturnType<typeof vi.fn>;
 
 function renderPage(initialPath = "/admin/system-events") {
   const queryClient = new QueryClient({
@@ -75,6 +83,22 @@ beforeEach(() => {
     data: sampleResponse,
     isLoading: false,
   });
+  mockUseSystemEventCategories.mockReturnValue({
+    data: [
+      { code: "security", name: "Security" },
+      { code: "operational", name: "Operational" },
+      { code: "federation", name: "Federation" },
+    ],
+  });
+  mockUseSystemEventTypes.mockReturnValue({
+    data: {
+      types: [
+        { type: "login_failed", category: "security" },
+        { type: "account_locked", category: "security" },
+        { type: "federation_peer_unreachable", category: "federation" },
+      ],
+    },
+  });
 });
 
 describe("AdminSystemEventsPage", () => {
@@ -83,17 +107,19 @@ describe("AdminSystemEventsPage", () => {
     expect(
       screen.getByRole("heading", { name: /System Events/ }),
     ).toBeInTheDocument();
-    expect(
-      screen.getByText(/Audit log of system events/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Audit log of system events/)).toBeInTheDocument();
   });
 
   it("renders events in the table", () => {
     renderPage();
     expect(screen.getAllByText("alice")).toHaveLength(2);
     expect(screen.getAllByText("10.0.0.1")).toHaveLength(2);
-    expect(screen.getAllByText("Login failed").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText("Account locked").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Login failed").length).toBeGreaterThanOrEqual(
+      1,
+    );
+    expect(screen.getAllByText("Account locked").length).toBeGreaterThanOrEqual(
+      1,
+    );
   });
 
   it("shows total count", () => {
@@ -128,16 +154,136 @@ describe("AdminSystemEventsPage", () => {
 
   it("reads filters from URL query params", () => {
     renderPage(
-      "/admin/system-events?eventType=login_failed&username=alice&ip=10&since=7d",
+      "/admin/system-events?category=federation&eventType=federation_peer_unreachable&username=alice&ip=10&since=7d",
     );
     expect(mockUseSystemEvents).toHaveBeenCalledWith(
       expect.objectContaining({
-        eventType: ["login_failed"],
+        category: "federation",
+        eventType: ["federation_peer_unreachable"],
         username: "alice",
         ip: "10",
         since: "7d",
       }),
     );
+  });
+
+  it("shows federation category filters from the server and applies them", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole("button", { name: "Federation" }));
+
+    await waitFor(() => {
+      expect(mockUseSystemEvents).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          category: "federation",
+        }),
+      );
+    });
+    expect(
+      screen.getByRole("button", { name: "Federation peer unreachable" }),
+    ).toBeInTheDocument();
+  });
+
+  it("clears event type filters when switching category", async () => {
+    const user = userEvent.setup();
+    renderPage("/admin/system-events?eventType=login_failed&category=security");
+
+    await user.click(screen.getByRole("button", { name: "Federation" }));
+
+    await waitFor(() => {
+      expect(mockUseSystemEvents).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          category: "federation",
+          eventType: [],
+        }),
+      );
+    });
+  });
+
+  it("keeps event type filters when re-clicking the selected category", async () => {
+    const user = userEvent.setup();
+    renderPage(
+      "/admin/system-events?category=federation&eventType=federation_peer_unreachable",
+    );
+
+    const eventTypeChip = screen.getByRole("button", {
+      name: "Federation peer unreachable",
+    });
+    expect(eventTypeChip).toHaveAttribute("aria-pressed", "true");
+
+    await user.click(screen.getByRole("button", { name: "Federation" }));
+
+    expect(eventTypeChip).toHaveAttribute("aria-pressed", "true");
+    expect(mockUseSystemEvents).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        category: "federation",
+        eventType: ["federation_peer_unreachable"],
+      }),
+    );
+  });
+
+  it("renders federation events with readable labels and peer details", () => {
+    mockUseSystemEvents.mockReturnValue({
+      data: {
+        data: [
+          {
+            id: 3,
+            createdAt: "2026-04-10T08:50:00Z",
+            categoryCode: "federation",
+            categoryName: "Federation",
+            eventType: "federation_peer_unreachable",
+            reason: "diagnostic_unreachable:abcdef1234",
+            username: "",
+            userId: 0,
+            ip: "",
+            path: "",
+            metadata: {
+              peerName: "Living Room",
+              peerFingerprint: "abcdef1234567890",
+              peerBaseUrl: "https://remote.example",
+              requestId: "req-123",
+            },
+            metadataRaw: "",
+            dismissedAt: null,
+          },
+          {
+            id: 4,
+            createdAt: "2026-04-10T08:45:00Z",
+            categoryCode: "federation",
+            categoryName: "Federation",
+            eventType: "federation_handshake_failed",
+            reason: "diagnostic_failed:fedcba9876",
+            username: "",
+            userId: 0,
+            ip: "",
+            path: "",
+            metadata: {
+              peerName: "Dining Room",
+              peerFingerprint: "fedcba9876543210",
+            },
+            metadataRaw: "",
+            dismissedAt: null,
+          },
+        ],
+        total: 2,
+        page: 1,
+        pageSize: 50,
+      },
+      isLoading: false,
+    });
+
+    renderPage();
+
+    expect(
+      screen.getAllByText("Federation peer unreachable").length,
+    ).toBeGreaterThanOrEqual(1);
+    expect(
+      screen.getByText(
+        "Diagnostic could not reach peer · Living Room · https://remote.example · Request req-123",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Diagnostic failed · Dining Room")).toBeInTheDocument();
   });
 
   it("toggling an event type chip updates the query", async () => {
@@ -170,14 +316,14 @@ describe("AdminSystemEventsPage", () => {
 
   it("renders a Clear button when filters are active", () => {
     renderPage("/admin/system-events?username=alice");
-    expect(
-      screen.getByRole("button", { name: /Clear/ }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Clear/ })).toBeInTheDocument();
   });
 
   it("does not render a Clear button on default view", () => {
     renderPage();
-    expect(screen.queryByRole("button", { name: /^Clear$/ })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /^Clear$/ }),
+    ).not.toBeInTheDocument();
   });
 
   it("renders a distinct error state on API failure", () => {
@@ -190,9 +336,13 @@ describe("AdminSystemEventsPage", () => {
     });
     renderPage();
     expect(screen.getByTestId("system-events-error")).toBeInTheDocument();
-    expect(screen.getByText(/Failed to load system events/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Failed to load system events/),
+    ).toBeInTheDocument();
     expect(screen.getByText(/boom/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Try again/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Try again/ }),
+    ).toBeInTheDocument();
   });
 
   it("hides the event count row when empty", () => {
@@ -228,13 +378,17 @@ describe("AdminSystemEventsPage", () => {
     await user.click(rows[1]);
 
     await waitFor(() => {
-      expect(screen.getByTestId("system-event-pivot-actions")).toBeInTheDocument();
+      expect(
+        screen.getByTestId("system-event-pivot-actions"),
+      ).toBeInTheDocument();
     });
     expect(
       screen.getByRole("button", { name: /View all events from user alice/ }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /View all events from IP 10\.0\.0\.1/ }),
+      screen.getByRole("button", {
+        name: /View all events from IP 10\.0\.0\.1/,
+      }),
     ).toBeInTheDocument();
   });
 
@@ -244,9 +398,7 @@ describe("AdminSystemEventsPage", () => {
 
     const rows = screen.getAllByRole("row");
     await user.click(rows[1]);
-    await waitFor(() =>
-      expect(screen.getByRole("dialog")).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.getByRole("dialog")).toBeInTheDocument());
 
     await user.click(
       screen.getByRole("button", { name: /View all events from user alice/ }),
@@ -272,12 +424,12 @@ describe("AdminSystemEventsPage", () => {
 
     const rows = screen.getAllByRole("row");
     await user.click(rows[1]);
-    await waitFor(() =>
-      expect(screen.getByRole("dialog")).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.getByRole("dialog")).toBeInTheDocument());
 
     await user.click(
-      screen.getByRole("button", { name: /View all events from IP 10\.0\.0\.1/ }),
+      screen.getByRole("button", {
+        name: /View all events from IP 10\.0\.0\.1/,
+      }),
     );
 
     await waitFor(() => {

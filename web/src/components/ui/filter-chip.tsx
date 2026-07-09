@@ -16,6 +16,7 @@ export function FilterChip({
   return (
     <button
       data-comp="FilterChip"
+      aria-pressed={isSelected}
       onClick={onClick}
       className={cn(
         "inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500",

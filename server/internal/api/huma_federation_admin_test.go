@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -17,6 +18,7 @@ import (
 type fakePairClient struct {
 	remote          federation.Identity
 	respFingerprint string
+	err             error
 	called          bool
 	requestID       string
 }
@@ -24,6 +26,9 @@ type fakePairClient struct {
 func (f *fakePairClient) Pair(baseURL, requestID string, _ PairRequestBody) (PairResponseBody, error) {
 	f.called = true
 	f.requestID = requestID
+	if f.err != nil {
+		return PairResponseBody{}, f.err
+	}
 	fp := f.remote.Fingerprint()
 	if f.respFingerprint != "" {
 		fp = f.respFingerprint
@@ -82,6 +87,13 @@ func TestAcceptInvite_PairsAndStoresPeer(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "Bob", stored.Name)
 	assert.Equal(t, db.PeerStatusActive, stored.Status)
+
+	var events []db.SystemEvent
+	require.NoError(t, database.Where("event_type = ?", db.SystemEventFederationPeerPaired).Find(&events).Error)
+	require.Len(t, events, 1)
+	assert.Equal(t, "pair_accepted", events[0].Reason)
+	assert.Contains(t, events[0].Metadata, remoteID.Fingerprint())
+	assert.Contains(t, events[0].Metadata, `"peerName":"Bob"`)
 }
 
 func TestAcceptInvite_RejectsMismatchedFingerprint(t *testing.T) {
@@ -109,6 +121,67 @@ func TestAcceptInvite_RejectsMismatchedFingerprint(t *testing.T) {
 	_, e2 := store.GetByFingerprint(attacker.Fingerprint())
 	assert.Error(t, e1)
 	assert.Error(t, e2)
+
+	var events []db.SystemEvent
+	require.NoError(t, database.Where("event_type = ?", db.SystemEventFederationHandshakeFailed).Find(&events).Error)
+	require.Len(t, events, 1)
+	assert.Contains(t, events[0].Reason, "pair_fingerprint_mismatch")
+	assert.Contains(t, events[0].Reason, federation.ShortFingerprint(remoteID.Fingerprint()))
+	assert.Contains(t, events[0].Metadata, remoteID.Fingerprint())
+}
+
+func TestAcceptInvite_RecordsPeerUnreachableWhenPairCallbackCannotConnect(t *testing.T) {
+	database := openAPIFedTestDB(t)
+	selfID, _ := federation.GenerateIdentity()
+	remoteID, _ := federation.GenerateIdentity()
+	fake := &fakePairClient{remote: remoteID, err: errors.New("connection refused")}
+	h := &FederationHandler{
+		DB: database, Identity: selfID, Peers: federation.PeerStore{DB: database},
+		BaseURL: "https://self", PairClient: fake,
+	}
+	inv := remoteID.NewInvite("https://remote", "n", time.Unix(4_000_000_000, 0))
+
+	_, err := h.HumaAcceptInvite(context.Background(), &AcceptInviteInput{
+		Body: AcceptInviteBody{Invite: federation.EncodeInvite(inv), Name: "Bob"},
+	})
+	assert.Error(t, err)
+
+	var events []db.SystemEvent
+	require.NoError(t, database.Where("event_type = ?", db.SystemEventFederationPeerUnreachable).Find(&events).Error)
+	require.Len(t, events, 1)
+	assert.Contains(t, events[0].Reason, "pair_callback_unreachable")
+	assert.Contains(t, events[0].Reason, federation.ShortFingerprint(remoteID.Fingerprint()))
+	assert.Contains(t, events[0].Metadata, remoteID.Fingerprint())
+	assert.Contains(t, events[0].Metadata, "connection refused")
+}
+
+func TestAcceptInvite_RecordsHandshakeFailureWhenPairCallbackReturnsMalformedResponse(t *testing.T) {
+	database := openAPIFedTestDB(t)
+	selfID, _ := federation.GenerateIdentity()
+	remoteID, _ := federation.GenerateIdentity()
+	fake := &fakePairClient{remote: remoteID, err: errors.New("invalid character 'x' looking for beginning of value")}
+	h := &FederationHandler{
+		DB: database, Identity: selfID, Peers: federation.PeerStore{DB: database},
+		BaseURL: "https://self", PairClient: fake,
+	}
+	inv := remoteID.NewInvite("https://remote", "n", time.Unix(4_000_000_000, 0))
+
+	_, err := h.HumaAcceptInvite(context.Background(), &AcceptInviteInput{
+		Body: AcceptInviteBody{Invite: federation.EncodeInvite(inv), Name: "Bob"},
+	})
+	assert.Error(t, err)
+
+	var handshakeEvents []db.SystemEvent
+	require.NoError(t, database.Where("event_type = ?", db.SystemEventFederationHandshakeFailed).Find(&handshakeEvents).Error)
+	require.Len(t, handshakeEvents, 1)
+	assert.Contains(t, handshakeEvents[0].Reason, "pair_callback_failed")
+	assert.Contains(t, handshakeEvents[0].Metadata, "invalid character")
+
+	var unreachableCount int64
+	database.Model(&db.SystemEvent{}).
+		Where("event_type = ?", db.SystemEventFederationPeerUnreachable).
+		Count(&unreachableCount)
+	assert.Equal(t, int64(0), unreachableCount)
 }
 
 func TestRevokePeer_RemovesIt(t *testing.T) {
@@ -127,6 +200,12 @@ func TestRevokePeer_RemovesIt(t *testing.T) {
 	require.NoError(t, err)
 	_, err = store.GetByFingerprint("fp-x")
 	assert.Error(t, err)
+
+	var events []db.SystemEvent
+	require.NoError(t, database.Where("event_type = ?", db.SystemEventFederationPeerRevoked).Find(&events).Error)
+	require.Len(t, events, 1)
+	assert.Equal(t, "peer_revoked", events[0].Reason)
+	assert.Contains(t, events[0].Metadata, "fp-x")
 }
 
 func TestUpdatePeerPolicy_SetsShareAndConsume(t *testing.T) {
@@ -229,6 +308,49 @@ func TestTestPeer_RecordsErrorWhenUnreachable(t *testing.T) {
 	require.NoError(t, err)
 	assert.False(t, got.Reachable)
 	assert.Equal(t, "connection refused", got.LastError)
+
+	var events []db.SystemEvent
+	require.NoError(t, database.Where("event_type = ?", db.SystemEventFederationPeerUnreachable).Find(&events).Error)
+	require.Len(t, events, 1)
+	assert.Contains(t, events[0].Reason, "diagnostic_unreachable")
+	assert.Contains(t, events[0].Reason, federation.ShortFingerprint(remoteID.Fingerprint()))
+	assert.Contains(t, events[0].Metadata, remoteID.Fingerprint())
+
+	db.ResetSystemEventDedupForTest()
+	_, err = h.HumaTestPeer(context.Background(), &TestPeerInput{Fingerprint: remoteID.Fingerprint()})
+	require.NoError(t, err)
+	var count int64
+	database.Model(&db.SystemEvent{}).
+		Where("event_type = ?", db.SystemEventFederationPeerUnreachable).
+		Count(&count)
+	assert.Equal(t, int64(1), count, "already-unreachable peers should not emit repeated system events")
+}
+
+func TestTestPeer_RecordsHandshakeFailureWhenPeerReturnsMalformedPong(t *testing.T) {
+	database := openAPIFedTestDB(t)
+	selfID, _ := federation.GenerateIdentity()
+	remoteID, _ := federation.GenerateIdentity()
+	store := activePeer(t, database, remoteID, "Bob", "https://remote")
+	h := &FederationHandler{
+		DB: database, Identity: selfID, Peers: store, BaseURL: "https://self",
+		Pinger: fakePinger{res: PingResult{Reachable: false, Error: "bad pong: invalid character 'x'"}},
+	}
+
+	out, err := h.HumaTestPeer(context.Background(), &TestPeerInput{Fingerprint: remoteID.Fingerprint()})
+	require.NoError(t, err)
+	assert.False(t, out.Body.Reachable)
+
+	var handshakeEvents []db.SystemEvent
+	require.NoError(t, database.Where("event_type = ?", db.SystemEventFederationHandshakeFailed).Find(&handshakeEvents).Error)
+	require.Len(t, handshakeEvents, 1)
+	assert.Contains(t, handshakeEvents[0].Reason, "diagnostic_failed")
+	assert.Contains(t, handshakeEvents[0].Metadata, "bad pong")
+
+	var unreachableCount int64
+	database.Model(&db.SystemEvent{}).
+		Where("event_type = ?", db.SystemEventFederationPeerUnreachable).
+		Count(&unreachableCount)
+	assert.Equal(t, int64(0), unreachableCount)
 }
 
 func TestTestPeer_NotFound(t *testing.T) {

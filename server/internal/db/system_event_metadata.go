@@ -98,3 +98,16 @@ type CoreUpdateFailedMetadata struct {
 	URL          string `json:"url"`
 	Error        string `json:"error"`
 }
+
+// FederationEventMetadata is the metadata shape for federation SystemEvents.
+// Fields are optional because pair, revoke, auth, and reachability events know
+// different subsets of peer/request details.
+type FederationEventMetadata struct {
+	PeerFingerprint string `json:"peerFingerprint,omitempty"`
+	PeerName        string `json:"peerName,omitempty"`
+	PeerBaseURL     string `json:"peerBaseUrl,omitempty"`
+	RequestID       string `json:"requestId,omitempty"`
+	Direction       string `json:"direction,omitempty"`
+	Operation       string `json:"operation,omitempty"`
+	Error           string `json:"error,omitempty"`
+}

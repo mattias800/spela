@@ -127,6 +127,36 @@ export const SYSTEM_EVENT_META: Record<SystemEventType, EventMeta> = {
     icon: Download,
     severity: "notice",
   },
+  federation_peer_paired: {
+    label: "Federation peer paired",
+    variant: "success",
+    icon: CheckCircle,
+    severity: "info",
+  },
+  federation_peer_revoked: {
+    label: "Federation peer revoked",
+    variant: "warning",
+    icon: XCircle,
+    severity: "notice",
+  },
+  federation_handshake_failed: {
+    label: "Federation handshake failed",
+    variant: "danger",
+    icon: AlertTriangle,
+    severity: "alert",
+  },
+  federation_peer_unreachable: {
+    label: "Federation peer unreachable",
+    variant: "warning",
+    icon: AlertTriangle,
+    severity: "notice",
+  },
+  federation_auth_rejected: {
+    label: "Federation auth rejected",
+    variant: "danger",
+    icon: ShieldOff,
+    severity: "alert",
+  },
 };
 
 export const UNKNOWN_EVENT_META: EventMeta = {

@@ -15,9 +15,7 @@ test.describe("Admin System Events Page", () => {
     await expect(
       page.getByRole("heading", { name: /System Events/ }),
     ).toBeVisible();
-    await expect(
-      page.getByText(/Audit log of system events/),
-    ).toBeVisible();
+    await expect(page.getByText(/Audit log of system events/)).toBeVisible();
   });
 
   test("renders events from the API", async ({ page }) => {
@@ -87,12 +85,62 @@ test.describe("Admin System Events Page", () => {
 
     await page.goto("/admin/system-events");
 
-    await page
-      .getByRole("button", { name: "Login failed" })
-      .first()
-      .click();
+    await page.getByRole("button", { name: "Login failed" }).first().click();
 
     await expect(page).toHaveURL(/eventType=login_failed/);
+  });
+
+  test("federation category filter updates URL query string", async ({
+    page,
+  }) => {
+    await page.route("**/api/admin/system-events*", (route) => {
+      const path = new URL(route.request().url()).pathname;
+      if (path.endsWith("/categories")) {
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify([
+            { code: "security", name: "Security" },
+            { code: "operational", name: "Operational" },
+            { code: "federation", name: "Federation" },
+          ]),
+        });
+        return;
+      }
+      if (path.endsWith("/types")) {
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            types: [
+              { type: "login_failed", category: "security" },
+              {
+                type: "federation_peer_unreachable",
+                category: "federation",
+              },
+            ],
+          }),
+        });
+        return;
+      }
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ data: [], total: 0, page: 1, pageSize: 50 }),
+      });
+    });
+
+    await page.goto("/admin/system-events");
+    await page.getByRole("button", { name: "Login failed" }).first().click();
+    await expect(page).toHaveURL(/eventType=login_failed/);
+
+    await page.getByRole("button", { name: "Federation", exact: true }).click();
+
+    await expect(page).toHaveURL(/category=federation/);
+    await expect(page).not.toHaveURL(/eventType=/);
+    await expect(
+      page.getByRole("button", { name: "Federation peer unreachable" }),
+    ).toBeVisible();
   });
 
   test("clicking a row opens the detail modal", async ({ page }) => {
