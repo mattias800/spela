@@ -49,8 +49,12 @@ class AndroidApiGraphSmokeTest : AndroidApiSmokeBase() {
                 platforms = game.platforms,
             )
 
-            val searchGame = apiClient.globalSearch("Castlevania", limit = 1).games.results.firstOrNull()
-                ?: throw AssertionError("Expected global search to return the seeded Castlevania game")
+            // Search for a title we know exists: the one just returned by
+            // GET /api/games. The CI seed has no commercial ROMs (nestest.nes
+            // + testdata-public only), so a hard-coded title like
+            // "Castlevania" only resolves against local dev libraries (#1670).
+            val searchGame = apiClient.globalSearch(game.title, limit = 1).games.results.firstOrNull()
+                ?: throw AssertionError("Expected global search for \"${game.title}\" to return the seeded game ${game.id}")
             assertPlatformTargets(
                 owner = "GET /api/search",
                 gameId = searchGame.id,
