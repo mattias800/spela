@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/cn";
-import { CoverImage } from "@/components/cover-image";
+import { CoverFrame } from "@/components/cover-frame";
 
 /**
  * CONTENT component — a cover art card with title and subtitle.
@@ -41,15 +41,19 @@ export function CoverCard({
 }: CoverCardProps) {
   const content = (
     <div data-comp="CoverCard" className={cn(coverHeight ? "flex-shrink-0 inline-block" : width, dimmed && "opacity-50")}>
-      <div
-        className="relative border border-surface-800/50"
-        style={coverHeight ? { height: coverHeight, width: "fit-content" } : { aspectRatio }}
+      <CoverFrame
+        src={imageUrl}
+        alt={title}
+        coverHeight={coverHeight}
+        aspectRatio={coverHeight ? undefined : aspectRatio}
+        className="border border-surface-800/50"
+        imgClassName="rounded-xl"
+        placeholderClassName="rounded-xl bg-surface-800"
       >
-        <CoverImage src={imageUrl} alt={title} className={coverHeight ? "h-full w-auto rounded-xl" : "w-full h-full rounded-xl"} objectFit={coverHeight ? "contain" : "cover"} />
         {overlay && (
           <div className="absolute bottom-2 left-2 z-10">{overlay}</div>
         )}
-      </div>
+      </CoverFrame>
       <div className={cn("mt-2 px-0.5", coverHeight && "w-0 min-w-full overflow-hidden")}>
         <p className="text-sm font-medium text-surface-200 truncate">
           {title}
