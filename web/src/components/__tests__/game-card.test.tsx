@@ -41,6 +41,43 @@ describe("GameCard", () => {
     vi.unstubAllGlobals();
   });
 
+  it("locks the cover height and lets the width follow the image (#1672)", () => {
+    render(
+      <MemoryRouter>
+        <GameCard
+          game={makeGame({ coverUrl: "http://x/cover.jpg" })}
+          coverHeight={192}
+        />
+      </MemoryRouter>,
+    );
+
+    const img = screen.getByRole("img", { name: "Test Game" });
+    expect(img).toHaveClass("h-full", "w-auto");
+    // Regression: the image must be a direct child of the element carrying
+    // the fixed height — an intermediate auto-height wrapper (the old Link)
+    // breaks the percentage-height chain and the cover renders unscaled.
+    expect(img.parentElement).toHaveAttribute("data-comp", "CoverFrame");
+    expect(img.parentElement).toHaveStyle({
+      height: "192px",
+      width: "fit-content",
+    });
+  });
+
+  it("keeps the cover link covering the whole cover area", () => {
+    render(
+      <MemoryRouter>
+        <GameCard
+          game={makeGame({ coverUrl: "http://x/cover.jpg" })}
+          coverHeight={192}
+        />
+      </MemoryRouter>,
+    );
+
+    const link = screen.getByRole("link", { name: "Open Test Game" });
+    expect(link).toHaveAttribute("href", "/games/game-1");
+    expect(link.parentElement).toHaveAttribute("data-comp", "CoverFrame");
+  });
+
   it("does not render platform pills for a single-platform game", () => {
     renderCard();
 

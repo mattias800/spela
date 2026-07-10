@@ -3,6 +3,7 @@ import { Heart, Clock, Loader2 } from "lucide-react";
 import { RatingDisplay } from "@/components/rating-display";
 import { cn } from "@/lib/cn";
 import { ConsoleBadge } from "@/components/console-badge";
+import { CoverFrame } from "@/components/cover-frame";
 import { GamePlatformPills } from "@/components/game-platform-pills";
 import { useAutoScrape } from "@/hooks/use-auto-scrape";
 import { getReleaseYear } from "@/lib/date-utils";
@@ -41,92 +42,66 @@ export function GameCard({
         coverHeight && "flex-shrink-0 inline-block",
       )}
     >
-      <div
-        className="relative rounded-2xl overflow-hidden bg-surface-900 border border-surface-800/50 transition-all duration-300 group-hover:border-surface-700/50 group-hover:shadow-xl group-hover:shadow-black/30 group-hover:-translate-y-1"
-        style={
-          coverHeight
-            ? { height: coverHeight, width: "fit-content" }
-            : undefined
+      <CoverFrame
+        src={game.coverUrl}
+        alt={game.title}
+        coverHeight={coverHeight}
+        placeholderAspectRatio={game.coverAspectRatio ?? aspectRatio ?? 3 / 4}
+        className="rounded-2xl bg-surface-900 border border-surface-800/50 transition-all duration-300 group-hover:border-surface-700/50 group-hover:shadow-xl group-hover:shadow-black/30 group-hover:-translate-y-1"
+        imgClassName="transition-transform duration-500 group-hover:scale-105"
+        placeholderClassName="bg-gradient-to-br from-surface-800 to-surface-900"
+        placeholder={
+          isScraping ? (
+            <Loader2 className="h-6 w-6 animate-spin text-surface-500" />
+          ) : (
+            <span className="text-3xl font-bold text-surface-700">
+              {game.title.charAt(0)}
+            </span>
+          )
         }
       >
+        {/* Hover overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+        {/* Pre-release badge */}
+        {game.isPreRelease && (
+          <div className="absolute top-2.5 left-2.5 z-10">
+            <span className="inline-flex items-center rounded-full bg-warning-500/80 backdrop-blur-sm px-2 py-0.5 text-[10px] font-medium text-white">
+              Pre-release
+            </span>
+          </div>
+        )}
+
+        {/* Console badge */}
+        {game.consoleName && (
+          <div
+            className={cn(
+              "absolute bottom-2.5 left-2.5 transition-opacity duration-300",
+              showConsoleBadge
+                ? "opacity-100"
+                : "opacity-0 group-hover:opacity-100",
+            )}
+          >
+            <ConsoleBadge code={game.consoleId} label={game.consoleName} />
+          </div>
+        )}
+
+        {/* Variant count badge */}
+        {game.variantCount != null && game.variantCount > 1 && (
+          <div className="absolute bottom-2.5 right-2.5 z-10">
+            <span className="inline-flex items-center rounded-full bg-surface-500/80 backdrop-blur-sm px-2 py-0.5 text-[10px] font-medium text-white">
+              {game.variantCount - 1}{" "}
+              {game.variantCount === 2 ? "version" : "versions"}
+            </span>
+          </div>
+        )}
+
+        {/* Cover click target — above the visual overlays, below the buttons */}
         <Link
           to={gamePath}
-          className="block"
+          className="absolute inset-0 z-10"
           aria-label={`Open ${game.title}`}
-        >
-          {game.coverUrl ? (
-            <img
-              src={game.coverUrl}
-              alt={game.title}
-              className={
-                coverHeight
-                  ? "h-full w-auto transition-transform duration-500 group-hover:scale-105"
-                  : "w-full transition-transform duration-500 group-hover:scale-105"
-              }
-              loading="lazy"
-            />
-          ) : (
-            <div
-              className="flex items-center justify-center bg-gradient-to-br from-surface-800 to-surface-900"
-              style={
-                coverHeight
-                  ? {
-                      height: coverHeight,
-                      aspectRatio:
-                        game.coverAspectRatio ?? aspectRatio ?? 3 / 4,
-                    }
-                  : {
-                      aspectRatio:
-                        game.coverAspectRatio ?? aspectRatio ?? 3 / 4,
-                    }
-              }
-            >
-              {isScraping ? (
-                <Loader2 className="h-6 w-6 animate-spin text-surface-500" />
-              ) : (
-                <span className="text-3xl font-bold text-surface-700">
-                  {game.title.charAt(0)}
-                </span>
-              )}
-            </div>
-          )}
-
-          {/* Hover overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-          {/* Pre-release badge */}
-          {game.isPreRelease && (
-            <div className="absolute top-2.5 left-2.5 z-10">
-              <span className="inline-flex items-center rounded-full bg-warning-500/80 backdrop-blur-sm px-2 py-0.5 text-[10px] font-medium text-white">
-                Pre-release
-              </span>
-            </div>
-          )}
-
-          {/* Console badge */}
-          {game.consoleName && (
-            <div
-              className={cn(
-                "absolute bottom-2.5 left-2.5 transition-opacity duration-300",
-                showConsoleBadge
-                  ? "opacity-100"
-                  : "opacity-0 group-hover:opacity-100",
-              )}
-            >
-              <ConsoleBadge code={game.consoleId} label={game.consoleName} />
-            </div>
-          )}
-
-          {/* Variant count badge */}
-          {game.variantCount != null && game.variantCount > 1 && (
-            <div className="absolute bottom-2.5 right-2.5 z-10">
-              <span className="inline-flex items-center rounded-full bg-surface-500/80 backdrop-blur-sm px-2 py-0.5 text-[10px] font-medium text-white">
-                {game.variantCount - 1}{" "}
-                {game.variantCount === 2 ? "version" : "versions"}
-              </span>
-            </div>
-          )}
-        </Link>
+        />
 
         {/* Favorite button */}
         {onToggleFavorite && (
@@ -175,7 +150,7 @@ export function GameCard({
             <Clock className="h-4 w-4 fill-current" />
           </div>
         )}
-      </div>
+      </CoverFrame>
 
       <div
         className={cn(
