@@ -135,6 +135,40 @@ class LiveApiContractSmokeTest {
         }
     }
 
+    /**
+     * Regression smoke for #720 / #1675: the feed's `metadata` field is a
+     * JSON object for events that carry one (e.g. rated_game) and absent for
+     * events that don't (e.g. favorited_game). The generated client once
+     * declared it as String, which made every real feed fetch throw at
+     * deserialization while all fake-repo tests stayed green. Seed one event
+     * of each shape, then fetch the feed through the full generated
+     * deserialization path.
+     */
+    @Test
+    fun activityFeedMetadataDeserializesFromLiveServer() = runTest {
+        val env = liveEnvironmentOrSkip() ?: return@runTest
+        val gameId = env.firstAvailableGameId()
+
+        env.apiClient.rateGame(
+            gameId,
+            com.spela.client.models.CreateOrUpdateRatingRequest(rating = 4),
+        )
+        env.apiClient.addFavorite(gameId)
+        try {
+            val feed = env.apiClient.getActivityFeed(page = 1, pageSize = 50)
+
+            val rated = feed.data.firstOrNull { it.eventType == "rated_game" && it.gameId == gameId }
+            assertNotNull(rated, "seeded rated_game event must appear in the feed")
+            assertEquals(4L, rated.metadata?.rating, "rated_game metadata must carry the rating")
+
+            val favorited = feed.data.firstOrNull { it.eventType == "favorited_game" && it.gameId == gameId }
+            assertNotNull(favorited, "seeded favorited_game event must appear in the feed")
+            assertEquals(null, favorited.metadata, "favorited_game carries no metadata")
+        } finally {
+            runCatching { env.apiClient.removeFavorite(gameId) }
+        }
+    }
+
     private suspend fun liveEnvironmentOrSkip(): LiveEnvironment? {
         if (System.getProperty("spela.liveApiContract") != "true") {
             return null

@@ -21,12 +21,12 @@ import kotlinx.serialization.descriptors.*
 import kotlinx.serialization.encoding.*
 
 /**
+ * 
  *
- *
- * @param consoleId
- * @param consoleName
- * @param gameId
- * @param isPreferred
+ * @param consoleId 
+ * @param consoleName 
+ * @param gameId 
+ * @param isPreferred 
  */
 @Serializable
 
@@ -44,3 +44,4 @@ data class GamePlatformResponse (
 
 
 }
+

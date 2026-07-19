@@ -56,7 +56,7 @@ class SpelaApiClientCollectionResilienceTest {
               "eventType": "started_playing",
               "gameCoverUrl": "", "gameId": "g1",
               "gameTitle": "Super Mario Bros.", "id": "e1",
-              "metadata": "{}", "userId": "u1", "username": "alice"
+              "metadata": {"seconds": 0}, "userId": "u1", "username": "alice"
             }
           ],
           "total": 1, "page": 1, "pageSize": 20

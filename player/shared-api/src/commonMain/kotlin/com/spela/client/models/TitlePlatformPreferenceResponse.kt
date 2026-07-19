@@ -21,10 +21,10 @@ import kotlinx.serialization.descriptors.*
 import kotlinx.serialization.encoding.*
 
 /**
+ * 
  *
- *
- * @param preferredGameId
- * @param titleKey
+ * @param preferredGameId 
+ * @param titleKey 
  * @param dollarSchema A URL to the JSON Schema for this object.
  */
 @Serializable
@@ -42,3 +42,4 @@ data class TitlePlatformPreferenceResponse (
 
 
 }
+

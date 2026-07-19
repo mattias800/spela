@@ -346,6 +346,41 @@
         ],
         "type": "object"
       },
+      "ActivityEventMetadata": {
+        "additionalProperties": false,
+        "properties": {
+          "challengeId": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "challengeName": {
+            "type": "string"
+          },
+          "collectionName": {
+            "type": "string"
+          },
+          "durationMs": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "rating": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "saveName": {
+            "type": "string"
+          },
+          "seconds": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "sharedSessionName": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "ActivityEventResponse": {
         "additionalProperties": false,
         "properties": {
@@ -375,8 +410,7 @@
             "type": "string"
           },
           "metadata": {
-            "additionalProperties": {},
-            "type": "object"
+            "$ref": "#/components/schemas/ActivityEventMetadata"
           },
           "userId": {
             "type": "string"
@@ -395,8 +429,7 @@
           "gameId",
           "gameTitle",
           "gameCoverUrl",
-          "consoleName",
-          "metadata"
+          "consoleName"
         ],
         "type": "object"
       },

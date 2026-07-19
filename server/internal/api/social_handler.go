@@ -52,16 +52,19 @@ func activityGameIDString(gid *uint) string {
 
 func CreateActivityEvent(database *gorm.DB, hub *ws.Hub, userID uint, eventType string, gameID uint, metadata any) {
 	metadataJSON := ""
-	// metadataMap is the broadcast-response shape (matches the persisted JSON
+	// metadataResp is the broadcast-response shape (matches the persisted JSON
 	// after round-tripping through the DB). We marshal once for the DB blob,
-	// then unmarshal back into a map so the in-memory WebSocket broadcast
-	// mirrors what subsequent GETs will return.
-	var metadataMap map[string]interface{}
+	// then unmarshal back into the typed union so the in-memory WebSocket
+	// broadcast mirrors what subsequent GETs will return.
+	var metadataResp *ActivityEventMetadata
 	if metadata != nil {
 		b, err := json.Marshal(metadata)
 		if err == nil {
 			metadataJSON = string(b)
-			_ = json.Unmarshal(b, &metadataMap)
+			var m ActivityEventMetadata
+			if json.Unmarshal(b, &m) == nil {
+				metadataResp = &m
+			}
 		}
 	}
 
@@ -111,7 +114,7 @@ func CreateActivityEvent(database *gorm.DB, hub *ws.Hub, userID uint, eventType 
 		GameTitle:    game.Title,
 		GameCoverURL: coverURL,
 		ConsoleName:  consoleName,
-		Metadata:     metadataMap,
+		Metadata:     metadataResp,
 	}
 
 	if hub != nil {

@@ -5693,6 +5693,20 @@ export interface components {
             /** Format: int64 */
             last: number;
         };
+        ActivityEventMetadata: {
+            /** Format: int64 */
+            challengeId?: number;
+            challengeName?: string;
+            collectionName?: string;
+            /** Format: int64 */
+            durationMs?: number;
+            /** Format: int64 */
+            rating?: number;
+            saveName?: string;
+            /** Format: int64 */
+            seconds?: number;
+            sharedSessionName?: string;
+        };
         ActivityEventResponse: {
             avatarUrl: string;
             consoleName: string;
@@ -5703,9 +5717,7 @@ export interface components {
             gameId: string;
             gameTitle: string;
             id: string;
-            metadata: {
-                [key: string]: unknown;
-            };
+            metadata?: components["schemas"]["ActivityEventMetadata"];
             userId: string;
             username: string;
         };
