@@ -43,7 +43,7 @@ internal class CalibrationInputMask {
 }
 
 /**
- * Polls connected gamepads via SDL2 (JNI) and routes their input
+ * Polls connected gamepads via SDL3 (JNI) and routes their input
  * to the emulation controller through [GamepadPortManager].
  *
  * Runs a coroutine at ~120 Hz on a dedicated dispatcher.
@@ -137,10 +137,10 @@ class DesktopGamepadPoller(
         pollJob = scope.launch(pollDispatcher) {
             initialized = jni.nativeGamepadInit()
             if (!initialized) {
-                println("[GamepadPoller] SDL2 gamepad init failed (SDL2 may not be available)")
+                println("[GamepadPoller] SDL3 gamepad init failed (see [GamepadSDL] log lines)")
                 return@launch
             }
-            println("[GamepadPoller] SDL2 gamepad initialized")
+            println("[GamepadPoller] SDL3 gamepad initialized")
 
             while (isActive) {
                 poll()

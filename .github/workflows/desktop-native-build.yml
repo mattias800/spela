@@ -49,7 +49,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake libvulkan-dev libx11-dev \
-            libwayland-dev wayland-protocols libsdl2-dev pkg-config
+            libwayland-dev wayland-protocols libsdl2-dev libudev-dev pkg-config
 
       - uses: android-actions/setup-android@v4
         with:
