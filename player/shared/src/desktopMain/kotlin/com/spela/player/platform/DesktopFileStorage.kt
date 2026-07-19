@@ -10,14 +10,7 @@ import java.nio.file.StandardCopyOption
 class DesktopFileStorage : FileStorage {
 
     private val baseDir: File by lazy {
-        val home = System.getProperty("user.home")
-        val osName = System.getProperty("os.name").lowercase()
-        val appDir = when {
-            osName.contains("win") -> File(System.getenv("APPDATA") ?: "$home/AppData/Roaming", "Spela")
-            osName.contains("mac") -> File(home, "Library/Application Support/Spela")
-            else -> resolveLinuxDataDir(home)
-        }
-        appDir.apply { mkdirs() }
+        resolveDesktopDataDir().apply { mkdirs() }
     }
 
     override fun getGamesDir(): String = File(baseDir, "games").apply { mkdirs() }.absolutePath
@@ -310,4 +303,21 @@ private fun readFully(input: java.io.InputStream, buf: ByteArray): Boolean {
 internal fun resolveLinuxDataDir(home: String, xdgDataHome: String? = System.getenv("XDG_DATA_HOME")): File {
     val dataDir = xdgDataHome?.takeIf { it.isNotBlank() } ?: "$home/.local/share"
     return File(dataDir, "spela")
+}
+
+/**
+ * The per-OS app data directory. Everything the desktop app persists —
+ * downloaded files (games/cores/saves) and the SQLDelight database — must
+ * live under this directory, never at a path relative to the process cwd:
+ * a packaged app's launch cwd is not stable across launches, so anything
+ * written there silently "resets" (#1676).
+ */
+internal fun resolveDesktopDataDir(
+    home: String = System.getProperty("user.home"),
+    osName: String = System.getProperty("os.name").lowercase(),
+    appData: String? = System.getenv("APPDATA"),
+): File = when {
+    osName.contains("win") -> File(appData ?: "$home/AppData/Roaming", "Spela")
+    osName.contains("mac") -> File(home, "Library/Application Support/Spela")
+    else -> resolveLinuxDataDir(home)
 }
