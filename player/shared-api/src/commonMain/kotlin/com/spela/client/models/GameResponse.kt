@@ -30,71 +30,71 @@ import kotlinx.serialization.descriptors.*
 import kotlinx.serialization.encoding.*
 
 /**
+ * 
  *
- *
- * @param achievementsWarning
- * @param ageRatings
- * @param averageRating
- * @param biosStatus
- * @param consoleId
- * @param consoleName
- * @param consoleSaveStatePolicy
- * @param coreOverride
- * @param coverAspectRatio
- * @param coverUrl
- * @param createdAt
- * @param description
- * @param developer
- * @param discCount
- * @param discs
- * @param fileName
- * @param fileSize
- * @param gameModes
- * @param genre
- * @param groupKey
- * @param heroUrl
- * @param id
- * @param igdbCriticsRating
- * @param igdbUserRating
- * @param igdbUserRatingCount
- * @param isFavorite
- * @param isInPlayLater
- * @param isPreRelease
- * @param languageSupports
- * @param lastPlayedAt
- * @param logoUrl
- * @param partyInfo
- * @param platforms
- * @param playable
- * @param players
- * @param publisher
- * @param ratingCount
- * @param region
- * @param releaseDate
- * @param releaseDates
- * @param revision
- * @param romHacks
- * @param scrapeAttempts
- * @param scraperId
- * @param screenshotUrls
- * @param storyline
- * @param tags
- * @param timeToBeatCompletely
- * @param timeToBeatHastily
- * @param timeToBeatNormally
- * @param title
- * @param totalPlayTime
- * @param totalRating
- * @param totalRatingCount
- * @param updatedAt
- * @param userRating
- * @param variantCount
- * @param variants
- * @param verificationStatus
- * @param verificationTag
- * @param videos
+ * @param achievementsWarning 
+ * @param ageRatings 
+ * @param averageRating 
+ * @param biosStatus 
+ * @param consoleId 
+ * @param consoleName 
+ * @param consoleSaveStatePolicy 
+ * @param coreOverride 
+ * @param coverAspectRatio 
+ * @param coverUrl 
+ * @param createdAt 
+ * @param description 
+ * @param developer 
+ * @param discCount 
+ * @param discs 
+ * @param fileName 
+ * @param fileSize 
+ * @param gameModes 
+ * @param genre 
+ * @param groupKey 
+ * @param heroUrl 
+ * @param id 
+ * @param igdbCriticsRating 
+ * @param igdbUserRating 
+ * @param igdbUserRatingCount 
+ * @param isFavorite 
+ * @param isInPlayLater 
+ * @param isPreRelease 
+ * @param languageSupports 
+ * @param lastPlayedAt 
+ * @param logoUrl 
+ * @param partyInfo 
+ * @param platforms 
+ * @param playable 
+ * @param players 
+ * @param publisher 
+ * @param ratingCount 
+ * @param region 
+ * @param releaseDate 
+ * @param releaseDates 
+ * @param revision 
+ * @param romHacks 
+ * @param scrapeAttempts 
+ * @param scraperId 
+ * @param screenshotUrls 
+ * @param storyline 
+ * @param tags 
+ * @param timeToBeatCompletely 
+ * @param timeToBeatHastily 
+ * @param timeToBeatNormally 
+ * @param title 
+ * @param totalPlayTime 
+ * @param totalRating 
+ * @param totalRatingCount 
+ * @param updatedAt 
+ * @param userRating 
+ * @param variantCount 
+ * @param variants 
+ * @param verificationStatus 
+ * @param verificationTag 
+ * @param videos 
  * @param dollarSchema A URL to the JSON Schema for this object.
- * @param parentGame
+ * @param parentGame 
  */
 @Serializable
 
@@ -231,3 +231,4 @@ data class GameResponse (
 
 
 }
+

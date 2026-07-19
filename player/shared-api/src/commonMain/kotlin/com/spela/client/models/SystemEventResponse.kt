@@ -56,7 +56,7 @@ data class SystemEventResponse (
 
     @SerialName(value = "ip") @Required val ip: kotlin.String,
 
-    @SerialName(value = "metadata") @Required val metadata: kotlin.String,
+    @SerialName(value = "metadata") val metadata: kotlinx.serialization.json.JsonObject? = null,
 
     @SerialName(value = "metadataRaw") @Required val metadataRaw: kotlin.String,
 

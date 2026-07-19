@@ -22,17 +22,17 @@ import kotlinx.serialization.descriptors.*
 import kotlinx.serialization.encoding.*
 
 /**
+ * 
  *
- *
- * @param consoleId
- * @param consoleName
- * @param coverAspectRatio
- * @param coverUrl
- * @param developer
- * @param genre
- * @param id
- * @param platforms
- * @param title
+ * @param consoleId 
+ * @param consoleName 
+ * @param coverAspectRatio 
+ * @param coverUrl 
+ * @param developer 
+ * @param genre 
+ * @param id 
+ * @param platforms 
+ * @param title 
  */
 @Serializable
 
@@ -60,3 +60,4 @@ data class SearchGameResult (
 
 
 }
+

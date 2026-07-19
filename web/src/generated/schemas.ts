@@ -17,6 +17,7 @@ export type ActiveNowItem = Schemas["ActiveNowItem"];
 export type ActiveNowResponse = Schemas["ActiveNowResponse"];
 export type ActivePlayerEntry = Schemas["ActivePlayerEntry"];
 export type ActiveYears = Schemas["ActiveYears"];
+export type ActivityEventMetadata = Schemas["ActivityEventMetadata"];
 export type ActivityEventResponse = Schemas["ActivityEventResponse"];
 export type AddGameToCollectionRequest = Schemas["AddGameToCollectionRequest"];
 export type AdminCreateRomHackResponse = Schemas["AdminCreateRomHackResponse"];

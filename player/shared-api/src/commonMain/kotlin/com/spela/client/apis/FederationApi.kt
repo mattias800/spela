@@ -329,12 +329,15 @@ open class FederationApi : ApiClient {
      * 
      * @param peer  (optional)
      * @param direction  (optional)
+     * @param operation  (optional)
      * @param status  (optional)
+     * @param startedAfter  (optional)
+     * @param startedBefore  (optional)
      * @param limit  (optional)
      * @return ListExchangesOutputBody
      */
     @Suppress("UNCHECKED_CAST")
-    open suspend fun federationListExchanges(peer: kotlin.String? = null, direction: kotlin.String? = null, status: kotlin.String? = null, limit: kotlin.Long? = null): HttpResponse<ListExchangesOutputBody> {
+    open suspend fun federationListExchanges(peer: kotlin.String? = null, direction: kotlin.String? = null, operation: kotlin.String? = null, status: kotlin.String? = null, startedAfter: kotlin.String? = null, startedBefore: kotlin.String? = null, limit: kotlin.Long? = null): HttpResponse<ListExchangesOutputBody> {
 
         val localVariableAuthNames = listOf<String>()
 
@@ -344,7 +347,10 @@ open class FederationApi : ApiClient {
         val localVariableQuery = mutableMapOf<String, List<String>>()
         peer?.apply { localVariableQuery["peer"] = listOf("$peer") }
         direction?.apply { localVariableQuery["direction"] = listOf("$direction") }
+        operation?.apply { localVariableQuery["operation"] = listOf("$operation") }
         status?.apply { localVariableQuery["status"] = listOf("$status") }
+        startedAfter?.apply { localVariableQuery["startedAfter"] = listOf("$startedAfter") }
+        startedBefore?.apply { localVariableQuery["startedBefore"] = listOf("$startedBefore") }
         limit?.apply { localVariableQuery["limit"] = listOf("$limit") }
         val localVariableHeaders = mutableMapOf<String, String>()
 

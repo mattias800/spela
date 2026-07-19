@@ -59,6 +59,14 @@ find "$OUT_DIR/src/commonMain/kotlin/com/spela/client/models" -name "*.kt" \
     s/\bkotlin\.Any\b/kotlinx.serialization.json.JsonElement/g;
   ' {} +
 
+echo "Post-processing: free-form object properties -> JsonObject?..."
+# The kotlin generator emits `kotlin.String` for free-form object properties
+# (type: object, empty additionalProperties) — the server sends a JSON object
+# there, so decoding fails at runtime (#720, #1675 regression). This step is
+# spec-driven and fails the regen if any free-form property is left as String.
+node "$SCRIPT_DIR/fix-freeform-objects.mjs" "$SPEC" \
+  "$OUT_DIR/src/commonMain/kotlin/com/spela/client/models"
+
 echo "Post-processing: decode HTML-entity backticks in apis/*.kt..."
 # openapi-generator 7.21 HTML-encodes Kotlin-reserved-word backticks
 # (&#x60;) in default argument values when a parameter's default matches
@@ -87,13 +95,19 @@ find "$OUT_DIR/src/commonMain/kotlin/com/spela/client/apis" -name "*.kt" \
     }ge;
   ' {} +
 
+echo "Recording source spec hash..."
+# CI's openapi-drift job compares this stamp against the committed spec, so
+# a server API change can't land without regenerating this client (#1675).
+# \r is stripped so the hash is stable across autocrlf settings.
+tr -d '\r' < "$SPEC" | sha256sum | awk '{print $1}' > "$OUT_DIR/openapi-spec.sha256"
+
 echo "Staging new + modified files in git..."
 # Stage everything under the generated tree, including newly-created
 # files. Manual `git add` after a regen is easy to forget — and CI
 # only catches it when a missing model is referenced (which it always
 # is, since the apis/*.kt always imports the new models).
 if command -v git >/dev/null 2>&1 && git -C "$REPO_ROOT" rev-parse --git-dir >/dev/null 2>&1; then
-  git -C "$REPO_ROOT" add "$OUT_DIR/src/commonMain/" >/dev/null 2>&1 || true
+  git -C "$REPO_ROOT" add "$OUT_DIR/src/commonMain/" "$OUT_DIR/openapi-spec.sha256" >/dev/null 2>&1 || true
 fi
 
 echo ""

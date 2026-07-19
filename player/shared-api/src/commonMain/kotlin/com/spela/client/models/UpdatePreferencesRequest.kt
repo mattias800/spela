@@ -22,24 +22,24 @@ import kotlinx.serialization.descriptors.*
 import kotlinx.serialization.encoding.*
 
 /**
- *
+ * 
  *
  * @param dollarSchema A URL to the JSON Schema for this object.
- * @param autoLoadSaveEnabled
- * @param autoSaveEnabled
- * @param autoUpdateCoresEnabled
- * @param consoleKeyMappings
- * @param consoleRenderScales
- * @param consoleSaveStatePolicies
- * @param consoleShaders
- * @param customKeyMapping
- * @param defaultSecondScreenPage
- * @param gameSaveStatePolicies
- * @param preferredRegions
- * @param selectedKeyMapping
- * @param selectedShader
- * @param selectedTheme
- * @param showPerformanceOverlay
+ * @param autoLoadSaveEnabled 
+ * @param autoSaveEnabled 
+ * @param autoUpdateCoresEnabled 
+ * @param consoleKeyMappings 
+ * @param consoleRenderScales 
+ * @param consoleSaveStatePolicies 
+ * @param consoleShaders 
+ * @param customKeyMapping 
+ * @param defaultSecondScreenPage 
+ * @param gameSaveStatePolicies 
+ * @param preferredRegions 
+ * @param selectedKeyMapping 
+ * @param selectedShader 
+ * @param selectedTheme 
+ * @param showPerformanceOverlay 
  */
 @Serializable
 
@@ -82,3 +82,4 @@ data class UpdatePreferencesRequest (
 
 
 }
+

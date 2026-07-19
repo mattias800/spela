@@ -63,7 +63,7 @@ open class UserApi : ApiClient {
     /**
      * Change current user password
      * Verifies the current password, sets a new one, revokes existing refresh tokens and blacklists the current access token.
-     * @param changePasswordRequest
+     * @param changePasswordRequest 
      * @param authorization Bearer access token; used to blacklist the current access token after a successful change. (optional)
      * @return MessageResponse
      */
@@ -105,7 +105,7 @@ open class UserApi : ApiClient {
 
         val localVariableAuthNames = listOf<String>()
 
-        val localVariableBody =
+        val localVariableBody = 
             io.ktor.client.utils.EmptyContent
 
         val localVariableQuery = mutableMapOf<String, List<String>>()
@@ -130,7 +130,7 @@ open class UserApi : ApiClient {
     /**
      * Create a saved search
      * Persists a named search filter for the caller. Up to 50 saved searches per user.
-     * @param savedSearchRequest
+     * @param savedSearchRequest 
      * @return SavedSearchResponse
      */
     @Suppress("UNCHECKED_CAST")
@@ -171,7 +171,7 @@ open class UserApi : ApiClient {
 
         val localVariableAuthNames = listOf<String>()
 
-        val localVariableBody =
+        val localVariableBody = 
             io.ktor.client.utils.EmptyContent
 
         val localVariableQuery = mutableMapOf<String, List<String>>()
@@ -204,7 +204,7 @@ open class UserApi : ApiClient {
 
         val localVariableAuthNames = listOf<String>()
 
-        val localVariableBody =
+        val localVariableBody = 
             io.ktor.client.utils.EmptyContent
 
         val localVariableQuery = mutableMapOf<String, List<String>>()
@@ -237,7 +237,7 @@ open class UserApi : ApiClient {
 
         val localVariableAuthNames = listOf<String>()
 
-        val localVariableBody =
+        val localVariableBody = 
             io.ktor.client.utils.EmptyContent
 
         val localVariableQuery = mutableMapOf<String, List<String>>()
@@ -269,7 +269,7 @@ open class UserApi : ApiClient {
 
         val localVariableAuthNames = listOf<String>()
 
-        val localVariableBody =
+        val localVariableBody = 
             io.ktor.client.utils.EmptyContent
 
         val localVariableQuery = mutableMapOf<String, List<String>>()
@@ -310,7 +310,7 @@ open class UserApi : ApiClient {
 
         val localVariableAuthNames = listOf<String>()
 
-        val localVariableBody =
+        val localVariableBody = 
             io.ktor.client.utils.EmptyContent
 
         val localVariableQuery = mutableMapOf<String, List<String>>()
@@ -352,7 +352,7 @@ open class UserApi : ApiClient {
 
         val localVariableAuthNames = listOf<String>()
 
-        val localVariableBody =
+        val localVariableBody = 
             io.ktor.client.utils.EmptyContent
 
         val localVariableQuery = mutableMapOf<String, List<String>>()
@@ -393,7 +393,7 @@ open class UserApi : ApiClient {
 
         val localVariableAuthNames = listOf<String>()
 
-        val localVariableBody =
+        val localVariableBody = 
             io.ktor.client.utils.EmptyContent
 
         val localVariableQuery = mutableMapOf<String, List<String>>()
@@ -434,7 +434,7 @@ open class UserApi : ApiClient {
 
         val localVariableAuthNames = listOf<String>()
 
-        val localVariableBody =
+        val localVariableBody = 
             io.ktor.client.utils.EmptyContent
 
         val localVariableQuery = mutableMapOf<String, List<String>>()
@@ -466,7 +466,7 @@ open class UserApi : ApiClient {
 
         val localVariableAuthNames = listOf<String>()
 
-        val localVariableBody =
+        val localVariableBody = 
             io.ktor.client.utils.EmptyContent
 
         val localVariableQuery = mutableMapOf<String, List<String>>()
@@ -498,7 +498,7 @@ open class UserApi : ApiClient {
 
         val localVariableAuthNames = listOf<String>()
 
-        val localVariableBody =
+        val localVariableBody = 
             io.ktor.client.utils.EmptyContent
 
         val localVariableQuery = mutableMapOf<String, List<String>>()
@@ -530,7 +530,7 @@ open class UserApi : ApiClient {
 
         val localVariableAuthNames = listOf<String>()
 
-        val localVariableBody =
+        val localVariableBody = 
             io.ktor.client.utils.EmptyContent
 
         val localVariableQuery = mutableMapOf<String, List<String>>()
@@ -562,7 +562,7 @@ open class UserApi : ApiClient {
 
         val localVariableAuthNames = listOf<String>()
 
-        val localVariableBody =
+        val localVariableBody = 
             io.ktor.client.utils.EmptyContent
 
         val localVariableQuery = mutableMapOf<String, List<String>>()
@@ -604,7 +604,7 @@ open class UserApi : ApiClient {
 
         val localVariableAuthNames = listOf<String>()
 
-        val localVariableBody =
+        val localVariableBody = 
             io.ktor.client.utils.EmptyContent
 
         val localVariableQuery = mutableMapOf<String, List<String>>()
@@ -630,7 +630,7 @@ open class UserApi : ApiClient {
      * Set per-game key mapping
      * Upserts the caller&#39;s custom key mapping for a specific game.
      * @param gameId Game ID.
-     * @param updateGameKeyMappingRequest
+     * @param updateGameKeyMappingRequest 
      * @return GameKeyMappingResponse
      */
     @Suppress("UNCHECKED_CAST")
@@ -663,7 +663,7 @@ open class UserApi : ApiClient {
     /**
      * Update current user preferences
      * Partially updates the authenticated user&#39;s emulation preferences. Nil fields are left untouched. Also upserts per-console shader and key-mapping overrides.
-     * @param updatePreferencesRequest
+     * @param updatePreferencesRequest 
      * @return UserPreferencesResponse
      */
     @Suppress("UNCHECKED_CAST")
@@ -696,7 +696,7 @@ open class UserApi : ApiClient {
     /**
      * Update current user profile
      * Updates the authenticated user&#39;s avatar URL.
-     * @param updateProfileRequest
+     * @param updateProfileRequest 
      * @return UserResponse
      */
     @Suppress("UNCHECKED_CAST")

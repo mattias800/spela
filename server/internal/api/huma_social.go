@@ -128,10 +128,13 @@ func (h *SocialHandler) HumaGetActivityFeed(_ context.Context, in *GetActivityFe
 			consoleName = e.Game.Console.Name
 		}
 
-		var metadata map[string]interface{}
+		var metadata *ActivityEventMetadata
 		if e.Metadata != "" {
-			if err := json.Unmarshal([]byte(e.Metadata), &metadata); err != nil {
+			var m ActivityEventMetadata
+			if err := json.Unmarshal([]byte(e.Metadata), &m); err != nil {
 				slog.Warn("failed to parse activity event metadata", "error", err, "eventId", e.ID)
+			} else {
+				metadata = &m
 			}
 		}
 

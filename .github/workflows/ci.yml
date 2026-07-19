@@ -83,6 +83,32 @@ jobs:
           mapfile -t packages < <(go list ./... | grep -vx 'github.com/spela/server/internal/api')
           go test "${packages[@]}"
 
+  openapi-drift:
+    name: OpenAPI spec drift
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
+      - name: Dump spec and diff against committed copy
+        working-directory: server
+        run: |
+          go run ./cmd/dump-openapi /tmp/openapi.json
+          if ! diff -u ../web/src/generated/openapi.json /tmp/openapi.json; then
+            echo "::error::web/src/generated/openapi.json is stale. Run 'npm run openapi:gen' in web/ and 'player/scripts/regen-kotlin-api.sh', then commit the regenerated files."
+            exit 1
+          fi
+      - name: Check Kotlin client was generated from this spec
+        run: |
+          want=$(tr -d '\r' < web/src/generated/openapi.json | sha256sum | awk '{print $1}')
+          have=$(cat player/shared-api/openapi-spec.sha256)
+          if [ "$want" != "$have" ]; then
+            echo "::error::player/shared-api is stale (generated from a different openapi.json). Run player/scripts/regen-kotlin-api.sh and commit."
+            exit 1
+          fi
+
   go-test:
     name: Go tests
     runs-on: ubuntu-latest

@@ -15,6 +15,7 @@
 
 package com.spela.client.models
 
+import com.spela.client.models.ActivityEventMetadata
 
 import kotlinx.serialization.*
 import kotlinx.serialization.descriptors.*
@@ -31,9 +32,9 @@ import kotlinx.serialization.encoding.*
  * @param gameId 
  * @param gameTitle 
  * @param id 
- * @param metadata 
  * @param userId 
  * @param username 
+ * @param metadata 
  */
 @Serializable
 
@@ -55,13 +56,13 @@ data class ActivityEventResponse (
 
     @SerialName(value = "id") @Required val id: kotlin.String,
 
-    @SerialName(value = "metadata") @Required val metadata: kotlin.String,
-
     @SerialName(value = "userId") @Required val userId: kotlin.String,
 
-    @SerialName(value = "username") @Required val username: kotlin.String
+    @SerialName(value = "username") @Required val username: kotlin.String,
 
-) : kotlin.collections.HashMap<String, kotlinx.serialization.json.JsonElement>() {
+    @SerialName(value = "metadata") val metadata: ActivityEventMetadata? = null
+
+) {
 
 
 }
