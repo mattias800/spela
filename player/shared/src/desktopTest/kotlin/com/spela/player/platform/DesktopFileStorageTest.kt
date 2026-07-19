@@ -33,6 +33,30 @@ class DesktopFileStorageTest {
         assertEquals(File("/home/user/.local/share", "spela"), result)
     }
 
+    @Test
+    fun desktopDataDirOnWindowsUsesAppData() {
+        val result = resolveDesktopDataDir("C:/Users/u", "windows 11", "C:/Users/u/AppData/Roaming")
+        assertEquals(File("C:/Users/u/AppData/Roaming", "Spela"), result)
+    }
+
+    @Test
+    fun desktopDataDirOnWindowsFallsBackWhenAppDataUnset() {
+        val result = resolveDesktopDataDir("C:/Users/u", "windows 11", null)
+        assertEquals(File("C:/Users/u/AppData/Roaming", "Spela"), result)
+    }
+
+    @Test
+    fun desktopDataDirOnMacUsesApplicationSupport() {
+        val result = resolveDesktopDataDir("/Users/u", "mac os x", null)
+        assertEquals(File("/Users/u", "Library/Application Support/Spela"), result)
+    }
+
+    @Test
+    fun desktopDataDirOnLinuxUsesXdgDefault() {
+        val result = resolveDesktopDataDir("/home/u", "linux", null)
+        assertEquals(resolveLinuxDataDir("/home/u"), result)
+    }
+
     // sha256File is the building block for #555 Phase 2 cache invalidation —
     // lock the hash format and the error-tolerance contract (null on
     // missing file) so the repository layer can rely on a stable

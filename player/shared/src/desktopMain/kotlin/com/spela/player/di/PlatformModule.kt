@@ -17,6 +17,7 @@ import com.spela.player.libretro.LibretroJni
 import com.spela.player.libretro.desktopDefaultRetroMapping
 import com.spela.player.presentation.secondarydisplay.PlatformSecondaryDisplay
 import com.spela.player.platform.DesktopFileStorage
+import com.spela.player.platform.resolveDesktopDataDir
 import com.spela.player.presentation.viewmodel.EmulationViewModel
 import com.spela.player.presentation.viewmodel.LibretroController
 import com.spela.player.util.FileStorage
@@ -30,7 +31,10 @@ import org.koin.dsl.module
 
 actual fun platformModule(): Module = module {
     single {
-        val dbPath = "spela.db"
+        val dbPath = resolveDatabaseFile(
+            dataDir = resolveDesktopDataDir().apply { mkdirs() },
+            legacyDb = java.io.File("spela.db").absoluteFile,
+        ).absolutePath
         val driver = JdbcSqliteDriver("jdbc:sqlite:$dbPath")
 
         val currentVersion: Long = driver.executeQuery(
@@ -163,6 +167,30 @@ actual fun platformModule(): Module = module {
     single<Map<Int, Int>>(named("platformDefaultMapping")) {
         desktopDefaultRetroMapping
     }
+}
+
+/**
+ * Returns the database file inside [dataDir], migrating a database that an
+ * earlier build left at [legacyDb] (the process cwd) if one exists. The DB
+ * must live in the per-OS data dir — a cwd-relative path is not stable
+ * across launches for a packaged app, so settings appeared to reset (#1676).
+ */
+internal fun resolveDatabaseFile(dataDir: java.io.File, legacyDb: java.io.File): java.io.File {
+    val dbFile = java.io.File(dataDir, "spela.db")
+    if (!dbFile.exists() && legacyDb.exists() && legacyDb != dbFile) {
+        for (suffix in listOf("", "-wal", "-shm")) {
+            val src = java.io.File(legacyDb.path + suffix)
+            if (!src.exists()) continue
+            val dst = java.io.File(dbFile.path + suffix)
+            if (!src.renameTo(dst)) {
+                // Cross-filesystem move: copy then delete.
+                src.copyTo(dst)
+                src.delete()
+            }
+        }
+        println("Spela: migrated database from ${legacyDb.parent} to $dataDir")
+    }
+    return dbFile
 }
 
 /**
