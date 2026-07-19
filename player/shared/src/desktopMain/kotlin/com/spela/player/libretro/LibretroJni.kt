@@ -84,7 +84,7 @@ class LibretroJni {
     external fun nativeGpuIsActive(): Boolean
     external fun nativeGpuSetSourceRect(x: Int, y: Int, w: Int, h: Int)
 
-    /* Gamepad (SDL2) */
+    /* Gamepad (SDL3) */
     external fun nativeGamepadInit(): Boolean
     external fun nativeGamepadShutdown()
     external fun nativeGamepadPoll(): Array<GamepadState>?

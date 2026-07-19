@@ -14,7 +14,11 @@
 #include "gamepad_sdl3.h"
 
 #include <SDL3/SDL.h>
+#include <stdio.h>
 #include <string.h>
+
+#define GP_LOGI(...) do { fprintf(stdout, "[GamepadSDL] "); fprintf(stdout, __VA_ARGS__); fprintf(stdout, "\n"); fflush(stdout); } while(0)
+#define GP_LOGE(...) do { fprintf(stderr, "[GamepadSDL ERROR] "); fprintf(stderr, __VA_ARGS__); fprintf(stderr, "\n"); fflush(stderr); } while(0)
 
 #define MAX_CONTROLLERS 8
 
@@ -73,6 +77,45 @@ static int sdl_button_to_position(SDL_GamepadButton btn) {
     }
 }
 
+/* One-shot enumeration snapshot for debugging "controller not detected"
+ * reports (#1680). A joystick that is not also a gamepad means SDL found the
+ * device but has no button mapping for it; zero joysticks means SDL's device
+ * discovery (udev/inotify/hidraw) never saw it at all — different bugs, and
+ * user reports can't distinguish them without this. Logged at init and on
+ * hot-plug only, never per-frame. */
+static void log_device_snapshot(const char *when) {
+    int num_js = 0;
+    SDL_JoystickID *js = SDL_GetJoysticks(&num_js);
+    int num_gp = 0;
+    SDL_JoystickID *gp = SDL_GetGamepads(&num_gp);
+    GP_LOGI("%s: %d joystick(s), %d gamepad(s)", when, num_js, num_gp);
+    if (js) {
+        for (int i = 0; i < num_js; i++) {
+            char guid[64];
+            SDL_GUIDToString(SDL_GetJoystickGUIDForID(js[i]), guid, sizeof(guid));
+            const char *name = SDL_GetJoystickNameForID(js[i]);
+            GP_LOGI("  id=%d name=\"%s\" vid=0x%04x pid=0x%04x guid=%s gamepad=%s",
+                    (int)js[i],
+                    name ? name : "(null)",
+                    SDL_GetJoystickVendorForID(js[i]),
+                    SDL_GetJoystickProductForID(js[i]),
+                    guid,
+                    SDL_IsGamepad(js[i]) ? "yes" : "NO MAPPING");
+        }
+        SDL_free(js);
+    }
+    if (gp) SDL_free(gp);
+
+    /* Raw HID layer visibility — on Steam Deck the built-in controller is
+     * only reachable through hidraw (SDL's hidapi steamdeck driver), so
+     * "0 raw HID devices" here means enumeration/permissions, not mapping. */
+    SDL_hid_device_info *hid = SDL_hid_enumerate(0, 0);
+    int hid_count = 0;
+    for (SDL_hid_device_info *cur = hid; cur; cur = cur->next) hid_count++;
+    if (hid) SDL_hid_free_enumeration(hid);
+    GP_LOGI("%s: %d raw HID device(s) visible", when, hid_count);
+}
+
 static void open_controllers(void) {
     num_controllers = 0;
     int count = 0;
@@ -84,6 +127,8 @@ static void open_controllers(void) {
                 controllers[num_controllers] = gc;
                 controller_instance_ids[num_controllers] = ids[i];
                 num_controllers++;
+            } else {
+                GP_LOGE("open failed for gamepad id=%d: %s", (int)ids[i], SDL_GetError());
             }
         }
         SDL_free(ids);
@@ -103,12 +148,18 @@ JNIEXPORT jboolean JNICALL Java_com_spela_player_libretro_LibretroJni_nativeGame
 
     /* SDL3: SDL_Init returns true on success. */
     if (!SDL_Init(SDL_INIT_GAMEPAD)) {
+        GP_LOGE("SDL_Init(SDL_INIT_GAMEPAD) failed: %s", SDL_GetError());
         return JNI_FALSE;
     }
+
+    int v = SDL_GetVersion();
+    GP_LOGI("SDL %d.%d.%d initialized",
+            SDL_VERSIONNUM_MAJOR(v), SDL_VERSIONNUM_MINOR(v), SDL_VERSIONNUM_MICRO(v));
 
     memset(controllers, 0, sizeof(controllers));
     memset(controller_instance_ids, 0, sizeof(controller_instance_ids));
     open_controllers();
+    log_device_snapshot("init");
     initialized = 1;
     return JNI_TRUE;
 }
@@ -156,7 +207,11 @@ JNIEXPORT jobjectArray JNICALL Java_com_spela_player_libretro_LibretroJni_native
                         controllers[num_controllers] = gc;
                         controller_instance_ids[num_controllers] = new_id;
                         num_controllers++;
+                        GP_LOGI("connected id=%d name=\"%s\"", (int)new_id, SDL_GetGamepadName(gc));
+                    } else {
+                        GP_LOGE("open failed for added gamepad id=%d: %s", (int)new_id, SDL_GetError());
                     }
+                    log_device_snapshot("hotplug");
                 }
                 break;
             }
@@ -164,6 +219,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_spela_player_libretro_LibretroJni_native
                 SDL_JoystickID instance_id = event.gdevice.which;
                 for (int i = 0; i < num_controllers; i++) {
                     if (controller_instance_ids[i] == instance_id) {
+                        GP_LOGI("disconnected id=%d", (int)instance_id);
                         SDL_CloseGamepad(controllers[i]);
                         for (int j = i; j < num_controllers - 1; j++) {
                             controllers[j] = controllers[j + 1];

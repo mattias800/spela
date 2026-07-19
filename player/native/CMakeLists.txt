@@ -69,8 +69,9 @@ if(NOT ANDROID)
     # gamepad-only library from dragging in X11/Wayland/OpenGL/KMSDRM build deps.
     # SDL3 hard-errors when a *wanted* feature can't be satisfied (cmake/macros),
     # so on Linux we also explicitly disable the non-video optional subsystems we
-    # don't use and whose dev headers aren't installed. Joystick + hot-plug use
-    # SDL's /dev/input fallback (no udev dependency). See #1337.
+    # don't use and whose dev headers aren't installed. See #1337. Joystick
+    # discovery uses udev (dlopen'ed at runtime, see SDL_LIBUDEV below); the
+    # /dev/input fallback remains for systems without libudev.
     if(APPLE OR WIN32)
         set(SDL_VIDEO ON CACHE BOOL "" FORCE)
     else()
@@ -86,7 +87,15 @@ if(NOT ANDROID)
         set(SDL_UNIX_CONSOLE_BUILD ON CACHE BOOL "" FORCE)
         set(SDL_DBUS OFF CACHE BOOL "" FORCE)
         set(SDL_IBUS OFF CACHE BOOL "" FORCE)
-        set(SDL_LIBUDEV OFF CACHE BOOL "" FORCE)
+        # udev support is dlopen'ed by SDL at runtime (libudev.so.1) — build
+        # needs only the headers (libudev-dev, installed in every Linux CI/
+        # release job) and there is no hard runtime dependency: SDL falls back
+        # to the inotify + /dev scanning path when libudev is absent. Without
+        # udev, joystick/hidraw discovery runs on that rarely-exercised
+        # fallback, which broke built-in controller detection on Steam Deck
+        # (its controller is only reachable via SDL's hidapi steamdeck
+        # driver). See #1680.
+        set(SDL_LIBUDEV ON CACHE BOOL "" FORCE)
         set(SDL_HIDAPI_LIBUSB OFF CACHE BOOL "" FORCE)
         set(SDL_LIBUSB OFF CACHE BOOL "" FORCE)
         set(SDL_LIBURING OFF CACHE BOOL "" FORCE)
