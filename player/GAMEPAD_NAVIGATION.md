@@ -186,6 +186,32 @@ pressed direction. This means:
 - Items in a `LazyColumn` are only composed when visible. Buttons in an
   offscreen item won't be found by `moveFocus(Next)`.
 
+### In-game overlay hotkey: Select + Start (#1682)
+
+While a game runs, every gamepad button is routed to the libretro core
+and `GamepadUiNavigator` is suppressed (`isInGame`), so no button reaches
+the app. Desktop has no system back button and Escape needs a keyboard —
+which left Big Picture / Steam Deck players unable to pause, save or exit.
+
+**Holding Select + Start for `OverlayHotkey.HOLD_MILLIS` toggles the
+overlay**, on desktop and Android. Non-obvious properties:
+
+- Detection is **positional** (`GamepadPosition.SELECT` / `START`), so it
+  follows the user's calibrated input layer, not raw key codes.
+- Presses **before** the hold threshold still reach the core, so games
+  that soft-reset on a quick Select+Start tap keep working.
+- Once fired, both buttons are **masked from the core** until released.
+  The mask is driven by a latch that is deliberately independent of
+  "is the overlay open": after the overlay opens, the platform leaves its
+  emulation-consuming state, so the eventual release is never routed and
+  the game would resume with both buttons stuck down.
+- Only *opening* needed solving. Once the overlay is up, `isInGame` goes
+  false, which re-enables `GamepadUiNavigator` — the d-pad navigates the
+  overlay and back synthesizes Escape to close it.
+- The in-game hint (`PauseHintText`) reads `LocalInputMode` and names the
+  combo in gamepad mode. Keep it in sync with the binding, or the feature
+  is invisible to the players who need it most.
+
 ### SpTopBar Auto-Hide
 
 `SpTopBar` checks `LocalInputMode` and returns early in GAMEPAD mode.

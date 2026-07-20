@@ -22,6 +22,7 @@ import com.spela.player.libretro.AndroidLibretroController
 import com.spela.player.libretro.AnalogTriggerRouteTracker
 import com.spela.player.libretro.GamepadButtonResolver
 import com.spela.player.libretro.GamepadPortManager
+import com.spela.player.libretro.OverlayHotkey
 import com.spela.player.presentation.App
 import com.spela.player.presentation.ui.gamepad.ComposeFocusBridge
 import com.spela.player.presentation.ui.gamepad.InputMode
@@ -34,6 +35,8 @@ import com.spela.player.presentation.viewmodel.EmulationViewModel
 import com.spela.player.presentation.viewmodel.KeyMappingViewModel
 import com.spela.player.presentation.viewmodel.LibretroController
 import com.spela.player.presentation.viewmodel.SettingsViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -58,6 +61,11 @@ class MainActivity : ComponentActivity() {
     private val preferencesRepository: PreferencesRepository by inject()
     private val analogTriggerRouteTracker = AnalogTriggerRouteTracker(GamepadPortManager.MAX_PORTS)
     private var analogTriggerAssignments: Map<Int, Int> = emptyMap()
+
+    /** Overlay hotkey state (#1682): Select+Start held together opens the overlay. */
+    private val overlayHotkeyPressed = mutableSetOf<GamepadPosition>()
+    private var overlayHotkeyJob: Job? = null
+    private var overlayHotkeyLatched = false
 
     /** True when gamepad input should go to libretro (game running, overlay not shown). */
     private val isEmulationConsuming: Boolean
@@ -372,6 +380,8 @@ class MainActivity : ComponentActivity() {
             val port = ensureDeviceConnected(deviceId)
             if (port < 0) return super.onKeyDown(keyCode, event)
 
+            if (handleOverlayHotkey(keyCode, deviceId, pressed = true)) return true
+
             val buttonId = gamepadPortManager.mapGamepadKeyToLibretro(port, keyCode, deviceId)
             if (buttonId != null) {
                 androidController?.let {
@@ -493,6 +503,12 @@ class MainActivity : ComponentActivity() {
         if (keyMappingViewModel.state.value.currentMappingButton != null && isGamepadCapturable(keyCode)) {
             return true
         }
+
+        // Overlay hotkey release (#1682) — handled in EVERY state, not just the
+        // emulation-consuming one: firing the hotkey opens the overlay, which
+        // moves this activity out of state 1, so a state-gated release would
+        // leave the combo latched forever and swallow every later Select/Start.
+        if (event != null && handleOverlayHotkey(keyCode, event.deviceId, pressed = false)) return true
 
         // State 1: Game running, overlay hidden — release button in core
         if (isEmulationConsuming && event != null) {
@@ -720,6 +736,48 @@ class MainActivity : ComponentActivity() {
             null
         }
         return GamepadMapping.selectPresentTriggerAxis(primary, fallback)
+    }
+
+    /**
+     * Overlay hotkey (#1682): Select+Start held together opens the in-game
+     * overlay. Without it, a gamepad-only player has no way in — while a game
+     * is running every button is routed to the core, so only a pad that emits
+     * KEYCODE_BACK could reach the overlay.
+     *
+     * Returns true when the event must be swallowed (the combo has fired and
+     * is still held), so the core never sees a stuck Select+Start. Presses
+     * before the hold threshold still reach the core, which keeps quick
+     * simultaneous taps working for games that soft-reset on Select+Start.
+     */
+    private fun handleOverlayHotkey(keyCode: Int, deviceId: Int, pressed: Boolean): Boolean {
+        val position = AndroidGamepadNormalizer.normalize(keyCode)
+        if (position == null || position !in OverlayHotkey.POSITIONS) return false
+
+        if (pressed) overlayHotkeyPressed.add(position) else overlayHotkeyPressed.remove(position)
+
+        if (OverlayHotkey.isCombo(overlayHotkeyPressed)) {
+            if (overlayHotkeyJob == null && !overlayHotkeyLatched) {
+                overlayHotkeyJob = lifecycleScope.launch {
+                    delay(OverlayHotkey.HOLD_MILLIS)
+                    overlayHotkeyLatched = true
+                    overlayHotkeyJob = null
+                    // Release both in the core first: once the overlay is open
+                    // this activity is no longer in the emulation-consuming
+                    // state, so the eventual key-up never reaches the core and
+                    // the game would resume with both buttons stuck down.
+                    val port = gamepadPortManager.getPort(deviceId)
+                    if (port >= 0) {
+                        OverlayHotkey.POSITIONS.forEach { routeMappedPosition(port, deviceId, it, false) }
+                    }
+                    emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
+                }
+            }
+        } else {
+            overlayHotkeyJob?.cancel()
+            overlayHotkeyJob = null
+            if (overlayHotkeyPressed.isEmpty()) overlayHotkeyLatched = false
+        }
+        return overlayHotkeyLatched
     }
 
     private fun routeMappedPosition(port: Int, deviceId: Int, position: GamepadPosition, pressed: Boolean) {
