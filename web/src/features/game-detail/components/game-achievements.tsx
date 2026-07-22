@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { AlertTriangle, Trophy, LayoutGrid, Clock } from "lucide-react";
+import { Trophy, LayoutGrid, Clock } from "lucide-react";
 import {
+  Banner,
   Section,
   Skeleton,
   Badge,
@@ -140,24 +141,14 @@ export function GameAchievements({ gameId, achievementsWarning }: GameAchievemen
       </div>
       <div className="px-5 pb-5">
         {achievementsWarning && (
-          <div
-            className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 mb-6"
-            data-testid="chd-warning-banner"
-          >
-            <AlertTriangle className="h-5 w-5 flex-shrink-0 text-amber-400 mt-0.5" />
-            <p className="text-sm text-amber-200">{achievementsWarning}</p>
-          </div>
+          <Banner className="mb-6" data-testid="chd-warning-banner">
+            {achievementsWarning}
+          </Banner>
         )}
-        <div
-          className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 mb-6"
-          data-testid="browser-warning-banner"
-        >
-          <AlertTriangle className="h-5 w-5 flex-shrink-0 text-amber-400 mt-0.5" />
-          <p className="text-sm text-amber-200">
-            Achievements are available for this game but require the Spela
-            Player app. Browser emulation does not support RetroAchievements.
-          </p>
-        </div>
+        <Banner className="mb-6" data-testid="browser-warning-banner">
+          Achievements are available for this game but require the Spela
+          Player app. Browser emulation does not support RetroAchievements.
+        </Banner>
 
         {viewMode === "grid" ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

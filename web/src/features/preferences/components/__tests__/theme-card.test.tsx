@@ -21,6 +21,35 @@ describe("ThemeCard", () => {
     expect(screen.getByText("Sunset Warm")).toBeInTheDocument();
   });
 
+  it("renders the experimental themes banner", () => {
+    render(
+      <ThemeCard
+        selectedTheme="default-dark"
+        isLoading={false}
+        onThemeChange={vi.fn()}
+      />,
+    );
+
+    const banner = screen.getByTestId("theme-experimental-banner");
+    expect(banner).toBeInTheDocument();
+    expect(banner).toHaveTextContent(/experimental/i);
+    expect(banner).toHaveTextContent(/player app/i);
+  });
+
+  it("renders the experimental themes banner while loading", () => {
+    render(
+      <ThemeCard
+        selectedTheme={undefined}
+        isLoading={true}
+        onThemeChange={vi.fn()}
+      />,
+    );
+
+    expect(
+      screen.getByTestId("theme-experimental-banner"),
+    ).toBeInTheDocument();
+  });
+
   it("renders loading skeleton", () => {
     const { container } = render(
       <ThemeCard
