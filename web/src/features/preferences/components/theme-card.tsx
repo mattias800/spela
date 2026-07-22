@@ -1,5 +1,5 @@
 import { Check } from "lucide-react";
-import { Section, Skeleton } from "@/components/ui";
+import { Banner, Section, Skeleton } from "@/components/ui";
 import { THEME_OPTIONS } from "@/lib/theme-constants";
 
 interface ThemeCardProps {
@@ -19,6 +19,10 @@ export function ThemeCard({
         <h2 className="text-lg font-semibold text-surface-100">Color Theme</h2>
       </div>
       <div className="px-5 pb-5">
+        <Banner className="mb-4" data-testid="theme-experimental-banner">
+          Themes are experimental and not fully supported yet. They only
+          affect the web UI — the Spela Player app is not themed at all.
+        </Banner>
         {isLoading ? (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
             {Array.from({ length: 5 }, (_, i) => (

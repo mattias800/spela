@@ -33,5 +33,6 @@ export { Chip, ChipPicker } from "./chip";
 export type { ChipPickerOption } from "./chip";
 export { SegmentedControl } from "./segmented-control";
 export type { SegmentedControlProps } from "./segmented-control";
+export { Banner } from "./banner";
 export { Divider } from "./divider";
 export { ProgressBar } from "./progress-bar";
