@@ -58,6 +58,12 @@ class DesktopGamepadPoller(
     private val isInGame: () -> Boolean = { false },
     /** Confirm/back convention (#1448): true = Nintendo (EAST confirms). */
     private val confirmIsEast: () -> Boolean = { false },
+    /**
+     * Invoked when the [OverlayHotkey] combo is held in-game (#1682) — the only
+     * gamepad route into the in-game overlay on desktop, where there is no
+     * system back button and Escape needs a keyboard.
+     */
+    private val onOverlayHotkey: () -> Unit = {},
 ) {
     companion object {
         private const val POLL_INTERVAL_MS = 8L // ~120 Hz
@@ -131,6 +137,9 @@ class DesktopGamepadPoller(
     private val routedPortsByController = mutableMapOf<Int, Int>()
     private val calibrationInputMask = CalibrationInputMask()
 
+    /** Per-controller Select+Start hold state for the overlay hotkey (#1682). */
+    private val overlayHotkeyDetectors = mutableMapOf<Int, OverlayHotkeyDetector>()
+
     fun start(scope: CoroutineScope) {
         if (pollJob != null) return
 
@@ -159,6 +168,7 @@ class DesktopGamepadPoller(
         }
         routedPortsByController.clear()
         calibrationInputMask.clear()
+        overlayHotkeyDetectors.clear()
         if (initialized) {
             jni.nativeGamepadShutdown()
             initialized = false
@@ -285,6 +295,21 @@ class DesktopGamepadPoller(
             if (isCalibrationCapturing || isCalibrationMasked) continue
             routedPortsByController[state.controllerId] = port
 
+            // Overlay hotkey (#1682): Select+Start held together opens the
+            // in-game overlay. Tracked even when not in-game so the latch (and
+            // therefore the mask below) stays valid for as long as the buttons
+            // are held — including after the overlay has opened, which is what
+            // keeps the core from resuming to a stuck Select+Start.
+            val hotkey = overlayHotkeyDetectors.getOrPut(state.controllerId) { OverlayHotkeyDetector() }
+            if (hotkey.update(System.currentTimeMillis(), OverlayHotkey.isCombo(rawPressedPositions)) &&
+                isInGame()
+            ) {
+                onOverlayHotkey()
+            }
+            if (hotkey.isLatched) {
+                OverlayHotkey.POSITIONS.forEach { positionPressed[it.ordinal] = false }
+            }
+
             var hasInput = false
 
             // Apply the configurable mapping layer (position -> RetroPad), with
@@ -368,6 +393,7 @@ class DesktopGamepadPoller(
             }
             knownControllers.remove(id)
             calibrationInputMask.clear(id)
+            overlayHotkeyDetectors.remove(id)
             gamepadPortManager.disconnectDevice(id)
         }
     }

@@ -151,6 +151,12 @@ actual fun platformModule(): Module = module {
                 prefsRepo.getConfirmButtonConvention() ==
                     com.spela.player.domain.repository.ConfirmButtonConvention.NINTENDO
             },
+            // Select+Start opens the in-game overlay (#1682). Desktop has no
+            // system back button, so without this a player without a keyboard
+            // (Big Picture / Steam Deck) can't pause, save or exit a game.
+            onOverlayHotkey = {
+                emuViewModel.onIntent(com.spela.player.presentation.intent.EmulationIntent.ToggleOverlay)
+            },
         )
     }
     single {
