@@ -85,6 +85,15 @@ jobs:
         working-directory: player
         run: ./gradlew ${{ matrix.format }}
 
+      # Guard against build-machine paths (Homebrew MoltenVK) leaking into the
+      # shipped app — that made every clean Mac crash at launch. (#1687)
+      - name: Verify macOS bundle is self-contained
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          APP_DIR=$(ls -d player/desktop/build/compose/binaries/main/app/*.app | head -1)
+          player/desktop/verify-macos-bundle.sh "$APP_DIR"
+
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
