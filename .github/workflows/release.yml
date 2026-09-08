@@ -272,6 +272,14 @@ jobs:
           rm "$DMG_PATH"
           hdiutil create -volname "Spela" -srcfolder "$APP_DIR" -ov -format UDZO "$DMG_PATH"
           echo "Repackaged $DMG_PATH"
+      # Guard against build-machine paths (Homebrew MoltenVK) leaking into the
+      # shipped app — that made every clean Mac crash at launch. (#1687)
+      - name: Verify macOS bundle is self-contained
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          APP_DIR=$(ls -d player/desktop/build/compose/binaries/main/app/*.app | head -1)
+          player/desktop/verify-macos-bundle.sh "$APP_DIR"
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:

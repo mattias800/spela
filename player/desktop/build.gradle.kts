@@ -1,4 +1,5 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+import java.io.ByteArrayOutputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Duration
@@ -61,7 +62,59 @@ val buildNativeLibrary by tasks.registering {
             workingDir = nativeDir
             commandLine(cmakePath, "--build", ".", "--parallel")
         }
+
+        if (org.gradle.internal.os.OperatingSystem.current().isMacOsX) {
+            bundleMoltenVk(nativeDir)
+        }
     }
+}
+
+// MoltenVK is not a macOS system library — it comes from the Homebrew
+// molten-vk formula on the build machine, and CMake bakes that absolute path
+// (/opt/homebrew/opt/molten-vk/lib/libMoltenVK.dylib) into
+// libspela-libretro.dylib as a load command. On any Mac without that formula the
+// packaged .app dies at launch with UnsatisfiedLinkError. Vendor the dylib next
+// to ours and repoint the load command at @loader_path so the bundle is
+// self-contained. (#1687)
+fun bundleMoltenVk(nativeDir: File) {
+    val ourLib = File(nativeDir, "libspela-libretro.dylib")
+    if (!ourLib.exists()) return
+
+    val otoolOut = ByteArrayOutputStream()
+    exec {
+        commandLine("otool", "-L", ourLib.absolutePath)
+        standardOutput = otoolOut
+    }
+    val moltenRef = otoolOut.toString()
+        .lineSequence()
+        .map { it.trim().substringBefore(" (compatibility") }
+        .firstOrNull { it.endsWith("libMoltenVK.dylib") }
+    if (moltenRef == null) {
+        // Built against the Vulkan loader fallback instead (see native/CMakeLists.txt).
+        logger.lifecycle("libspela-libretro.dylib does not link MoltenVK; nothing to bundle")
+        return
+    }
+    if (moltenRef.startsWith("@")) return  // already relocated
+
+    val source = File(moltenRef).takeIf { it.exists() }
+        ?: listOf("/opt/homebrew/lib/libMoltenVK.dylib", "/usr/local/lib/libMoltenVK.dylib")
+            .map(::File).firstOrNull { it.exists() }
+        ?: error("libspela-libretro.dylib links $moltenRef but no libMoltenVK.dylib " +
+            "exists on this machine. Install it with: brew install molten-vk")
+
+    val bundled = File(nativeDir, "libMoltenVK.dylib")
+    source.canonicalFile.copyTo(bundled, overwrite = true)
+
+    // install_name_tool invalidates the code signature, and arm64 refuses to load
+    // an unsigned dylib — so re-sign ad hoc after every rewrite.
+    exec { commandLine("install_name_tool", "-id", "@loader_path/libMoltenVK.dylib", bundled.absolutePath) }
+    exec { commandLine("codesign", "--force", "--sign", "-", bundled.absolutePath) }
+    exec {
+        commandLine("install_name_tool", "-change", moltenRef,
+            "@loader_path/libMoltenVK.dylib", ourLib.absolutePath)
+    }
+    exec { commandLine("codesign", "--force", "--sign", "-", ourLib.absolutePath) }
+    logger.lifecycle("Bundled ${source.canonicalPath} as @loader_path/libMoltenVK.dylib")
 }
 
 fun findCmake(): String? {
