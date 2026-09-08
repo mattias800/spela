@@ -27,17 +27,24 @@ for f in "$APP_LIB_DIR"/*; do
   [ -f "$f" ] || continue
   file "$f" | grep -q 'Mach-O' || continue
   checked=$((checked + 1))
-  # A dylib's own install name is the first line of otool -L output; exclude it
-  # so only real dependencies are inspected.
+  # otool -L prints the examined file's own path first, then (for a dylib) its
+  # install name, then the real dependencies. Drop the path line and exclude the
+  # install name so only dependencies are inspected.
   own_id=$(otool -D "$f" | tail -n +2 | tr -d '\t ' || true)
   deps=$(otool -L "$f" | tail -n +2 | sed -e 's/ (compatibility.*//' -e 's/^[[:space:]]*//')
   while IFS= read -r dep; do
     [ -n "$dep" ] || continue
     [ "$dep" = "$own_id" ] && continue
     case "$dep" in
-      /usr/lib/* | /System/*) ;;                       # system, always present
-      @loader_path/* | @rpath/* | @executable_path/*) ;; # bundle-relative
-      /*) offenders="$offenders$(basename "$f") -> $dep"$'\n' ;;
+      /usr/lib/* | /System/*) ;;  # system, always present
+      @loader_path/*)
+        # Bundle-relative is only good if the file is actually in the bundle.
+        if [ ! -f "$(dirname "$f")/${dep#@loader_path/}" ]; then
+          offenders="$offenders$(basename "$f") -> $dep (missing from bundle)"$'\n'
+        fi
+        ;;
+      @rpath/* | @executable_path/*) ;;  # resolved against the app's own layout
+      *) offenders="$offenders$(basename "$f") -> $dep"$'\n' ;;
     esac
   done <<< "$deps"
 done

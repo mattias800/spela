@@ -89,6 +89,7 @@ jobs:
       # shipped app — that made every clean Mac crash at launch. (#1687)
       - name: Verify macOS bundle is self-contained
         if: runner.os == 'macOS'
+        shell: bash
         run: |
           APP_DIR=$(ls -d player/desktop/build/compose/binaries/main/app/*.app | head -1)
           player/desktop/verify-macos-bundle.sh "$APP_DIR"

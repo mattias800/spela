@@ -64,57 +64,81 @@ val buildNativeLibrary by tasks.registering {
         }
 
         if (org.gradle.internal.os.OperatingSystem.current().isMacOsX) {
-            bundleMoltenVk(nativeDir)
+            bundleExternalDylibs(nativeDir)
         }
     }
 }
 
-// MoltenVK is not a macOS system library — it comes from the Homebrew
-// molten-vk formula on the build machine, and CMake bakes that absolute path
-// (/opt/homebrew/opt/molten-vk/lib/libMoltenVK.dylib) into
-// libspela-libretro.dylib as a load command. On any Mac without that formula the
-// packaged .app dies at launch with UnsatisfiedLinkError. Vendor the dylib next
-// to ours and repoint the load command at @loader_path so the bundle is
-// self-contained. (#1687)
-fun bundleMoltenVk(nativeDir: File) {
+// MoltenVK is not a macOS system library — it comes from the Homebrew molten-vk
+// formula on the build machine, and CMake links it by absolute path, so
+// /opt/homebrew/opt/molten-vk/lib/libMoltenVK.dylib ends up as a load command in
+// libspela-libretro.dylib. On any Mac without that formula the packaged .app dies
+// at launch with UnsatisfiedLinkError. Vendor every such dependency next to our
+// dylib and repoint the load command at @loader_path so the bundle is
+// self-contained. Kept generic rather than MoltenVK-specific because the Vulkan
+// loader fallback in native/CMakeLists.txt has the same problem under a different
+// filename. (#1687)
+//
+// Only direct dependencies are relocated. Homebrew's libMoltenVK.dylib links
+// nothing outside /usr/lib and /System today; if that ever changes, the
+// verify-macos-bundle.sh gate in CI fails and this needs to recurse.
+fun bundleExternalDylibs(nativeDir: File) {
     val ourLib = File(nativeDir, "libspela-libretro.dylib")
     if (!ourLib.exists()) return
 
-    val otoolOut = ByteArrayOutputStream()
-    exec {
-        commandLine("otool", "-L", ourLib.absolutePath)
-        standardOutput = otoolOut
+    fun capture(vararg args: String): String {
+        val out = ByteArrayOutputStream()
+        exec {
+            commandLine(*args)
+            standardOutput = out
+        }
+        return out.toString()
     }
-    val moltenRef = otoolOut.toString()
-        .lineSequence()
+
+    // otool -L prints the examined file's path first, then its own install name,
+    // then the actual dependencies — drop the path line and skip the install name.
+    val ownId = capture("otool", "-D", ourLib.absolutePath)
+        .lineSequence().drop(1).map { it.trim() }.firstOrNull { it.isNotEmpty() }
+    val deps = capture("otool", "-L", ourLib.absolutePath)
+        .lineSequence().drop(1)
         .map { it.trim().substringBefore(" (compatibility") }
-        .firstOrNull { it.endsWith("libMoltenVK.dylib") }
-    if (moltenRef == null) {
-        // Built against the Vulkan loader fallback instead (see native/CMakeLists.txt).
-        logger.lifecycle("libspela-libretro.dylib does not link MoltenVK; nothing to bundle")
-        return
-    }
-    if (moltenRef.startsWith("@")) return  // already relocated
+        .filter { it.isNotEmpty() && it != ownId }
+        .toList()
 
-    val source = File(moltenRef).takeIf { it.exists() }
-        ?: listOf("/opt/homebrew/lib/libMoltenVK.dylib", "/usr/local/lib/libMoltenVK.dylib")
-            .map(::File).firstOrNull { it.exists() }
-        ?: error("libspela-libretro.dylib links $moltenRef but no libMoltenVK.dylib " +
-            "exists on this machine. Install it with: brew install molten-vk")
+    // Already-relocated deps must still have their copy in place: cmake will not
+    // relink an up-to-date library, so a cleaned-out build dir would otherwise
+    // ship an app whose @loader_path reference resolves to nothing.
+    deps.filter { it.startsWith("@loader_path/") }
+        .map { it.removePrefix("@loader_path/") }
+        .filterNot { File(nativeDir, it).exists() }
+        .forEach {
+            error("libspela-libretro.dylib expects a bundled $it but it is missing from " +
+                "${nativeDir.absolutePath}. Delete that directory and rebuild.")
+        }
 
-    val bundled = File(nativeDir, "libMoltenVK.dylib")
-    source.canonicalFile.copyTo(bundled, overwrite = true)
+    val external = deps.filter {
+        it.startsWith("/") && !it.startsWith("/usr/lib/") && !it.startsWith("/System/")
+    }.distinct()
+    if (external.isEmpty()) return
 
-    // install_name_tool invalidates the code signature, and arm64 refuses to load
-    // an unsigned dylib — so re-sign ad hoc after every rewrite.
-    exec { commandLine("install_name_tool", "-id", "@loader_path/libMoltenVK.dylib", bundled.absolutePath) }
-    exec { commandLine("codesign", "--force", "--sign", "-", bundled.absolutePath) }
-    exec {
-        commandLine("install_name_tool", "-change", moltenRef,
-            "@loader_path/libMoltenVK.dylib", ourLib.absolutePath)
+    for (dep in external) {
+        val source = File(dep).takeIf { it.exists() }
+            ?: error("libspela-libretro.dylib links $dep, which does not exist on this " +
+                "machine. Install the missing dependency (brew install molten-vk) and rebuild.")
+        val bundled = File(nativeDir, source.name)
+        source.canonicalFile.copyTo(bundled, overwrite = true)
+
+        // install_name_tool invalidates the code signature, and arm64 refuses to
+        // load an unsigned dylib — so re-sign ad hoc after every rewrite.
+        exec { commandLine("install_name_tool", "-id", "@loader_path/${source.name}", bundled.absolutePath) }
+        exec { commandLine("codesign", "--force", "--sign", "-", bundled.absolutePath) }
+        exec {
+            commandLine("install_name_tool", "-change", dep,
+                "@loader_path/${source.name}", ourLib.absolutePath)
+        }
+        logger.lifecycle("Bundled $dep as @loader_path/${source.name}")
     }
     exec { commandLine("codesign", "--force", "--sign", "-", ourLib.absolutePath) }
-    logger.lifecycle("Bundled ${source.canonicalPath} as @loader_path/libMoltenVK.dylib")
 }
 
 fun findCmake(): String? {
