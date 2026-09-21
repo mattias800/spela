@@ -47,17 +47,17 @@ type ConsoleShowcaseResponse struct {
 // in the OpenAPI spec rather than marking it required (which would crash the
 // Kotlin client whenever the server returned null).
 type ConsoleHighlight struct {
-	ID         string        `json:"id"`
-	Name       string        `json:"name"`
-	ColorTheme string        `json:"colorTheme"`
-	IconURL    string        `json:"iconUrl"`
-	LogoURL    string        `json:"logoUrl"`
+	ID         string `json:"id"`
+	Name       string `json:"name"`
+	ColorTheme string `json:"colorTheme"`
+	IconURL    string `json:"iconUrl"`
+	LogoURL    string `json:"logoUrl"`
 	// LogoAspectRatio mirrors ConsoleResponse.logoAspectRatio so the
 	// explore-page quick-jump tiles can also start at the correct logo
 	// size on first render. Nil when the server couldn't determine it.
-	LogoAspectRatio *float64 `json:"logoAspectRatio"`
-	GameCount  int           `json:"gameCount"`
-	TopGame    *GameResponse `json:"topGame,omitempty"`
+	LogoAspectRatio *float64      `json:"logoAspectRatio"`
+	GameCount       int           `json:"gameCount"`
+	TopGame         *GameResponse `json:"topGame,omitempty"`
 }
 
 // ConsoleHighlightsResponse is the API response for the console highlights endpoint.

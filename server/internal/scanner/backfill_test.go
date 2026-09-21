@@ -105,7 +105,7 @@ func TestBackfillGameMetadata_SkipsAlreadyBackfilled(t *testing.T) {
 
 	require.NoError(t, database.Create(&db.Game{
 		Title: "Existing", FileName: "Existing (USA).gba",
-		FilePath: "/roms/gba/Existing (USA).gba",
+		FilePath:  "/roms/gba/Existing (USA).gba",
 		ConsoleID: console.ID, GroupKey: "existing",
 	}).Error)
 	require.NoError(t, database.Create(&db.Game{

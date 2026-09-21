@@ -41,13 +41,13 @@ func createEnrichTestGame(t *testing.T, database *gorm.DB, title string, rating 
 	var console db.Console
 	require.NoError(t, database.Where("abbreviation = ?", "NES").First(&console).Error)
 	game := db.Game{
-		ConsoleID: console.ID,
-		Title:     title,
-		FileName:  title + ".nes",
-		FilePath:  "NES/" + title + ".nes",
+		ConsoleID:         console.ID,
+		Title:             title,
+		FileName:          title + ".nes",
+		FilePath:          "NES/" + title + ".nes",
 		IGDBCriticsRating: rating,
-		ScraperID: fmt.Sprintf("igdb:%d", 1000+int(rating)),
-		IsPrimary: true,
+		ScraperID:         fmt.Sprintf("igdb:%d", 1000+int(rating)),
+		IsPrimary:         true,
 	}
 	require.NoError(t, database.Create(&game).Error)
 	return game
@@ -630,13 +630,13 @@ func TestGetSeriesDetail_ExtendedFields(t *testing.T) {
 	var snesConsole db.Console
 	require.NoError(t, env.database.Where("abbreviation = ?", "SNES").First(&snesConsole).Error)
 	game2 := db.Game{
-		ConsoleID:   snesConsole.ID,
-		Title:       "Zelda2",
-		FileName:    "Zelda2.sfc",
-		FilePath:    "SNES/Zelda2.sfc",
+		ConsoleID:         snesConsole.ID,
+		Title:             "Zelda2",
+		FileName:          "Zelda2.sfc",
+		FilePath:          "SNES/Zelda2.sfc",
 		IGDBCriticsRating: 95,
-		ReleaseDate: "1991-11-21",
-		ScraperID:   "igdb:2000",
+		ReleaseDate:       "1991-11-21",
+		ScraperID:         "igdb:2000",
 	}
 	require.NoError(t, env.database.Create(&game2).Error)
 
@@ -1108,13 +1108,13 @@ func TestGetFranchiseDetail_ExtendedFields(t *testing.T) {
 	var snesConsole db.Console
 	require.NoError(t, env.database.Where("abbreviation = ?", "SNES").First(&snesConsole).Error)
 	game2 := db.Game{
-		ConsoleID:   snesConsole.ID,
-		Title:       "Zelda2",
-		FileName:    "Zelda2.sfc",
-		FilePath:    "SNES/Zelda2.sfc",
+		ConsoleID:         snesConsole.ID,
+		Title:             "Zelda2",
+		FileName:          "Zelda2.sfc",
+		FilePath:          "SNES/Zelda2.sfc",
 		IGDBCriticsRating: 95,
-		ReleaseDate: "1991-11-21",
-		ScraperID:   "igdb:2001",
+		ReleaseDate:       "1991-11-21",
+		ScraperID:         "igdb:2001",
 	}
 	require.NoError(t, env.database.Create(&game2).Error)
 

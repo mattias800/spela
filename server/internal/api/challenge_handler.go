@@ -69,11 +69,11 @@ type ChallengeHandler struct {
 // NewChallengeHandler creates a ChallengeHandler with initialized internals.
 func NewChallengeHandler(database *gorm.DB, store *storage.Storage, hub *ws.Hub) *ChallengeHandler {
 	return &ChallengeHandler{
-		DB:                     database,
-		Storage:                store,
-		Hub:                    hub,
+		DB:                      database,
+		Storage:                 store,
+		Hub:                     hub,
 		AttemptRateLimitSeconds: 30,
-		attemptLastStart:       make(map[string]time.Time),
+		attemptLastStart:        make(map[string]time.Time),
 	}
 }
 

@@ -292,11 +292,11 @@ func TestFindBestMatch(t *testing.T) {
 	}
 
 	tests := []struct {
-		name          string
-		query         string
-		wantRaw       string
-		wantFound     bool
-		wantScoreMin  float64
+		name         string
+		query        string
+		wantRaw      string
+		wantFound    bool
+		wantScoreMin float64
 	}{
 		{
 			name:         "exact match after normalization",

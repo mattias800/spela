@@ -8,11 +8,11 @@ import (
 
 // iNES header constants.
 const (
-	iNESHeaderSize  = 16
-	iNESMagicSize   = 4
-	prgROMBankSize  = 16384 // 16 KB
-	chrROMBankSize  = 8192  // 8 KB
-	trainerSize     = 512
+	iNESHeaderSize = 16
+	iNESMagicSize  = 4
+	prgROMBankSize = 16384 // 16 KB
+	chrROMBankSize = 8192  // 8 KB
+	trainerSize    = 512
 )
 
 // iNES magic bytes: "NES\x1a"

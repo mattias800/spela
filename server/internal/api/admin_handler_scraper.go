@@ -172,4 +172,3 @@ func IGDBSource(database *gorm.DB) string {
 	}
 	return "none"
 }
-

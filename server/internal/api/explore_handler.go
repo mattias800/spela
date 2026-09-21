@@ -92,9 +92,9 @@ type RatingDistribution struct {
 
 // TimelineGame is a lightweight game reference used in timeline entries.
 type TimelineGame struct {
-	ID       string  `json:"id"`
-	Title    string  `json:"title"`
-	CoverURL string  `json:"coverUrl"`
+	ID                string  `json:"id"`
+	Title             string  `json:"title"`
+	CoverURL          string  `json:"coverUrl"`
 	IGDBCriticsRating float64 `json:"igdbCriticsRating"`
 }
 
@@ -120,42 +120,42 @@ type RelatedPublisher struct {
 
 // DeveloperDetailResponse is the API response for a developer detail page.
 type DeveloperDetailResponse struct {
-	Name               string              `json:"name"`
-	GameCount          int                 `json:"gameCount"`
-	AvgRating          float64             `json:"avgRating"`
-	Consoles           []string            `json:"consoles"`
-	Games              []GameResponse      `json:"games"`
-	HeroURL            string              `json:"heroUrl"`
-	TopGames           []GameResponse      `json:"topGames"`
-	PlatformBreakdown  []PlatformCount     `json:"platformBreakdown"`
-	UserStats          *EntityUserStats    `json:"userStats"`
-	Publishers         []NameCount         `json:"publishers"`
-	CompanyInfo        *CompanyInfo        `json:"companyInfo"`
-	ActiveYears        *ActiveYears        `json:"activeYears"`
-	RatingDistribution RatingDistribution  `json:"ratingDistribution"`
-	PrimaryGenre       string              `json:"primaryGenre"`
-	Timeline           []TimelineEntry     `json:"timeline"`
-	RelatedDevelopers  []RelatedDeveloper  `json:"relatedDevelopers"`
+	Name               string             `json:"name"`
+	GameCount          int                `json:"gameCount"`
+	AvgRating          float64            `json:"avgRating"`
+	Consoles           []string           `json:"consoles"`
+	Games              []GameResponse     `json:"games"`
+	HeroURL            string             `json:"heroUrl"`
+	TopGames           []GameResponse     `json:"topGames"`
+	PlatformBreakdown  []PlatformCount    `json:"platformBreakdown"`
+	UserStats          *EntityUserStats   `json:"userStats"`
+	Publishers         []NameCount        `json:"publishers"`
+	CompanyInfo        *CompanyInfo       `json:"companyInfo"`
+	ActiveYears        *ActiveYears       `json:"activeYears"`
+	RatingDistribution RatingDistribution `json:"ratingDistribution"`
+	PrimaryGenre       string             `json:"primaryGenre"`
+	Timeline           []TimelineEntry    `json:"timeline"`
+	RelatedDevelopers  []RelatedDeveloper `json:"relatedDevelopers"`
 }
 
 // PublisherDetailResponse is the API response for a publisher detail page.
 type PublisherDetailResponse struct {
-	Name               string              `json:"name"`
-	GameCount          int                 `json:"gameCount"`
-	AvgRating          float64             `json:"avgRating"`
-	Consoles           []string            `json:"consoles"`
-	Games              []GameResponse      `json:"games"`
-	HeroURL            string              `json:"heroUrl"`
-	TopGames           []GameResponse      `json:"topGames"`
-	PlatformBreakdown  []PlatformCount     `json:"platformBreakdown"`
-	UserStats          *EntityUserStats    `json:"userStats"`
-	Developers         []NameCount         `json:"developers"`
-	CompanyInfo        *CompanyInfo        `json:"companyInfo"`
-	ActiveYears        *ActiveYears        `json:"activeYears"`
-	RatingDistribution RatingDistribution  `json:"ratingDistribution"`
-	PrimaryGenre       string              `json:"primaryGenre"`
-	Timeline           []TimelineEntry     `json:"timeline"`
-	RelatedPublishers  []RelatedPublisher  `json:"relatedPublishers"`
+	Name               string             `json:"name"`
+	GameCount          int                `json:"gameCount"`
+	AvgRating          float64            `json:"avgRating"`
+	Consoles           []string           `json:"consoles"`
+	Games              []GameResponse     `json:"games"`
+	HeroURL            string             `json:"heroUrl"`
+	TopGames           []GameResponse     `json:"topGames"`
+	PlatformBreakdown  []PlatformCount    `json:"platformBreakdown"`
+	UserStats          *EntityUserStats   `json:"userStats"`
+	Developers         []NameCount        `json:"developers"`
+	CompanyInfo        *CompanyInfo       `json:"companyInfo"`
+	ActiveYears        *ActiveYears       `json:"activeYears"`
+	RatingDistribution RatingDistribution `json:"ratingDistribution"`
+	PrimaryGenre       string             `json:"primaryGenre"`
+	Timeline           []TimelineEntry    `json:"timeline"`
+	RelatedPublishers  []RelatedPublisher `json:"relatedPublishers"`
 }
 
 // PlatformCount holds a console name/ID and the number of games on that platform.

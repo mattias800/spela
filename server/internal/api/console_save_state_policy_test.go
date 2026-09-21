@@ -23,10 +23,10 @@ import (
 // destroying a valid override. See #804 phase 4 review feedback.
 func TestNormalizeSaveStateChoice(t *testing.T) {
 	cases := []struct {
-		name      string
-		in        string
+		name       string
+		in         string
 		wantChoice db.ConsoleSaveStateChoice
-		wantClear bool
+		wantClear  bool
 	}{
 		{"enabled", "enabled", db.ConsoleSaveStateChoiceEnabled, false},
 		{"disabled", "disabled", db.ConsoleSaveStateChoiceDisabled, false},

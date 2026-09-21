@@ -11,10 +11,10 @@ import (
 
 func TestBetterVariant(t *testing.T) {
 	tests := []struct {
-		name   string
-		a      db.Game
-		b      db.Game
-		aWins  bool
+		name  string
+		a     db.Game
+		b     db.Game
+		aWins bool
 	}{
 		{
 			name:  "non-prerelease beats prerelease",

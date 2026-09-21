@@ -115,9 +115,9 @@ func TestApplyBPS_InvalidHeader(t *testing.T) {
 	source := []byte("test")
 	// Build a patch with wrong header but valid CRC so header check is reached
 	patch := []byte("XXXX")
-	patch = append(patch, encodeVLQ(4)...)  // source size
-	patch = append(patch, encodeVLQ(4)...)  // target size
-	patch = append(patch, encodeVLQ(0)...)  // metadata size
+	patch = append(patch, encodeVLQ(4)...) // source size
+	patch = append(patch, encodeVLQ(4)...) // target size
+	patch = append(patch, encodeVLQ(0)...) // metadata size
 	patch = append(patch, writeLE32(crc32.ChecksumIEEE(source))...)
 	patch = append(patch, writeLE32(crc32.ChecksumIEEE(source))...)
 	patch = append(patch, writeLE32(crc32.ChecksumIEEE(patch))...)

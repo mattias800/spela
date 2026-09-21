@@ -142,27 +142,27 @@ func RegisterAdminMultipartRoutes(
 	sec := []map[string][]string{{"bearer": {}}}
 
 	huma.Register(api, huma.Operation{
-		OperationID:   "adminUploadBios",
-		Method:        http.MethodPost,
-		Path:          "/api/admin/bios",
-		Summary:       "Upload a BIOS file",
-		Description:   "Admin-only. Stores the uploaded file in the BIOS directory and matches it against the registry by filename, falling back to MD5 lookup. Returns the resulting BIOS file metadata. Max 16 MB.",
-		Tags:          []string{"admin"},
-		Middlewares:   adminMW,
-		Security:      sec,
-		MaxBodyBytes:  maxBiosUploadSize,
+		OperationID:  "adminUploadBios",
+		Method:       http.MethodPost,
+		Path:         "/api/admin/bios",
+		Summary:      "Upload a BIOS file",
+		Description:  "Admin-only. Stores the uploaded file in the BIOS directory and matches it against the registry by filename, falling back to MD5 lookup. Returns the resulting BIOS file metadata. Max 16 MB.",
+		Tags:         []string{"admin"},
+		Middlewares:  adminMW,
+		Security:     sec,
+		MaxBodyBytes: maxBiosUploadSize,
 	}, biosH.HumaUploadBiosFile)
 
 	huma.Register(api, huma.Operation{
-		OperationID:   "adminReplaceROM",
-		Method:        http.MethodPut,
-		Path:          "/api/admin/games/{id}/replace-rom",
-		Summary:       "Replace a game's ROM",
-		Description:   "Admin-only. Replaces the existing ROM file for the given game and re-verifies it against the DAT registry. Accepts a raw ROM file or a .zip containing one.",
-		Tags:          []string{"admin"},
-		Middlewares:   uploadMW,
-		Security:      sec,
-		MaxBodyBytes:  maxROMUploadSize,
+		OperationID:  "adminReplaceROM",
+		Method:       http.MethodPut,
+		Path:         "/api/admin/games/{id}/replace-rom",
+		Summary:      "Replace a game's ROM",
+		Description:  "Admin-only. Replaces the existing ROM file for the given game and re-verifies it against the DAT registry. Accepts a raw ROM file or a .zip containing one.",
+		Tags:         []string{"admin"},
+		Middlewares:  uploadMW,
+		Security:     sec,
+		MaxBodyBytes: maxROMUploadSize,
 	}, gameH.HumaReplaceROM)
 
 	huma.Register(api, huma.Operation{
@@ -179,15 +179,15 @@ func RegisterAdminMultipartRoutes(
 	}, romHackH.HumaCreateRomHack)
 
 	huma.Register(api, huma.Operation{
-		OperationID:   "adminUploadROMs",
-		Method:        http.MethodPost,
-		Path:          "/api/admin/uploads",
-		Summary:       "Stage ROM file uploads",
-		Description:   "Admin-only. Accepts one or more ROM files (or .zip archives containing ROMs) and stages them for review. Each archive is extracted and its individual ROMs are staged separately. Returns one StagedUploadResponse per resulting file.",
-		Tags:          []string{"admin"},
-		Middlewares:   adminMW,
-		Security:      sec,
-		MaxBodyBytes:  maxROMUploadSize,
+		OperationID:  "adminUploadROMs",
+		Method:       http.MethodPost,
+		Path:         "/api/admin/uploads",
+		Summary:      "Stage ROM file uploads",
+		Description:  "Admin-only. Accepts one or more ROM files (or .zip archives containing ROMs) and stages them for review. Each archive is extracted and its individual ROMs are staged separately. Returns one StagedUploadResponse per resulting file.",
+		Tags:         []string{"admin"},
+		Middlewares:  adminMW,
+		Security:     sec,
+		MaxBodyBytes: maxROMUploadSize,
 	}, uploadH.HumaUploadROMs)
 }
 

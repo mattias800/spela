@@ -68,8 +68,8 @@ var decadeLabel = map[string]string{
 // each matched row with parseReleaseDateMonthDay. The point of the
 // SQL prefilter is to reduce rows-transferred, not to be exact.
 func onThisDayLikePatterns(month time.Month, day int) []string {
-	monthName := month.String()       // "March"
-	monthAbbr := monthName            // "March" — full == abbrev for May / June / July / Sept-Dec; Go .String() uses the full name
+	monthName := month.String() // "March"
+	monthAbbr := monthName      // "March" — full == abbrev for May / June / July / Sept-Dec; Go .String() uses the full name
 	if len(monthName) > 3 {
 		monthAbbr = monthName[:3] // "Mar"
 	}
@@ -84,11 +84,11 @@ func onThisDayLikePatterns(month time.Month, day int) []string {
 	}
 
 	patterns := []string{
-		"%-" + monthPad + "-" + dayPad + "%",      // ISO: "1996-05-13" / "1996-05-13T..."
-		monthName + " " + dayStr + ",%",           // "May 13, 1996" / "March 3, 1996"
-		monthName + " " + dayPad + ",%",           // "May 13, 1996" (zero-padded day variant)
-		dayStr + " " + monthName + "%",            // "13 May 1996" / "3 March 1996"
-		dayPad + " " + monthName + "%",            // "03 March 1996"
+		"%-" + monthPad + "-" + dayPad + "%", // ISO: "1996-05-13" / "1996-05-13T..."
+		monthName + " " + dayStr + ",%",      // "May 13, 1996" / "March 3, 1996"
+		monthName + " " + dayPad + ",%",      // "May 13, 1996" (zero-padded day variant)
+		dayStr + " " + monthName + "%",       // "13 May 1996" / "3 March 1996"
+		dayPad + " " + monthName + "%",       // "03 March 1996"
 	}
 	// Add 3-letter abbreviation variants only when distinct from full
 	// name (May / June / July / Sept-Dec are >3 chars but the abbrev

@@ -537,10 +537,10 @@ func (h *ConsoleHandler) humaTopListByRating(ratingColumn, ratingFilter, console
 				top_rated_games.name AS name,
 				MIN(games.cover_url) AS cover_url,
 				consoles.abbreviation AS console_abbr,
-				` + ratingColumn + ` AS rating`).
+				`+ratingColumn+` AS rating`).
 		Joins("JOIN games ON (games.scraper_id = ('igdb:' || CAST(top_rated_games.igdb_game_id AS TEXT)) OR LOWER(games.title) = LOWER(top_rated_games.name)) AND games.console_id = top_rated_games.console_id AND games.deleted_at IS NULL AND games.is_primary = true").
 		Joins("JOIN consoles ON consoles.id = top_rated_games.console_id AND consoles.deleted_at IS NULL").
-		Where("top_rated_games.deleted_at IS NULL AND " + ratingFilter).
+		Where("top_rated_games.deleted_at IS NULL AND "+ratingFilter).
 		Where("consoles.abbreviation NOT IN ?", demoConsoleAbbreviations)
 
 	if consoleParam != "" {
@@ -631,4 +631,3 @@ func (h *ConsoleHandler) humaTopListLongest(consoleParam string) (*TopListLonges
 
 	return &TopListLongestOutput{Body: result}, nil
 }
-
