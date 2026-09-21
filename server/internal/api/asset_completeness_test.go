@@ -21,9 +21,9 @@ import (
 //
 // Lookup paths mirror the production handlers:
 //   - Logo:  static/console-logos/<lowercase abbreviation>.svg
-//            (HumaGetConsoleLogo in huma_downloads.go)
+//     (HumaGetConsoleLogo in huma_downloads.go)
 //   - Icon:  static/console-icons/<lowercase abbreviation>.png
-//            (HumaGetConsoleIcon in huma_downloads.go)
+//     (HumaGetConsoleIcon in huma_downloads.go)
 //
 // Consoles that fall back to a parent platform's asset via
 // consoleLogoFallbacks (e.g. ADEMO → AMIGA, DDEMO → DOS) are exempt from

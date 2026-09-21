@@ -1119,4 +1119,3 @@ func (h *SessionHandler) HumaUpdateSessionCheats(ctx context.Context, in *Update
 		EnabledIndices: indices,
 	}}, nil
 }
-

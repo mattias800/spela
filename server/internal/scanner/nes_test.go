@@ -17,10 +17,10 @@ func makeNESROM(t *testing.T, dir string, name string, prgBanks, chrBanks byte, 
 
 	header := [16]byte{
 		'N', 'E', 'S', 0x1A, // magic
-		prgBanks,             // PRG ROM banks
-		chrBanks,             // CHR ROM banks
-		flags6,               // flags 6
-		flags7,               // flags 7
+		prgBanks, // PRG ROM banks
+		chrBanks, // CHR ROM banks
+		flags6,   // flags 6
+		flags7,   // flags 7
 	}
 	copy(header[8:], padding[:])
 

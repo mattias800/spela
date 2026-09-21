@@ -575,8 +575,8 @@ func pickCanonicalGroupKey(database *gorm.DB, games []db.Game, scraperID string)
 
 	// For each group key, count how many distinct IGDB IDs it contains
 	type purity struct {
-		key          string
-		distinctIDs  int64
+		key         string
+		distinctIDs int64
 	}
 	best := purity{key: groupKeys[0], distinctIDs: 999999}
 

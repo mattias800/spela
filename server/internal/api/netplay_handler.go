@@ -28,6 +28,7 @@ type NetplayHandler struct {
 	Hub        *ws.Hub
 	NetplayHub *ws.NetplayHub
 }
+
 func (h *NetplayHandler) HandleWebSocket(c *gin.Context) {
 	uid := getUserID(c)
 
@@ -59,6 +60,7 @@ func (h *NetplayHandler) HandleWebSocket(c *gin.Context) {
 
 	h.NetplayHub.HandleNetplayWebSocket(c, uint(sessionID), uid)
 }
+
 // generateInviteCode creates a 6-character invite code using safe alphanumeric characters.
 func generateInviteCode() string {
 	code := make([]byte, 6)
@@ -137,12 +139,12 @@ func (h *NetplayHandler) toSessionResponse(s db.NetplaySession) NetplaySessionRe
 		ConsoleID:        consoleID,
 		CoverAspectRatio: coverAspect,
 		Status:           s.Status,
-		EndReason:       s.EndReason,
-		InputDelay:      s.InputDelay,
-		CoreName:        s.CoreName,
-		InviteCode:      s.InviteCode,
-		CreatedAt:       s.CreatedAt,
-		StartedAt:       s.StartedAt,
-		EndedAt:         s.EndedAt,
+		EndReason:        s.EndReason,
+		InputDelay:       s.InputDelay,
+		CoreName:         s.CoreName,
+		InviteCode:       s.InviteCode,
+		CreatedAt:        s.CreatedAt,
+		StartedAt:        s.StartedAt,
+		EndedAt:          s.EndedAt,
 	}
 }

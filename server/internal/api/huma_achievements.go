@@ -57,12 +57,12 @@ type GetGameAchievementsInput struct {
 // HTTP 200) and the pending-queued-fetch response (status="pending", HTTP 202).
 // Fields are omitempty so the empty side of the union doesn't leak.
 type GameAchievementsResponse struct {
-	RAGameID     uint                           `json:"raGameId" doc:"RetroAchievements game ID (0 when unknown)."`
-	Title        string                         `json:"title" doc:"RetroAchievements game title; present when achievement data is available."`
+	RAGameID     uint                            `json:"raGameId" doc:"RetroAchievements game ID (0 when unknown)."`
+	Title        string                          `json:"title" doc:"RetroAchievements game title; present when achievement data is available."`
 	Achievements []retroachievements.Achievement `json:"achievements" doc:"Achievement definitions for this game (empty when unknown)."`
-	TotalCount   int                            `json:"totalCount" doc:"Total number of achievements for this game."`
-	TotalPoints  int                            `json:"totalPoints" doc:"Total number of points available across all achievements."`
-	Status       string                         `json:"status" doc:"Only set to 'pending' when the data is being fetched asynchronously; clients should retry." enum:"pending"`
+	TotalCount   int                             `json:"totalCount" doc:"Total number of achievements for this game."`
+	TotalPoints  int                             `json:"totalPoints" doc:"Total number of points available across all achievements."`
+	Status       string                          `json:"status" doc:"Only set to 'pending' when the data is being fetched asynchronously; clients should retry." enum:"pending"`
 }
 
 // GetGameAchievementsOutput wraps the achievements response.

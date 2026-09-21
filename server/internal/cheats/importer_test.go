@@ -26,7 +26,6 @@ func setupTestDB(t *testing.T) *gorm.DB {
 	return database
 }
 
-
 func TestParseChtContent_basic(t *testing.T) {
 	content := `cheat0_desc = "Infinite Health"
 cheat0_code = "ABCD-1234"
@@ -94,7 +93,7 @@ func TestImportCheatsForGame_SkipsUnverifiedGames(t *testing.T) {
 		ConsoleID:          console.ID,
 		Title:              "Unverified Game",
 		FileName:           "Unverified Game.sfc",
-		FilePath:            "/games/snes/Unverified Game.sfc",
+		FilePath:           "/games/snes/Unverified Game.sfc",
 		VerificationStatus: "unverified",
 	}
 	require.NoError(t, database.Create(&game).Error)
@@ -138,7 +137,7 @@ cheat1_code = "7E14A2:01"`
 		ConsoleID:          console.ID,
 		Title:              "Super Mario World",
 		FileName:           "Super Mario World (USA).sfc",
-		FilePath:            "/games/snes/Super Mario World (USA).sfc",
+		FilePath:           "/games/snes/Super Mario World (USA).sfc",
 		VerificationStatus: "verified",
 	}
 	require.NoError(t, database.Create(&game).Error)
@@ -162,7 +161,7 @@ func TestStartAutoImport_SkipsWhenCheatsExist(t *testing.T) {
 		ConsoleID:          console.ID,
 		Title:              "Test Game",
 		FileName:           "Test Game.sfc",
-		FilePath:            "/games/snes/Test Game.sfc",
+		FilePath:           "/games/snes/Test Game.sfc",
 		VerificationStatus: "verified",
 	}
 	require.NoError(t, database.Create(&game).Error)
@@ -206,7 +205,7 @@ cheat0_code = "AAAA:01"`
 		ConsoleID:          console.ID,
 		Title:              "Test Game",
 		FileName:           "Test Game.sfc",
-		FilePath:            "/games/snes/Test Game.sfc",
+		FilePath:           "/games/snes/Test Game.sfc",
 		VerificationStatus: "verified",
 		Console:            console,
 	}

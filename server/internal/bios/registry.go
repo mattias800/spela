@@ -284,7 +284,7 @@ var repoFolders = map[string]string{
 	"lynx":  "Atari/Lynx",
 	"3do":   "3DO Company/3DO",
 	"pcfx":  "NEC/PC-FX",
-	"ps2":  "Sony/PlayStation 2",
+	"ps2":   "Sony/PlayStation 2",
 	// nds — repo uses different filenames (nds7.bin/nds9.bin vs bios7.bin/bios9.bin)
 	// cv — uses OverrideURL (repo has BIOS.col, cores expect colecovision.rom)
 	// neogeo, neocd, amiga, cdi — use OverrideURL

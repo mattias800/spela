@@ -39,9 +39,9 @@ func TestExtractRegion(t *testing.T) {
 
 func TestHasNonPreferredRegion(t *testing.T) {
 	tests := []struct {
-		name string
+		name  string
 		input string
-		want bool
+		want  bool
 	}{
 		{"USA only", "Castlevania (USA)", false},
 		{"World only", "Tetris (World)", false},

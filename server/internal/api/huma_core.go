@@ -130,12 +130,12 @@ func (h *CoreHandler) HumaListCores(_ context.Context, _ *ListCoresInput) (*List
 //
 // Resolution order:
 //
-//   1. If the request carries a PlatformArch and a CorePlatformBinary row
-//      exists for (core, platform), return that row's fingerprint. This is
-//      the path the player takes for staleness checks (#1190).
-//   2. Otherwise, fall back to the Core row's own Sha256 / etc. — the
-//      legacy single-binary view kept for admin tooling and any caller
-//      that doesn't know about per-platform rows.
+//  1. If the request carries a PlatformArch and a CorePlatformBinary row
+//     exists for (core, platform), return that row's fingerprint. This is
+//     the path the player takes for staleness checks (#1190).
+//  2. Otherwise, fall back to the Core row's own Sha256 / etc. — the
+//     legacy single-binary view kept for admin tooling and any caller
+//     that doesn't know about per-platform rows.
 //
 // Fallback is intentional: a request that names a platform we haven't
 // polled yet should still get *something* useful back (typically empty),

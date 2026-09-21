@@ -231,7 +231,7 @@ func TestPrune_KeepsUnionOfBoth(t *testing.T) {
 	h, coreDir, _ := buildCoreHistoryEnv(t)
 
 	now := time.Now()
-	old := now.Add(-200 * 24 * time.Hour) // older than the 90-day cutoff
+	old := now.Add(-200 * 24 * time.Hour)  // older than the 90-day cutoff
 	fresh := now.Add(-10 * 24 * time.Hour) // newer than the cutoff
 
 	// Layout, newest first:

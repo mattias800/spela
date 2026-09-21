@@ -62,7 +62,7 @@ func TestSteamGridDBClient_SearchGame_NoResults(t *testing.T) {
 
 func TestSteamGridDBClient_SearchGame_ReleaseYearDisambiguation(t *testing.T) {
 	// Simulates "The Witness" scenario: modern PC game (2016) vs retro Amiga game (1983)
-	releaseDate1983 := int64(410227200) // 1983-01-01
+	releaseDate1983 := int64(410227200)  // 1983-01-01
 	releaseDate2016 := int64(1453795200) // 2016-01-26
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -355,9 +355,9 @@ func TestSteamGridDBClient_GetBestArtwork_PartialFailure(t *testing.T) {
 
 	assert.Equal(t, 99, artwork.SteamGridDBID)
 	assert.Equal(t, "https://cdn.steamgriddb.com/hero/tetris.png", artwork.HeroURL)
-	assert.Empty(t, artwork.GridURL)  // empty array
-	assert.Empty(t, artwork.LogoURL)  // 404 error
-	assert.Empty(t, artwork.IconURL)  // 500 error
+	assert.Empty(t, artwork.GridURL) // empty array
+	assert.Empty(t, artwork.LogoURL) // 404 error
+	assert.Empty(t, artwork.IconURL) // 500 error
 }
 
 func TestSteamGridDBClient_RateLimited(t *testing.T) {

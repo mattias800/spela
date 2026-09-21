@@ -17,17 +17,17 @@ import (
 
 // Scraper fetches game metadata from IGDB and box art from LibRetro Thumbnails (preferred) with IGDB fallback.
 type Scraper struct {
-	DB               *gorm.DB
-	Storage          *storage.Storage
-	HTTPClient       *http.Client
-	IGDBClient       *igdb.Client
+	DB                *gorm.DB
+	Storage           *storage.Storage
+	HTTPClient        *http.Client
+	IGDBClient        *igdb.Client
 	SteamGridDBClient *SteamGridDBClient
 	PouetClient       *pouet.Client
 	RAClient          *retroachievements.RAClient
 	RAAPIKey          string
-	DATCache         *DATCache
-	GameDirs         []string
-	cache            *nameCache
+	DATCache          *DATCache
+	GameDirs          []string
+	cache             *nameCache
 
 	// Persistent scrape queue (replaces in-memory lock)
 	Queue *ScrapeQueue
@@ -41,8 +41,8 @@ type Scraper struct {
 	// scrape to avoid hammering a broken/blocked endpoint for thousands of games.
 	// These are non-persisted struct fields that reset on server restart or new
 	// Scraper instance, so the circuit automatically re-closes on the next scrape.
-	raCircuitOpen          bool
-	raConsecutiveFailures  int
+	raCircuitOpen         bool
+	raConsecutiveFailures int
 }
 
 // NewScraper creates a new metadata scraper instance.
@@ -176,35 +176,35 @@ var AbbreviationToLibRetro = map[string]string{
 	"PCE":    "NEC - PC Engine - TurboGrafx 16",
 	"PCECD":  "NEC - PC Engine CD - TurboGrafx-CD",
 	"A26":    "Atari - 2600",
-	"GG":    "Sega - Game Gear",
-	"SCD":   "Sega - Mega CD - Sega CD",
-	"32X":   "Sega - 32X",
-	"DC":    "Sega - Dreamcast",
-	"VB":    "Nintendo - Virtual Boy",
-	"3DS":   "Nintendo - Nintendo 3DS",
-	"GC":    "Nintendo - GameCube",
-	"A52":   "Atari - 5200",
-	"A78":   "Atari - 7800",
-	"LYNX":  "Atari - Lynx",
-	"JAG":   "Atari - Jaguar",
-	"NGP":   "SNK - Neo Geo Pocket",
-	"WS":    "Bandai - WonderSwan",
-	"PCFX":  "NEC - PC-FX",
-	"CV":    "Coleco - ColecoVision",
-	"PKMN":  "Nintendo - Pokemon Mini",
-	"PS2":   "Sony - PlayStation 2",
-	"C64":   "Commodore - 64",
-	"DOS":   "DOS",
-	"DDEMO": "DOS",
-	"AMIGA": "Commodore - Amiga",
-	"ACD32": "Commodore - Amiga CD32",
-	"ADEMO": "Commodore - Amiga",
-	"MSX1":  "Microsoft - MSX",
-	"MSX2":  "Microsoft - MSX2",
-	"PS3":   "Sony - PlayStation 3",
-	"XBOX":  "Microsoft - Xbox",
-	"WII":   "Nintendo - Wii",
-	"ZXS":   "Sinclair - ZX Spectrum",
-	"CPC":   "Amstrad - CPC",
-	"X68K":  "Sharp - X68000",
+	"GG":     "Sega - Game Gear",
+	"SCD":    "Sega - Mega CD - Sega CD",
+	"32X":    "Sega - 32X",
+	"DC":     "Sega - Dreamcast",
+	"VB":     "Nintendo - Virtual Boy",
+	"3DS":    "Nintendo - Nintendo 3DS",
+	"GC":     "Nintendo - GameCube",
+	"A52":    "Atari - 5200",
+	"A78":    "Atari - 7800",
+	"LYNX":   "Atari - Lynx",
+	"JAG":    "Atari - Jaguar",
+	"NGP":    "SNK - Neo Geo Pocket",
+	"WS":     "Bandai - WonderSwan",
+	"PCFX":   "NEC - PC-FX",
+	"CV":     "Coleco - ColecoVision",
+	"PKMN":   "Nintendo - Pokemon Mini",
+	"PS2":    "Sony - PlayStation 2",
+	"C64":    "Commodore - 64",
+	"DOS":    "DOS",
+	"DDEMO":  "DOS",
+	"AMIGA":  "Commodore - Amiga",
+	"ACD32":  "Commodore - Amiga CD32",
+	"ADEMO":  "Commodore - Amiga",
+	"MSX1":   "Microsoft - MSX",
+	"MSX2":   "Microsoft - MSX2",
+	"PS3":    "Sony - PlayStation 3",
+	"XBOX":   "Microsoft - Xbox",
+	"WII":    "Nintendo - Wii",
+	"ZXS":    "Sinclair - ZX Spectrum",
+	"CPC":    "Amstrad - CPC",
+	"X68K":   "Sharp - X68000",
 }

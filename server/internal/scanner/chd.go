@@ -8,10 +8,10 @@ import (
 
 // CHD file format constants.
 const (
-	chdV5HeaderSize    = 124
-	chdV5MetaOffset    = 104 // offset of the metadata offset field in a v5 header
-	chdMetaEntrySize   = 16  // 4-byte tag + 4-byte flags/length + 8-byte next
-	chdMetaNone        = 0   // sentinel: no more metadata entries
+	chdV5HeaderSize  = 124
+	chdV5MetaOffset  = 104 // offset of the metadata offset field in a v5 header
+	chdMetaEntrySize = 16  // 4-byte tag + 4-byte flags/length + 8-byte next
+	chdMetaNone      = 0   // sentinel: no more metadata entries
 )
 
 // CD metadata tags that indicate the CHD was created with createcd.

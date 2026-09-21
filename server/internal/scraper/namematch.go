@@ -347,4 +347,3 @@ func findBestMatch(normalizedQuery string, entries []nameEntry, threshold float6
 
 	return bestEntry, bestScore, found
 }
-

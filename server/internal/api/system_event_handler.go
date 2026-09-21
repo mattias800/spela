@@ -138,4 +138,3 @@ type SystemEventTypeInfo struct {
 type SystemEventTypesResponse struct {
 	Types []SystemEventTypeInfo `json:"types"`
 }
-

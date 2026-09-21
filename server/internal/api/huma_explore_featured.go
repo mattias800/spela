@@ -177,7 +177,7 @@ func (h *ExploreHandler) HumaGetExploreFeatured(ctx context.Context, _ *GetExplo
 	var allRows []featuredRow
 	err := h.DB.
 		Table("games").
-		Select("games.id AS game_id, games.title, game_artworks.hero_url, game_artworks.logo_url, "+effectiveRatingPrefixed+" AS rating, games.genre, games.console_id").
+		Select("games.id AS game_id, games.title, game_artworks.hero_url, game_artworks.logo_url, " + effectiveRatingPrefixed + " AS rating, games.genre, games.console_id").
 		Joins("JOIN game_artworks ON game_artworks.game_id = games.id").
 		Where("games.deleted_at IS NULL").
 		Where("games.is_primary = true").
