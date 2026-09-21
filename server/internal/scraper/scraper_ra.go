@@ -3,10 +3,10 @@ package scraper
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/spela/server/internal/db"
@@ -30,10 +30,15 @@ func (s *Scraper) ScrapeRAAchievements(ctx context.Context, onProgress func(curr
 		return 0, 0, fmt.Errorf("RA client or API key not configured")
 	}
 
-	// Find all games without an RA game ID that are on playable consoles
+	// Find all games without an RA game ID that are on playable consoles.
+	// Games already checked against RA are excluded: RAHashChecked=true with
+	// RAGameID=0 means RA has no entry for that ROM, and re-querying it on
+	// every startup is what made Spela the heaviest caller of dorequest.php
+	// (#1674). See the Game model for the sentinel documentation.
 	var games []db.Game
 	if err := s.DB.Joins("JOIN consoles ON consoles.id = games.console_id AND consoles.playable = ?", true).
 		Where("games.ra_game_id = 0 OR games.ra_game_id IS NULL").
+		Where("games.ra_hash_checked = ? OR games.ra_hash_checked IS NULL", false).
 		Where("games.deleted_at IS NULL").
 		Preload("Console").
 		Find(&games).Error; err != nil {
@@ -74,12 +79,21 @@ func (s *Scraper) ScrapeRAAchievements(ctx context.Context, onProgress func(curr
 		time.Sleep(500 * time.Millisecond)
 		raGameID, err := s.RAClient.GetGameIDFromHash(hash)
 		if err != nil {
+			// RA answered and has no entry for this hash — record that so the
+			// next startup skips this ROM. Transient errors leave the flag
+			// unset so the lookup is retried later (#1674).
+			if errors.Is(err, retroachievements.ErrNoRAMatch) {
+				s.DB.Model(&db.Game{}).Where("id = ?", game.ID).
+					Updates(map[string]interface{}{"ra_hash_checked": true})
+			}
 			slog.Debug("RA: no game ID for hash", "game", game.Title, "hash", hash, "error", err)
 			continue
 		}
 
-		// Store the RA game ID on the game record
-		if err := s.DB.Model(&db.Game{}).Where("id = ?", game.ID).Update("ra_game_id", raGameID).Error; err != nil {
+		// Store the RA game ID on the game record, and mark the hash as
+		// checked so later runs skip straight to the achievement cache.
+		if err := s.DB.Model(&db.Game{}).Where("id = ?", game.ID).
+			Updates(map[string]interface{}{"ra_game_id": raGameID, "ra_hash_checked": true}).Error; err != nil {
 			slog.Warn("RA: failed to update game with RA ID", "game", game.Title, "raGameId", raGameID, "error", err)
 			continue
 		}
@@ -188,9 +202,9 @@ func (s *Scraper) FetchRAAchievements(game *db.Game) error {
 		id, err := s.RAClient.GetGameIDFromHash(hash)
 		if err != nil {
 			// GetGameIDFromHash returns an error both for transient failures
-			// AND when RA simply doesn't recognize the hash (GameID=0).
-			// Check if this is a "no match" (contains "no RA game found") vs transient.
-			if strings.Contains(err.Error(), "no RA game found") {
+			// AND when RA simply doesn't recognize the hash (GameID=0), which
+			// it reports as ErrNoRAMatch.
+			if errors.Is(err, retroachievements.ErrNoRAMatch) {
 				// RA doesn't have this game — mark checked so we don't rehash.
 				s.DB.Model(&db.Game{}).Where("id = ?", game.ID).
 					Updates(map[string]interface{}{"ra_hash_checked": true})
