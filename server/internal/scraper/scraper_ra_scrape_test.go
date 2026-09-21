@@ -2,6 +2,7 @@ package scraper
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -147,11 +148,44 @@ func TestScrapeRAAchievements_TransientFailureStaysRetryable(t *testing.T) {
 
 	assert.False(t, reloadGame(t, s, game.ID).RAHashChecked,
 		"a transient RA failure must NOT be negative-cached")
+	assert.Equal(t, int64(1), atomic.LoadInt64(&lookups))
 
-	// Still selected on the next run, so it recovers once RA is healthy.
+	// Still selected on the next run, and actually re-queried, so it recovers
+	// once RA is healthy again.
 	_, total, err := s.ScrapeRAAchievements(context.Background(), nil)
 	require.NoError(t, err)
 	assert.Equal(t, 1, total, "a transiently-failed game must stay in scope")
+	assert.Equal(t, int64(2), atomic.LoadInt64(&lookups), "the retry must actually reach RA")
+}
+
+// When RA rate-limits or blocks us every lookup is "transient", so the loop
+// has to stop rather than walk the whole library at 500ms per game.
+func TestScrapeRAAchievements_CircuitBreakerBoundsTransientFailures(t *testing.T) {
+	var lookups int64
+	mockRA := failingRAServer(t, &lookups)
+
+	s, console := setupScrapeTest(t, mockRA)
+	// Distinct files: Game.FilePath is uniquely indexed, and each needs a real
+	// ROM on disk to get as far as the lookup.
+	for i := 0; i < raCircuitBreakerThreshold+3; i++ {
+		name := fmt.Sprintf("unmatched-%d.nes", i)
+		require.NoError(t, os.WriteFile(
+			filepath.Join(s.GameDirs[0], "roms", name),
+			append(append([]byte{}, unmatchedROMContent...), byte(i)), 0o644))
+		createScrapeGame(t, s, console, fmt.Sprintf("Game %d", i), name)
+	}
+
+	_, _, err := s.ScrapeRAAchievements(context.Background(), nil)
+	require.NoError(t, err)
+
+	assert.Equal(t, int64(raCircuitBreakerThreshold), atomic.LoadInt64(&lookups),
+		"scrape must abort once the breaker trips, not walk the whole library")
+	assert.True(t, s.raCircuitOpen)
+
+	// And a subsequent run makes no requests at all while the breaker is open.
+	_, _, err = s.ScrapeRAAchievements(context.Background(), nil)
+	require.NoError(t, err)
+	assert.Equal(t, int64(raCircuitBreakerThreshold), atomic.LoadInt64(&lookups))
 }
 
 // A ROM that isn't readable right now is not an RA answer. Marking it checked

@@ -29,6 +29,10 @@ func (s *Scraper) ScrapeRAAchievements(ctx context.Context, onProgress func(curr
 	if !s.IsRAConfigured() {
 		return 0, 0, fmt.Errorf("RA client or API key not configured")
 	}
+	if s.raCircuitOpen {
+		slog.Warn("RA: circuit breaker open, skipping achievement scrape")
+		return 0, 0, nil
+	}
 
 	// Find all games without an RA game ID that are on playable consoles.
 	// Games already checked against RA are excluded: RAHashChecked=true with
@@ -92,12 +96,26 @@ func (s *Scraper) ScrapeRAAchievements(ctx context.Context, onProgress func(curr
 				} else {
 					slog.Debug("RA: no match, negative-cached", "game", game.Title, "hash", hash)
 				}
+				s.raConsecutiveFailures = 0
 				continue
 			}
-			// Transient — leave the flag unset so this retries.
+			// Transient — leave the flag unset so this retries. But bound it:
+			// when RA rate-limits or Cloudflare-blocks us, *every* lookup
+			// lands here, and an unbounded loop re-queries the whole library
+			// at 500ms intervals on every boot. Reuse the circuit breaker the
+			// queue path already has (#1674).
+			s.raConsecutiveFailures++
+			if s.raConsecutiveFailures >= raCircuitBreakerThreshold {
+				s.raCircuitOpen = true
+				slog.Warn("RA: too many consecutive lookup failures, aborting scrape",
+					"consecutiveFailures", s.raConsecutiveFailures, "lastError", err)
+				return successes, total, nil
+			}
 			slog.Warn("RA: hash lookup failed, will retry", "game", game.Title, "hash", hash, "error", err)
 			continue
 		}
+		// RA answered, so it is reachable — reset the breaker.
+		s.raConsecutiveFailures = 0
 
 		// Store the RA game ID on the game record, and mark the hash as
 		// checked so later runs skip straight to the achievement cache.
@@ -218,8 +236,10 @@ func (s *Scraper) FetchRAAchievements(game *db.Game) error {
 			// it reports as ErrNoRAMatch.
 			if errors.Is(err, retroachievements.ErrNoRAMatch) {
 				// RA doesn't have this game — mark checked so we don't rehash.
-				s.DB.Model(&db.Game{}).Where("id = ?", game.ID).
-					Updates(map[string]interface{}{"ra_hash_checked": true})
+				if uErr := s.DB.Model(&db.Game{}).Where("id = ?", game.ID).
+					Updates(map[string]interface{}{"ra_hash_checked": true}).Error; uErr != nil {
+					slog.Warn("RA fetch: failed to record no-match", "game", game.Title, "error", uErr)
+				}
 				slog.Debug("RA fetch: no RA match for game", "game", game.Title)
 				return nil
 			}
@@ -228,8 +248,10 @@ func (s *Scraper) FetchRAAchievements(game *db.Game) error {
 		}
 
 		// Match found — cache the RA game ID and mark hash as checked.
-		s.DB.Model(&db.Game{}).Where("id = ?", game.ID).
-			Updates(map[string]interface{}{"ra_hash_checked": true, "ra_game_id": id})
+		if uErr := s.DB.Model(&db.Game{}).Where("id = ?", game.ID).
+			Updates(map[string]interface{}{"ra_hash_checked": true, "ra_game_id": id}).Error; uErr != nil {
+			slog.Warn("RA fetch: failed to cache RA game ID", "game", game.Title, "error", uErr)
+		}
 		raGameID = id
 	}
 

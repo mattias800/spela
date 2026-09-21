@@ -55,7 +55,10 @@ func newTestRAServerCounting(t *testing.T, lookups *int64) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/dorequest.php":
-			if lookups != nil {
+			// Count only hash lookups — the real Connect API multiplexes every
+			// action on this one path, so counting the path would silently
+			// miscount the moment a test logs in.
+			if lookups != nil && r.URL.Query().Get("r") == "gameid" {
 				atomic.AddInt64(lookups, 1)
 			}
 			hash := r.URL.Query().Get("m")

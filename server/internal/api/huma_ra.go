@@ -450,6 +450,8 @@ func (h *RAHandler) HumaGetAchievementProgress(ctx context.Context, in *GetAchie
 				if uErr := h.DB.Model(&db.Game{}).Where("id = ?", game.ID).
 					Updates(map[string]interface{}{"ra_hash_checked": true}).Error; uErr != nil {
 					slog.Warn("RA: failed to record no-match", "gameId", game.ID, "error", uErr)
+				} else {
+					slog.Debug("RA: no match for hash, negative-cached", "gameId", game.ID, "hash", hash)
 				}
 			}
 			return &GetAchievementProgressOutput{Body: GameAchievementProgressResponse{RAGameID: 0, Progress: []RAProgressEntry{}}}, nil
