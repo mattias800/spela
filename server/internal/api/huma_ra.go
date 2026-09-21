@@ -425,6 +425,12 @@ func (h *RAHandler) HumaGetAchievementProgress(ctx context.Context, in *GetAchie
 	}
 
 	raGameID := game.RAGameID
+
+	// Previously checked + no RA match recorded — short-circuit to empty.
+	if game.RAHashChecked && raGameID == 0 {
+		return &GetAchievementProgressOutput{Body: GameAchievementProgressResponse{RAGameID: 0, Progress: []RAProgressEntry{}}}, nil
+	}
+
 	if raGameID == 0 {
 		romPath := filepath.Join(h.GameDir, game.FilePath)
 		if !storage.ValidateROMPath(romPath, []string{h.GameDir}) {
@@ -437,9 +443,21 @@ func (h *RAHandler) HumaGetAchievementProgress(ctx context.Context, in *GetAchie
 		var lookupErr error
 		raGameID, lookupErr = h.RAClient.GetGameIDFromHash(hash)
 		if lookupErr != nil {
+			// RA answered and has no entry for this hash — record that so the
+			// next view is served from the negative cache instead of another
+			// lookup. Transient errors stay retryable (#1674).
+			if errors.Is(lookupErr, retroachievements.ErrNoRAMatch) {
+				if uErr := h.DB.Model(&db.Game{}).Where("id = ?", game.ID).
+					Updates(map[string]interface{}{"ra_hash_checked": true}).Error; uErr != nil {
+					slog.Warn("RA: failed to record no-match", "gameId", game.ID, "error", uErr)
+				} else {
+					slog.Debug("RA: no match for hash, negative-cached", "gameId", game.ID, "hash", hash)
+				}
+			}
 			return &GetAchievementProgressOutput{Body: GameAchievementProgressResponse{RAGameID: 0, Progress: []RAProgressEntry{}}}, nil
 		}
-		h.DB.Model(&db.Game{}).Where("id = ?", game.ID).Update("ra_game_id", raGameID)
+		h.DB.Model(&db.Game{}).Where("id = ?", game.ID).
+			Updates(map[string]interface{}{"ra_game_id": raGameID, "ra_hash_checked": true})
 	}
 
 	raToken, err := h.decryptRAToken(&cred)

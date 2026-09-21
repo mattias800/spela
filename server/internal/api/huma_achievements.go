@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 	"path/filepath"
@@ -141,6 +142,18 @@ func (h *RAHandler) HumaGetGameAchievements(ctx context.Context, in *GetGameAchi
 		var lookupErr error
 		raGameID, lookupErr = h.RAClient.GetGameIDFromHash(hash)
 		if lookupErr != nil {
+			// RA answered and has no entry for this hash — record that so the
+			// RAHashChecked guard above fires next time instead of repeating
+			// the lookup. Transient errors stay retryable (#1674).
+			if errors.Is(lookupErr, retroachievements.ErrNoRAMatch) {
+				if uErr := h.DB.Model(&db.Game{}).Where("id = ?", game.ID).
+					Updates(map[string]interface{}{"ra_hash_checked": true}).Error; uErr != nil {
+					slog.Warn("RA: failed to record no-match", "gameId", game.ID, "error", uErr)
+				}
+				// Expected outcome for any ROM RA doesn't carry — not a warning.
+				slog.Debug("RA: no match for hash, negative-cached", "hash", hash)
+				return empty(), nil
+			}
 			slog.Warn("RA game ID lookup failed", "hash", hash, "error", lookupErr)
 			return empty(), nil
 		}

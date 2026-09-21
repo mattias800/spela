@@ -2,6 +2,7 @@ package retroachievements
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -108,7 +109,9 @@ func TestGetGameIDFromHash_NotFound(t *testing.T) {
 	client := &RAClient{BaseURL: server.URL, HTTPClient: server.Client()}
 	_, err := client.GetGameIDFromHash("unknownhash")
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "no RA game found")
+	assert.Contains(t, err.Error(), "no RetroAchievements match for hash")
+	// Callers negative-cache on this sentinel, so it must survive wrapping (#1674).
+	assert.True(t, errors.Is(err, ErrNoRAMatch))
 }
 
 func TestGetGameIDFromHash_Failure(t *testing.T) {
@@ -124,6 +127,8 @@ func TestGetGameIDFromHash_Failure(t *testing.T) {
 	_, err := client.GetGameIDFromHash("badhash")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid hash")
+	// An upstream failure is NOT a no-match — it must stay retryable.
+	assert.False(t, errors.Is(err, ErrNoRAMatch))
 }
 
 func TestGetGameInfoAndUserProgress_Success(t *testing.T) {

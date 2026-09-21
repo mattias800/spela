@@ -251,7 +251,15 @@ func (c *RAClient) LoginWithPassword(username, password string) (string, error) 
 	return result.Token, nil
 }
 
+// ErrNoRAMatch is returned by GetGameIDFromHash (wrapped via fmt.Errorf %w)
+// when RA answered successfully but does not know the hash. Callers branch on
+// errors.Is(err, ErrNoRAMatch) to tell a definitive "no such game" apart from
+// a transient failure: the former must be cached so the hash is never looked
+// up again, the latter must stay retryable. See #1674.
+var ErrNoRAMatch = errors.New("no RetroAchievements match for hash")
+
 // GetGameIDFromHash looks up a game's RA ID by its ROM MD5 hash.
+// Returns ErrNoRAMatch when RA has no entry for the hash.
 func (c *RAClient) GetGameIDFromHash(hash string) (uint, error) {
 	u := fmt.Sprintf("%s/dorequest.php?r=gameid&m=%s", c.BaseURL, url.QueryEscape(hash))
 
@@ -289,7 +297,7 @@ func (c *RAClient) GetGameIDFromHash(hash string) (uint, error) {
 	}
 
 	if result.GameID == 0 {
-		return 0, fmt.Errorf("no RA game found for hash %s", hash)
+		return 0, fmt.Errorf("%w %s", ErrNoRAMatch, hash)
 	}
 
 	return result.GameID, nil
