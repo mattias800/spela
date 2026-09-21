@@ -22,6 +22,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"go/format"
 	"io"
 	"maps"
 	"net/http"
@@ -166,7 +167,16 @@ func main() {
 	}
 	buf.WriteString("}\n")
 
-	if err := os.WriteFile(out, []byte(buf.String()), 0644); err != nil {
+	// gofmt the output: the map literal's keys need column alignment, which
+	// the hand-written writes above don't produce. Without this the generated
+	// file lands unformatted and any tree-wide gofmt pass fights the next
+	// regeneration.
+	formatted, err := format.Source([]byte(buf.String()))
+	if err != nil {
+		fatal("formatting generated source: %v", err)
+	}
+
+	if err := os.WriteFile(out, formatted, 0644); err != nil {
 		fatal("write %s: %v", out, err)
 	}
 
