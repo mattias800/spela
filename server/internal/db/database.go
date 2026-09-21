@@ -255,6 +255,12 @@ func Initialize(dbPath string) (*gorm.DB, error) {
 		return nil, fmt.Errorf("dropping users.email: %w", err)
 	}
 
+	// One-time: re-open games negative-cached against RA before #1674, which
+	// included rows poisoned by the old ROM-not-found write.
+	if err := MigrateRAHashChecked(db); err != nil {
+		slog.Warn("RA hash-checked backfill failed (will retry next start)", "error", err)
+	}
+
 	// Seed system event categories (security, operational).
 	if err := seedSystemEventCategories(db); err != nil {
 		return nil, fmt.Errorf("seeding system event categories: %w", err)
