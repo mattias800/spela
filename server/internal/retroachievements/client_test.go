@@ -109,7 +109,7 @@ func TestGetGameIDFromHash_NotFound(t *testing.T) {
 	client := &RAClient{BaseURL: server.URL, HTTPClient: server.Client()}
 	_, err := client.GetGameIDFromHash("unknownhash")
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "no RA game found")
+	assert.Contains(t, err.Error(), "no RetroAchievements match for hash")
 	// Callers negative-cache on this sentinel, so it must survive wrapping (#1674).
 	assert.True(t, errors.Is(err, ErrNoRAMatch))
 }

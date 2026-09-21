@@ -297,7 +297,7 @@ func (c *RAClient) GetGameIDFromHash(hash string) (uint, error) {
 	}
 
 	if result.GameID == 0 {
-		return 0, fmt.Errorf("no RA game found for hash %s: %w", hash, ErrNoRAMatch)
+		return 0, fmt.Errorf("%w %s", ErrNoRAMatch, hash)
 	}
 
 	return result.GameID, nil

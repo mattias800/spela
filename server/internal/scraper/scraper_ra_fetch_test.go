@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -42,11 +43,21 @@ func setupRAFetchTestDB(t *testing.T) *gorm.DB {
 
 func newTestRAServer(t *testing.T) *httptest.Server {
 	t.Helper()
+	return newTestRAServerCounting(t, nil)
+}
+
+// newTestRAServerCounting is newTestRAServer with an optional counter of
+// gameid lookups, for tests that assert on upstream traffic (#1674).
+func newTestRAServerCounting(t *testing.T, lookups *int64) *httptest.Server {
+	t.Helper()
 	expectedHash := testROMHash()
 
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/dorequest.php":
+			if lookups != nil {
+				atomic.AddInt64(lookups, 1)
+			}
 			hash := r.URL.Query().Get("m")
 			if hash == expectedHash {
 				json.NewEncoder(w).Encode(map[string]interface{}{

@@ -447,8 +447,10 @@ func (h *RAHandler) HumaGetAchievementProgress(ctx context.Context, in *GetAchie
 			// next view is served from the negative cache instead of another
 			// lookup. Transient errors stay retryable (#1674).
 			if errors.Is(lookupErr, retroachievements.ErrNoRAMatch) {
-				h.DB.Model(&db.Game{}).Where("id = ?", game.ID).
-					Updates(map[string]interface{}{"ra_hash_checked": true})
+				if uErr := h.DB.Model(&db.Game{}).Where("id = ?", game.ID).
+					Updates(map[string]interface{}{"ra_hash_checked": true}).Error; uErr != nil {
+					slog.Warn("RA: failed to record no-match", "gameId", game.ID, "error", uErr)
+				}
 			}
 			return &GetAchievementProgressOutput{Body: GameAchievementProgressResponse{RAGameID: 0, Progress: []RAProgressEntry{}}}, nil
 		}

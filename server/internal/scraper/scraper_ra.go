@@ -83,10 +83,19 @@ func (s *Scraper) ScrapeRAAchievements(ctx context.Context, onProgress func(curr
 			// next startup skips this ROM. Transient errors leave the flag
 			// unset so the lookup is retried later (#1674).
 			if errors.Is(err, retroachievements.ErrNoRAMatch) {
-				s.DB.Model(&db.Game{}).Where("id = ?", game.ID).
-					Updates(map[string]interface{}{"ra_hash_checked": true})
+				// Nothing ever clears this flag, so log the write rather than
+				// dropping its error: a silent failure here reproduces the
+				// hammering this whole change exists to stop.
+				if uErr := s.DB.Model(&db.Game{}).Where("id = ?", game.ID).
+					Updates(map[string]interface{}{"ra_hash_checked": true}).Error; uErr != nil {
+					slog.Warn("RA: failed to record no-match", "game", game.Title, "error", uErr)
+				} else {
+					slog.Debug("RA: no match, negative-cached", "game", game.Title, "hash", hash)
+				}
+				continue
 			}
-			slog.Debug("RA: no game ID for hash", "game", game.Title, "hash", hash, "error", err)
+			// Transient — leave the flag unset so this retries.
+			slog.Warn("RA: hash lookup failed, will retry", "game", game.Title, "hash", hash, "error", err)
 			continue
 		}
 
@@ -191,9 +200,12 @@ func (s *Scraper) FetchRAAchievements(game *db.Game) error {
 			}
 		}
 		if hash == "" {
-			// ROM file not found — mark as checked so we don't retry.
-			s.DB.Model(&db.Game{}).Where("id = ?", game.ID).
-				Updates(map[string]interface{}{"ra_hash_checked": true})
+			// ROM file not readable right now (unmounted share, copy still in
+			// flight). This is NOT an RA answer, so it must not set
+			// RAHashChecked — the model documents that flag as "RA has no such
+			// game", and nothing ever clears it. Marking it here would
+			// permanently hide the game once the file comes back. Costs no
+			// upstream traffic either way: we return before calling RA.
 			slog.Warn("RA fetch: ROM file not found", "game", game.Title, "path", game.FilePath)
 			return nil
 		}

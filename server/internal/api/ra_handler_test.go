@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -32,6 +33,14 @@ func romHashForTest() string {
 
 // newMockRAServer creates an httptest server that mimics the RA API.
 func newMockRAServer(t *testing.T) *httptest.Server {
+	t.Helper()
+	return newMockRAServerCounting(t, nil)
+}
+
+// newMockRAServerCounting is newMockRAServer with an optional counter of
+// dorequest.php gameid lookups, for tests that assert on upstream traffic
+// rather than response shape (#1674). Pass nil to count nothing.
+func newMockRAServerCounting(t *testing.T, lookups *int64) *httptest.Server {
 	t.Helper()
 	expectedHash := romHashForTest()
 
@@ -58,6 +67,9 @@ func newMockRAServer(t *testing.T) *httptest.Server {
 					})
 				}
 			case "gameid":
+				if lookups != nil {
+					atomic.AddInt64(lookups, 1)
+				}
 				hash := r.URL.Query().Get("m")
 				if hash == expectedHash {
 					json.NewEncoder(w).Encode(map[string]interface{}{
