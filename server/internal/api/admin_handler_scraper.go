@@ -52,8 +52,10 @@ func (h *AdminHandler) collectGameIDs(mode string, consoleID uint, source, statu
 		}
 	}
 
+	// Qualify the column: the "ra" mode joins consoles, and both tables have
+	// an id, so a bare "id" is ambiguous and SQLite rejects the whole query.
 	var gameIDs []uint
-	if err := q.Pluck("id", &gameIDs).Error; err != nil {
+	if err := q.Pluck("games.id", &gameIDs).Error; err != nil {
 		return nil, fmt.Errorf("collecting game IDs: %w", err)
 	}
 	return gameIDs, nil
