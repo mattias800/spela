@@ -113,7 +113,7 @@ export function useScanLibrary() {
   });
 }
 
-export type ScrapeMode = "new" | "all" | "fallback" | "ra";
+export type ScrapeMode = "new" | "all" | "fallback" | "ra" | "ra_recheck";
 
 export function useScrapeMetadata() {
   const queryClient = useQueryClient();

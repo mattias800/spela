@@ -37,18 +37,39 @@ func MigrateRAHashChecked(database *gorm.DB) error {
 		return nil // Already completed.
 	}
 
-	res := database.Model(&Game{}).
-		Where("ra_hash_checked = ? AND (ra_game_id = 0 OR ra_game_id IS NULL)", true).
-		Update("ra_hash_checked", false)
-	if res.Error != nil {
-		return fmt.Errorf("re-opening RA-negative-cached games: %w", res.Error)
+	n, err := ClearRANegativeCache(database, 0)
+	if err != nil {
+		return fmt.Errorf("re-opening RA-negative-cached games: %w", err)
 	}
-	if res.RowsAffected > 0 {
-		slog.Info("re-opened RA-negative-cached games for one re-check", "games", res.RowsAffected)
+	if n > 0 {
+		slog.Info("re-opened RA-negative-cached games for one re-check", "games", n)
 	}
 
 	if err := database.Save(&ServerSetting{Key: raHashCheckedBackfilledKey, Value: "true"}).Error; err != nil {
 		slog.Warn("failed to write ra-hash-checked backfill sentinel — migration will retry on next start", "error", err)
 	}
 	return nil
+}
+
+// ClearRANegativeCache clears RAHashChecked on games recorded as having no
+// RetroAchievements match, so they are looked up once more. Pass consoleID 0
+// for the whole library.
+//
+// This is the only way back: nothing else ever clears the flag, so without it
+// a game wrongly recorded as "RA has no such game" — a mass RA incident, or a
+// fix to our ROM hashing that would now match — stays hidden forever. Games
+// with a resolved RAGameID are left alone; they are not negative-cached.
+//
+// Returns the number of rows re-opened.
+func ClearRANegativeCache(database *gorm.DB, consoleID uint) (int64, error) {
+	q := database.Model(&Game{}).
+		Where("ra_hash_checked = ? AND (ra_game_id = 0 OR ra_game_id IS NULL)", true)
+	if consoleID > 0 {
+		q = q.Where("console_id = ?", consoleID)
+	}
+	res := q.Update("ra_hash_checked", false)
+	if res.Error != nil {
+		return 0, fmt.Errorf("clearing RA negative cache: %w", res.Error)
+	}
+	return res.RowsAffected, nil
 }

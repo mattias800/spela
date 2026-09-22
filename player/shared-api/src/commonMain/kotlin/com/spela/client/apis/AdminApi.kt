@@ -2385,7 +2385,7 @@ open class AdminApi : ApiClient {
     /**
      * Trigger a scrape job
      * Admin-only. Enqueues matching games for scraping. Supports conflict resolution (reject/replace/merge) if another scrape is active.
-     * @param mode Scrape mode: &#39;new&#39; (default), &#39;all&#39;, &#39;fallback&#39;, &#39;ra&#39;. (optional)
+     * @param mode Scrape mode: &#39;new&#39; (default), &#39;all&#39;, &#39;fallback&#39;, &#39;ra&#39;, &#39;ra_recheck&#39;. (optional)
      * @param force Legacy: &#39;true&#39; is equivalent to mode&#x3D;all. (optional)
      * @param console Optional console abbreviation filter. (optional)
      * @param source Filter by scrape source (igdb, libretro, steamgriddb). (optional)

@@ -10834,7 +10834,7 @@ export interface operations {
     triggerScrape: {
         parameters: {
             query?: {
-                /** @description Scrape mode: 'new' (default), 'all', 'fallback', 'ra'. */
+                /** @description Scrape mode: 'new' (default), 'all', 'fallback', 'ra', 'ra_recheck'. */
                 mode?: string;
                 /** @description Legacy: 'true' is equivalent to mode=all. */
                 force?: string;
