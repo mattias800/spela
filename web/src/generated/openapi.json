@@ -13660,12 +13660,12 @@
         "operationId": "triggerScrape",
         "parameters": [
           {
-            "description": "Scrape mode: 'new' (default), 'all', 'fallback', 'ra'.",
+            "description": "Scrape mode: 'new' (default), 'all', 'fallback', 'ra', 'ra_recheck'.",
             "explode": false,
             "in": "query",
             "name": "mode",
             "schema": {
-              "description": "Scrape mode: 'new' (default), 'all', 'fallback', 'ra'.",
+              "description": "Scrape mode: 'new' (default), 'all', 'fallback', 'ra', 'ra_recheck'.",
               "type": "string"
             }
           },

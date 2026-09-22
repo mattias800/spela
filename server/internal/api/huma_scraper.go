@@ -17,7 +17,7 @@ import (
 
 // TriggerScrapeInput is the input for POST /api/admin/scrape.
 type TriggerScrapeInput struct {
-	Mode     string `query:"mode" doc:"Scrape mode: 'new' (default), 'all', 'fallback', 'ra'."`
+	Mode     string `query:"mode" doc:"Scrape mode: 'new' (default), 'all', 'fallback', 'ra', 'ra_recheck'."`
 	Force    string `query:"force" doc:"Legacy: 'true' is equivalent to mode=all."`
 	Console  string `query:"console" doc:"Optional console abbreviation filter."`
 	Source   string `query:"source" doc:"Filter by scrape source (igdb, libretro, steamgriddb)."`
@@ -262,6 +262,22 @@ func (h *AdminHandler) HumaTriggerScrape(ctx context.Context, in *TriggerScrapeI
 			return nil, huma.Error400BadRequest("unknown console")
 		}
 		consoleID = console.ID
+	}
+
+	// 'ra_recheck' is 'ra' plus a reset: re-open games previously recorded as
+	// having no RA match so they are looked up once more. Nothing else ever
+	// clears RAHashChecked, so this is the only operator recovery from a game
+	// wrongly marked — a bad RA response, or a fix to our ROM hashing that
+	// would now match (#1674). Done here rather than inside collectGameIDs so
+	// the write is visible at the call site.
+	if mode == "ra_recheck" {
+		n, err := db.ClearRANegativeCache(h.DB, consoleID)
+		if err != nil {
+			slog.Error("failed to clear RA negative cache", "error", err)
+			return nil, huma.Error500InternalServerError("clearing RA negative cache")
+		}
+		slog.Info("cleared RA negative cache for re-check", "games", n, "consoleId", consoleID)
+		mode = "ra"
 	}
 
 	source := in.Source

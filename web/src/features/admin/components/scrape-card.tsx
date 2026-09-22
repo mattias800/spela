@@ -307,6 +307,36 @@ export function ScrapeCard() {
           >
             Scrape Missing Achievements
           </Button>
+          <Button
+            onClick={() =>
+              scrapeMetadata.mutate(
+                { mode: "ra_recheck", console: consoleParam },
+                {
+                  onSuccess: (data) => {
+                    const n = data?.total ?? 0;
+                    toast(
+                      n === 0 ? "info" : "success",
+                      n === 0
+                        ? "No games to re-check"
+                        : `Re-checking achievement matches for ${n} game${n === 1 ? "" : "s"}...`,
+                    );
+                  },
+                  onError: (err) =>
+                    toast(
+                      "error",
+                      err instanceof Error ? err.message : "Scrape failed",
+                    ),
+                },
+              )
+            }
+            loading={scrapeMetadata.isPending}
+            disabled={isActive}
+            variant="secondary"
+            icon={<RotateCcw className="h-4 w-4" />}
+            className="w-full"
+          >
+            Re-check Achievement Matches
+          </Button>
         </div>
       </div>
     </Section>
